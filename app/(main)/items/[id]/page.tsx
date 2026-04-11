@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import { Item, ItemService } from "@/lib/services/item-service";
 import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Phone, Eye, ArrowLeft, ShieldCheck, User, ChevronLeft, ChevronRight, Share2, Bookmark } from "lucide-react";
+import { Calendar, Phone, Eye, ArrowLeft, ShieldCheck, User, ChevronLeft, ChevronRight, Share2, Bookmark, Pencil, Archive, Trash2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -23,6 +23,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 export default function ItemDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { t } = useLanguage();
@@ -34,10 +43,29 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+  const viewIncremented = useRef(false);
+  
+  // Confirmation states
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
+
+  const isOwner = userId === item?.user_id;
 
   useEffect(() => {
     loadItem();
-    ItemService.incrementView(id);
+    
+    // Prevent double increment: use ref for strict mode + session storage for page reloads
+    if (!viewIncremented.current) {
+      const sessionKey = `viewed_${id}`;
+      if (!sessionStorage.getItem(sessionKey)) {
+        ItemService.incrementView(id);
+        sessionStorage.setItem(sessionKey, 'true');
+      }
+      viewIncremented.current = true;
+    }
+
     if (userId) {
       checkInitialSavedState();
     }
@@ -48,7 +76,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
       const token = await getToken({ template: 'supabase' });
       if (!token) return;
       
-      const supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(token!);
       const { data, error } = await supabase
         .from('saved_items')
         .select('item_id')
@@ -66,7 +94,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
 
   const toggleSave = async () => {
     if (!userId) {
-      toast.info("Лутфан аввал сабти ном кунед");
+      toast.info(t('pleaseLogin'));
       router.push("/sign-up");
       return;
     }
@@ -78,12 +106,11 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
       const token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("No token");
       
-      const supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(token!);
       const saved = await ItemService.toggleSaveItem(supabase, userId!, id);
       setIsSaved(saved);
-      toast.success(saved ? "Ба захирашудаҳо илова шуд" : "Аз захирашудаҳо нест шуд");
+      toast.success(saved ? t('addedToSaved') : t('removedFromSaved'));
       
-      // Dispatch a custom event to notify other components (like ProfilePage)
       window.dispatchEvent(new Event('saved-items-updated'));
     } catch (e) {
       console.error("Error toggling save in DB:", e);
@@ -121,7 +148,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     try {
       const data = await ItemService.getItemDetails(id);
       setItem(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading item:", error);
       toast.error(t('itemNotFound'));
     } finally {
@@ -139,6 +166,54 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success(t('success'));
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsActionLoading(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      await ItemService.deleteItem(supabase, id);
+      toast.success(t('success'));
+      router.push('/');
+    } catch (error) {
+      toast.error(t('error'));
+    } finally {
+      setIsActionLoading(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleArchive = async () => {
+    setIsActionLoading(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      await ItemService.archiveToSafetyBox(supabase, item!, userId!);
+      toast.success(t('moveToSafeSuccess'));
+      router.push('/profile?tab=safety');
+    } catch (error) {
+      toast.error(t('error'));
+    } finally {
+      setIsActionLoading(false);
+      setShowArchiveConfirm(false);
+    }
+  };
+
+  const handleResolved = async () => {
+    setIsActionLoading(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      await ItemService.deleteItem(supabase, id);
+      toast.success(t('itemResolvedSuccess'));
+      router.push('/');
+    } catch (error) {
+      toast.error(t('error'));
+    } finally {
+      setIsActionLoading(false);
+      setShowResolvedConfirm(false);
     }
   };
 
@@ -171,16 +246,16 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <Button variant="ghost" asChild className="mb-6 gap-2 rounded-md font-bold">
+        <Button variant="ghost" asChild className="mb-6 gap-2 rounded-xl font-black uppercase text-[10px] tracking-widest bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 transition-colors">
           <Link href="/">
             <ArrowLeft className="w-4 h-4" /> {t('home')}
           </Link>
         </Button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-          {/* Images Carousel - Sticky on Desktop */}
+          {/* Images Carousel */}
           <div className="md:sticky md:top-24 space-y-4">
-            <div className="relative aspect-square overflow-hidden rounded-2xl border shadow-md bg-zinc-100 dark:bg-zinc-900 group">
+            <div className="relative aspect-square overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-md bg-zinc-100 dark:bg-zinc-950 group">
               {images.map((img, index) => (
                 <Image
                   key={index}
@@ -195,45 +270,16 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 />
               ))}
               
-              {/* Carousel Controls */}
+              {/* Carousel Controls - Always Visible */}
               {images.length > 1 && (
                 <>
-                  <button 
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center text-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-                  <button 
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center text-zinc-800 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </button>
-                  
-                  {/* Indicators */}
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {images.map((_, i) => (
-                      <div 
-                        key={i} 
-                        className={cn(
-                          "h-1.5 rounded-full transition-all",
-                          i === currentImageIndex ? "w-6 bg-white shadow-sm" : "w-1.5 bg-white/50"
-                        )}
-                      />
-                    ))}
-                  </div>
+                  <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center text-zinc-800 transition-all hover:bg-white z-20"><ChevronLeft className="w-6 h-6" /></button>
+                  <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center text-zinc-800 transition-all hover:bg-white z-20"><ChevronRight className="w-6 h-6" /></button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">{images.map((_, i) => (<div key={i} className={cn("h-1.5 rounded-full transition-all", i === currentImageIndex ? "w-6 bg-white shadow-sm" : "w-1.5 bg-white/50")}/>))}</div>
                 </>
               )}
 
-              <Badge 
-                className={cn(
-                  "absolute top-4 left-4 uppercase font-black rounded-md px-3 py-1 shadow-sm border-none z-10",
-                  item.type === 'lost' 
-                    ? "bg-red-600 text-white hover:bg-red-700" 
-                    : "bg-emerald-600 text-white hover:bg-emerald-700"
-                )}
-              >
+              <Badge className={cn("absolute top-4 left-4 uppercase font-black rounded-md px-3 py-1 shadow-md border-none z-10", item.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
                 {item.type === 'lost' ? t('lost') : t('found')}
               </Badge>
             </div>
@@ -243,116 +289,154 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
           <div className="flex flex-col">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                  {item.profiles?.avatar_url ? (
-                    <Image src={item.profiles.avatar_url} alt="User" width={44} height={44} className="object-cover" />
-                  ) : (
-                    <User className="w-5 h-5 text-zinc-400" />
-                  )}
+                <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                  {item.profiles?.avatar_url ? (<Image src={item.profiles.avatar_url} alt="User" width={48} height={48} className="object-cover w-full h-full" />) : (<User className="w-6 h-6 text-zinc-400" />)}
                 </div>
                 <div>
-                  <p className="font-bold text-sm leading-tight">
-                    {item.profiles?.first_name || t('user')} {item.profiles?.last_name || ""}
-                  </p>
-                  <p className="text-[9px] text-zinc-400 font-black uppercase tracking-tighter mt-0.5">
-                    {t('ownerInfo')}
-                  </p>
+                  <p className="font-black text-sm leading-tight uppercase tracking-tight">{item.profiles?.first_name || t('user')}</p>
+                  <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-0.5">{item.profiles?.last_name || ""}</p>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-bold mr-2">
-                  <Eye className="w-4 h-4" /> {item.views || 0}
-                </div>
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-zinc-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20" onClick={handleShare}>
-                      <Share2 className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Мубодила</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={cn(
-                        "h-9 w-9 rounded-xl transition-colors",
-                        isSaved 
-                          ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" 
-                          : "text-zinc-500 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20"
-                      )} 
-                      onClick={toggleSave}
-                      disabled={isToggling}
-                    >
-                      <Bookmark className={cn("w-4 h-4 transition-all", isSaved && "fill-emerald-500 text-emerald-500")} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{isSaved ? "Бардоштан аз захира" : "Захира кардан"}</TooltipContent>
-                </Tooltip>
+              <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black uppercase tracking-widest">
+                <Eye className="w-4 h-4" /> {item.views || 0}
               </div>
             </div>
 
-            <div className="flex items-start mb-4">
-              <Badge variant="outline" className="uppercase tracking-widest text-[10px] rounded-md px-2 py-0.5">
+            {/* Category and Date Row */}
+            <div className="flex justify-between items-center mb-4">
+              <Badge variant="outline" className="uppercase tracking-widest text-[10px] rounded-md px-2 py-1 font-black border-zinc-200">
                 {t(`categories.${item.category}`)}
               </Badge>
+              <div className="flex items-center gap-2 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{item.created_at ? format(new Date(item.created_at), "dd.MM.yyyy") : ""}</span>
+              </div>
             </div>
 
-            <h1 className="text-3xl font-black tracking-tight mb-2 uppercase">{item.title}</h1>
-            
-            <div className="flex items-center gap-2 text-zinc-500 mb-8 text-sm font-medium">
-              <Calendar className="w-4 h-4" />
-              <span>{item.created_at ? format(new Date(item.created_at), "dd.MM.yyyy") : ""}</span>
+            <div className="flex flex-col mb-4">
+              {/* Title and Status Row */}
+              <div className="flex justify-between items-start gap-4 mb-2">
+                <h1 className="text-4xl font-black tracking-tighter uppercase leading-none flex-1">{item.title}</h1>
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md border shrink-0",
+                  item.type === 'lost' 
+                    ? "text-red-600 border-red-100 bg-red-50 dark:bg-red-950/20 dark:border-red-900/30" 
+                    : "text-emerald-600 border-emerald-100 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-900/30"
+                )}>
+                  {item.type === 'lost' ? t('lost') : t('found')}
+                </span>
+              </div>
             </div>
 
             {item.reward && (
-              <div className="bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-yellow-400 rounded-md p-4 mb-8">
-                <p className="text-yellow-800 dark:text-yellow-400 font-bold text-[10px] uppercase tracking-wider mb-1">
-                  {t('reward')}
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 mb-8 shadow-sm">
+                <p className="text-amber-600 dark:text-amber-400 font-black text-[10px] uppercase tracking-widest mb-1 leading-tight">
+                  {item.type === 'lost' ? t('reward_gives_viewer') : t('reward_wants_viewer')}
                 </p>
-                <p className="text-2xl font-black text-yellow-900 dark:text-yellow-100">
-                  {item.reward} TJS
+                <p className="text-3xl font-black text-amber-900 dark:text-amber-100 tracking-tight">
+                  {item.reward} <span className="text-xl">TJS</span>
                 </p>
               </div>
             )}
 
             <div className="mb-8">
-              <h3 className="font-black text-sm uppercase tracking-wider text-zinc-400 mb-3">{t('description')}</h3>
+              <h3 className="font-black text-[10px] uppercase tracking-widest text-zinc-400 mb-4">{t('description')}</h3>
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">
                 {item.description}
               </p>
             </div>
 
-            {/* Safety Tips */}
-            <div className="bg-blue-50 dark:bg-blue-900/10 rounded-xl p-4 mb-8 flex gap-4 items-start border border-blue-100 dark:border-blue-900/30">
-              <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-2xl p-5 mb-8 flex gap-4 items-start border border-blue-100 dark:border-blue-900/30 shadow-sm">
+              <ShieldCheck className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold text-xs text-blue-900 dark:text-blue-400">{t('safetyTitle')}</p>
-                <p className="text-[10px] text-blue-700 dark:text-blue-500 font-medium leading-tight mt-1">{t('safetyText')}</p>
+                <p className="font-black text-[10px] uppercase tracking-widest text-blue-900 dark:text-blue-400 mb-1">{t('safetyTitle')}</p>
+                <p className="text-xs text-blue-700 dark:text-blue-500 font-medium leading-relaxed">{t('safetyText')}</p>
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Action Buttons - Always Visible with Proper Labels */}
+            <div className="flex flex-wrap items-center gap-4 mb-10">
+              {isOwner && (
+                <>
+                  <div className="flex flex-col gap-2 items-center">
+                    <Button variant="secondary" size="icon" className="h-16 w-16 rounded-2xl bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:bg-zinc-900/50 dark:text-zinc-400 border border-zinc-100 dark:border-zinc-800 transition-all active:scale-95 shadow-sm" asChild>
+                      <Link href={`/items/${id}/edit`}>
+                        <Pencil className="w-7 h-7" />
+                      </Link>
+                    </Button>
+                    <span className="text-[9px] font-black uppercase text-zinc-500 tracking-tighter">{t('edit')}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 items-center">
+                    <Button variant="secondary" size="icon" className="h-16 w-16 rounded-2xl bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/10 dark:text-amber-400 border border-amber-100/50 dark:border-amber-900/30 transition-all active:scale-95 shadow-sm" onClick={() => setShowArchiveConfirm(true)} disabled={isActionLoading}><Archive className="w-7 h-7" /></Button>
+                    <span className="text-[9px] font-black uppercase text-amber-600/70 tracking-tighter">{t('moveToSafe')}</span>
+                  </div>
+                  <div className="flex flex-col gap-2 items-center">
+                    <Button variant="secondary" size="icon" className="h-16 w-16 rounded-2xl bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/10 dark:text-red-400 border border-red-100/50 dark:border-red-900/30 transition-all active:scale-95 shadow-sm" onClick={() => setShowDeleteConfirm(true)} disabled={isActionLoading}><Trash2 className="w-7 h-7" /></Button>
+                    <span className="text-[9px] font-black uppercase text-red-600/70 tracking-tighter">{t('delete')}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex flex-col gap-2 items-center">
+                <Button variant="secondary" size="icon" className="h-16 w-16 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/10 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 transition-all active:scale-95 shadow-sm" onClick={handleShare}><Share2 className="w-7 h-7" /></Button>
+                <span className="text-[9px] font-black uppercase text-blue-600/70 tracking-tighter">{t('share')}</span>
+              </div>
+              <div className="flex flex-col gap-2 items-center">
+                <Button variant="secondary" size="icon" className={cn("h-16 w-16 rounded-2xl transition-all active:scale-95 border shadow-sm", isSaved ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30" : "bg-zinc-50 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900/50 dark:text-zinc-400 border-zinc-100 dark:border-zinc-800")} onClick={toggleSave} disabled={isToggling}><Bookmark className={cn("w-7 h-7 transition-all", isSaved && "fill-emerald-600 dark:fill-emerald-400")} /></Button>
+                <span className={cn("text-[9px] font-black uppercase tracking-tighter", isSaved ? "text-emerald-600/70" : "text-zinc-400")}>{t('save')}</span>
+              </div>
+            </div>
+
             <div className="mt-auto">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button size="lg" className="h-14 w-full rounded-xl text-base font-black gap-3 bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-100 dark:shadow-none" asChild>
-                    <a href={`tel:${item.phone_number}`}>
-                      <Phone className="w-5 h-5" /> {t('call')}
-                    </a>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{t('call')} {item.phone_number}</p>
-                </TooltipContent>
-              </Tooltip>
+              {isOwner ? (
+                <Button size="lg" className="h-16 w-full rounded-2xl text-base font-black gap-3 bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-100 dark:shadow-none uppercase tracking-widest text-white transition-all active:scale-95" onClick={() => setShowResolvedConfirm(true)} disabled={isActionLoading}><CheckCircle2 className="w-6 h-6" /> {t('resolved')}</Button>
+              ) : (
+                <Button size="lg" className="h-16 w-full rounded-2xl text-base font-black gap-3 bg-zinc-900 hover:bg-zinc-800 shadow-xl shadow-zinc-100 dark:shadow-none text-white transition-all active:scale-95 uppercase tracking-widest" asChild>
+                  <a href={`tel:${item.phone_number}`}><Phone className="w-6 h-6" /> {t('call')}</a>
+                </Button>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Confirmation Modals */}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="rounded-3xl max-w-sm border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-red-600">{t('deleteConfirm')}</DialogTitle>
+              <DialogDescription className="font-medium pt-3 text-zinc-500">{t('deletePostConfirm')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-row gap-3 mt-6">
+              <Button variant="outline" className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 border-zinc-200" onClick={() => setShowDeleteConfirm(false)}>{t('cancel')}</Button>
+              <Button variant="destructive" className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete} disabled={isActionLoading}>{t('delete')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
+          <DialogContent className="rounded-3xl max-w-sm border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-amber-600">{t('moveToSafe')}</DialogTitle>
+              <DialogDescription className="font-medium pt-3 text-zinc-500">{t('moveToSafeDesc')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-row gap-3 mt-6">
+              <Button variant="outline" className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 border-zinc-200" onClick={() => setShowArchiveConfirm(false)}>{t('cancel')}</Button>
+              <Button className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 bg-amber-600 hover:bg-amber-700 text-white" onClick={handleArchive} disabled={isActionLoading}>{t('moveToSafe')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showResolvedConfirm} onOpenChange={setShowResolvedConfirm}>
+          <DialogContent className="rounded-3xl max-w-sm border-none shadow-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tighter text-emerald-600">{t('resolved')}</DialogTitle>
+              <DialogDescription className="font-medium pt-3 text-zinc-500">{t('resolvedConfirm')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex flex-row gap-3 mt-6">
+              <Button variant="outline" className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 border-zinc-200" onClick={() => setShowResolvedConfirm(false)}>{t('cancel')}</Button>
+              <Button className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleResolved} disabled={isActionLoading}>{t('resolved')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );

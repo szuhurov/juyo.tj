@@ -7,9 +7,6 @@ export interface Item {
   description: string;
   category: string;
   type: 'lost' | 'found';
-  location_lat?: number;
-  location_lng?: number;
-  location_text?: string;
   date: string;
   reward?: string;
   phone_number?: string;
@@ -42,11 +39,11 @@ export const ItemService = {
       .select('*, images:item_images(image_url)')
       .order('created_at', { ascending: false });
 
-    // If we're looking for a specific user's items, we don't filter by resolved/moderated status
     if (user_id) {
       query = query.eq('user_id', user_id);
     } else {
-      query = query.eq('is_resolved', false).eq('moderation_status', 'approved');
+      // Show all unresolved items (either false or NULL)
+      query = query.or('is_resolved.eq.false,is_resolved.is.null');
     }
 
     if (category && category !== 'All') {
@@ -146,5 +143,69 @@ export const ItemService = {
     return data.map((d: any) => d.items) as Item[];
   },
 
-  // ... other methods will be refactored as needed
+  async deleteItem(supabaseClient: any, id: string) {
+    const { error } = await supabaseClient.from('items').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  async archiveToSafetyBox(supabaseClient: any, item: Item, userId: string) {
+    // 1. Insert into safety_box
+    const { error: insertError } = await supabaseClient.from('safety_box').insert([{
+      user_id: userId,
+      item_name: item.title,
+      description: item.description,
+      category: item.category,
+      type: item.type,
+      reward: item.reward,
+      phone_number: item.phone_number,
+      images: item.images?.map(img => img.image_url) || [],
+      views: item.views || 0,
+      date: item.date, // Preserve the item's original date
+      created_at: item.created_at
+    }]);
+
+    if (insertError) throw insertError;
+
+    // 2. Delete from items
+    const { error: deleteError } = await supabaseClient.from('items').delete().eq('id', item.id);
+    if (deleteError) throw deleteError;
+  },
+
+  async publishFromSafetyBox(supabaseClient: any, safetyItem: any, userId: string) {
+    // 1. Create item in feed
+    const { data: item, error: itemError } = await supabaseClient
+      .from('items')
+      .insert([{
+        user_id: userId,
+        title: safetyItem.item_name,
+        description: safetyItem.description,
+        category: safetyItem.category,
+        type: safetyItem.type || 'lost',
+        date: safetyItem.date || new Date().toISOString().split('T')[0],
+        reward: safetyItem.reward,
+        phone_number: safetyItem.phone_number,
+        is_resolved: false,
+        views: safetyItem.views || 0, // Carry over views
+        created_at: safetyItem.created_at // Preserve original creation date
+      }])
+      .select()
+      .single();
+
+    if (itemError) throw itemError;
+
+    // 2. Add images
+    if (safetyItem.images?.length > 0) {
+      const imageRecords = safetyItem.images.map((url: string) => ({
+        item_id: item.id,
+        image_url: url
+      }));
+      await supabaseClient.from('item_images').insert(imageRecords);
+    }
+
+    // 3. Remove from safety box
+    const { error: deleteError } = await supabaseClient.from('safety_box').delete().eq('id', safetyItem.id);
+    if (deleteError) throw deleteError;
+
+    return item;
+  }
 };

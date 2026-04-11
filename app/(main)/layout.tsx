@@ -8,7 +8,7 @@ export default function MainLayout({
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 pt-16">
         {children}
       </main>
       <footer className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12">
