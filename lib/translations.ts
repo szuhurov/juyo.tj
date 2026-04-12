@@ -284,6 +284,11 @@ export const translations: Record<string, any> = {
     removeFromSafe: 'Нест кардан аз сандуқ',
     publishFromSafeConfirm: 'Оё шумо мехоҳед ин ашёро дар лентаи умумӣ нашр кунед?',
     publishFromSafeSuccess: 'Эълони шумо нашр шуд ва пас аз тафтиш дар лента пайдо мешавад.',
+    imageModeration: {
+      submitted: 'Акси шумо қабул шуд ва баъд аз санҷиш нашр мешавад',
+      pending: 'Дар ҳоли санҷиш',
+      rejected: 'Ин акс манъ карда шуд',
+    },
     removeFromSafeConfirm: 'Шумо мутмаин ҳастед, ки ин ашёро аз сандуқ нест мекунед?',
     
     // Public Profile
@@ -458,9 +463,13 @@ export const translations: Record<string, any> = {
     resolvedConfirm: 'Вы нашли вещь или вернули её владельцу? Объявление будет удалено.',
     share: 'Поделиться',
     edit: 'Редактировать',
-    publishSuccess: 'Объявление успешно опубликовано!',
-    moveToSafeSuccess: 'Объявление перемещено в личный сейф',
-    itemResolvedSuccess: 'Поздравляем! Мы рады, что смогли помочь вам.',
+    publishFromSafeSuccess: 'Объявление опубликовано и появится в ленте после проверки.',
+    imageModeration: {
+      submitted: 'Ваше изображение отправлено на проверку',
+      pending: 'На проверке',
+      rejected: 'Изображение отклонено',
+    },
+    removeFromSafeConfirm: 'Вы уверены, что хотите удалить этот предмет из сейфа?',
     auth: {
       resetPassword: 'Восстановление',
       enterNewPassword: 'Введите новый пароль',
@@ -612,6 +621,11 @@ export const translations: Record<string, any> = {
     removeFromSafe: 'Удалить из сейфа',
     publishFromSafeConfirm: 'Вы хотите опубликовать этот предмет в общей ленте?',
     publishFromSafeSuccess: 'Объявление опубликовано и появится в ленте после проверки.',
+    imageModeration: {
+      submitted: 'Ваше изображение отправлено на проверку',
+      pending: 'На проверке',
+      rejected: 'Изображение отклонено',
+    },
     removeFromSafeConfirm: 'Вы уверены, что хотите удалить этот предмет из сейфа?',
 
     // Public Profile
@@ -932,6 +946,11 @@ export const translations: Record<string, any> = {
     removeFromSafe: 'Remove from Box',
     publishFromSafeConfirm: 'Do you want to publish this item to the public feed?',
     publishFromSafeSuccess: 'Post published and will appear after review.',
+    imageModeration: {
+      submitted: 'Your image has been submitted for review',
+      pending: 'Under review',
+      rejected: 'Image rejected',
+    },
     removeFromSafeConfirm: 'Are you sure you want to remove this item from the box?',
 
     // Public Profile

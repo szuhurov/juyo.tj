@@ -1,4 +1,5 @@
 import { Header } from "@/components/header";
+import { MandatoryPhoneModal } from "@/components/mandatory-phone-modal";
 
 export default function MainLayout({
   children,
@@ -8,6 +9,7 @@ export default function MainLayout({
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
+      <MandatoryPhoneModal />
       <main className="flex-1 pt-16">
         {children}
       </main>

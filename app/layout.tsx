@@ -23,6 +23,8 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+import { QueryProvider } from "@/components/query-provider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -36,11 +38,13 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
-          <LanguageProvider>
-            <NetworkStatus />
-            {children}
-            <Toaster position="top-center" richColors />
-          </LanguageProvider>
+          <QueryProvider>
+            <LanguageProvider>
+              <NetworkStatus />
+              {children}
+              <Toaster position="top-center" richColors />
+            </LanguageProvider>
+          </QueryProvider>
         </body>
       </html>
     </ClerkProvider>

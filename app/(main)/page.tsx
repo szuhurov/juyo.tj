@@ -7,7 +7,8 @@ import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams, useRouter } from "next/navigation";
-import useSWR, { useSWRConfig } from "swr";
+import { useItems } from "@/lib/hooks/use-items";
+import { useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
 
@@ -16,7 +17,7 @@ function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || "";
-  const { mutate } = useSWRConfig();
+  const queryClient = useQueryClient();
   
   const [searchValue, setSearchValue] = useState(searchQuery);
   const [category, setCategory] = useState("All");
@@ -45,7 +46,7 @@ function HomeContent() {
   // Listen for global item updates
   useEffect(() => {
     const handleUpdate = () => {
-      mutate(['items', category, itemType, searchQuery]);
+      queryClient.invalidateQueries({ queryKey: ['items'] });
     };
     window.addEventListener('items-updated', handleUpdate);
     window.addEventListener('saved-items-updated', handleUpdate);
@@ -53,21 +54,14 @@ function HomeContent() {
       window.removeEventListener('items-updated', handleUpdate);
       window.removeEventListener('saved-items-updated', handleUpdate);
     };
-  }, [category, itemType, searchQuery, mutate]);
+  }, [queryClient]);
 
-  // Use SWR for caching items
-  const { data: items = [], isLoading } = useSWR(
-    ['items', category, itemType, searchQuery],
-    () => ItemService.getItems({ 
-      category: category === "All" ? undefined : category,
-      type: itemType || undefined,
-      search: searchQuery
-    }),
-    {
-      revalidateOnFocus: false, // Don't refetch when window gets focus
-      dedupingInterval: 60000, // Cache for 1 minute
-    }
-  );
+  // Use TanStack Query for caching items
+  const { data: items = [], isLoading, isPlaceholderData } = useItems({ 
+    category: category === "All" ? undefined : category,
+    type: itemType || undefined,
+    search: searchQuery
+  });
 
   return (
     <div className="pb-18">

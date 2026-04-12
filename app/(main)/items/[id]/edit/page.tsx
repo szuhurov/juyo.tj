@@ -124,11 +124,13 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       const finalImageUrls = [];
       const newFiles = images;
       let newFileIdx = 0;
+      let hasNewImages = false;
 
       for (const preview of previews) {
         if (preview.isExisting) {
           finalImageUrls.push(preview.url);
         } else {
+          hasNewImages = true;
           const file = newFiles[newFileIdx++];
           const ext = file.name.split('.').pop();
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
@@ -144,33 +146,59 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         }
       }
 
+      // Check if order or set of images changed
+      const existingUrls = item.images?.map(img => img.image_url) || [];
+      const imagesChanged = hasNewImages || 
+                            finalImageUrls.length !== existingUrls.length ||
+                            finalImageUrls.some((url, i) => url !== existingUrls[i]);
+
       // 2. Update item record
+      const updateData: any = {
+        title,
+        description,
+        category,
+        type,
+        phone_number: phone,
+        reward: reward ? `${reward}` : null
+      };
+
+      if (imagesChanged) {
+        updateData.moderation_status = 'pending';
+      }
+
       const { error: updateError } = await supabase
         .from('items')
-        .update({
-          title,
-          description,
-          category,
-          type,
-          phone_number: phone,
-          reward: reward ? `${reward}` : null
-        })
+        .update(updateData)
         .eq('id', id);
 
       if (updateError) throw updateError;
 
       // 3. Update images (delete old and insert new)
-      await supabase.from('item_images').delete().eq('item_id', id);
-      
-      const imageRecords = finalImageUrls.map(url => ({
-        item_id: id,
-        image_url: url
-      }));
-      await supabase.from('item_images').insert(imageRecords);
+      if (imagesChanged) {
+        await supabase.from('item_images').delete().eq('item_id', id);
+        
+        const imageRecords = finalImageUrls.map(url => ({
+          item_id: id,
+          image_url: url
+        }));
+        await supabase.from('item_images').insert(imageRecords);
 
-      toast.success(t('updateSuccess'));
-      window.dispatchEvent(new Event('items-updated'));
-      router.push(`/items/${id}`);
+        // 4. Trigger Re-Moderation (Async) - Server handles DB update
+        fetch('/api/moderate', {
+          method: 'POST',
+          body: JSON.stringify({ imageUrls: finalImageUrls, itemId: id }),
+          headers: { 'Content-Type': 'application/json' }
+        }).catch(err => console.error('Moderation background error:', err));
+      }
+
+      if (imagesChanged) {
+        toast.success(t('imageModeration.submitted'));
+      } else {
+        toast.success(t('updateSuccess'));
+      }
+      
+      // Force a full page reload to clear any client-side cache and show fresh data
+      window.location.href = `/items/${id}`;
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || t('error'));

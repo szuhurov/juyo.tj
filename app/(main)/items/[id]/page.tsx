@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Phone, Eye, ArrowLeft, ShieldCheck, User, ChevronLeft, ChevronRight, Share2, Bookmark, Pencil, Archive, Trash2, CheckCircle2 } from "lucide-react";
+import { Calendar, Phone, Eye, ArrowLeft, ShieldCheck, User, ChevronLeft, ChevronRight, Share2, Bookmark, Pencil, Archive, Trash2, CheckCircle2, ShieldAlert, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -32,13 +32,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { useItemDetails } from "@/lib/hooks/use-items";
+import { useQueryClient } from "@tanstack/react-query";
+
 export default function ItemDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { t } = useLanguage();
   const router = useRouter();
-  const { getToken, userId } = useAuth();
-  const [item, setItem] = useState<Item | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { getToken, userId, isLoaded } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Use TanStack Query for caching
+  const { data: item, isLoading: loading } = useItemDetails(id);
+  
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
@@ -50,23 +56,36 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
+  const [showBlockedInfo, setShowBlockedInfo] = useState(false);
 
   const isOwner = userId === item?.user_id;
 
+  // View increment logic
   useEffect(() => {
-    loadItem();
-    
-    // Prevent double increment: use ref for strict mode + session storage for page reloads
-    if (!viewIncremented.current) {
-      const sessionKey = `viewed_${id}`;
-      if (!sessionStorage.getItem(sessionKey)) {
-        ItemService.incrementView(id);
-        sessionStorage.setItem(sessionKey, 'true');
+    if (isLoaded && item && !viewIncremented.current) {
+      const isActuallyOwner = userId === item.user_id;
+      
+      if (!isActuallyOwner) {
+        const sessionKey = `viewed_${id}`;
+        if (!sessionStorage.getItem(sessionKey)) {
+          viewIncremented.current = true;
+          ItemService.incrementView(id).then(() => {
+            sessionStorage.setItem(sessionKey, 'true');
+            // Optimistically update local cache
+            queryClient.setQueryData(['items', 'detail', id], (old: any) => ({
+              ...old,
+              views: (old?.views || 0) + 1
+            }));
+          });
+        }
       }
       viewIncremented.current = true;
     }
+  }, [id, userId, isLoaded, item, queryClient]);
 
-    if (userId) {
+  // Initial saved state check
+  useEffect(() => {
+    if (userId && id) {
       checkInitialSavedState();
     }
   }, [id, userId]);
@@ -111,6 +130,8 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
       setIsSaved(saved);
       toast.success(saved ? t('addedToSaved') : t('removedFromSaved'));
       
+      // Invalidate saved items query to refresh profile page cache
+      queryClient.invalidateQueries({ queryKey: ['items', 'saved', userId] });
       window.dispatchEvent(new Event('saved-items-updated'));
     } catch (e) {
       console.error("Error toggling save in DB:", e);
@@ -119,6 +140,13 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
       setIsToggling(false);
     }
   };
+
+  // Auto-show blocked info if item is rejected
+  useEffect(() => {
+    if (item?.moderation_status === 'rejected') {
+      setShowBlockedInfo(true);
+    }
+  }, [item?.moderation_status]);
 
   const images = item?.images && item.images.length > 0 
     ? item.images 
@@ -142,18 +170,6 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   const prevImage = () => {
     setIsAutoPlaying(false);
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  const loadItem = async () => {
-    try {
-      const data = await ItemService.getItemDetails(id);
-      setItem(data);
-    } catch (error: any) {
-      console.error("Error loading item:", error);
-      toast.error(t('itemNotFound'));
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleShare = () => {
@@ -193,8 +209,11 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
       await ItemService.archiveToSafetyBox(supabase, item!, userId!);
       toast.success(t('moveToSafeSuccess'));
       router.push('/profile?tab=safety');
-    } catch (error) {
-      toast.error(t('error'));
+    } catch (error: any) {
+      console.error("Archive Error:", error);
+      const msg = error.message || t('error');
+      const code = error.code || "no-code";
+      toast.error(`Хатогии интиқол: ${msg} (Код: ${code})`);
     } finally {
       setIsActionLoading(false);
       setShowArchiveConfirm(false);
@@ -434,6 +453,34 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
             <DialogFooter className="flex flex-row gap-3 mt-6">
               <Button variant="outline" className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 border-zinc-200" onClick={() => setShowResolvedConfirm(false)}>{t('cancel')}</Button>
               <Button className="flex-1 rounded-2xl font-black uppercase text-[10px] tracking-widest h-14 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleResolved} disabled={isActionLoading}>{t('resolved')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
+          <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
+            <DialogHeader className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-red-50 dark:bg-red-900/20 text-red-600">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tight text-red-600">{t('imageBlockedTitle')}</DialogTitle>
+              <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
+                {t('imageBlockedDesc')}
+                {item.moderation_result && (
+                  <span className="mt-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold text-xs uppercase italic block">
+                    &quot;{item.moderation_result}&quot;
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="pt-2">
+              <Button 
+                type="button" 
+                className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white"
+                onClick={() => setShowBlockedInfo(false)}
+              >
+                {t('ok')}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

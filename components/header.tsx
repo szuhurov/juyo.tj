@@ -19,7 +19,8 @@ import {
   ShieldCheck,
   Bookmark,
   List,
-  Settings
+  Settings,
+  Loader2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -60,6 +61,7 @@ export function Header() {
   const { t, locale, setLocale } = useLanguage();
   
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || "");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const languages = [
     { code: "tg", label: "Тоҷикӣ" },
@@ -80,6 +82,11 @@ export function Header() {
     { href: "/profile?tab=saved", label: t('savedItems') || "Saved Items", icon: Bookmark },
     { href: "/profile?tab=safety", label: t('mySafe') || "My Safety Box", icon: ShieldCheck },
   ];
+
+  // Close menu when a link is clicked
+  const handleLinkClick = () => {
+    setIsMenuOpen(false);
+  };
 
   // Handle live search
   useEffect(() => {
@@ -290,7 +297,7 @@ export function Header() {
               ) : null}
 
               {/* Mobile Nav Button (Trigger) */}
-              <Sheet>
+              <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9 bg-zinc-100 dark:bg-zinc-900">
                     <Menu className="h-5 w-5" />
@@ -329,10 +336,10 @@ export function Header() {
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
-                          <Button variant="outline" className="rounded-md font-bold text-xs uppercase tracking-widest h-10 border-zinc-200 dark:border-zinc-800" asChild>
+                          <Button variant="outline" className="rounded-md font-bold text-xs uppercase tracking-widest h-10 border-zinc-200 dark:border-zinc-800" asChild onClick={handleLinkClick}>
                             <Link href="/sign-in">{t('login')}</Link>
                           </Button>
-                          <Button className="rounded-md font-bold text-xs uppercase tracking-widest h-10 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200" asChild>
+                          <Button className="rounded-md font-bold text-xs uppercase tracking-widest h-10 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200" asChild onClick={handleLinkClick}>
                             <Link href="/sign-up">{t('signup')}</Link>
                           </Button>
                         </div>
@@ -345,7 +352,7 @@ export function Header() {
                     {/* Main Nav Section */}
                     <div className="space-y-2">
                       <h4 className="px-4 text-[10px] font-black text-zinc-400 mb-4">{t('home') || "Main"}</h4>
-                      <Link href="/" className="block">
+                      <Link href="/" className="block" onClick={handleLinkClick}>
                         <Button
                           variant={pathname === "/" ? "secondary" : "ghost"}
                           className={`w-full justify-start gap-4 h-12 rounded-xl font-bold uppercase text-xs tracking-widest transition-all ${
@@ -358,7 +365,7 @@ export function Header() {
                           {t('home')}
                         </Button>
                       </Link>
-                      <Link href="/items/add" className="block">
+                      <Link href="/items/add" className="block" onClick={handleLinkClick}>
                         <Button
                           variant={pathname === "/items/add" ? "secondary" : "ghost"}
                           className={`w-full justify-start gap-4 h-12 rounded-xl font-bold uppercase text-xs tracking-widest transition-all ${
@@ -384,7 +391,7 @@ export function Header() {
                             : (pathname === link.href);
                           
                           return (
-                            <Link key={link.href} href={link.href} className="block">
+                            <Link key={link.href} href={link.href} className="block" onClick={handleLinkClick}>
                               <Button
                                 variant={isActive ? "secondary" : "ghost"}
                                 className={`w-full justify-start gap-4 h-12 rounded-xl font-bold uppercase text-xs tracking-widest transition-all ${
@@ -407,7 +414,10 @@ export function Header() {
                   {userId && (
                     <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
                       <Button 
-                        onClick={() => signOut(() => router.push("/"))} 
+                        onClick={() => signOut(() => {
+                          setIsMenuOpen(false);
+                          router.push("/");
+                        })} 
                         variant="ghost" 
                         className="w-full justify-start gap-4 h-12 rounded-md font-black uppercase text-xs tracking-widest text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all"
                       >

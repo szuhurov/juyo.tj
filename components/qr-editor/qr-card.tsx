@@ -18,7 +18,7 @@ interface QRCardProps {
   settings: QRCardSettings;
   id: string;
   className?: string;
-  innerRef?: React.RefObject<HTMLDivElement>;
+  innerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 export const QRCard: React.FC<QRCardProps> = ({ settings, id, className, innerRef }) => {

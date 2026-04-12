@@ -123,7 +123,8 @@ export default function AddItemPage() {
         phone_number: phone,
         reward: reward ? `${reward}` : null,
         date: new Date().toISOString().split('T')[0],
-        is_resolved: false
+        is_resolved: false,
+        moderation_status: 'pending'
       };
 
       const { data: item, error: itemError } = await supabase
@@ -141,9 +142,16 @@ export default function AddItemPage() {
           image_url: url
         }));
         await supabase.from('item_images').insert(imageRecords);
+
+        // 4. Trigger Moderation (Async) - Server handles DB update
+        fetch('/api/moderate', {
+          method: 'POST',
+          body: JSON.stringify({ imageUrls, itemId: item.id }),
+          headers: { 'Content-Type': 'application/json' }
+        }).catch(err => console.error('Moderation background error:', err));
       }
 
-      toast.success(t('publishSuccess'));
+      toast.success(t('imageModeration.submitted'));
       router.push('/profile');
     } catch (error: any) {
       console.error(error);

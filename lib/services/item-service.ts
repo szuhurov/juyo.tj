@@ -13,6 +13,8 @@ export interface Item {
   created_at: string;
   is_resolved: boolean;
   views?: number;
+  moderation_status?: 'pending' | 'approved' | 'rejected';
+  moderation_result?: string;
   images?: { image_url: string }[];
   profiles?: {
     first_name: string;
@@ -42,8 +44,8 @@ export const ItemService = {
     if (user_id) {
       query = query.eq('user_id', user_id);
     } else {
-      // Show all unresolved items (either false or NULL)
-      query = query.or('is_resolved.eq.false,is_resolved.is.null');
+      // Show all unresolved items that are approved OR have no status (legacy items)
+      query = query.or('is_resolved.eq.false,is_resolved.is.null').or('moderation_status.eq.approved,moderation_status.is.null');
     }
 
     if (category && category !== 'All') {
@@ -186,7 +188,8 @@ export const ItemService = {
         phone_number: safetyItem.phone_number,
         is_resolved: false,
         views: safetyItem.views || 0, // Carry over views
-        created_at: safetyItem.created_at // Preserve original creation date
+        created_at: safetyItem.created_at, // Preserve original creation date
+        moderation_status: 'pending'
       }])
       .select()
       .single();

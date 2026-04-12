@@ -66,14 +66,18 @@ import {
 import { QRCard } from "@/components/qr-editor/qr-card";
 import { toPng } from "html-to-image";
 
+import { useUserItems, useSavedItems, useSafetyItems } from "@/lib/hooks/use-items";
+import { useQueryClient } from "@tanstack/react-query";
+
 export default function ProfilePage() {
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "posts");
-  const qrRef = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   
   // Profile state
@@ -88,13 +92,20 @@ export default function ProfilePage() {
     text: t('qrScanMe')
   });
 
-  // States for Posts
-  const [myItems, setMyItems] = useState<Item[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
+  // Use TanStack Query for caching
+  const { data: myItems = [], isLoading: postsLoading } = useUserItems(userId || undefined);
+  
+  const [token, setToken] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (userId) {
+      getToken({ template: 'supabase' }).then(setToken);
+    }
+  }, [userId, getToken]);
+
+  const { data: savedItems = [], isLoading: savedLoading } = useSavedItems(userId || undefined, token);
+  const { data: safetyItems = [], isLoading: safetyLoading } = useSafetyItems(userId || undefined, token);
 
   // States for Safety Box
-  const [safetyItems, setSafetyItems] = useState<any[]>([]);
-  const [safetyLoading, setSafetyLoading] = useState(false);
   const [safetySubmitting, setSafetySubmitting] = useState(false);
   const [safetyType, setSafetyType] = useState<'lost' | 'found'>('lost');
   const [safetyCategory, setSafetyCategory] = useState("");
@@ -159,10 +170,6 @@ export default function ProfilePage() {
     variant: "default"
   });
 
-  // States for Saved Items
-  const [savedItems, setSavedItems] = useState<Item[]>([]);
-  const [savedLoading, setSavedLoading] = useState(false);
-
   const menuItems = [
     {
       id: "posts",
@@ -201,35 +208,10 @@ export default function ProfilePage() {
     }
   ];
 
-  useEffect(() => {
-    if (user?.id) {
-      if (activeTab === "posts") loadMyItems();
-      if (activeTab === "safety") loadSafetyItems();
-      if (activeTab === "saved") loadSavedItems();
-    }
-  }, [user?.id, activeTab]);
-
-  const loadSavedItems = async () => {
-    setSavedLoading(true);
-    try {
-      if (userId) {
-        const token = await getToken({ template: 'supabase' });
-        const supabase = createClerkSupabaseClient(token!);
-        const items = await ItemService.getSavedItems(supabase, userId);
-        setSavedItems(items);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setSavedLoading(false);
-    }
-  };
-
+  // Listen for global item updates and invalidate queries
   useEffect(() => {
     const handleUpdate = () => {
-      if (activeTab === "saved") loadSavedItems();
-      if (activeTab === "posts") loadMyItems();
-      if (activeTab === "safety") loadSafetyItems();
+      queryClient.invalidateQueries({ queryKey: ['items'] });
     };
     window.addEventListener('saved-items-updated', handleUpdate);
     window.addEventListener('items-updated', handleUpdate);
@@ -237,39 +219,7 @@ export default function ProfilePage() {
       window.removeEventListener('saved-items-updated', handleUpdate);
       window.removeEventListener('items-updated', handleUpdate);
     };
-  }, [activeTab]);
-
-  const loadMyItems = async () => {
-    if (!user?.id) return;
-    setPostsLoading(true);
-    try {
-      const data = await ItemService.getItems({ user_id: user.id });
-      setMyItems(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setPostsLoading(false);
-    }
-  };
-
-  const loadSafetyItems = async () => {
-    setSafetyLoading(true);
-    try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-      const { data, error } = await supabase
-        .from('safety_box')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setSafetyItems(data || []);
-    } catch (error) {
-      toast.error(t('dataLoadError'));
-    } finally {
-      setSafetyLoading(false);
-    }
-  };
+  }, [queryClient]);
 
   const handleSafetyImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -338,8 +288,11 @@ export default function ProfilePage() {
       setSafetyCategory("");
       setSafetyType('lost');
       setIsAddingSafetyItem(false);
-    } catch (error) {
-      toast.error(t('error'));
+    } catch (error: any) {
+      console.error("Detailed Safety Box Error:", error);
+      const errorMsg = error.message || "Unknown error";
+      const errorCode = error.code || "No code";
+      toast.error(`Хатогӣ: ${errorMsg} (Код: ${errorCode})`);
     } finally {
       setSafetySubmitting(false);
     }
@@ -393,8 +346,11 @@ export default function ProfilePage() {
       setEditingSafetyItem(null);
       setSafetyImages([]);
       setSafetyPreviews([]);
-    } catch (error) {
-      toast.error(t('error'));
+    } catch (error: any) {
+      console.error("Detailed Safety Box Error:", error);
+      const errorMsg = error.message || "Unknown error";
+      const errorCode = error.code || "No code";
+      toast.error(`Хатогӣ: ${errorMsg} (Код: ${errorCode})`);
     } finally {
       setSafetySubmitting(false);
     }
@@ -412,14 +368,26 @@ export default function ProfilePage() {
         try {
           const token = await getToken({ template: 'supabase' });
           const supabase = createClerkSupabaseClient(token!);
-          
-          await ItemService.publishFromSafetyBox(supabase, safetyItem, userId!);
-          
+
+          const item = await ItemService.publishFromSafetyBox(supabase, safetyItem, userId!);
+
+          // Trigger Moderation (Async) - Server handles DB update
+          if (safetyItem.images && safetyItem.images.length > 0) {
+            const moderationImages = Array.isArray(safetyItem.images) 
+              ? safetyItem.images 
+              : [safetyItem.images];
+
+            fetch('/api/moderate', {
+              method: 'POST',
+              body: JSON.stringify({ imageUrls: moderationImages, itemId: item.id }),
+              headers: { 'Content-Type': 'application/json' }
+            }).catch(err => console.error('Moderation trigger error:', err));
+          }
+
           setSafetyItems(prev => prev.filter(i => i.id !== safetyItem.id));
-          toast.success(t('publishSuccess'));
+          toast.success(t('imageModeration.submitted'));
           setConfirmDialog(prev => ({ ...prev, open: false }));
-          loadSafetyItems();
-        } catch (error: any) {
+          loadSafetyItems();        } catch (error: any) {
           toast.error(error.message || t('error'));
         } finally {
           setConfirmDialog(prev => ({ ...prev, isLoading: false }));
@@ -1157,69 +1125,49 @@ export default function ProfilePage() {
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 min-h-[90vh]">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12 items-start">
-          {/* Left Sidebar - Sticky - Hidden on mobile */}
-          <div className="hidden lg:block lg:col-span-1 lg:sticky lg:top-[80px] z-20 space-y-10">
-            <div className="flex items-center gap-4 text-left">
-              <div className=" group shrink-0">
-                <Avatar className="w-16 h-16 border-2 border-white dark:border-zinc-800 shadow-md rounded-xl transition-transform group-hover:scale-105">
-                  <AvatarImage src={user?.imageUrl} />
-                  <AvatarFallback className="bg-zinc-900 text-white text-xl font-black">
-                    {user?.firstName?.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <div className="space-y-0.5 min-w-0">
-                <h2 className="text-lg font-black tracking-tight uppercase leading-tight truncate">
-                  {user?.fullName || t('user')}
-                </h2>
-                <div className="flex items-center gap-1.5 text-zinc-400">
-                  <Mail className="w-3 h-3 shrink-0" />
-                  <span className="text-[10px] font-bold lowercase tracking-tight truncate">
-                    {user?.primaryEmailAddress?.emailAddress}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {menuItems.map((item) => (
-                <button 
-                  key={item.id} 
-                  onClick={() => handleTabChange(item.id)}
-                  className={cn(
-                    "flex items-center justify-between p-3 rounded-xl transition-all group shadow-sm border",
-                    activeTab === item.id 
-                      ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900 scale-[1.02] shadow-md" 
-                      : "bg-white border-zinc-100 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "p-2 rounded-lg transition-colors", 
-                      activeTab === item.id ? "bg-white/20 text-white dark:bg-zinc-900/10 dark:text-zinc-900" : cn(item.bg, item.color)
-                    )}>
-                      <item.icon className="w-4 h-4" />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12">
+          {/* Left Sidebar - Fixed on Desktop - Hidden on mobile */}
+          <div className="hidden lg:block lg:col-span-1">
+            <div className="sticky top-[100px] h-fit z-20 space-y-6">
+              <div className="flex flex-col gap-3">
+                {menuItems.map((item) => (
+                  <button 
+                    key={item.id} 
+                    onClick={() => handleTabChange(item.id)}
+                    className={cn(
+                      "flex items-center justify-between p-3 rounded-xl transition-all group shadow-sm border",
+                      activeTab === item.id 
+                        ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900 scale-[1.02] shadow-md" 
+                        : "bg-white border-zinc-100 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700"
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "p-2 rounded-lg transition-colors", 
+                        activeTab === item.id ? "bg-white/20 text-white dark:bg-zinc-900/10 dark:text-zinc-900" : cn(item.bg, item.color)
+                      )}>
+                        <item.icon className="w-4 h-4" />
+                      </div>
+                      <span className="font-black text-[10px] uppercase tracking-wider">
+                        {item.title}
+                      </span>
                     </div>
-                    <span className="font-black text-[10px] uppercase tracking-wider">
-                      {item.title}
-                    </span>
-                  </div>
-                  <ChevronRight className={cn(
-                    "w-4 h-4 transition-transform", 
-                    activeTab === item.id ? "translate-x-1" : "text-zinc-300 group-hover:translate-x-0.5"
-                  )} />
-                </button>
-              ))}
-            </div>
-            
-            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-900">
-              <SignOutButton>
-                <Button variant="ghost" className="w-full h-11 rounded-xl font-black text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4">
-                  <LogOut className="w-4 h-4" />
-                  {t('signOut')}
-                </Button>
-              </SignOutButton>
+                    <ChevronRight className={cn(
+                      "w-4 h-4 transition-transform", 
+                      activeTab === item.id ? "translate-x-1" : "text-zinc-300 group-hover:translate-x-0.5"
+                    )} />
+                  </button>
+                ))}
+              </div>
+              
+              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-900">
+                <SignOutButton>
+                  <Button variant="ghost" className="w-full h-11 rounded-xl font-black text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4">
+                    <LogOut className="w-4 h-4" />
+                    {t('signOut')}
+                  </Button>
+                </SignOutButton>
+              </div>
             </div>
           </div>
 
@@ -1231,45 +1179,6 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-
-      {/* Mandatory Phone Modal (RED) */}
-      <Dialog open={showPhoneModal} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-4 border-red-600 shadow-2xl bg-white dark:bg-zinc-950" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-          <DialogHeader className="space-y-3">
-            <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 flex items-center justify-center mx-auto mb-2 animate-pulse">
-              <Phone className="w-8 h-8" />
-            </div>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-center text-red-600">{t('phoneRequiredTitle')}</DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-center text-sm leading-relaxed">
-              {t('phoneRequiredDesc')}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSavePhoneModal} className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('phoneLabel')}</Label>
-              <div className="relative">
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                <Input 
-                  name="phone" 
-                  placeholder={t('phonePlaceholder')} 
-                  className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 focus:border-red-600 transition-all" 
-                  required 
-                  inputMode="numeric"
-                  autoFocus
-                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                />
-              </div>
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-100 dark:shadow-none"
-              disabled={safetySubmitting}
-            >
-              {safetySubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Reusable Confirmation Dialog */}
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog(prev => ({ ...prev, open: false }))}>
@@ -1376,7 +1285,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                <h2 className="text-4xl font-black tracking-tighter uppercase leading-none mb-6">{selectedSafetyItem.item_name}</h2>
+                <DialogTitle className="text-4xl font-black tracking-tighter uppercase leading-none mb-6">{selectedSafetyItem.item_name}</DialogTitle>
 
                 {selectedSafetyItem.reward && (
                   <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 mb-8 shadow-sm">
