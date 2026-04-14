@@ -59,8 +59,10 @@ export function ItemCard({ item }: { item: Item }) {
   }, [images.length, item.id, userId]);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // We allow the owner to click and enter the item details page even if rejected or pending
-    // No more blocking setShowBlockedInfo here, as per user request to "enter and see by id"
+    if (isOwner && item.moderation_status === 'rejected') {
+      // Show modal but don't prevent navigation
+      setShowBlockedInfo(true);
+    }
   };
 
   const checkSavedStatus = async () => {
@@ -96,24 +98,32 @@ export function ItemCard({ item }: { item: Item }) {
       return;
     }
 
-    if (isToggling) return;
-
-    setIsToggling(true);
+    // Optimistic Update
+    const previousSavedState = isSaved;
+    const newSavedState = !previousSavedState;
+    
+    setIsSaved(newSavedState);
+    toast.success(newSavedState ? t('addedToSaved') : t('removedFromSaved'));
+    
+    // Background task
     try {
       const token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("No token");
       
       const supabase = createClerkSupabaseClient(token);
       const saved = await ItemService.toggleSaveItem(supabase, userId!, item.id);
-      setIsSaved(saved);
-      toast.success(saved ? t('addedToSaved') : t('removedFromSaved'));
+      
+      // Sync with actual result just in case, though it should match newSavedState
+      if (saved !== newSavedState) {
+        setIsSaved(saved);
+      }
       
       window.dispatchEvent(new Event('saved-items-updated'));
     } catch (e) {
       console.error("Toggle save error:", e);
+      // Revert on error
+      setIsSaved(previousSavedState);
       toast.error(t('error'));
-    } finally {
-      setIsToggling(false);
     }
   };
 

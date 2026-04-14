@@ -112,7 +112,7 @@ export function Header() {
         <div className="container mx-auto flex h-16 items-center justify-between px-4 gap-2 sm:gap-4">
           <div className="flex items-center gap-4 sm:gap-8 flex-1 min-w-0">
             <Link href="/" className="flex items-center space-x-2 shrink-0">
-              <span className="text-xl sm:text-2xl font-black tracking-tighter text-zinc-900 dark:text-zinc-100">JUYO</span>
+              <span className="text-xl sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100 uppercase">JUYO</span>
             </Link>
 
             {/* Desktop Navigation */}

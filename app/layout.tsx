@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "JUYO - Lost and Found",
+  title: "JUYO",
   description: "Platform for lost and found items in Tajikistan",
 };
 

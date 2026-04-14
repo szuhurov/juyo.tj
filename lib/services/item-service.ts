@@ -33,18 +33,21 @@ export const CATEGORIES = [
 ];
 
 export const ItemService = {
-  async getItems(filters: { search?: string; category?: string; type?: string | null; user_id?: string } = {}) {
+  async getItems(filters: { search?: string; category?: string; type?: string | null; user_id?: string } = {}, supabaseClient?: any) {
     const { search, category, type, user_id } = filters;
     
-    let query = supabase
+    const client = supabaseClient || supabase;
+    
+    let query = client
       .from('items')
       .select('*, images:item_images(image_url)')
       .order('created_at', { ascending: false });
 
     if (user_id) {
+      // If user_id is provided, we ONLY filter by user_id to show all their items
       query = query.eq('user_id', user_id);
     } else {
-      // Show all unresolved items that are approved OR have no status (legacy items)
+      // For public view, only show approved and unresolved items
       query = query.or('is_resolved.eq.false,is_resolved.is.null').or('moderation_status.eq.approved,moderation_status.is.null');
     }
 
@@ -65,8 +68,10 @@ export const ItemService = {
     return data as Item[];
   },
 
-  async getItemDetails(id: string) {
-    const { data, error } = await supabase
+  async getItemDetails(id: string, supabaseClient?: any) {
+    const client = supabaseClient || supabase;
+    
+    const { data, error } = await client
       .from('items')
       .select('*, images:item_images(image_url)')
       .eq('id', id)
@@ -74,7 +79,7 @@ export const ItemService = {
 
     if (error) throw error;
     
-    const { data: profile } = await supabase
+    const { data: profile } = await client
       .from('profiles')
       .select('first_name, last_name, avatar_url')
       .eq('id', data.user_id)
@@ -145,9 +150,56 @@ export const ItemService = {
     return data.map((d: any) => d.items) as Item[];
   },
 
-  async deleteItem(supabaseClient: any, id: string) {
-    const { error } = await supabaseClient.from('items').delete().eq('id', id);
+  async getSafetyBoxItems(supabaseClient: any, userId: string) {
+    const { data, error } = await supabaseClient
+      .from('safety_box')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
     if (error) throw error;
+    return data;
+  },
+
+  async deleteItem(supabaseClient: any, id: string) {
+    try {
+      // 1. Get image records
+      const { data: images } = await supabaseClient
+        .from('item_images')
+        .select('image_url')
+        .eq('item_id', id);
+
+      // 2. Delete from storage if images exist
+      if (images && images.length > 0) {
+        const fileNames = images.map((img: any) => {
+          // Robustly extract filename from Supabase URL
+          // Format: .../storage/v1/object/public/items/FILENAME
+          const urlParts = img.image_url.split('/');
+          return urlParts[urlParts.length - 1];
+        }).filter(Boolean);
+
+        if (fileNames.length > 0) {
+          const { error: storageError } = await supabaseClient.storage
+            .from('items')
+            .remove(fileNames);
+          
+          if (storageError) {
+            console.error("Storage deletion error:", storageError);
+          }
+        }
+      }
+
+      // 3. Delete the item record
+      const { error: deleteError } = await supabaseClient
+        .from('items')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
+    } catch (err) {
+      console.error("Error in deleteItem:", err);
+      throw err;
+    }
   },
 
   async archiveToSafetyBox(supabaseClient: any, item: Item, userId: string) {

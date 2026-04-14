@@ -66,7 +66,7 @@ import {
 import { QRCard } from "@/components/qr-editor/qr-card";
 import { toPng } from "html-to-image";
 
-import { useUserItems, useSavedItems, useSafetyItems } from "@/lib/hooks/use-items";
+import { useUserItems, useSavedItems, useSafetyItems, ITEM_KEYS } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function ProfilePage() {
@@ -93,14 +93,14 @@ export default function ProfilePage() {
   });
 
   // Use TanStack Query for caching
-  const { data: myItems = [], isLoading: postsLoading } = useUserItems(userId || undefined);
-  
   const [token, setToken] = useState<string | undefined>(undefined);
   useEffect(() => {
     if (userId) {
       getToken({ template: 'supabase' }).then(setToken);
     }
   }, [userId, getToken]);
+
+  const { data: myItems = [], isLoading: postsLoading } = useUserItems(userId || undefined, token);
 
   const { data: savedItems = [], isLoading: savedLoading } = useSavedItems(userId || undefined, token);
   const { data: safetyItems = [], isLoading: safetyLoading } = useSafetyItems(userId || undefined, token);
@@ -281,7 +281,10 @@ export default function ProfilePage() {
         .single();
 
       if (error) throw error;
-      setSafetyItems(prev => [data, ...prev]);
+      
+      // Update cache using TanStack Query
+      queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
+      
       toast.success(t('success'));
       setSafetyImages([]);
       setSafetyPreviews([]);
@@ -310,19 +313,23 @@ export default function ProfilePage() {
 
     setSafetySubmitting(true);
     try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
+      const supabaseToken = await getToken({ template: 'supabase' });
+      if (!supabaseToken) throw new Error("No authentication token");
+      
+      const supabase = createClerkSupabaseClient(supabaseToken);
 
       // Existing images + new uploads
       let imageUrls = [...(editingSafetyItem.images || [])];
       
-      for (const file of safetyImages) {
-        const ext = file.name.split('.').pop();
-        const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from('items').upload(fileName, file);
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('items').getPublicUrl(fileName);
-        imageUrls.push(publicUrl);
+      if (safetyImages.length > 0) {
+        for (const file of safetyImages) {
+          const ext = file.name.split('.').pop();
+          const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+          const { error: uploadError } = await supabase.storage.from('items').upload(fileName, file);
+          if (uploadError) throw uploadError;
+          const { data: { publicUrl } } = supabase.storage.from('items').getPublicUrl(fileName);
+          imageUrls.push(publicUrl);
+        }
       }
 
       const { data, error } = await supabase
@@ -340,17 +347,22 @@ export default function ProfilePage() {
         .select()
         .single();
 
-      if (error) throw error;
-      setSafetyItems(prev => prev.map(i => i.id === data.id ? data : i));
+      if (error) {
+        console.error("Supabase Update Error:", error);
+        throw error;
+      }
+      
+      // Update cache using TanStack Query - use the state token for consistency
+      queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
+      
       toast.success(t('success'));
       setEditingSafetyItem(null);
       setSafetyImages([]);
       setSafetyPreviews([]);
     } catch (error: any) {
       console.error("Detailed Safety Box Error:", error);
-      const errorMsg = error.message || "Unknown error";
-      const errorCode = error.code || "No code";
-      toast.error(`Хатогӣ: ${errorMsg} (Код: ${errorCode})`);
+      const errorMsg = error.message || error.details || "Unknown error";
+      toast.error(`Хатогӣ: ${errorMsg}`);
     } finally {
       setSafetySubmitting(false);
     }
@@ -384,10 +396,13 @@ export default function ProfilePage() {
             }).catch(err => console.error('Moderation trigger error:', err));
           }
 
-          setSafetyItems(prev => prev.filter(i => i.id !== safetyItem.id));
+          // Update cache using TanStack Query
+          queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
+          queryClient.invalidateQueries({ queryKey: ITEM_KEYS.userItems(userId || "", token) });
+          
           toast.success(t('imageModeration.submitted'));
           setConfirmDialog(prev => ({ ...prev, open: false }));
-          loadSafetyItems();        } catch (error: any) {
+        } catch (error: any) {
           toast.error(error.message || t('error'));
         } finally {
           setConfirmDialog(prev => ({ ...prev, isLoading: false }));
@@ -410,7 +425,10 @@ export default function ProfilePage() {
           const supabase = createClerkSupabaseClient(token!);
           const { error } = await supabase.from('safety_box').delete().eq('id', id);
           if (error) throw error;
-          setSafetyItems(prev => prev.filter(i => i.id !== id));
+          
+          // Update cache using TanStack Query
+          queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
+          
           toast.success(t('success'));
           setConfirmDialog(prev => ({ ...prev, open: false }));
         } catch (error) {
@@ -1042,9 +1060,7 @@ export default function ProfilePage() {
                                       className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-amber-600 hover:bg-amber-600 hover:text-white shadow-sm border-none transition-all"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setSafetyType(item.type || 'lost');
-                                        setSafetyCategory(item.category);
-                                        setEditingSafetyItem(item);
+                                        startEditing(item);
                                       }}
                                     >
                                       <Pencil className="w-3.5 h-3.5" />

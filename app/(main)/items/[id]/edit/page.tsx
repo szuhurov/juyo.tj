@@ -47,22 +47,34 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   const [previews, setPreviews] = useState<{url: string, isExisting: boolean}[]>([]);
 
   useEffect(() => {
-    loadItem();
-  }, [id]);
+    if (userId) loadItem();
+  }, [id, userId]);
 
   const loadItem = async () => {
     try {
-      const data = await ItemService.getItemDetails(id);
-      if (userId && data.user_id !== userId) {
+      setLoading(true);
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      
+      const { data, error } = await supabase
+        .from('items')
+        .select('*, images:item_images(image_url)')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      
+      if (data.user_id !== userId) {
         toast.error(t('accessDenied'));
         router.push('/');
         return;
       }
+
       setItem(data);
       setType(data.type);
       setCategory(data.category);
       if (data.images) {
-        setPreviews(data.images.map(img => ({ url: img.image_url, isExisting: true })));
+        setPreviews(data.images.map((img: any) => ({ url: img.image_url, isExisting: true })));
       }
     } catch (error) {
       console.error(error);
@@ -117,8 +129,10 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
 
     setSaving(true);
     try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
+      let token = await getToken({ template: 'supabase' });
+      if (!token) throw new Error("Authentication token missing");
+      
+      let supabase = createClerkSupabaseClient(token);
 
       // 1. Upload new images if any
       const finalImageUrls = [];
@@ -145,6 +159,12 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
           finalImageUrls.push(publicUrl);
         }
       }
+
+      // RE-FETCH token before database updates in case uploads took too long
+      // This helps prevent "exp" claim timestamp check failed errors
+      token = await getToken({ template: 'supabase' });
+      if (!token) throw new Error("Authentication token expired or missing");
+      supabase = createClerkSupabaseClient(token);
 
       // Check if order or set of images changed
       const existingUrls = item.images?.map(img => img.image_url) || [];
@@ -183,12 +203,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         }));
         await supabase.from('item_images').insert(imageRecords);
 
-        // 4. Trigger Re-Moderation (Async) - Server handles DB update
-        fetch('/api/moderate', {
-          method: 'POST',
-          body: JSON.stringify({ imageUrls: finalImageUrls, itemId: id }),
-          headers: { 'Content-Type': 'application/json' }
-        }).catch(err => console.error('Moderation background error:', err));
+        // 4. Moderation handled automatically by Supabase Edge Function
       }
 
       if (imagesChanged) {

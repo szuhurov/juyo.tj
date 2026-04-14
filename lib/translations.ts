@@ -239,7 +239,7 @@ export const translations: Record<string, any> = {
     phoneSaveError: 'Захира кардани рақам имконнопазир аст.',
     dataLoadError: 'Маълумот бор нашуд.',
     imagePermissionError: 'Baрои илова кардани сурат иҷозат лозим аст.',
-    maxImagesReached: 'Шумо метавонед ҳадди аксар 5 сурат илова кунед.',
+    maxImagesReached: 'Ҳадди аксар 5 сурат иҷозат дода мешавад.',
     
     imageBlockedTitle: 'Сурат маҳкам шуд',
     imageBlockedDesc: 'Ин сурат аз ҷониби системаи амниятӣ маҳкам карда шуд.',
@@ -576,7 +576,7 @@ export const translations: Record<string, any> = {
     phoneSaveError: 'Не удалось сохранить номер.',
     dataLoadError: 'Не удалось загрузить данные.',
     imagePermissionError: 'Требуется разрешение на добавление фото.',
-    maxImagesReached: 'Вы можете добавить максимум 5 фото.',
+    maxImagesReached: 'Максимум 5 изображений.',
 
     imageBlockedTitle: 'Изображение заблокировано',
     imageBlockedDesc: 'Это изображение было заблокировано системой безопасности.',

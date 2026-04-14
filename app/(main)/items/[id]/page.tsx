@@ -43,7 +43,14 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   const queryClient = useQueryClient();
   
   // Use TanStack Query for caching
-  const { data: item, isLoading: loading } = useItemDetails(id);
+  const [token, setToken] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (isLoaded) {
+      getToken({ template: 'supabase' }).then(setToken);
+    }
+  }, [isLoaded, getToken]);
+
+  const { data: item, isLoading: loading } = useItemDetails(id, token);
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);

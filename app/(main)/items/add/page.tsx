@@ -92,10 +92,10 @@ export default function AddItemPage() {
 
     setLoading(true);
     try {
-      const token = await getToken({ template: 'supabase' });
-      if (!token) throw new Error("No token");
+      let token = await getToken({ template: 'supabase' });
+      if (!token) throw new Error("Authentication token missing");
       
-      const supabase = createClerkSupabaseClient(token);
+      let supabase = createClerkSupabaseClient(token);
 
       // 1. Upload images to Supabase Storage
       const imageUrls = [];
@@ -112,6 +112,12 @@ export default function AddItemPage() {
         const { data: { publicUrl } } = supabase.storage.from('items').getPublicUrl(fileName);
         imageUrls.push(publicUrl);
       }
+
+      // RE-FETCH token before database updates in case uploads took too long
+      // This helps prevent "exp" claim timestamp check failed errors
+      token = await getToken({ template: 'supabase' });
+      if (!token) throw new Error("Authentication token expired or missing");
+      supabase = createClerkSupabaseClient(token);
 
       // 2. Create item record
       const itemData = {
@@ -143,16 +149,12 @@ export default function AddItemPage() {
         }));
         await supabase.from('item_images').insert(imageRecords);
 
-        // 4. Trigger Moderation (Async) - Server handles DB update
-        fetch('/api/moderate', {
-          method: 'POST',
-          body: JSON.stringify({ imageUrls, itemId: item.id }),
-          headers: { 'Content-Type': 'application/json' }
-        }).catch(err => console.error('Moderation background error:', err));
+        // 4. Moderation handled automatically by Supabase Edge Function
       }
 
       toast.success(t('imageModeration.submitted'));
-      router.push('/profile');
+      window.dispatchEvent(new Event('items-updated'));
+      router.push('/profile?tab=posts');
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || t('error'));
