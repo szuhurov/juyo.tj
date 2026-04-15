@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Item, ItemService } from "@/lib/services/item-service";
 
 export const ITEM_KEYS = {
@@ -15,8 +15,9 @@ export const ITEM_KEYS = {
 export function useItems(filters?: any) {
   return useQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
-    queryFn: () => ItemService.getItems(),
+    queryFn: () => ItemService.getItems(filters),
     staleTime: 1000 * 60 * 5, // 5 minutes
+    placeholderData: keepPreviousData,
   });
 }
 

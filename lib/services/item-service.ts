@@ -60,7 +60,7 @@ export const ItemService = {
     }
 
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,phone_number.ilike.%${search}%,reward.ilike.%${search}%`);
     }
 
     const { data, error } = await query;
@@ -235,12 +235,12 @@ export const ItemService = {
         description: safetyItem.description,
         category: safetyItem.category,
         type: safetyItem.type || 'lost',
-        date: safetyItem.date || new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0], // Санаи имрӯза
         reward: safetyItem.reward,
         phone_number: safetyItem.phone_number,
         is_resolved: false,
-        views: safetyItem.views || 0, // Carry over views
-        created_at: safetyItem.created_at, // Preserve original creation date
+        views: 0, // Аз 0 оғоз мешавад
+        created_at: new Date().toISOString(), // Вақти ҳозира
         moderation_status: 'pending'
       }])
       .select()

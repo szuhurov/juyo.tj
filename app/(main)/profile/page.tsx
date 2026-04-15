@@ -40,7 +40,8 @@ import {
   Download,
   RefreshCw,
   Palette,
-  Type
+  Type,
+  ChevronLeft
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -115,6 +116,7 @@ export default function ProfilePage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [selectedSafetyItem, setSelectedSafetyItem] = useState<any>(null);
   const [editingSafetyItem, setEditingSafetyItem] = useState<any>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Load Profile from Supabase
   useEffect(() => {
@@ -252,18 +254,23 @@ export default function ProfilePage() {
 
     setSafetySubmitting(true);
     try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-
       const imageUrls = [];
       for (const file of safetyImages) {
+        // Refetch token for each upload to prevent expiration during long uploads
+        const uploadToken = await getToken({ template: 'supabase' });
+        const uploadSupabase = createClerkSupabaseClient(uploadToken!);
+        
         const ext = file.name.split('.').pop();
         const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from('items').upload(fileName, file);
+        const { error: uploadError } = await uploadSupabase.storage.from('items').upload(fileName, file);
         if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('items').getPublicUrl(fileName);
+        const { data: { publicUrl } } = uploadSupabase.storage.from('items').getPublicUrl(fileName);
         imageUrls.push(publicUrl);
       }
+
+      // Final token for the database record insertion
+      const dbToken = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(dbToken!);
 
       const { data, error } = await supabase
         .from('safety_box')
@@ -1247,16 +1254,64 @@ export default function ProfilePage() {
       </Dialog>
 
       {/* Safety Item Details Dialog */}
-      <Dialog open={!!selectedSafetyItem} onOpenChange={(open) => !open && setSelectedSafetyItem(null)}>
+      <Dialog open={!!selectedSafetyItem} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedSafetyItem(null);
+          setCurrentImageIndex(0);
+        }
+      }}>
         <DialogContent className="sm:max-w-4xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl max-h-[90vh] overflow-y-auto">
           {selectedSafetyItem && (
             <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-900">
-                  {selectedSafetyItem.images?.[0] ? (
-                    <Image src={selectedSafetyItem.images[0]} alt={selectedSafetyItem.item_name} fill className="object-cover" />
+                <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-900 group">
+                  {selectedSafetyItem.images?.[currentImageIndex] ? (
+                    <Image 
+                      src={selectedSafetyItem.images[currentImageIndex]} 
+                      alt={selectedSafetyItem.item_name} 
+                      fill 
+                      className="object-cover animate-in fade-in duration-300" 
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full"><PackageSearch className="w-24 h-24 text-zinc-200" /></div>
                   )}
+
+                  {/* Image Navigation */}
+                  {selectedSafetyItem.images && selectedSafetyItem.images.length > 1 && (
+                    <>
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white shadow-sm border-none transition-all opacity-0 group-hover:opacity-100"
+                          onClick={() => setCurrentImageIndex(prev => (prev === 0 ? selectedSafetyItem.images.length - 1 : prev - 1))}
+                        >
+                          <ChevronLeft className="w-6 h-6" />
+                        </Button>
+                      </div>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white shadow-sm border-none transition-all opacity-0 group-hover:opacity-100"
+                          onClick={() => setCurrentImageIndex(prev => (prev === selectedSafetyItem.images.length - 1 ? 0 : prev + 1))}
+                        >
+                          <ChevronRight className="w-6 h-6" />
+                        </Button>
+                      </div>
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                        {selectedSafetyItem.images.map((_: any, i: number) => (
+                          <div 
+                            key={i} 
+                            className={cn(
+                              "h-1.5 transition-all duration-300 rounded-full shadow-sm",
+                              i === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"
+                            )} 
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+
                   <div className="absolute top-6 left-6 flex flex-col gap-2 z-10">
                     <Badge className={cn("uppercase font-black rounded-md px-3 py-1 shadow-md border-none", selectedSafetyItem.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
                       {selectedSafetyItem.type === 'lost' ? t('lost') : t('found')}
