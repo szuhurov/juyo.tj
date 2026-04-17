@@ -7,6 +7,9 @@ export interface Profile {
   avatar_url: string;
   phone?: string;
   secondary_phone?: string;
+  accepted_terms?: boolean;
+  accepted_at?: string;
+  terms_version?: string;
   created_at: string;
 }
 

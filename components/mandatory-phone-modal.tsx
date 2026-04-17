@@ -9,18 +9,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Phone, Loader2 } from "lucide-react";
+import { Phone, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 
 export function MandatoryPhoneModal() {
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
-    const checkPhone = async () => {
+    const checkStatus = async () => {
       if (!userId || !userLoaded) return;
       
       try {
@@ -28,25 +31,44 @@ export function MandatoryPhoneModal() {
         const supabase = createClerkSupabaseClient(token!);
         const data = await ProfileService.getProfile(supabase, userId);
         
-        if (data && (!data.phone || !data.secondary_phone)) {
+        // СТРИКТ ТАФТИШ: Агар ҳатто яке аз инҳо набошад, модалро нишон деҳ
+        const isMissingData = 
+          !data?.phone || 
+          !data?.secondary_phone || 
+          data?.accepted_terms !== true || 
+          !data?.accepted_at || 
+          !data?.terms_version;
+
+        if (data && isMissingData) {
           setShowModal(true);
         }
       } catch (err) {
-        console.error("Error checking phone status:", err);
+        console.error("Error checking profile status:", err);
       }
     };
 
-    checkPhone();
+    checkStatus();
   }, [userId, userLoaded, getToken]);
 
-  const handleSavePhone = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveData = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!acceptedTerms) {
+      toast.error(t('terms.error') || "Лутфан шартҳоро қабул кунед");
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     const phone = (formData.get('phone') as string).trim();
     const secondary_phone = (formData.get('secondary_phone') as string).trim();
     
     if (phone.length < 9 || secondary_phone.length < 9) {
       toast.error(t('phoneMinLength'));
+      return;
+    }
+
+    if (phone === secondary_phone) {
+      toast.error(t('phonesMustBeDifferent') || "Рақами аввал ва дуюм бояд аз ҳам фарқ кунанд");
       return;
     }
 
@@ -58,6 +80,9 @@ export function MandatoryPhoneModal() {
       await ProfileService.updateProfile(supabase, userId!, {
         phone,
         secondary_phone,
+        accepted_terms: true,
+        accepted_at: new Date().toISOString(),
+        terms_version: "v1.0",
         first_name: user?.firstName || "",
         last_name: user?.lastName || "",
         avatar_url: user?.imageUrl || ""
@@ -65,7 +90,7 @@ export function MandatoryPhoneModal() {
       
       setShowModal(false);
       toast.success(t('phoneSaved'));
-      window.location.reload(); // Refresh to update all components
+      window.location.reload(); 
     } catch (err) {
       toast.error(t('error'));
     } finally {
@@ -86,6 +111,29 @@ export function MandatoryPhoneModal() {
           <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-900/20 text-red-600 flex items-center justify-center mx-auto mb-2 animate-pulse">
             <Phone className="w-8 h-8" />
           </div>
+
+          {/* Language Switcher */}
+          <div className="flex justify-center gap-2 mb-2">
+            {[
+              { code: 'tg', label: 'TG' },
+              { code: 'ru', label: 'RU' },
+              { code: 'en', label: 'EN' }
+            ].map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => setLocale(lang.code as any)}
+                className={`px-3 py-1 rounded-full text-[10px] font-black transition-all ${
+                  locale === lang.code 
+                    ? 'bg-red-600 text-white' 
+                    : 'bg-zinc-100 text-zinc-400 hover:bg-zinc-200'
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+
           <DialogTitle className="text-2xl font-black uppercase tracking-tight text-center text-red-600">
             {t('phoneRequiredTitle')}
           </DialogTitle>
@@ -93,7 +141,8 @@ export function MandatoryPhoneModal() {
             {t('phoneRequiredDesc')}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSavePhone} className="space-y-4 pt-2">
+
+        <form onSubmit={handleSaveData} className="space-y-4 pt-2">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
@@ -114,7 +163,7 @@ export function MandatoryPhoneModal() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+              <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1 leading-tight block">
                 {t('phoneSecondaryLabel')}
               </Label>
               <div className="relative">
@@ -122,19 +171,37 @@ export function MandatoryPhoneModal() {
                 <Input 
                   name="secondary_phone" 
                   placeholder={t('phoneSecondaryPlaceholder')} 
-                  className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 focus:border-red-600 transition-all" 
+                  className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 focus:border-red-600 transition-all placeholder:text-zinc-300 placeholder:text-sm placeholder:font-medium placeholder:tracking-normal" 
                   required 
                   inputMode="numeric"
                   onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                 />
               </div>
             </div>
+
+            {/* Terms and Conditions Checkbox */}
+            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border-2 border-zinc-100 dark:border-zinc-800 space-y-3">
+              <div className="flex items-start space-x-3">
+                <Checkbox 
+                  id="terms-check" 
+                  checked={acceptedTerms} 
+                  onCheckedChange={(val) => setAcceptedTerms(!!val)}
+                  className="mt-1 border-2 border-red-600 data-[state=checked]:bg-red-600"
+                />
+                <Label 
+                  htmlFor="terms-check" 
+                  className="text-[11px] font-bold leading-tight cursor-pointer text-zinc-600 dark:text-zinc-400"
+                >
+                  {t('terms.checkbox')}
+                </Label>
+              </div>
+            </div>
           </div>
 
           <Button 
             type="submit" 
-            className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-100 dark:shadow-none"
-            disabled={loading}
+            className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-100 dark:shadow-none transition-all active:scale-95 disabled:opacity-50 disabled:grayscale"
+            disabled={loading || !acceptedTerms}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}
           </Button>

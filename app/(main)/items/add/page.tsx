@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth, useClerk } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { ItemService, CATEGORIES } from "@/lib/services/item-service";
+import { ProfileService } from "@/lib/services/profile-service";
 import { createClerkSupabaseClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,25 @@ function AddItemForm() {
   const [category, setCategory] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [phone, setPhone] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!userId) return;
+      try {
+        const token = await getToken({ template: 'supabase' });
+        if (!token) return;
+        const supabase = createClerkSupabaseClient(token);
+        const profile = await ProfileService.getProfile(supabase, userId);
+        if (profile?.phone) {
+          setPhone(profile.phone);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+      }
+    };
+    fetchProfile();
+  }, [userId, getToken]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -231,7 +251,8 @@ function AddItemForm() {
                   required 
                   type="text" 
                   inputMode="numeric"
-                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                  value={phone || ""}
+                  onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
                 />
               </div>
               {type === 'lost' && (

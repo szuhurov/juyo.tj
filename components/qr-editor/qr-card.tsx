@@ -43,30 +43,20 @@ export const QRCard: React.FC<QRCardProps> = ({ settings, id, className, innerRe
       <div 
         ref={innerRef}
         className={cn(
-          "relative flex flex-col items-center pt-4 px-4 pb-2 transition-all duration-300 w-fit",
+          "relative flex flex-col items-center pt-4 px-4 pb-2 transition-all duration-300 w-fit overflow-hidden",
           radiusMap[borderRadius],
           shadowMap[shadow],
           hasBorder && "border-2 border-zinc-100 dark:border-zinc-800"
         )}
         style={{ backgroundColor: bgColor }}
       >
-        {/* Pattern Overlay */}
-        {pattern === "subtle" && (
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-            style={{ 
-              backgroundImage: `radial-gradient(${qrColor} 1px, transparent 1px)`,
-              backgroundSize: '12px 12px'
-            }} 
-          />
-        )}
-
         {/* QR Code Area with Integrated Brand Center */}
         <div className="relative z-10 flex items-center justify-center">
           <QRCodeSVG
             value={qrUrl}
             size={180}
             fgColor={qrColor}
-            bgColor="transparent"
+            bgColor={bgColor}
             level="H"
             includeMargin={false}
           />

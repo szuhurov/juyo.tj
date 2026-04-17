@@ -164,33 +164,54 @@ export const ItemService = {
 
   async deleteItem(supabaseClient: any, id: string) {
     try {
-      // 1. Get image records
-      const { data: images } = await supabaseClient
+      // 1. Get image records before deleting the item
+      const { data: images, error: imagesError } = await supabaseClient
         .from('item_images')
         .select('image_url')
         .eq('item_id', id);
 
+      if (imagesError) {
+        console.error("Error fetching images for deletion:", imagesError);
+      }
+
       // 2. Delete from storage if images exist
       if (images && images.length > 0) {
-        const fileNames = images.map((img: any) => {
-          // Robustly extract filename from Supabase URL
-          // Format: .../storage/v1/object/public/items/FILENAME
-          const urlParts = img.image_url.split('/');
-          return urlParts[urlParts.length - 1];
+        const filePaths = images.map((img: any) => {
+          // Supabase public URL format: .../storage/v1/object/public/BUCKET_NAME/FILE_PATH
+          // Example: https://xyz.supabase.co/storage/v1/object/public/items/123-abc.jpg?t=...
+          
+          try {
+            // Try to use URL object for safer parsing
+            const url = new URL(img.image_url);
+            const pathParts = url.pathname.split('/public/items/');
+            if (pathParts.length > 1) {
+              return pathParts[1]; // This will be the filename or subpath
+            }
+          } catch (e) {
+            // Fallback to simple split if URL parsing fails
+            const parts = img.image_url.split('/public/items/');
+            if (parts.length > 1) {
+              return parts[1].split('?')[0]; // Remove query params if any
+            }
+          }
+          return null;
         }).filter(Boolean);
 
-        if (fileNames.length > 0) {
+        if (filePaths.length > 0) {
+          console.log("Deleting files from storage:", filePaths);
           const { error: storageError } = await supabaseClient.storage
             .from('items')
-            .remove(fileNames);
+            .remove(filePaths);
           
           if (storageError) {
             console.error("Storage deletion error:", storageError);
+          } else {
+            console.log("Successfully deleted files from storage");
           }
         }
       }
 
-      // 3. Delete the item record
+      // 3. Delete the item record (item_images will be deleted by CASCADE)
       const { error: deleteError } = await supabaseClient
         .from('items')
         .delete()

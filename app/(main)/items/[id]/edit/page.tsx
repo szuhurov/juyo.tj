@@ -112,10 +112,11 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     if (!userId || !item) return;
 
     const formData = new FormData(e.currentTarget);
-    const title = (formData.get('title') as string).trim();
-    const description = (formData.get('description') as string).trim();
-    const phone = (formData.get('phone') as string).trim();
-    const reward = (formData.get('reward') as string).trim();
+    const title = (formData.get('title') as string || '').trim();
+    const description = (formData.get('description') as string || '').trim();
+    const phone = (formData.get('phone') as string || '').trim();
+    const rewardField = formData.get('reward');
+    const reward = rewardField ? (rewardField as string).trim() : null;
 
     if (!title || !description || !category || !phone) {
       toast.error(t('fillAllFields'));
@@ -195,6 +196,26 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
 
       // 3. Update images (delete old and insert new)
       if (imagesChanged) {
+        // Find images that were removed to clean up storage
+        const removedUrls = existingUrls.filter(url => !finalImageUrls.includes(url));
+        
+        if (removedUrls.length > 0) {
+          const filePaths = removedUrls.map(urlStr => {
+            try {
+              const url = new URL(urlStr);
+              const pathParts = url.pathname.split('/public/items/');
+              return pathParts.length > 1 ? pathParts[1] : null;
+            } catch (e) {
+              const parts = urlStr.split('/public/items/');
+              return parts.length > 1 ? parts[1].split('?')[0] : null;
+            }
+          }).filter(Boolean) as string[];
+
+          if (filePaths.length > 0) {
+            await supabase.storage.from('items').remove(filePaths);
+          }
+        }
+
         await supabase.from('item_images').delete().eq('item_id', id);
         
         const imageRecords = finalImageUrls.map(url => ({

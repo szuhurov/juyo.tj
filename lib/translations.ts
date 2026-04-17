@@ -187,13 +187,12 @@ export const translations: Record<string, any> = {
 
     // Item Details
     what_happened: 'Чӣ шуд?',
-    lost: 'Гумшудааст',
+    lost: 'Гумшуда',
     lost_desc: 'Ман чизеро гум кардам',
-    found: 'Ёфтшудааст',
+    found: 'Ёфтшуда',
     found_desc: 'Ман чизеро ёфтам',
     request: 'Дархост',
     request_desc: 'Ман ба кумак ниёз дорам',
-    filterLost: 'Эълонҳо',
     reward: 'ТУҲФА',
     reward_gives: 'Туҳфа медиҳам',
     reward_wants: 'Туҳфа мехоҳам',
@@ -220,10 +219,11 @@ export const translations: Record<string, any> = {
     titleLabel: 'Номи ашё',
     categoryLabel: 'Категория',
     rewardLabel: 'Маблағи туҳфа (ихтиёрӣ)',
-    phoneLabel: 'Рақами телефон',
-    phoneSecondaryLabel: 'Рақами эҳтиётӣ (барои тамос)',
+    phoneLabel: 'Рақами телефони шумо',
+    phoneSecondaryLabel: 'Рақами эҳтиётӣ (наздикон)',
     phonePlaceholder: '992XXXXXXXXX',
-    phoneSecondaryPlaceholder: 'Рақами наздикон (992XXXXXXXXX)',
+    phoneSecondaryPlaceholder: 'Рақами падар, модар ё дӯст',
+    phonesMustBeDifferent: 'Рақами аввал ва дуюм бояд аз ҳам фарқ кунанд. Лутфан рақами ягон наздикатонро ҳамчун эҳтиётӣ ворид кунед.',
     locationLabel: 'Макони гумшавӣ ё ёфтшавӣ',
     addImages: 'Иловаи суратҳо',
     maxImages: 'Максимум 5 сурат',
@@ -241,6 +241,16 @@ export const translations: Record<string, any> = {
     dataLoadError: 'Маълумот бор нашуд.',
     imagePermissionError: 'Baрои илова кардани сурат иҷозат лозим аст.',
     maxImagesReached: 'Ҳадди аксар 5 сурат иҷозат дода мешавад.',
+    
+    terms: {
+      title: 'Тасдиқи шартҳо',
+      description: 'Барои идома додани истифодаи барнома, шумо бояд ба шартҳо ва қоидаҳои мо розӣ шавед.',
+      checkbox: 'Ман ба коркарди маълумоти шахсии худ розӣ ҳастам ва тасдиқ мекунам, ки синнам аз 18 боло аст',
+      button: 'ИДОМА ДОДАН',
+      link: 'Шартҳои истифода ва махфият',
+      error: 'Лутфан шартҳоро қабул кунед',
+      success: 'Розигии шумо қабул шуд'
+    },
     
     imageBlockedTitle: 'Сурат маҳкам шуд',
     imageBlockedDesc: 'Ин сурат аз ҷониби системаи амниятӣ маҳкам карда шуд.',
@@ -533,10 +543,11 @@ export const translations: Record<string, any> = {
     titleLabel: 'Название предмета',
     categoryLabel: 'Категория',
     rewardLabel: 'Вознаграждение (опционально)',
-    phoneLabel: 'Номер телефона',
-    phoneSecondaryLabel: 'Запасной номер (для связи)',
+    phoneLabel: 'Ваш номер телефона',
+    phoneSecondaryLabel: 'Запасной номер (близких)',
     phonePlaceholder: '992XXXXXXXXX',
-    phoneSecondaryPlaceholder: 'Номер близких (992XXXXXXXXX)',
+    phoneSecondaryPlaceholder: 'Номер папы, мамы или друга',
+    phonesMustBeDifferent: 'Первый и второй номера должны отличаться. Пожалуйста, введите номер кого-то из близких как запасной.',
     locationLabel: 'Место утери или находки',
     addImages: 'Добавить фото',
     maxImages: 'Максимум 5 фото',
@@ -633,6 +644,16 @@ export const translations: Record<string, any> = {
       'Clothing': 'Одежда',
       'Pets': 'Животные',
       'Other': 'Другое',
+    },
+
+    terms: {
+      title: 'Подтверждение условий',
+      description: 'Чтобы продолжить использование приложения, вы должны согласиться с нашими условиями и правилами.',
+      checkbox: 'Я согласен на обработку моих персональных данных, и подтверждаю, что мне исполнилось 18 лет или больше',
+      button: 'ПРОДОЛЖИТЬ',
+      link: 'Условия использования и конфиденциальности',
+      error: 'Пожалуйста, примите условия',
+      success: 'Ваше согласие принято'
     },
   },
   en: {
@@ -848,10 +869,11 @@ export const translations: Record<string, any> = {
     titleLabel: 'Item Title',
     categoryLabel: 'Category',
     rewardLabel: 'Reward Amount (optional)',
-    phoneLabel: 'Phone Number',
-    phoneSecondaryLabel: 'Secondary Phone (for contact)',
+    phoneLabel: 'Your Phone Number',
+    phoneSecondaryLabel: 'Secondary Phone (Relative/Friend)',
     phonePlaceholder: '992XXXXXXXXX',
-    phoneSecondaryPlaceholder: 'Emergency Number (992XXXXXXXXX)',
+    phoneSecondaryPlaceholder: 'Parent, Sibling or Friend',
+    phonesMustBeDifferent: 'Primary and secondary numbers must be different. Please provide a relative\'s number as backup.',
     locationLabel: 'Location of loss or discovery',
     addImages: 'Add Photos',
     maxImages: 'Maximum 5 photos',
@@ -940,6 +962,16 @@ export const translations: Record<string, any> = {
       'Clothing': 'Clothing',
       'Pets': 'Pets',
       'Other': 'Other',
+    },
+
+    terms: {
+      title: 'Terms Confirmation',
+      description: 'To continue using the application, you must agree to our terms and conditions.',
+      checkbox: 'I consent to the processing of my personal data and confirm that I am 18 years of age or older',
+      button: 'CONTINUE',
+      link: 'Terms of Service and Privacy',
+      error: 'Please accept the terms',
+      success: 'Your consent has been accepted'
     },
   }
 };

@@ -66,6 +66,7 @@ import {
 // QR Integration
 import { QRCard } from "@/components/qr-editor/qr-card";
 import { toPng } from "html-to-image";
+import { HexColorPicker } from "react-colorful";
 
 import { useUserItems, useSavedItems, useSafetyItems, ITEM_KEYS } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
@@ -80,6 +81,7 @@ function ProfileContent() {
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "posts");
   const qrRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [activePicker, setActivePicker] = useState<"qr" | "bg" | null>(null);
   
   // Profile state
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -134,7 +136,7 @@ function ProfileContent() {
         setProfile(data);
         
         // Mandatory phone check
-        if (data && !data.phone) {
+        if (data && (!data.phone || !data.secondary_phone)) {
           setShowPhoneModal(true);
         }
       } catch (err) {
@@ -247,10 +249,10 @@ function ProfileContent() {
   const handleRegisterSafetyItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const name = (formData.get('name') as string).trim();
-    const description = (formData.get('description') as string).trim();
-    const phone = (formData.get('phone') as string).trim();
-    const reward = (formData.get('reward') as string).trim();
+    const name = (formData.get('name') as string || "").trim();
+    const description = (formData.get('description') as string || "").trim();
+    const phone = (formData.get('phone') as string || "").trim();
+    const reward = (formData.get('reward') as string || "").trim();
 
     if (!name || !description || !safetyCategory || !phone) {
       toast.error(t('fillAllFields'));
@@ -327,7 +329,30 @@ function ProfileContent() {
       
       const supabase = createClerkSupabaseClient(supabaseToken);
 
-      let imageUrls = [...(editingSafetyItem.images || [])];
+      // 1. Identify which images were removed to clean up storage
+      const originalImages = safetyItems.find((it: any) => it.id === editingSafetyItem.id)?.images || [];
+      const currentImagesInState = editingSafetyItem.images || [];
+      const removedUrls = originalImages.filter((url: string) => !currentImagesInState.includes(url));
+
+      if (removedUrls.length > 0) {
+        const filePaths = removedUrls.map((urlStr: string) => {
+          try {
+            const url = new URL(urlStr);
+            const pathParts = url.pathname.split('/public/items/');
+            return pathParts.length > 1 ? pathParts[1] : null;
+          } catch (e) {
+            const parts = urlStr.split('/public/items/');
+            return parts.length > 1 ? parts[1].split('?')[0] : null;
+          }
+        }).filter(Boolean) as string[];
+
+        if (filePaths.length > 0) {
+          await supabase.storage.from('items').remove(filePaths);
+        }
+      }
+
+      // 2. Upload new images
+      let imageUrls = [...currentImagesInState];
       
       if (safetyImages.length > 0) {
         for (const file of safetyImages) {
@@ -428,6 +453,33 @@ function ProfileContent() {
         try {
           const token = await getToken({ template: 'supabase' });
           const supabase = createClerkSupabaseClient(token!);
+          
+          // 1. Get the item first to get its images
+          const { data: item } = await supabase
+            .from('safety_box')
+            .select('images')
+            .eq('id', id)
+            .single();
+
+          // 2. Delete images from storage if they exist
+          if (item?.images && item.images.length > 0) {
+            const filePaths = item.images.map((urlStr: string) => {
+              try {
+                const url = new URL(urlStr);
+                const pathParts = url.pathname.split('/public/items/');
+                return pathParts.length > 1 ? pathParts[1] : null;
+              } catch (e) {
+                const parts = urlStr.split('/public/items/');
+                return parts.length > 1 ? parts[1].split('?')[0] : null;
+              }
+            }).filter(Boolean) as string[];
+
+            if (filePaths.length > 0) {
+              await supabase.storage.from('items').remove(filePaths);
+            }
+          }
+
+          // 3. Delete from database
           const { error } = await supabase.from('safety_box').delete().eq('id', id);
           if (error) throw error;
           
@@ -478,9 +530,15 @@ function ProfileContent() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const phone = (formData.get('phone') as string).trim();
+    const secondary_phone = (formData.get('secondary_phone') as string).trim();
     
-    if (phone.length < 9) {
+    if (phone.length < 9 || secondary_phone.length < 9) {
       toast.error(t('phoneMinLength'));
+      return;
+    }
+
+    if (phone === secondary_phone) {
+      toast.error(t('phonesMustBeDifferent'));
       return;
     }
 
@@ -491,6 +549,7 @@ function ProfileContent() {
       
       const updated = await ProfileService.updateProfile(supabase, userId!, {
         phone,
+        secondary_phone,
         first_name: user?.firstName || "",
         last_name: user?.lastName || "",
         avatar_url: user?.imageUrl || ""
@@ -604,14 +663,13 @@ function ProfileContent() {
                         <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400">{t('qrColors')}</h4>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-2">
+                        <div className="space-y-2 relative">
                           <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('qrColorLabel')}</Label>
                           <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800">
-                            <input 
-                              type="color" 
-                              value={qrSettings.qrColor} 
-                              onChange={(e) => setQrSettings({...qrSettings, qrColor: e.target.value})}
-                              className="w-10 h-10 rounded-lg cursor-pointer border-none p-0 bg-transparent shrink-0"
+                            <button 
+                              className="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-100 dark:border-zinc-800 shrink-0 shadow-sm transition-transform active:scale-95"
+                              style={{ backgroundColor: qrSettings.qrColor }}
+                              onClick={() => setActivePicker(activePicker === "qr" ? null : "qr")}
                             />
                             <Input 
                               value={qrSettings.qrColor} 
@@ -624,15 +682,32 @@ function ProfileContent() {
                               className="h-8 border-none bg-transparent font-mono font-bold text-[10px] uppercase text-zinc-500 focus-visible:ring-0 p-0"
                             />
                           </div>
+                          
+                          {activePicker === "qr" && (
+                            <div className="absolute top-full left-0 z-50 mt-2 p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in-95 duration-200">
+                              <HexColorPicker 
+                                color={qrSettings.qrColor} 
+                                onChange={(color) => setQrSettings({...qrSettings, qrColor: color})} 
+                              />
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full mt-2 h-8 font-black uppercase text-[8px] tracking-widest"
+                                onClick={() => setActivePicker(null)}
+                              >
+                                {t('confirm') || 'OK'}
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        <div className="space-y-2">
+
+                        <div className="space-y-2 relative">
                           <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('qrBgLabel')}</Label>
                           <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800">
-                            <input 
-                              type="color" 
-                              value={qrSettings.bgColor} 
-                              onChange={(e) => setQrSettings({...qrSettings, bgColor: e.target.value})}
-                              className="w-10 h-10 rounded-lg cursor-pointer border-none p-0 bg-transparent shrink-0"
+                            <button 
+                              className="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-100 dark:border-zinc-800 shrink-0 shadow-sm transition-transform active:scale-95"
+                              style={{ backgroundColor: qrSettings.bgColor }}
+                              onClick={() => setActivePicker(activePicker === "bg" ? null : "bg")}
                             />
                             <Input 
                               value={qrSettings.bgColor} 
@@ -645,6 +720,23 @@ function ProfileContent() {
                               className="h-8 border-none bg-transparent font-mono font-bold text-[10px] uppercase text-zinc-500 focus-visible:ring-0 p-0"
                             />
                           </div>
+
+                          {activePicker === "bg" && (
+                            <div className="absolute top-full left-0 z-50 mt-2 p-3 bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-100 dark:border-zinc-800 animate-in fade-in zoom-in-95 duration-200">
+                              <HexColorPicker 
+                                color={qrSettings.bgColor} 
+                                onChange={(color) => setQrSettings({...qrSettings, bgColor: color})} 
+                              />
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full mt-2 h-8 font-black uppercase text-[8px] tracking-widest"
+                                onClick={() => setActivePicker(null)}
+                              >
+                                {t('confirm') || 'OK'}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -723,7 +815,18 @@ function ProfileContent() {
                       const formData = new FormData(e.currentTarget);
                       const firstName = formData.get('firstName') as string;
                       const lastName = formData.get('lastName') as string;
-                      const phone = formData.get('phone') as string;
+                      const phone = (formData.get('phone') as string || "").trim();
+                      const secondaryPhone = (formData.get('secondaryPhone') as string || "").trim();
+
+                      if (phone.length < 9 || secondaryPhone.length < 9) {
+                        toast.error(t('phoneMinLength'));
+                        return;
+                      }
+
+                      if (phone === secondaryPhone) {
+                        toast.error(t('phonesMustBeDifferent'));
+                        return;
+                      }
                       
                       setSafetySubmitting(true);
                       try {
@@ -741,6 +844,7 @@ function ProfileContent() {
                           first_name: firstName,
                           last_name: lastName,
                           phone,
+                          secondary_phone: secondaryPhone,
                           avatar_url: user?.imageUrl || ""
                         });
                         setProfile(updated);
@@ -777,6 +881,7 @@ function ProfileContent() {
                             defaultValue={profile?.phone || ""} 
                             className="h-10 pl-9 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
                             inputMode="numeric"
+                            required
                             onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                           />
                         </div>
@@ -791,6 +896,7 @@ function ProfileContent() {
                             defaultValue={profile?.secondary_phone || ""} 
                             className="h-10 pl-9 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
                             inputMode="numeric"
+                            required
                             onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                           />
                         </div>
