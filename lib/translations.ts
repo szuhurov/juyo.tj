@@ -187,12 +187,14 @@ export const translations: Record<string, any> = {
 
     // Item Details
     what_happened: 'Чӣ шуд?',
-    lost: 'Гумшуда',
+    lost: 'Гумшудаҳо',
     lost_desc: 'Ман чизеро гум кардам',
-    found: 'Ёфтшуда',
+    found: 'Ёфтшудаҳо',
     found_desc: 'Ман чизеро ёфтам',
     request: 'Дархост',
     request_desc: 'Ман ба кумак ниёз дорам',
+    filterLost: 'Гумшудаҳо',
+    filterFound: 'Ёфтшудаҳо',
     reward: 'ТУҲФА',
     reward_gives: 'Туҳфа медиҳам',
     reward_wants: 'Туҳфа мехоҳам',
