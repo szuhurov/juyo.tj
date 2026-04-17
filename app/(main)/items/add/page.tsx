@@ -79,7 +79,7 @@ export default function AddItemPage() {
       return;
     }
 
-    // Reward validation: must be a number if provided
+    // Reward validation: must be a number if provided/
     if (reward && isNaN(Number(reward))) {
       toast.error(t('rewardOnlyNumbers'));
       return;
