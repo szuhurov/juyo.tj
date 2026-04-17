@@ -20,6 +20,7 @@ export interface Item {
     first_name: string;
     last_name: string;
     avatar_url: string;
+    secondary_phone?: string;
   };
 }
 
@@ -81,7 +82,7 @@ export const ItemService = {
     
     const { data: profile } = await client
       .from('profiles')
-      .select('first_name, last_name, avatar_url')
+      .select('first_name, last_name, avatar_url, secondary_phone')
       .eq('id', data.user_id)
       .single();
 
