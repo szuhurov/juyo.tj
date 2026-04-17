@@ -105,7 +105,6 @@ export const translations: Record<string, any> = {
     pleaseLogin: 'Лутфан аввал сабти ном кунед',
     addedToSaved: 'Ба захирашудаҳо илова шуд',
     removedFromSaved: 'Аз захирашудаҳо нест шуд',
-    phonePlaceholder: '992XXXXXXXXX',
     rewardOnlyNumbers: 'Маблағи туҳфа бояд танҳо рақам бошад',
     qrSavedSuccess: 'QR-код бо муваффақият захира шуд!',
     qrMyCode: 'QR-коди ман',
