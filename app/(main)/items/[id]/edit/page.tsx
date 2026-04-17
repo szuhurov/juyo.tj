@@ -136,7 +136,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       let supabase = createClerkSupabaseClient(token);
 
       // 1. Upload new images if any
-      const finalImageUrls = [];
+      const finalImageUrls: string[] = [];
       const newFiles = images;
       let newFileIdx = 0;
       let hasNewImages = false;
