@@ -426,7 +426,6 @@ export const translations: Record<string, any> = {
     pleaseLogin: 'Пожалуйста, сначала зарегистрируйтесь',
     addedToSaved: 'Добавлено в сохраненные',
     removedFromSaved: 'Удалено из сохраненных',
-    phonePlaceholder: '992XXXXXXXXX',
     rewardOnlyNumbers: 'Сумма вознаграждения должна быть только цифрами',
     qrSavedSuccess: 'QR-код успешно сохранен!',
     qrMyCode: 'Мой QR-код',
