@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useUser, SignOutButton, useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service";
@@ -70,7 +70,7 @@ import { toPng } from "html-to-image";
 import { useUserItems, useSavedItems, useSafetyItems, ITEM_KEYS } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
   const { t } = useLanguage();
@@ -96,10 +96,14 @@ export default function ProfilePage() {
   // Use TanStack Query for caching
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
-    if (userId) {
-      getToken({ template: 'supabase' }).then(setToken);
-    }
-  }, [userId, getToken]);
+    const fetchToken = async () => {
+      if (userId) {
+        const t = await getToken({ template: 'supabase' });
+        setToken(t);
+      }
+    };
+    fetchToken();
+  }, [userId]); // Removed getToken from dependencies
 
   const { data: myItems = [], isLoading: postsLoading } = useUserItems(userId || undefined, token);
 
@@ -123,8 +127,9 @@ export default function ProfilePage() {
     const loadProfile = async () => {
       if (!userId) return;
       try {
-        const token = await getToken({ template: 'supabase' });
-        const supabase = createClerkSupabaseClient(token!);
+        const supabaseToken = await getToken({ template: 'supabase' });
+        if (!supabaseToken) return;
+        const supabase = createClerkSupabaseClient(supabaseToken);
         const data = await ProfileService.getProfile(supabase, userId);
         setProfile(data);
         
@@ -139,7 +144,7 @@ export default function ProfilePage() {
       }
     };
     loadProfile();
-  }, [userId, getToken]);
+  }, [userId]); // Removed getToken from dependencies
 
   // Sync tab with URL
   useEffect(() => {
@@ -256,7 +261,6 @@ export default function ProfilePage() {
     try {
       const imageUrls = [];
       for (const file of safetyImages) {
-        // Refetch token for each upload to prevent expiration during long uploads
         const uploadToken = await getToken({ template: 'supabase' });
         const uploadSupabase = createClerkSupabaseClient(uploadToken!);
         
@@ -268,7 +272,6 @@ export default function ProfilePage() {
         imageUrls.push(publicUrl);
       }
 
-      // Final token for the database record insertion
       const dbToken = await getToken({ template: 'supabase' });
       const supabase = createClerkSupabaseClient(dbToken!);
 
@@ -289,7 +292,6 @@ export default function ProfilePage() {
 
       if (error) throw error;
       
-      // Update cache using TanStack Query
       queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
       
       toast.success(t('success'));
@@ -325,7 +327,6 @@ export default function ProfilePage() {
       
       const supabase = createClerkSupabaseClient(supabaseToken);
 
-      // Existing images + new uploads
       let imageUrls = [...(editingSafetyItem.images || [])];
       
       if (safetyImages.length > 0) {
@@ -359,7 +360,6 @@ export default function ProfilePage() {
         throw error;
       }
       
-      // Update cache using TanStack Query - use the state token for consistency
       queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
       
       toast.success(t('success'));
@@ -390,7 +390,6 @@ export default function ProfilePage() {
 
           const item = await ItemService.publishFromSafetyBox(supabase, safetyItem, userId!);
 
-          // Trigger Moderation (Async) - Server handles DB update
           if (safetyItem.images && safetyItem.images.length > 0) {
             const moderationImages = Array.isArray(safetyItem.images) 
               ? safetyItem.images 
@@ -403,7 +402,6 @@ export default function ProfilePage() {
             }).catch(err => console.error('Moderation trigger error:', err));
           }
 
-          // Update cache using TanStack Query
           queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
           queryClient.invalidateQueries({ queryKey: ITEM_KEYS.userItems(userId || "", token) });
           
@@ -433,7 +431,6 @@ export default function ProfilePage() {
           const { error } = await supabase.from('safety_box').delete().eq('id', id);
           if (error) throw error;
           
-          // Update cache using TanStack Query
           queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
           
           toast.success(t('success'));
@@ -581,7 +578,6 @@ export default function ProfilePage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-stretch px-2">
-                {/* Left: QR Code Preview */}
                 <div className="flex flex-col">
                   <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[3rem] p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full h-full overflow-hidden">
                     <QRCard 
@@ -600,10 +596,8 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                {/* Right: Controls */}
                 <div className="bg-zinc-50 dark:bg-zinc-900/30 p-8 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col justify-center">
                   <div className="space-y-8">
-                    {/* Color Section */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Palette className="w-4 h-4 text-zinc-400" />
@@ -655,7 +649,6 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    {/* Text Section */}
                     <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                       <div className="flex items-center gap-2 mb-2">
                         <Type className="w-4 h-4 text-zinc-400" />
@@ -686,7 +679,6 @@ export default function ProfilePage() {
             </div>
             
             <div className="animate-in slide-in-from-right-4 duration-500 max-w-2xl px-2 space-y-12">
-              {/* Avatar Section */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <User className="w-4 h-4 text-zinc-400" />
@@ -735,14 +727,12 @@ export default function ProfilePage() {
                       
                       setSafetySubmitting(true);
                       try {
-                        // 1. Update Clerk (Name)
                         try {
                           await user?.update({ firstName, lastName });
                         } catch (clerkErr) {
                           console.error("Clerk Update Error:", clerkErr);
                         }
                         
-                        // 2. Update Supabase (Full Profile)
                         const token = await getToken({ template: 'supabase' });
                         if (!token) throw new Error("Authentication token not found");
                         
@@ -798,7 +788,6 @@ export default function ProfilePage() {
                 </div>
               </section>
 
-              {/* Read-only Email Section */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Mail className="w-4 h-4 text-zinc-400" />
@@ -1149,7 +1138,6 @@ export default function ProfilePage() {
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 min-h-[90vh]">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12">
-          {/* Left Sidebar - Fixed on Desktop - Hidden on mobile */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-[100px] h-fit z-20 space-y-6">
               <div className="flex flex-col gap-3">
@@ -1194,7 +1182,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Right Content */}
           <div className="lg:col-span-3">
             <div className="min-h-[60vh]">
               {renderContent()}
@@ -1203,7 +1190,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Reusable Confirmation Dialog */}
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog(prev => ({ ...prev, open: false }))}>
         <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
           <DialogHeader className="space-y-3">
@@ -1253,7 +1239,6 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Safety Item Details Dialog */}
       <Dialog open={!!selectedSafetyItem} onOpenChange={(open) => {
         if (!open) {
           setSelectedSafetyItem(null);
@@ -1275,7 +1260,6 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-center h-full"><PackageSearch className="w-24 h-24 text-zinc-200" /></div>
                   )}
 
-                  {/* Image Navigation */}
                   {selectedSafetyItem.images && selectedSafetyItem.images.length > 1 && (
                     <>
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4">
@@ -1403,7 +1387,6 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Safety Item Edit Dialog */}
       <Dialog open={!!editingSafetyItem} onOpenChange={(open) => !open && setEditingSafetyItem(null)}>
         <DialogContent className="sm:max-w-xl rounded-3xl p-8 border-none shadow-2xl overflow-y-auto max-h-[90vh]">
           <DialogHeader className="mb-6">
@@ -1486,7 +1469,6 @@ export default function ProfilePage() {
                     <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm">
                       <Image src={src} alt="Preview" fill className="object-cover" />
                       <button type="button" onClick={() => {
-                        // Handle removal of existing and new images
                         const isExisting = editingSafetyItem.images?.includes(src);
                         if (isExisting) {
                           setEditingSafetyItem({
@@ -1526,6 +1508,18 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
     </TooltipProvider>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto px-4 py-20 flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-10 h-10 animate-spin text-zinc-900" />
+      </div>
+    }>
+      <ProfileContent />
+    </Suspense>
   );
 }
 
