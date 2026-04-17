@@ -1,5 +1,6 @@
 import { Header } from "@/components/header";
 import { MandatoryPhoneModal } from "@/components/mandatory-phone-modal";
+import { Suspense } from "react";
 
 export default function MainLayout({
   children,
@@ -8,7 +9,9 @@ export default function MainLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen">
-      <Header />
+      <Suspense fallback={<div className="h-16 border-b bg-white animate-pulse" />}>
+        <Header />
+      </Suspense>
       <MandatoryPhoneModal />
       <main className="flex-1 pt-16">
         {children}
