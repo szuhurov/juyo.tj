@@ -83,7 +83,7 @@ export function Header() {
     { href: "/profile?tab=safety", label: t('mySafe') || "My Safety Box", icon: ShieldCheck },
   ];
 
-  // Close menu when a link is clicked
+  // Close menu when a link is clicked.
   const handleLinkClick = () => {
     setIsMenuOpen(false);
   };
