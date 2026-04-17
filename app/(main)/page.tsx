@@ -66,7 +66,7 @@ function HomeContent() {
   return (
     <div className="pb-18">
       {/* Filters Section - Seamlessly glued to Navbar */}
-      <div className="fixed top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
+      <div className="fixed top-14 sm:top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
         <div className="container mx-auto px-4 pb-1.5 pt-0">
           {/* Mobile Search Bar */}
           <div className="md:hidden relative mb-3 mt-3">

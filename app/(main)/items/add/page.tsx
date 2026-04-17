@@ -66,14 +66,14 @@ function AddItemForm() {
     const title = (formData.get('title') as string).trim();
     const description = (formData.get('description') as string).trim();
     const phone = (formData.get('phone') as string).trim();
-    const reward = (formData.get('reward') as string).trim();
+    const reward = (formData.get('reward') as string || "").trim();
 
     if (!title || !description || !category || !phone) {
       toast.error(t('fillAllFields'));
       return;
     }
 
-    if (reward && isNaN(Number(reward))) {
+    if (type === 'lost' && reward && isNaN(Number(reward))) {
       toast.error(t('rewardOnlyNumbers'));
       return;
     }
@@ -116,7 +116,7 @@ function AddItemForm() {
         category,
         type,
         phone_number: phone,
-        reward: reward ? `${reward}` : null,
+        reward: (type === 'lost' && reward) ? `${reward}` : null,
         date: new Date().toISOString().split('T')[0],
         is_resolved: false,
         moderation_status: 'pending'
@@ -234,20 +234,22 @@ function AddItemForm() {
                   onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="reward" className="font-bold text-xs uppercase text-zinc-500">
-                  {type === 'lost' ? t('reward_gives_input') : t('reward_wants_input')}
-                </Label>
-                <Input 
-                  id="reward" 
-                  name="reward" 
-                  placeholder={t('rewardPlaceholder')} 
-                  className="rounded-lg h-11" 
-                  type="text" 
-                  inputMode="numeric" 
-                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                />
-              </div>
+              {type === 'lost' && (
+                <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                  <Label htmlFor="reward" className="font-bold text-xs uppercase text-zinc-500">
+                    {t('reward_gives_input')}
+                  </Label>
+                  <Input 
+                    id="reward" 
+                    name="reward" 
+                    placeholder={t('rewardPlaceholder')} 
+                    className="rounded-lg h-11" 
+                    type="text" 
+                    inputMode="numeric" 
+                    onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="space-y-4">

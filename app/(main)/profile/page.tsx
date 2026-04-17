@@ -766,18 +766,34 @@ function ProfileContent() {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('phoneLabel')}</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
-                        <Input 
-                          name="phone" 
-                          placeholder={t('phonePlaceholder')}
-                          defaultValue={profile?.phone || ""} 
-                          className="h-10 pl-9 rounded-xl bg-white dark:bg-zinc-950 font-bold"
-                          inputMode="numeric"
-                          onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                        />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('phoneLabel')}</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                          <Input 
+                            name="phone" 
+                            placeholder={t('phonePlaceholder')}
+                            defaultValue={profile?.phone || ""} 
+                            className="h-10 pl-9 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
+                            inputMode="numeric"
+                            onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('phoneSecondaryLabel')}</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                          <Input 
+                            name="secondaryPhone" 
+                            placeholder={t('phoneSecondaryPlaceholder')}
+                            defaultValue={profile?.secondary_phone || ""} 
+                            className="h-10 pl-9 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
+                            inputMode="numeric"
+                            onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -947,18 +963,20 @@ function ProfileContent() {
                             onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="reward" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('rewardLabel')}</Label>
-                          <Input 
-                            id="reward" 
-                            name="reward" 
-                            placeholder={t('rewardPlaceholder')} 
-                            className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" 
-                            type="text" 
-                            inputMode="numeric"
-                            onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                          />
-                        </div>
+                        {safetyType === 'lost' && (
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                            <Label htmlFor="reward" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('rewardLabel')}</Label>
+                            <Input 
+                              id="reward" 
+                              name="reward" 
+                              placeholder={t('rewardPlaceholder')} 
+                              className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" 
+                              type="text" 
+                              inputMode="numeric"
+                              onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                            />
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -1297,18 +1315,15 @@ function ProfileContent() {
                   )}
 
                   <div className="absolute top-6 left-6 flex flex-col gap-2 z-10">
-                    <Badge className={cn("uppercase font-black rounded-md px-3 py-1 shadow-md border-none", selectedSafetyItem.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
-                      {selectedSafetyItem.type === 'lost' ? t('lost') : t('found')}
-                    </Badge>
                     {selectedSafetyItem.reward && (
                       <Badge className="max-[632px]:flex hidden bg-amber-400 text-amber-950 font-black rounded-md px-3 py-1 shadow-md border-none whitespace-nowrap">
-                        {selectedSafetyItem.type === 'lost' ? t('reward_gives_viewer') : t('reward_wants_viewer')} {selectedSafetyItem.reward} TJS
+                        {t('reward_gives_viewer')} {selectedSafetyItem.reward} TJS
                       </Badge>
                     )}
                   </div>
                   {selectedSafetyItem.reward && (
                     <Badge className="max-[632px]:hidden absolute bottom-6 right-6 bg-amber-400 text-amber-950 font-black rounded-md px-3 py-1 shadow-md border-none whitespace-nowrap z-10">
-                      {selectedSafetyItem.type === 'lost' ? t('reward_gives_viewer') : t('reward_wants_viewer')} {selectedSafetyItem.reward} TJS
+                      {t('reward_gives_viewer')} {selectedSafetyItem.reward} TJS
                     </Badge>
                   )}
                   <Button variant="ghost" size="icon" className="absolute top-6 right-6 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white z-10" onClick={() => setSelectedSafetyItem(null)}><X className="w-5 h-5" /></Button>
@@ -1342,10 +1357,10 @@ function ProfileContent() {
 
                 <DialogTitle className="text-4xl font-black tracking-tighter uppercase leading-none mb-6">{selectedSafetyItem.item_name}</DialogTitle>
 
-                {selectedSafetyItem.reward && (
+                {selectedSafetyItem.type === 'lost' && selectedSafetyItem.reward && (
                   <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 mb-8 shadow-sm">
                     <p className="text-amber-600 dark:text-amber-400 font-black text-[10px] uppercase tracking-widest mb-1 leading-tight">
-                      {selectedSafetyItem.type === 'lost' ? t('reward_gives_viewer') : t('reward_wants_viewer')}
+                      {t('reward_gives_viewer')}
                     </p>
                     <p className="text-3xl font-black text-amber-900 dark:text-amber-100 tracking-tight">
                       {selectedSafetyItem.reward} <span className="text-xl">TJS</span>
@@ -1396,36 +1411,6 @@ function ProfileContent() {
           </DialogHeader>
           {editingSafetyItem && (
             <form onSubmit={handleUpdateSafetyItem} className="space-y-6">
-              <div className="space-y-3">
-                <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('what_happened')}</Label>
-                <RadioGroup 
-                  defaultValue={editingSafetyItem.type || 'lost'} 
-                  onValueChange={(val) => setSafetyType(val as 'lost' | 'found')}
-                  className="grid grid-cols-2 gap-4"
-                >
-                  <div>
-                    <RadioGroupItem value="lost" id="edit-safety-lost" className="peer sr-only" />
-                    <Label
-                      htmlFor="edit-safety-lost"
-                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-red-600 peer-data-[state=checked]:bg-red-50 cursor-pointer transition-all"
-                    >
-                      <span className="text-2xl mb-1">🔍</span>
-                      <span className="font-bold text-xs uppercase">{t('lost')}</span>
-                    </Label>
-                  </div>
-                  <div>
-                    <RadioGroupItem value="found" id="edit-safety-found" className="peer sr-only" />
-                    <Label
-                      htmlFor="edit-safety-found"
-                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-emerald-50 cursor-pointer transition-all"
-                    >
-                      <span className="text-2xl mb-1">🎁</span>
-                      <span className="font-bold text-xs uppercase">{t('found')}</span>
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="edit-name" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('safetyItemNameLabel')}</Label>

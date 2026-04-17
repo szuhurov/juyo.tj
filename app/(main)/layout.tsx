@@ -13,7 +13,7 @@ export default function MainLayout({
         <Header />
       </Suspense>
       <MandatoryPhoneModal />
-      <main className="flex-1 pt-16">
+      <main className="flex-1 pt-14 sm:pt-16">
         {children}
       </main>
       <footer className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12">

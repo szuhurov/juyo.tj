@@ -28,7 +28,7 @@ export function MandatoryPhoneModal() {
         const supabase = createClerkSupabaseClient(token!);
         const data = await ProfileService.getProfile(supabase, userId);
         
-        if (data && !data.phone) {
+        if (data && (!data.phone || !data.secondary_phone)) {
           setShowModal(true);
         }
       } catch (err) {
@@ -43,8 +43,9 @@ export function MandatoryPhoneModal() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const phone = (formData.get('phone') as string).trim();
+    const secondary_phone = (formData.get('secondary_phone') as string).trim();
     
-    if (phone.length < 9) {
+    if (phone.length < 9 || secondary_phone.length < 9) {
       toast.error(t('phoneMinLength'));
       return;
     }
@@ -56,6 +57,7 @@ export function MandatoryPhoneModal() {
       
       await ProfileService.updateProfile(supabase, userId!, {
         phone,
+        secondary_phone,
         first_name: user?.firstName || "",
         last_name: user?.lastName || "",
         avatar_url: user?.imageUrl || ""
@@ -92,23 +94,43 @@ export function MandatoryPhoneModal() {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSavePhone} className="space-y-4 pt-2">
-          <div className="space-y-2">
-            <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
-              {t('phoneLabel')}
-            </Label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-              <Input 
-                name="phone" 
-                placeholder={t('phonePlaceholder')} 
-                className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 focus:border-red-600 transition-all" 
-                required 
-                inputMode="numeric"
-                autoFocus
-                onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-              />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                {t('phoneLabel')}
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Input 
+                  name="phone" 
+                  placeholder={t('phonePlaceholder')} 
+                  className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 focus:border-red-600 transition-all" 
+                  required 
+                  inputMode="numeric"
+                  autoFocus
+                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                {t('phoneSecondaryLabel')}
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                <Input 
+                  name="secondary_phone" 
+                  placeholder={t('phoneSecondaryPlaceholder')} 
+                  className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 focus:border-red-600 transition-all" 
+                  required 
+                  inputMode="numeric"
+                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                />
+              </div>
             </div>
           </div>
+
           <Button 
             type="submit" 
             className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-100 dark:shadow-none"

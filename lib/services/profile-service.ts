@@ -6,6 +6,7 @@ export interface Profile {
   last_name: string;
   avatar_url: string;
   phone?: string;
+  secondary_phone?: string;
   created_at: string;
 }
 
@@ -47,7 +48,7 @@ export const ProfileService = {
   async getPublicProfile(supabaseClient: any, userId: string) {
     const { data, error } = await supabaseClient
       .from('profiles')
-      .select('first_name, last_name, avatar_url, phone')
+      .select('first_name, last_name, avatar_url, phone, secondary_phone')
       .eq('id', userId)
       .single();
 

@@ -108,11 +108,11 @@ export function Header() {
 
   return (
     <TooltipProvider>
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/80 backdrop-blur-md dark:bg-zinc-950/80">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4 gap-2 sm:gap-4">
-          <div className="flex items-center gap-4 sm:gap-8 flex-1 min-w-0">
+      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/80 backdrop-blur-md dark:bg-zinc-950/80 border-b border-zinc-100 dark:border-zinc-900/50">
+        <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 gap-2">
+          <div className="flex items-center gap-3 sm:gap-8 flex-1 min-w-0">
             <Link href="/" className="flex items-center space-x-2 shrink-0">
-              <span className="text-xl sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100 uppercase">JUYO</span>
+              <span className="text-lg sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100 uppercase">JUYO</span>
             </Link>
 
             {/* Desktop Navigation */}

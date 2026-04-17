@@ -324,21 +324,23 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                     onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reward" className="font-bold text-xs uppercase text-zinc-500">
-                    {type === 'lost' ? t('reward_gives') : t('reward_wants')}
-                  </Label>
-                  <Input 
-                    id="reward" 
-                    name="reward" 
-                    defaultValue={item?.reward?.replace(/[^0-9]/g, '')}
-                    placeholder={t('rewardPlaceholder')} 
-                    className="rounded-lg h-11" 
-                    type="text" 
-                    inputMode="numeric" 
-                    onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                  />
-                </div>
+                {type === 'lost' && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                    <Label htmlFor="reward" className="font-bold text-xs uppercase text-zinc-500">
+                      {t('reward_gives_input')}
+                    </Label>
+                    <Input 
+                      id="reward" 
+                      name="reward" 
+                      defaultValue={item?.reward?.replace(/[^0-9]/g, '')}
+                      placeholder={t('rewardPlaceholder')} 
+                      className="rounded-lg h-11" 
+                      type="text" 
+                      inputMode="numeric" 
+                      onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">

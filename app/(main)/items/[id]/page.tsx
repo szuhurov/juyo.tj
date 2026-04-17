@@ -354,10 +354,10 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {item.reward && (
+            {item.type === 'lost' && item.reward && (
               <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 mb-8 shadow-sm">
                 <p className="text-amber-600 dark:text-amber-400 font-black text-[10px] uppercase tracking-widest mb-1 leading-tight">
-                  {item.type === 'lost' ? t('reward_gives_viewer') : t('reward_wants_viewer')}
+                  {t('reward_gives_viewer')}
                 </p>
                 <p className="text-3xl font-black text-amber-900 dark:text-amber-100 tracking-tight">
                   {item.reward} <span className="text-xl">TJS</span>
@@ -412,13 +412,26 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            <div className="mt-auto">
+            <div className="mt-auto flex flex-col gap-3">
               {isOwner ? (
-                <Button size="lg" className="h-16 w-full rounded-2xl text-base font-black gap-3 bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-100 dark:shadow-none uppercase tracking-widest text-white transition-all active:scale-95" onClick={() => setShowResolvedConfirm(true)} disabled={isActionLoading}><CheckCircle2 className="w-6 h-6" /> {t('resolved')}</Button>
-              ) : (
-                <Button size="lg" className="h-16 w-full rounded-2xl text-base font-black gap-3 bg-zinc-900 hover:bg-zinc-800 shadow-xl shadow-zinc-100 dark:shadow-none text-white transition-all active:scale-95 uppercase tracking-widest" asChild>
-                  <a href={`tel:${item.phone_number}`}><Phone className="w-6 h-6" /> {t('call')}</a>
+                <Button size="lg" className="h-16 w-full rounded-2xl text-base font-black gap-3 bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-100 dark:shadow-none uppercase tracking-widest text-white transition-all active:scale-95" onClick={() => setShowResolvedConfirm(true)} disabled={isActionLoading}>
+                  <CheckCircle2 className="w-6 h-6" /> {t('resolved')}
                 </Button>
+              ) : (
+                <>
+                  <Button size="lg" className="h-16 w-full rounded-2xl text-base font-black gap-3 bg-zinc-900 hover:bg-zinc-800 shadow-xl shadow-zinc-100 dark:shadow-none text-white transition-all active:scale-95 uppercase tracking-widest" asChild>
+                    <a href={`tel:${item.phone_number}`}>
+                      <Phone className="w-6 h-6" /> {t('call')} (1)
+                    </a>
+                  </Button>
+                  {item.profiles?.secondary_phone && (
+                    <Button size="lg" variant="outline" className="h-16 w-full rounded-2xl text-base font-black gap-3 border-2 border-zinc-200 hover:bg-zinc-50 transition-all active:scale-95 uppercase tracking-widest" asChild>
+                      <a href={`tel:${item.profiles.secondary_phone}`}>
+                        <Phone className="w-6 h-6 text-emerald-600" /> {t('call')} (2)
+                      </a>
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           </div>

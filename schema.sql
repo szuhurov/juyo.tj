@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     last_name TEXT,
     avatar_url TEXT,
     phone TEXT,
+    secondary_phone TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

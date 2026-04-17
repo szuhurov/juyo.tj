@@ -236,8 +236,8 @@ export function ItemCard({ item }: { item: Item }) {
                   )}
                 />
               ))}
-              {/* Status Badge (Top-Left) */}
-              <div className="absolute top-3 left-3 z-10 h-6 flex items-center">
+              {/* Status Badge (Top-Left) - Closer to edge for mobile */}
+              <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 h-6 flex items-center">
                 <Badge
                   className={cn(
                     "uppercase font-black rounded-md text-[10px] px-2.5 py-1 shadow-lg border-none whitespace-nowrap",
@@ -250,11 +250,31 @@ export function ItemCard({ item }: { item: Item }) {
                 </Badge>
               </div>
 
-              {/* Reward Badge */}
-              {item.reward && (
-                <div className="absolute max-[600px]:bottom-3 max-[600px]:right-3 min-[601px]:top-3 min-[601px]:right-3 z-10 h-6 flex items-center justify-end">
+              {/* Mobile Save Button (Top-Right) */}
+              <div className="absolute top-2 right-2 z-10 sm:hidden">
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleSave();
+                  }}
+                  disabled={isToggling}
+                  className={cn(
+                    "p-1.5 rounded-full backdrop-blur-md transition-all shadow-md",
+                    isSaved 
+                      ? "bg-emerald-500 text-white" 
+                      : "bg-black/20 text-white hover:bg-black/40"
+                  )}
+                >
+                  <Bookmark className={cn("w-3.5 h-3.5", isSaved && "fill-current")} />
+                </button>
+              </div>
+
+              {/* Reward Badge - Only for Lost items - Closer to edge for mobile */}
+              {item.type === 'lost' && item.reward && (
+                <div className="absolute bottom-2 right-2 sm:top-3 sm:right-3 z-10 h-6 flex items-center justify-end">
                   <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[10px] px-2.5 py-1 shadow-lg border-none whitespace-nowrap">
-                    {item.type === 'lost' ? t('reward_gives_viewer') : t('reward_wants_viewer')} {item.reward} TJS
+                    {t('reward_gives_viewer')} {item.reward} TJS
                   </Badge>
                 </div>
               )}
