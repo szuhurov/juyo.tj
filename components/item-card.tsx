@@ -254,9 +254,7 @@ export function ItemCard({ item }: { item: Item }) {
               <div className="absolute top-2 right-2 z-10 sm:hidden">
                 <button 
                   onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleSave();
+                    toggleSave(e);
                   }}
                   disabled={isToggling}
                   className={cn(
