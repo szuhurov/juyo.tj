@@ -45,7 +45,7 @@ export default function ForgotPasswordPage() {
   async function reset(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
-    await signIn
+    await (signIn as any)
       ?.attemptFirstFactor({
         strategy: "reset_password_email_code" as any,
         code,

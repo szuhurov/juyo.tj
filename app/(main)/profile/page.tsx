@@ -94,7 +94,7 @@ export default function ProfilePage() {
   });
 
   // Use TanStack Query for caching
-  const [token, setToken] = useState<string | undefined>(undefined);
+  const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
     if (userId) {
       getToken({ template: 'supabase' }).then(setToken);
@@ -1025,7 +1025,7 @@ export default function ProfilePage() {
                     </div>
                   ) : safetyItems.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                      {safetyItems.map((item) => (
+                      {safetyItems.map((item: any) => (
                         <Card 
                           key={item.id} 
                           className="overflow-hidden hover:shadow-md transition-shadow duration-300 group flex flex-col h-full rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 cursor-pointer"

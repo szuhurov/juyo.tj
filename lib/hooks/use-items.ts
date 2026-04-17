@@ -6,10 +6,10 @@ export const ITEM_KEYS = {
   lists: () => [...ITEM_KEYS.all, "list"] as const,
   list: (filters: any) => [...ITEM_KEYS.lists(), { filters }] as const,
   details: () => [...ITEM_KEYS.all, "detail"] as const,
-  detail: (id: string, token?: string) => [...ITEM_KEYS.details(), id, token].filter(Boolean) as const,
-  userItems: (userId: string, token?: string) => [...ITEM_KEYS.all, "user", userId, token].filter(Boolean) as const,
-  savedItems: (userId: string, token?: string) => [...ITEM_KEYS.all, "saved", userId, token].filter(Boolean) as const,
-  safetyItems: (userId: string, token?: string) => [...ITEM_KEYS.all, "safety", userId, token].filter(Boolean) as const,
+  detail: (id: string, token?: string | null) => [...ITEM_KEYS.details(), id, token].filter(Boolean),
+  userItems: (userId: string, token?: string | null) => [...ITEM_KEYS.all, "user", userId, token].filter(Boolean),
+  savedItems: (userId: string, token?: string | null) => [...ITEM_KEYS.all, "saved", userId, token].filter(Boolean),
+  safetyItems: (userId: string, token?: string | null) => [...ITEM_KEYS.all, "safety", userId, token].filter(Boolean),
 };
 
 export function useItems(filters?: any) {
@@ -21,7 +21,7 @@ export function useItems(filters?: any) {
   });
 }
 
-export function useItemDetails(id: string, token?: string) {
+export function useItemDetails(id: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.detail(id, token),
     queryFn: async () => {
@@ -37,7 +37,7 @@ export function useItemDetails(id: string, token?: string) {
   });
 }
 
-export function useUserItems(userId?: string, token?: string) {
+export function useUserItems(userId?: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.userItems(userId || "", token),
     queryFn: async () => {
@@ -57,7 +57,7 @@ export function useUserItems(userId?: string, token?: string) {
   });
 }
 
-export function useSavedItems(userId?: string, token?: string) {
+export function useSavedItems(userId?: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.savedItems(userId || "", token),
     queryFn: async () => {
@@ -71,7 +71,7 @@ export function useSavedItems(userId?: string, token?: string) {
   });
 }
 
-export function useSafetyItems(userId?: string, token?: string) {
+export function useSafetyItems(userId?: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.safetyItems(userId || "", token),
     queryFn: async () => {

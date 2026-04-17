@@ -43,7 +43,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   const queryClient = useQueryClient();
   
   // Use TanStack Query for caching
-  const [token, setToken] = useState<string | undefined>(undefined);
+  const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
     if (isLoaded) {
       getToken({ template: 'supabase' }).then(setToken);

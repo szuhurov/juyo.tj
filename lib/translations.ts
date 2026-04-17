@@ -251,26 +251,7 @@ export const translations: Record<string, any> = {
     qrAlbumSuccess: 'Стикери шумо дар албоми "JUYO" захира шуд!',
     permissionGallery: 'Лутфан дар танзимоти телефон иҷозати дастрасӣ ба галереяро фаъол кунед.',
     saveBtn: 'ЗАХИРА КАРДАН',
-    
-    // IMEI
-    imeiTitle: 'Сабти IMEI',
-    imeiLabel: 'Рақами IMEI (15 рақам)',
-    deviceNameLabel: 'Номи дастгоҳ (масалан: iPhone 13)',
-    imeiRegisterBtn: 'САБТ КАРДАН',
-    imeiSuccess: 'IMEI-и шумо бо муваффақият сабт шуд.',
-    imeiExists: 'Ин IMEI аллакай сабт шудааст.',
-    myImeis: 'Дастгоҳҳои ман',
-    imeiNote: 'Ин дастгоҳ дар системаи JUYO тасдиқ шудааст.',
-    imeiBadge: 'ДАСТГОҲИ САБТШУДА',
-    imeiRegisterDesc: 'IMEI-ро сабт кунед, то дар сурати гум шудан, дигарон тавонанд бо шумо тамос гиранд.',
-    imeiInfo: 'IMEI-ро сабт ва ФАЪОЛ кунед, то дар сурати гум шудан дигарон тавонанд дастгоҳи шуморо дар ҷустуҷӯ пайдо кунанд.',
-    imeiPlaceholder: '15 рақам',
-    deviceNamePlaceholder: 'Масалан: iPhone 13',
-    descriptionLabel: 'Тавсифи иловагӣ',
-    descriptionPlaceholder: 'Масалан: Телефони сиёҳ бо чехоли кабуд...',
-    active: 'ФАЪОЛ',
-    inactive: 'ХОМӮШ',
-    
+
     // Safety Box
     safetyBoxTitle: 'Сандуқчаи ман',
     safetyBoxDesc: 'Ашёҳои муҳимро инҷо нигоҳ доред',
@@ -463,13 +444,6 @@ export const translations: Record<string, any> = {
     resolvedConfirm: 'Вы нашли вещь или вернули её владельцу? Объявление будет удалено.',
     share: 'Поделиться',
     edit: 'Редактировать',
-    publishFromSafeSuccess: 'Объявление опубликовано и появится в ленте после проверки.',
-    imageModeration: {
-      submitted: 'Ваше изображение отправлено на проверку',
-      pending: 'На проверке',
-      rejected: 'Изображение отклонено',
-    },
-    removeFromSafeConfirm: 'Вы уверены, что хотите удалить этот предмет из сейфа?',
     auth: {
       resetPassword: 'Восстановление',
       enterNewPassword: 'Введите новый пароль',
@@ -588,25 +562,6 @@ export const translations: Record<string, any> = {
     qrAlbumSuccess: 'Стикер сохранен в альбом "JUYO"!',
     permissionGallery: 'Пожалуйста, разрешите доступ к галерее в настройках телефона.',
     saveBtn: 'СОХРАНИТЬ',
-
-    // IMEI
-    imeiTitle: 'Регистрация IMEI',
-    imeiLabel: 'Номер IMEI (15 цифр)',
-    deviceNameLabel: 'Название устройства (напр: iPhone 13)',
-    imeiRegisterBtn: 'ЗАРЕГИСТРИРОВАТЬ',
-    imeiSuccess: 'Ваш IMEI успешно зарегистрирован.',
-    imeiExists: 'Этот IMEI уже зарегистрирован.',
-    myImeis: 'Мои устройства',
-    imeiNote: 'Это устройство подтверждено в системе JUYO.',
-    imeiBadge: 'ЗАРЕГИСТРИРОВАНО',
-    imeiRegisterDesc: 'Зарегистрируйте IMEI, чтобы другие могли связаться с вами в случае потери.',
-    imeiInfo: 'Зарегистрируйте и АКТИВИРУЙТЕ IMEI, чтобы в случае потери другие могли найти ваше устройство через поиск.',
-    imeiPlaceholder: '15 цифр',
-    deviceNamePlaceholder: 'Напр: iPhone 13',
-    descriptionLabel: 'Дополнительное описание',
-    descriptionPlaceholder: 'Напр: Черный телефон в синем чехле...',
-    active: 'АКТИВЕН',
-    inactive: 'ВЫКЛ',
 
     // Safety Box
     safetyBoxTitle: 'Мой Сейф',
@@ -913,25 +868,6 @@ export const translations: Record<string, any> = {
     qrAlbumSuccess: 'Sticker saved to "JUYO" album!',
     permissionGallery: 'Please enable gallery access in phone settings.',
     saveBtn: 'SAVE STICKER',
-
-    // IMEI
-    imeiTitle: 'IMEI Registration',
-    imeiLabel: 'IMEI Number (15 digits)',
-    deviceNameLabel: 'Device Name (e.g. iPhone 13)',
-    imeiRegisterBtn: 'REGISTER DEVICE',
-    imeiSuccess: 'Your IMEI has been successfully registered.',
-    imeiExists: 'This IMEI is already registered.',
-    myImeis: 'My Devices',
-    imeiNote: 'This device is verified in JUYO system.',
-    imeiBadge: 'REGISTERED DEVICE',
-    imeiRegisterDesc: 'Register your IMEI so others can contact you if your device is lost.',
-    imeiInfo: 'Register and ACTIVATE your IMEI so that in case of loss others can find your device in the search.',
-    imeiPlaceholder: '15 digits',
-    deviceNamePlaceholder: 'e.g. iPhone 13',
-    descriptionLabel: 'Additional description',
-    descriptionPlaceholder: 'e.g. Black phone with blue case...',
-    active: 'ACTIVE',
-    inactive: 'INACTIVE',
 
     // Safety Box
     safetyBoxTitle: 'My Safety Box',
