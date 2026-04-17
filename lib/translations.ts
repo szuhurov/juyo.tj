@@ -739,8 +739,6 @@ export const translations: Record<string, any> = {
     pleaseLogin: 'Please login or register first',
     addedToSaved: 'Added to saved items',
     removedFromSaved: 'Removed from saved items',
-    phonePlaceholder: '992XXXXXXXXX',
-    rewardOnlyNumbers: 'Reward amount must be numbers only',
     qrSavedSuccess: 'QR code saved successfully!',
     qrMyCode: 'My QR Code',
     qrScanMe: 'Scan me',
