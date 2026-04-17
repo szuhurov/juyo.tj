@@ -306,7 +306,7 @@ export function ItemCard({ item }: { item: Item }) {
                   <span>{exactDate}</span>
                 </div>
                 
-                <div className="flex items-center gap-1 sm:gap-1.5 self-stretch sm:self-auto justify-between sm:justify-end bg-zinc-50/50 dark:bg-zinc-900/50 p-1 sm:p-0 rounded-lg sm:bg-transparent">
+                <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 self-stretch sm:self-auto justify-between sm:justify-end bg-zinc-50/50 dark:bg-zinc-900/50 p-1 sm:p-0 rounded-lg sm:bg-transparent">
                   {isActionLoading ? (
                     <div className="w-full flex justify-center py-1">
                       <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-400" />
@@ -317,13 +317,13 @@ export function ItemCard({ item }: { item: Item }) {
                         {isOwner && (
                           <>
                             <button onClick={handleEdit} className="p-1.5 rounded-md hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                              <Pencil className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+                              <Pencil className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={handleArchiveClick} className="p-1.5 rounded-md hover:text-amber-600 hover:bg-amber-50 transition-colors">
-                              <Archive className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+                              <Archive className="w-3.5 h-3.5" />
                             </button>
                             <button onClick={handleDelete} className="p-1.5 rounded-md hover:text-red-600 hover:bg-red-50 transition-colors">
-                              <Trash2 className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </>
                         )}
@@ -331,7 +331,7 @@ export function ItemCard({ item }: { item: Item }) {
                       
                       <div className="flex items-center gap-1">
                         <button onClick={handleShare} className="p-1.5 rounded-md hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                          <Share2 className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5" />
+                          <Share2 className="w-3.5 h-3.5" />
                         </button>
                         <button 
                           onClick={toggleSave}
