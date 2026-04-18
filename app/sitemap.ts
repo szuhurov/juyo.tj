@@ -1,9 +1,13 @@
-import { MetadataRoute } from 'next'
+/**
+ * Ин файл барои тавлиди худкори харитаи сайт (sitemap.xml) хидмат мекунад.
+ * Харитаи сайт ба ботҳои ҷустуҷӯӣ барои пайдо кардани тамоми саҳифаҳои муҳим кӯмак мекунад.
+ */
+import { MetadataRoute } from 'next' // Инаш ҳам барои Next.js
  
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://juyo.tj'
   
-  // Static routes
+  // Таърифи роҳҳои статикии сайт
   const routes = [
     '',
     '/privacy',
@@ -14,9 +18,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route === '' ? 1 : 0.8,
   }))
  
+  /**
+   * Баргардонидани рӯйхати пурраи URL-ҳо.
+   * Дар оянда метавон роҳҳои динамикиро (масалан, эълонҳо) аз махзани маълумот илова кард.
+   */
   return [
     ...routes,
-    // In a real production app, you would fetch all item IDs from Supabase here
-    // and add them to the sitemap dynamically.
   ]
 }

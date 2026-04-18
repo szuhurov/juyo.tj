@@ -1,21 +1,27 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Item } from "@/lib/services/item-service";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { MapPin, Calendar, Eye, Bookmark, Pencil, Archive, Trash2, Share2, Loader2, AlertTriangle, ShieldAlert, Clock, AlertCircle } from "lucide-react";
-import { useLanguage } from "@/lib/language-context";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { useState, useEffect } from "react";
-import { useAuth } from "@clerk/nextjs";
-import { createClerkSupabaseClient } from "@/lib/supabase";
-import { ItemService } from "@/lib/services/item-service";
+/**
+ * Карточкаи эълон (ItemCard).
+ * Ҳамаи инфо дар бораи чизҳои гумшуда ё ёфтшуда ҳамин ҷо нишон дода мешавад.
+ * Логикаи сав (save), шеар (share) ва редактирование (edit) ҳам дар ҳамин ҷост.
+ */
+
+import Image from "next/image"; // Барои нишон додани суратҳо
+import Link from "next/link"; // Барои пайвандҳо
+import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
+import { Item } from "@/lib/services/item-service"; // Типи маълумоти эълон
+import { Badge } from "@/components/ui/badge"; // Компоненти нишон
+import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { Card, CardContent, CardFooter } from "@/components/ui/card"; // Компоненти корт
+import { MapPin, Calendar, Eye, Bookmark, Pencil, Archive, Trash2, Share2, Loader2, AlertTriangle, ShieldAlert, Clock, AlertCircle } from "lucide-react"; // Иконкаҳо
+import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
+import { format } from "date-fns"; // Барои формат кардани вақт
+import { cn } from "@/lib/utils"; // Барои классҳои CSS
+import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
+import { useState, useEffect } from "react"; // Хукҳои React
+import { useAuth } from "@clerk/nextjs"; // Барои аутентификатсия
+import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
+import { ItemService } from "@/lib/services/item-service"; // Сервиси эълонҳо
 import {
   Dialog,
   DialogContent,
@@ -23,12 +29,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"; // Тирезаҳои огоҳӣ
 
+// Пропҳои компонент
 export function ItemCard({ item }: { item: Item }) {
+  // Хукҳо ва лоигкаи асосӣ
   const { t } = useLanguage();
   const router = useRouter();
   const { getToken, userId } = useAuth();
+  
+  // Состояниеҳо (States) барои идоракунии UI
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isSaved, setIsSaved] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -37,13 +47,16 @@ export function ItemCard({ item }: { item: Item }) {
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
   
+  // Санҷиши соҳиби эълон
   const isOwner = userId === item.user_id;
   const exactDate = format(new Date(item.created_at), "dd.MM.yyyy");
 
+  // Агар сурат набошад, плейсхолдер мемонем
   const images = item.images && item.images.length > 0 
     ? item.images 
     : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
+  // Эффект барои автоматикӣ иваз шудани суратҳо ва санҷиши статус
   useEffect(() => {
     if (userId) {
       checkSavedStatus();
@@ -58,13 +71,14 @@ export function ItemCard({ item }: { item: Item }) {
     return () => clearInterval(interval);
   }, [images.length, item.id, userId]);
 
+  // Функсия барои нишон додани модал агар эълон блок шуда бошад
   const handleCardClick = (e: React.MouseEvent) => {
     if (isOwner && item.moderation_status === 'rejected') {
-      // Show modal but don't prevent navigation
       setShowBlockedInfo(true);
     }
   };
 
+  // Санҷиши ин ки эълон дар рӯйхати "маъқулдоштаҳо" ҳаст ё не (База)
   const checkSavedStatus = async () => {
     if (!userId) return;
     
@@ -88,6 +102,7 @@ export function ItemCard({ item }: { item: Item }) {
     }
   };
 
+  // Логикаи сав/ансав (save/unsave)
   const toggleSave = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -98,14 +113,14 @@ export function ItemCard({ item }: { item: Item }) {
       return;
     }
 
-    // Optimistic Update
+    // Optimistic Update: Аввал UI-ро иваз мекунем, баъд запрос мефиристем
     const previousSavedState = isSaved;
     const newSavedState = !previousSavedState;
     
     setIsSaved(newSavedState);
     toast.success(newSavedState ? t('addedToSaved') : t('removedFromSaved'));
     
-    // Background task
+    // Запрос ба База (Background task)
     try {
       const token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("No token");
@@ -113,7 +128,6 @@ export function ItemCard({ item }: { item: Item }) {
       const supabase = createClerkSupabaseClient(token);
       const saved = await ItemService.toggleSaveItem(supabase, userId!, item.id);
       
-      // Sync with actual result just in case, though it should match newSavedState
       if (saved !== newSavedState) {
         setIsSaved(saved);
       }
@@ -121,12 +135,13 @@ export function ItemCard({ item }: { item: Item }) {
       window.dispatchEvent(new Event('saved-items-updated'));
     } catch (e) {
       console.error("Toggle save error:", e);
-      // Revert on error
+      // Агар хатогӣ шавад, ба ҳолати пешина бармегардонем
       setIsSaved(previousSavedState);
       toast.error(t('error'));
     }
   };
 
+  // Функсияи паҳн кардан (Share)
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -144,10 +159,8 @@ export function ItemCard({ item }: { item: Item }) {
           url: url,
         });
       } catch (error: any) {
-        // AbortError is normal if user cancels, others we just log
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
           console.error("Share error:", error);
-          // Fallback to clipboard if share fails
           navigator.clipboard.writeText(url);
           toast.success(t('success'));
         }
@@ -160,18 +173,21 @@ export function ItemCard({ item }: { item: Item }) {
     }
   };
 
+  // Гузаштан ба страницаи редактирование
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     router.push(`/items/${item.id}/edit`);
   };
 
+  // Кушодани тасдиқи архив (Safety Box)
   const handleArchiveClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setShowArchiveConfirm(true);
   };
 
+  // Функсияи тасдиқи архив (Запрос ба сервис)
   const confirmArchive = async () => {
     if (isActionLoading) return;
     
@@ -191,12 +207,14 @@ export function ItemCard({ item }: { item: Item }) {
     }
   };
 
+  // Кушодани тасдиқи нест кардан
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setShowDeleteConfirm(true);
   };
 
+  // Функсияи тасдиқи удаление (Запрос ба сервис)
   const confirmDelete = async () => {
     if (isActionLoading) return;
     
@@ -223,6 +241,7 @@ export function ItemCard({ item }: { item: Item }) {
             "overflow-hidden hover:shadow-md transition-shadow duration-300 group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
             item.moderation_status === 'rejected' && isOwner && "opacity-75 grayscale-[0.5]"
           )}>
+            {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
             <div className="relative aspect-square overflow-hidden rounded-t-xl">
               {images.map((img, index) => (
                 <Image
@@ -236,7 +255,8 @@ export function ItemCard({ item }: { item: Item }) {
                   )}
                 />
               ))}
-              {/* Status Badge (Top-Left) - Closer to edge for mobile */}
+              
+              {/* Статус: Гумшуда ё Ёфтшуда */}
               <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 h-6 flex items-center">
                 <Badge
                   className={cn(
@@ -250,7 +270,7 @@ export function ItemCard({ item }: { item: Item }) {
                 </Badge>
               </div>
 
-              {/* Mobile Save Button (Top-Right) */}
+              {/* Тугмаи Сав (Bookmark) барои мобилка */}
               <div className="absolute top-2 right-2 z-10 sm:hidden">
                 <button 
                   onClick={(e) => {
@@ -268,7 +288,7 @@ export function ItemCard({ item }: { item: Item }) {
                 </button>
               </div>
 
-              {/* Reward Badge - Only for Lost items - Closer to edge for mobile */}
+              {/* Мукофот (Reward) агар бошад */}
               {item.type === 'lost' && item.reward && (
                 <div className="absolute bottom-2 right-2 sm:top-3 sm:right-3 z-10 h-6 flex items-center justify-end">
                   <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[10px] px-2.5 py-1 shadow-lg border-none whitespace-nowrap">
@@ -276,7 +296,8 @@ export function ItemCard({ item }: { item: Item }) {
                   </Badge>
                 </div>
               )}
-              {/* Pending Overlay for Owner */}
+
+              {/* Оверлей барои модерацияи сурат */}
               {isOwner && item.moderation_status === 'pending' && (
                 <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-20">
                   <div className="bg-white/90 dark:bg-zinc-900/90 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-pulse">
@@ -288,7 +309,7 @@ export function ItemCard({ item }: { item: Item }) {
                 </div>
               )}
 
-              {/* Rejected Overlay for Owner */}
+              {/* Оверлей агар сурат рад шуда бошад */}
               {isOwner && item.moderation_status === 'rejected' && (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-4 z-20">
                   <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3">
@@ -300,6 +321,8 @@ export function ItemCard({ item }: { item: Item }) {
                 </div>
               )}
             </div>
+
+            {/* Контенти карточка: Сарлавҳа ва Тавсиф */}
             <CardContent className="p-3 pb-1">
               <div className="flex flex-col gap-0.5">
                 <div className="flex justify-between items-start">
@@ -317,6 +340,8 @@ export function ItemCard({ item }: { item: Item }) {
                 </p>
               </div>
             </CardContent>
+
+            {/* Футери карточка: Сана ва тугмаҳои амалиёт */}
             <CardFooter className="px-3 pb-3  flex flex-col mt-auto">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between text-zinc-400 text-[9px] font-bold uppercase tracking-wider border-t border-zinc-50 dark:border-zinc-900 pt-1.5 w-full gap-1.5">
                 <div className="flex items-center gap-1.5">
@@ -331,6 +356,7 @@ export function ItemCard({ item }: { item: Item }) {
                     </div>
                   ) : (
                     <>
+                      {/* Тугмаҳо барои соҳиби эълон */}
                       <div className="flex items-center gap-1">
                         {isOwner && (
                           <>
@@ -347,6 +373,7 @@ export function ItemCard({ item }: { item: Item }) {
                         )}
                       </div>
                       
+                      {/* Тугмаҳои Шеар ва Сав */}
                       <div className="flex items-center gap-1">
                         <button onClick={handleShare} className="p-1.5 rounded-md hover:text-blue-600 hover:bg-blue-50 transition-colors">
                           <Share2 className="w-3.5 h-3.5" />
@@ -371,6 +398,7 @@ export function ItemCard({ item }: { item: Item }) {
         </Link>
       </div>
 
+      {/* Модал барои нишон додани сабаби блок шудани сурат */}
       <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
         <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
           <DialogHeader className="space-y-3">
@@ -399,6 +427,7 @@ export function ItemCard({ item }: { item: Item }) {
         </DialogContent>
       </Dialog>
 
+      {/* Модал барои тасдиқи нест кардан */}
       <Dialog open={showDeleteConfirm} onOpenChange={(open) => !isActionLoading && setShowDeleteConfirm(open)}>
         <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <DialogHeader className="space-y-3">
@@ -441,6 +470,7 @@ export function ItemCard({ item }: { item: Item }) {
         </DialogContent>
       </Dialog>
 
+      {/* Модал барои тасдиқи ба архив мондан */}
       <Dialog open={showArchiveConfirm} onOpenChange={(open) => !isActionLoading && setShowArchiveConfirm(open)}>
         <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl" onClick={(e) => e.stopPropagation()}>
           <DialogHeader className="space-y-3">

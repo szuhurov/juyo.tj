@@ -1,3 +1,7 @@
+/**
+ * Компонентҳо барои тирезаҳои модалӣ (Dialog).
+ * Бо истифода аз Radix UI барои интерфейс сохта шудааст.
+ */
 "use client"
 
 import * as React from "react"

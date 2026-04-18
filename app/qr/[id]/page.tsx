@@ -1,33 +1,46 @@
+/**
+ * Саҳифаи ҷамъиятии профил (QR Scan View)
+ * 
+ * Ин файл барои намоиши маълумоти ҷамъиятии корбар ҳангоми сканер кардани QR-код хизмат мекунад.
+ * Он имкон медиҳад, ки шахси ашёро ёфта бо соҳиби он тамос гирад ва дигар эълонҳои ӯро бубинад.
+ * Роли он дар архитектура: Нуқтаи вуруди ҷамъиятӣ барои тамоси мустақим бо соҳиби ашё.
+ */
+
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { Profile, ProfileService } from "@/lib/services/profile-service";
-import { Item, ItemService } from "@/lib/services/item-service";
-import { ItemCard } from "@/components/item-card";
-import { createClient } from "@supabase/supabase-js";
-import { useLanguage } from "@/lib/language-context";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Phone, Mail, ShieldCheck, Heart, User, PackageSearch } from "lucide-react";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
+import { useEffect, useState, use } from "react"; // Хукҳои React
+import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои кор бо профил
+import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
+import { ItemCard } from "@/components/item-card"; // Компоненти корти эълон
+import { createClient } from "@supabase/supabase-js"; // Барои пайваст шудан ба Supabase
+import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Компоненти аватар
+import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { Skeleton } from "@/components/ui/skeleton"; // Барои ҳолати боргузорӣ
+import { Phone, Mail, ShieldCheck, Heart, User, PackageSearch } from "lucide-react"; // Иконкаҳо
+import { cn } from "@/lib/utils"; // Барои якҷоя кардани классҳои CSS
+import Link from "next/link"; // Барои гузариш байни саҳифаҳо
 
+// Танзимоти муштарии Supabase барои дастрасии ҷамъиятӣ
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function PublicQRPage({ params }: { params: Promise<{ id: string }> }) {
+  // Гирифтани ID-и корбар аз параметрҳои URL
   const { id } = use(params);
   const { t } = useLanguage();
+  
+  // Ҳолатҳо барои нигоҳдории маълумоти профил ва ашёҳо
   const [profile, setProfile] = useState<any>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Боргузории додаҳои ҷамъиятӣ ҳангоми кушодани саҳифа
   useEffect(() => {
     const loadData = async () => {
       try {
-        // 1. Load Public Profile
+        // 1. Боргузории профили ҷамъиятӣ аз базаи додаҳо
         const { data: profileData, error: profileError } = await publicSupabase
           .from('profiles')
           .select('first_name, last_name, avatar_url, phone')
@@ -37,7 +50,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
         if (profileError) throw profileError;
         setProfile(profileData);
 
-        // 2. Load Public Items
+        // 2. Боргузории эълонҳои ҷамъиятии ин корбар
         const data = await ItemService.getItems({ user_id: id });
         setItems(data);
       } catch (err) {
@@ -50,6 +63,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
   }, [id]);
 
   if (loading) {
+    /* Намоиши ҳолати боргузорӣ (Skeleton) */
     return (
       <div className="container mx-auto px-4 py-20 text-center space-y-8">
         <Skeleton className="w-32 h-32 rounded-3xl mx-auto" />
@@ -62,6 +76,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
   }
 
   if (!profile) {
+    /* Паём дар сурати наёфтани корбар */
     return (
       <div className="container mx-auto px-4 py-24 text-center">
         <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-6">
@@ -75,7 +90,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
-      {/* Top Profile Header */}
+      {/* Қисмати болоии Профил (Header) */}
       <div className="bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 pt-20 pb-12">
         <div className="container mx-auto px-4 text-center">
           <div className="relative inline-block mb-6">
@@ -100,6 +115,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
             </Badge>
           </div>
 
+          {/* Паёми тамос */}
           <div className="max-w-md mx-auto bg-white dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 mb-10 shadow-xl shadow-zinc-200/50 dark:shadow-none relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-zinc-900 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
               Message
@@ -109,6 +125,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
             </p>
           </div>
 
+          {/* Тугмаи тамос бо соҳиб */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             {profile.phone ? (
               <Button size="lg" className="w-full sm:w-auto h-16 px-10 rounded-2xl bg-zinc-900 text-white hover:bg-zinc-800 font-black uppercase tracking-widest gap-3 shadow-xl transition-all active:scale-95" asChild>
@@ -126,7 +143,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
         </div>
       </div>
 
-      {/* Owner's Items */}
+      {/* Эълонҳои соҳиби профил */}
       <div className="container mx-auto px-4 pt-12">
         <div className="flex items-center gap-3 mb-8">
           <PackageSearch className="w-6 h-6 text-zinc-400" />
@@ -152,7 +169,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
         )}
       </div>
 
-      {/* Footer Branding */}
+      {/* Брендинги Footer */}
       <div className="mt-20 text-center opacity-30">
         <p className="text-2xl font-black tracking-tighter text-zinc-900 dark:text-white">JUYO.TJ</p>
         <p className="text-[10px] font-bold uppercase tracking-widest mt-1">{t('securityNote')}</p>
@@ -161,6 +178,9 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
   );
 }
 
+/**
+ * Ҷузъи ёрирасон барои намоиши нишонҳо (Badges)
+ */
 function Badge({ children, className, variant = "default" }: any) {
   return (
     <span className={cn(

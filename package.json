@@ -8,6 +8,23 @@
     "start": "next start",
     "lint": "eslint"
   },
+  "package_info": {
+    "dependencies_explanation": {
+      "@clerk/nextjs": "Барои регистратсия ва логини корбарон",
+      "@supabase/supabase-js": "Барои пайваст шудан ба базаи маълумот",
+      "next": "Фреймворки асосии барнома",
+      "react": "Китобхона барои сохтани интерфейс",
+      "tailwindcss": "Барои дизайни сайт ва стилҳо",
+      "lucide-react": "Набори иконкаҳои зебо барои сайт",
+      "qrcode.react": "Барои генератсия кардани кодҳои QR",
+      "react-colorful": "Панели интихоби ранг (color picker)",
+      "html-to-image": "Барои захира кардани стикери QR ҳамчун расм",
+      "sonner": "Барои баровардани хабарҳои кӯтоҳ (toast notifications)",
+      "zod": "Барои тафтиши дурустии маълумотҳо дар формаҳо",
+      "@tanstack/react-query": "Барои тез кор кардани запросҳо ва кэш",
+      "date-fns": "Барои кор бо вақт ва сана"
+    }
+  },
   "dependencies": {
     "@clerk/nextjs": "^7.0.11",
     "@hookform/resolvers": "^5.2.2",

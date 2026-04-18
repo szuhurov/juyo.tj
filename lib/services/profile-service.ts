@@ -1,5 +1,11 @@
-import { createClerkSupabaseClient } from '../supabase';
+/**
+ * Хизматрасониҳо барои кор бо профили корбар (Profile Service).
+ * Ин файл тамоми амалиётҳоро бо ҷадвали 'profiles' дар Supabase иҷро мекунад.
+ */
 
+import { createClerkSupabaseClient } from '../supabase'; // Барои пайваст шудан ба база
+
+// Сохтори маълумоти профил
 export interface Profile {
   id: string;
   first_name: string;
@@ -7,6 +13,7 @@ export interface Profile {
   avatar_url: string;
   phone?: string;
   secondary_phone?: string;
+  secondary_phone_type?: string;
   accepted_terms?: boolean;
   accepted_at?: string;
   terms_version?: string;
@@ -14,6 +21,7 @@ export interface Profile {
 }
 
 export const ProfileService = {
+  // Гирифтани маълумоти профили корбари ҷорӣ
   async getProfile(supabaseClient: any, userId: string): Promise<Profile | null> {
     const { data, error } = await supabaseClient
       .from('profiles')
@@ -25,6 +33,7 @@ export const ProfileService = {
     return data;
   },
 
+  // Навсозӣ ё сохтани профили нав (Upsert)
   async updateProfile(supabaseClient: any, userId: string, updates: Partial<Profile>) {
     try {
       const { data, error } = await supabaseClient
@@ -48,6 +57,7 @@ export const ProfileService = {
     }
   },
 
+  // Гирифтани маълумоти оммавии корбар (барои дигарон намоён)
   async getPublicProfile(supabaseClient: any, userId: string) {
     const { data, error } = await supabaseClient
       .from('profiles')

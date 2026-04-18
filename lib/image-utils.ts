@@ -1,23 +1,20 @@
 /**
- * Compresses an image file using HTML5 Canvas.
- * 
- * @param file The original image file
- * @param maxWidth The maximum width for the compressed image (default 1200px)
- * @param quality The quality of compression between 0 and 1 (default 0.8)
- * @returns A promise that resolves to the compressed Blob/File
+ * Барои паст кардани вазни суратҳо пеш аз боргузорӣ.
+ * Ин кор барои тезтар кор кардани сайт лозим аст.
  */
 export async function compressImage(
   file: File,
   maxWidth: number = 1200,
   quality: number = 0.8
 ): Promise<File> {
-  // If file is smaller than 200KB, don't compress
+  // Агар ҳаҷми файл аз 200KB хурд бошад, онро фишурда намекунем
   if (file.size < 200 * 1024) {
     return file;
   }
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
+    // Хондани файл ва табдил додани он ба формати DataURL
     reader.readAsDataURL(file);
     
     reader.onload = (event) => {
@@ -25,11 +22,12 @@ export async function compressImage(
       img.src = event.target?.result as string;
       
       img.onload = () => {
+        // Сохтани элементи Canvas барои коркарди графикӣ дар браузер
         const canvas = document.createElement("canvas");
         let width = img.width;
         let height = img.height;
 
-        // Calculate new dimensions while maintaining aspect ratio
+        // Ҳисобкунии таносуби андозаҳо (Aspect Ratio) барои нигоҳ доштани сифат
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
@@ -40,18 +38,19 @@ export async function compressImage(
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          return resolve(file); // Fallback to original if context fails
+          return resolve(file); // Агар контексти Canvas дастрас набошад, файли аслиро мефиристем
         }
 
-        // Draw and compress
+        // Кашидани акс дар Canvas бо андозаҳои нав
         ctx.drawImage(img, 0, 0, width, height);
         
+        // Табдил додани мазмуни Canvas ба BloB (Binary Large Object) бо формати JPEG
         canvas.toBlob(
           (blob) => {
             if (!blob) {
               return resolve(file);
             }
-            // Create a new file from the blob
+            // Сохтани файли нави фишурдашуда аз объект Blob
             const compressedFile = new File([blob], file.name, {
               type: "image/jpeg",
               lastModified: Date.now(),

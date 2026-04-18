@@ -1,5 +1,10 @@
-import { supabase } from '../supabase';
+/**
+ * Сервис барои кор бо эълонҳо ва ашёҳо.
+ * Функсияҳо барои гирифтан, илова кардан ва таҳрири эълонҳо дар ин ҷо ҳастанд.
+ */
+import { supabase } from '../supabase'; // Барои пайваст шудан ба базаи маълумотҳо
 
+// Сохтори маълумотии Ашё (Interface)
 export interface Item {
   id: string;
   user_id: string;
@@ -24,6 +29,7 @@ export interface Item {
   };
 }
 
+// Категорияҳои асосии ашёҳо барои филтр ва ҷустуҷӯ
 export const CATEGORIES = [
   { id: '1', name: 'Electronics', icon: '📱' },
   { id: '2', name: 'Documents', icon: '📄' },
@@ -34,6 +40,11 @@ export const CATEGORIES = [
 ];
 
 export const ItemService = {
+  /**
+   * Гирифтани рӯйхати ашёҳо бо истифода аз филтрҳо.
+   * Ин функсия имкон медиҳад, ки корбар аз рӯи категория, намуд (гумшуда/ёфтшуда)
+   * ва матни ҷустуҷӯӣ эълонҳоро пайдо кунад.
+   */
   async getItems(filters: { search?: string; category?: string; type?: string | null; user_id?: string } = {}, supabaseClient?: any) {
     const { search, category, type, user_id } = filters;
     
@@ -44,22 +55,25 @@ export const ItemService = {
       .select('*, images:item_images(image_url)')
       .order('created_at', { ascending: false });
 
+    // Агар ID-и корбар бошад, танҳо эълонҳои ҳамон корбарро нишон медиҳем (барои Профил)
     if (user_id) {
-      // If user_id is provided, we ONLY filter by user_id to show all their items
       query = query.eq('user_id', user_id);
     } else {
-      // For public view, only show approved and unresolved items
+      // Барои лентаи умумӣ: танҳо эълонҳои тасдиқшуда ва ҳалнашударо нишон медиҳем
       query = query.or('is_resolved.eq.false,is_resolved.is.null').or('moderation_status.eq.approved,moderation_status.is.null');
     }
 
+    // Филтр аз рӯи категория
     if (category && category !== 'All') {
       query = query.eq('category', category);
     }
 
+    // Филтр аз рӯи намуд (lost/found)
     if (type) {
       query = query.eq('type', type);
     }
 
+    // Ҷустуҷӯи матнӣ дар ном, тавсиф ва рақами телефон
     if (search) {
       query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,phone_number.ilike.%${search}%,reward.ilike.%${search}%`);
     }
@@ -69,6 +83,9 @@ export const ItemService = {
     return data as Item[];
   },
 
+  /**
+   * Гирифтани маълумоти муфассали як ашё ва профили соҳиби он.
+   */
   async getItemDetails(id: string, supabaseClient?: any) {
     const client = supabaseClient || supabase;
     
@@ -80,6 +97,7 @@ export const ItemService = {
 
     if (error) throw error;
     
+    // Гирифтани маълумоти соҳиби эълон
     const { data: profile } = await client
       .from('profiles')
       .select('first_name, last_name, avatar_url, secondary_phone')
@@ -89,18 +107,24 @@ export const ItemService = {
     return { ...data, profiles: profile } as Item;
   },
 
+  /**
+   * Зиёд кардани шумораи биниши эълон (Views).
+   */
   async incrementView(id: string) {
     const { data, error } = await supabase.rpc('increment_item_views', { item_id: id });
     if (error) {
-      // Fallback if RPC doesn't exist yet
+      // Агар функсияи RPC дар база набошад, усули оддиро истифода мебарем
       const { data: item } = await supabase.from('items').select('views').eq('id', id).single();
       await supabase.from('items').update({ views: (item?.views || 0) + 1 }).eq('id', id);
     }
   },
 
+  /**
+   * Илова ё нест кардани ашё аз рӯйхати "Захирашудаҳо" (Bookmarks).
+   */
   async toggleSaveItem(supabaseClient: any, userId: string, itemId: string) {
     try {
-      // Check if already saved
+      // Санҷиши мавҷудияти ашё дар рӯйхати захирашудаҳо
       const { data: existing, error: checkError } = await supabaseClient
         .from('saved_items')
         .select('item_id')
@@ -111,7 +135,7 @@ export const ItemService = {
       if (checkError) throw checkError;
 
       if (existing) {
-        // Remove if exists
+        // Агар аллакай захира шуда бошад, онро нест мекунем
         const { error: deleteError } = await supabaseClient
           .from('saved_items')
           .delete()
@@ -119,27 +143,25 @@ export const ItemService = {
           .eq('item_id', itemId);
         
         if (deleteError) throw deleteError;
-        return false; // Successfully unsaved
+        return false; 
       } else {
-        // Add if not exists
+        // Агар захира нашуда бошад, илова мекунем
         const { error: insertError } = await supabaseClient
           .from('saved_items')
           .insert([{ user_id: userId, item_id: itemId }]);
         
         if (insertError) throw insertError;
-        return true; // Successfully saved
+        return true;
       }
     } catch (error: any) {
-      console.error("Detailed error in toggleSaveItem:", {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
+      console.error("Хатогӣ дар toggleSaveItem:", error.message);
       throw error;
     }
   },
 
+  /**
+   * Гирифтани рӯйхати ашёҳои захиракардаи корбар.
+   */
   async getSavedItems(supabaseClient: any, userId: string) {
     const { data, error } = await supabaseClient
       .from('saved_items')
@@ -151,6 +173,9 @@ export const ItemService = {
     return data.map((d: any) => d.items) as Item[];
   },
 
+  /**
+   * Гирифтани ашёҳо аз "Сандуқчаи бехатарӣ" (Safety Box).
+   */
   async getSafetyBoxItems(supabaseClient: any, userId: string) {
     const { data, error } = await supabaseClient
       .from('safety_box')
@@ -162,56 +187,38 @@ export const ItemService = {
     return data;
   },
 
+  /**
+   * Нест кардани эълон ва аксҳои он аз база ва аз Storage.
+   */
   async deleteItem(supabaseClient: any, id: string) {
     try {
-      // 1. Get image records before deleting the item
+      // 1. Гирифтани рӯйхати аксҳо пеш аз нест кардани эълон
       const { data: images, error: imagesError } = await supabaseClient
         .from('item_images')
         .select('image_url')
         .eq('item_id', id);
 
-      if (imagesError) {
-        console.error("Error fetching images for deletion:", imagesError);
-      }
+      if (imagesError) console.error("Хатогӣ ҳангоми гирифтани аксҳо:", imagesError);
 
-      // 2. Delete from storage if images exist
+      // 2. Тоза кардани файлҳо аз Storage (Object Storage)
       if (images && images.length > 0) {
         const filePaths = images.map((img: any) => {
-          // Supabase public URL format: .../storage/v1/object/public/BUCKET_NAME/FILE_PATH
-          // Example: https://xyz.supabase.co/storage/v1/object/public/items/123-abc.jpg?t=...
-          
           try {
-            // Try to use URL object for safer parsing
             const url = new URL(img.image_url);
             const pathParts = url.pathname.split('/public/items/');
-            if (pathParts.length > 1) {
-              return pathParts[1]; // This will be the filename or subpath
-            }
+            return pathParts.length > 1 ? pathParts[1] : null;
           } catch (e) {
-            // Fallback to simple split if URL parsing fails
             const parts = img.image_url.split('/public/items/');
-            if (parts.length > 1) {
-              return parts[1].split('?')[0]; // Remove query params if any
-            }
+            return parts.length > 1 ? parts[1].split('?')[0] : null;
           }
-          return null;
         }).filter(Boolean);
 
         if (filePaths.length > 0) {
-          console.log("Deleting files from storage:", filePaths);
-          const { error: storageError } = await supabaseClient.storage
-            .from('items')
-            .remove(filePaths);
-          
-          if (storageError) {
-            console.error("Storage deletion error:", storageError);
-          } else {
-            console.log("Successfully deleted files from storage");
-          }
+          await supabaseClient.storage.from('items').remove(filePaths);
         }
       }
 
-      // 3. Delete the item record (item_images will be deleted by CASCADE)
+      // 3. Нест кардани худи эълон (item_images ба таври CASCADE нест мешаванд)
       const { error: deleteError } = await supabaseClient
         .from('items')
         .delete()
@@ -219,13 +226,15 @@ export const ItemService = {
 
       if (deleteError) throw deleteError;
     } catch (err) {
-      console.error("Error in deleteItem:", err);
+      console.error("Хатогӣ дар deleteItem:", err);
       throw err;
     }
   },
 
+  /**
+   * Интиқоли эълон аз лентаи умумӣ ба "Сандуқчаи бехатарӣ" (Архив).
+   */
   async archiveToSafetyBox(supabaseClient: any, item: Item, userId: string) {
-    // 1. Insert into safety_box
     const { error: insertError } = await supabaseClient.from('safety_box').insert([{
       user_id: userId,
       item_name: item.title,
@@ -236,19 +245,22 @@ export const ItemService = {
       phone_number: item.phone_number,
       images: item.images?.map(img => img.image_url) || [],
       views: item.views || 0,
-      date: item.date, // Preserve the item's original date
+      date: item.date,
       created_at: item.created_at
     }]);
 
     if (insertError) throw insertError;
 
-    // 2. Delete from items
+    // Нест кардан аз лентаи умумӣ
     const { error: deleteError } = await supabaseClient.from('items').delete().eq('id', item.id);
     if (deleteError) throw deleteError;
   },
 
+  /**
+   * Нашри эълон аз "Сандуқчаи бехатарӣ" ба лентаи умумӣ.
+   */
   async publishFromSafetyBox(supabaseClient: any, safetyItem: any, userId: string) {
-    // 1. Create item in feed
+    // 1. Сохтани эълони нав дар ҷадвали 'items'
     const { data: item, error: itemError } = await supabaseClient
       .from('items')
       .insert([{
@@ -257,12 +269,12 @@ export const ItemService = {
         description: safetyItem.description,
         category: safetyItem.category,
         type: safetyItem.type || 'lost',
-        date: new Date().toISOString().split('T')[0], // Санаи имрӯза
+        date: new Date().toISOString().split('T')[0],
         reward: safetyItem.reward,
         phone_number: safetyItem.phone_number,
         is_resolved: false,
-        views: 0, // Аз 0 оғоз мешавад
-        created_at: new Date().toISOString(), // Вақти ҳозира
+        views: 0,
+        created_at: new Date().toISOString(),
         moderation_status: 'pending'
       }])
       .select()
@@ -270,7 +282,7 @@ export const ItemService = {
 
     if (itemError) throw itemError;
 
-    // 2. Add images
+    // 2. Илова кардани аксҳо ба ҷадвали 'item_images'
     if (safetyItem.images?.length > 0) {
       const imageRecords = safetyItem.images.map((url: string) => ({
         item_id: item.id,
@@ -279,7 +291,7 @@ export const ItemService = {
       await supabaseClient.from('item_images').insert(imageRecords);
     }
 
-    // 3. Remove from safety box
+    // 3. Нест кардан аз "Сандуқчаи бехатарӣ"
     const { error: deleteError } = await supabaseClient.from('safety_box').delete().eq('id', safetyItem.id);
     if (deleteError) throw deleteError;
 

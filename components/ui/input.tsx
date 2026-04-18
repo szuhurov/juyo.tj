@@ -1,3 +1,7 @@
+/**
+ * Компоненти воридкунии матн (Input).
+ * Майдони оддӣ барои гирифтани маълумот аз корбар.
+ */
 import * as React from "react"
 
 import { cn } from "@/lib/utils"

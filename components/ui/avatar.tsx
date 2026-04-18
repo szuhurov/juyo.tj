@@ -1,9 +1,9 @@
 "use client"
 
-import * as React from "react"
-import * as AvatarPrimitive from "@radix-ui/react-avatar"
+import * as React from "react" // Аз React мегирем
+import * as AvatarPrimitive from "@radix-ui/react-avatar" // Барои аватари зӯр
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils" // Ин барои класси CSS
 
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,

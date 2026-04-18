@@ -1,6 +1,12 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { Item, ItemService } from "@/lib/services/item-service";
+/**
+ * Хукҳои фармоишӣ барои кор бо эълонҳо (Items Hooks).
+ * Ин файл аз React Query барои гирифтани маълумот, кэш ва навсозии автоматии рӯйхати ашёҳо истифода мебарад.
+ */
 
+import { useQuery, keepPreviousData } from "@tanstack/react-query"; // Барои идоракунии кэш ва запросҳо
+import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
+
+// Калидҳо барои React Query, то ки кэш дуруст идора карда шавад
 export const ITEM_KEYS = {
   all: ["items"] as const,
   lists: () => [...ITEM_KEYS.all, "list"] as const,
@@ -12,15 +18,17 @@ export const ITEM_KEYS = {
   safetyItems: (userId: string, token?: string | null) => [...ITEM_KEYS.all, "safety", userId, token].filter(Boolean),
 };
 
+// Хук барои гирифтани рӯйхати умумии ашёҳо бо филтрҳо
 export function useItems(filters?: any) {
   return useQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
     queryFn: () => ItemService.getItems(filters),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 дақиқа нигоҳ доштани маълумот дар кэш
     placeholderData: keepPreviousData,
   });
 }
 
+// Хук барои гирифтани маълумоти муфассали як ашё
 export function useItemDetails(id: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.detail(id, token),
@@ -37,6 +45,7 @@ export function useItemDetails(id: string, token?: string | null) {
   });
 }
 
+// Хук барои гирифтани эълонҳои худи корбар
 export function useUserItems(userId?: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.userItems(userId || "", token),
@@ -52,11 +61,12 @@ export function useUserItems(userId?: string, token?: string | null) {
       return ItemService.getItems({ user_id: userId }, supabaseClient);
     },
     enabled: !!userId,
-    staleTime: 0, // Always fetch fresh data for user's own items
+    staleTime: 0, // Ҳамеша маълумоти тоза лозим аст
     refetchOnWindowFocus: true,
   });
 }
 
+// Хук барои гирифтани ашёҳои захирашуда (Saved)
 export function useSavedItems(userId?: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.savedItems(userId || "", token),
@@ -71,6 +81,7 @@ export function useSavedItems(userId?: string, token?: string | null) {
   });
 }
 
+// Хук барои гирифтани ашёҳо аз сандуқчаи амниятӣ (Safety Box)
 export function useSafetyItems(userId?: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.safetyItems(userId || "", token),

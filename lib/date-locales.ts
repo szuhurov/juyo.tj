@@ -1,4 +1,8 @@
-import { ru, enUS } from "date-fns/locale";
+/**
+ * Созгузории забонҳо барои китобхонаи date-fns.
+ * Барои дуруст нишон додани сана ва вақт бо забонҳои гуногун.
+ */
+import { ru, enUS } from "date-fns/locale"; // Барои забонҳои русиву англисӣ
 
 // Омода кардани локали оддии тоҷикӣ барои date-fns
 const tgLocale: any = {

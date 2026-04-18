@@ -1,42 +1,50 @@
+/**
+ * Ин саҳифа барои илова кардани эълони нав ҳаст (Add Item Page).
+ * Дар ин ҷо корбар метавонад дар бораи чизи гумкардааш ё ёфтааш хабар диҳад.
+ * Мо суратҳоро пеш аз бор кардан фишурда (сжать) мекунем, то ки база пур нашавад.
+ */
+
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth, useClerk } from "@clerk/nextjs";
-import { useLanguage } from "@/lib/language-context";
-import { ItemService, CATEGORIES } from "@/lib/services/item-service";
-import { ProfileService } from "@/lib/services/profile-service";
-import { createClerkSupabaseClient } from "@/lib/supabase";
-import { compressImage } from "@/lib/image-utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useState, useEffect, Suspense } from "react"; // Барои идоракунии ҳолатҳо ва боргирии муваққатӣ
+import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар пас аз сабт
+import { useAuth, useClerk } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда
+import { useLanguage } from "@/lib/language-context"; // Барои дастрасӣ ба тарҷумаҳо ва забон
+import { ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо базаи эълонҳо ва рӯйхати категорияҳо
+import { ProfileService } from "@/lib/services/profile-service"; // Барои гирифтани маълумоти профили корбар
+import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
+import { compressImage } from "@/lib/image-utils"; // Барои хурд кардани ҳаҷми суратҳо пеш аз бор кардан
+import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { Input } from "@/components/ui/input"; // Майдони воридкунии маълумоти кӯтоҳ
+import { Textarea } from "@/components/ui/textarea"; // Майдони воридкунии матни дароз
+import { Label } from "@/components/ui/label"; // Сарлавҳаҳо барои майдонҳои форма
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Барои интихоби як вариант аз чандто
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Loader2, Plus, X, Upload } from "lucide-react";
-import Image from "next/image";
+} from "@/components/ui/select"; // Рӯйхати интихобшаванда (выпадающий список)
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Барои сохтани блоки асосии форма
+import { toast } from "sonner"; // Барои нишон додани паёмҳои муваққатӣ
+import { Loader2, Plus, X, Upload } from "lucide-react"; // Иконкаҳои лозимӣ барои интерфейс
+import Image from "next/image"; // Барои нишон додани пешнамоиши суратҳо
 
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳои кӯтоҳ
 
 function AddItemForm() {
+  // Хукҳо барои забон, роутинг ва аутентификатсияи корбар
   const { t } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
   
+  // Стейтҳо барои маълумоти форма ва раванди боргузорӣ (Loading)
   const [loading, setLoading] = useState(false);
   const [type, setType] = useState<'lost' | 'found'>('lost');
   const [category, setCategory] = useState("");
@@ -44,6 +52,7 @@ function AddItemForm() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [phone, setPhone] = useState("");
 
+  // Вақте ки саҳифа бор мешавад, рақами телефони корбарро аз профилаш мегирем
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -62,6 +71,9 @@ function AddItemForm() {
     fetchProfile();
   }, [userId, getToken]);
 
+  /**
+   * Функсия барои коркарди суратҳои интихобшуда
+   */
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 5) {
@@ -74,21 +86,29 @@ function AddItemForm() {
     setPreviews(prev => [...prev, ...newPreviews]);
   };
 
+  /**
+   * Функсия барои нест кардани сурат аз пешнамоиш (Preview)
+   */
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  /**
+   * Функсияи асосӣ барои сабти эълон (Submit)
+   */
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId) return;
 
+    // Маълумотро аз форма мегирем
     const formData = new FormData(e.currentTarget);
     const title = (formData.get('title') as string).trim();
     const description = (formData.get('description') as string).trim();
     const phone = (formData.get('phone') as string).trim();
     const reward = (formData.get('reward') as string || "").trim();
 
+    // Проверкаи майдонҳои ҳатмӣ
     if (!title || !description || !category || !phone) {
       toast.error(t('fillAllFields'));
       return;
@@ -111,9 +131,9 @@ function AddItemForm() {
       
       let supabase = createClerkSupabaseClient(token);
 
+      // Боргузории суратҳо ба Облако (Storage) бо фишурдасозӣ
       const imageUrls = [];
       for (const file of images) {
-        // Compress image before upload
         const compressedFile = await compressImage(file);
         
         const ext = compressedFile.name.split('.').pop();
@@ -133,6 +153,7 @@ function AddItemForm() {
       if (!token) throw new Error("Authentication token expired or missing");
       supabase = createClerkSupabaseClient(token);
 
+      // Тайёр кардани объекти эълони нав
       const itemData = {
         user_id: userId,
         title,
@@ -146,6 +167,7 @@ function AddItemForm() {
         moderation_status: 'pending'
       };
 
+      // Сабти эълон дар база (Insert query)
       const { data: item, error: itemError } = await supabase
         .from('items')
         .insert([itemData])
@@ -154,6 +176,7 @@ function AddItemForm() {
 
       if (itemError) throw itemError;
 
+      // Сабти истиноди суратҳо дар таблицаи алоҳида
       if (imageUrls.length > 0) {
         const imageRecords = imageUrls.map(url => ({
           item_id: item.id,
@@ -176,11 +199,13 @@ function AddItemForm() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <Card className="rounded-2xl overflow-hidden border shadow-xl">
+        {/* Сарлавҳаи форма */}
         <CardHeader className="bg-zinc-900 text-white p-6">
           <CardTitle className="text-2xl font-black uppercase tracking-tight">{t('addItemTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={onSubmit} className="space-y-6">
+            {/* Интихоби навъи эълон (Гумшуда ё Ёфтшуда) */}
             <div className="space-y-3">
               <Label className="text-sm font-black uppercase tracking-wider text-zinc-400">{t('what_happened')}</Label>
               <RadioGroup 
@@ -211,6 +236,7 @@ function AddItemForm() {
               </RadioGroup>
             </div>
 
+            {/* Майдонҳои Сарлавҳа ва Категория */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="title" className="font-bold text-xs uppercase text-zinc-500">{t('titleLabel')}</Label>
@@ -233,6 +259,7 @@ function AddItemForm() {
               </div>
             </div>
 
+            {/* Тавсифи ашё */}
             <div className="space-y-2">
               <Label htmlFor="description" className="font-bold text-xs uppercase text-zinc-500">{t('description')}</Label>
               <Textarea 
@@ -244,6 +271,7 @@ function AddItemForm() {
               />
             </div>
 
+            {/* Телефон ва Мукофотпулӣ */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="phone" className="font-bold text-xs uppercase text-zinc-500">{t('phoneLabel')}</Label>
@@ -277,6 +305,7 @@ function AddItemForm() {
               )}
             </div>
 
+            {/* Боргузории суратҳо (Photo Upload) */}
             <div className="space-y-4">
               <Label className="font-bold text-xs uppercase text-zinc-500">{t('addImages')} ({images.length}/5)</Label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
@@ -309,6 +338,7 @@ function AddItemForm() {
               </div>
             </div>
 
+            {/* Тугмаи нашр кардан (Publish) */}
             <Button type="submit" size="lg" className="w-full h-12 rounded-lg text-base font-black bg-zinc-900 hover:bg-zinc-800 mt-4 uppercase tracking-wider text-white" disabled={loading}>
               {loading ? (
                 <>
@@ -326,6 +356,9 @@ function AddItemForm() {
   );
 }
 
+/**
+ * Саҳифаи асосии AddItem бо Suspense
+ */
 export default function AddItemPage() {
   return (
     <TooltipProvider>

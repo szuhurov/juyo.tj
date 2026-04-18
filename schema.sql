@@ -1,3 +1,6 @@
+-- Сохтори таблитсаҳои базаи маълумот (PostgreSQL).
+-- Ҳамаи майдонҳо ва робитаҳои байни таблитсаҳо дар ин ҷоянд.
+
 -- СБРОС: Удаляем старое (если нужно начать с чистого листа)
 -- DROP TABLE IF EXISTS public.item_images CASCADE;
 -- DROP TABLE IF EXISTS public.saved_items CASCADE;

@@ -1,21 +1,27 @@
+/**
+ * Ин саҳифаи Профили корбар ҳаст. 
+ * Дар ин ҷо корбар метавонад эълонҳои худро идора кунад, маълумоти шахсиашро иваз кунад,
+ * QR-коди худро созад ва ашёҳояшро дар "Қуттии бехатарӣ" (Safety Box) нигоҳ дорад.
+ */
+
 "use client";
 
-import { useEffect, useState, useRef, Suspense } from "react";
-import { useUser, SignOutButton, useAuth } from "@clerk/nextjs";
-import { useLanguage } from "@/lib/language-context";
-import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service";
-import { Profile, ProfileService } from "@/lib/services/profile-service";
-import { ItemCard } from "@/components/item-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { createClerkSupabaseClient } from "@/lib/supabase";
+import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
+import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
+import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
+import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо хизматрасониҳои эълонҳо ва категорияҳо
+import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
+import { ItemCard } from "@/components/item-card"; // Барои нишон додани карточкаҳои эълонҳо
+import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Барои сохтани блокҳои иттилоотӣ
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Барои нишон додани сурати корбар
+import { Skeleton } from "@/components/ui/skeleton"; // Барои ҳолати боргирии муваққатӣ
+import { Input } from "@/components/ui/input"; // Майдони воридкунии матн
+import { Label } from "@/components/ui/label"; // Сарлавҳаҳо барои майдонҳои форма
+import { Textarea } from "@/components/ui/textarea"; // Майдони воридкунии матни калон
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Рӯйхати интихобшаванда
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Гурӯҳи интихобкунандаҳо
+import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
 import { 
   User, 
   Bookmark, 
@@ -42,18 +48,18 @@ import {
   Palette,
   Type,
   ChevronLeft
-} from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+} from "lucide-react"; // Иконкаҳои гуногун барои интерфейс
+import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
+import Image from "next/image"; // Барои нишон додани суратҳои оптимизатсияшуда
+import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
+import { cn } from "@/lib/utils"; // Барои пайваст кардани классҳои CSS
+import { toast } from "sonner"; // Барои нишон додани огоҳиномаҳо
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳои кӯтоҳ
 import {
   Dialog,
   DialogContent,
@@ -61,42 +67,45 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"; // Барои тирезаҳои тасдиқкунанда (модалкаҳо)
 
-// QR Integration
-import { QRCard } from "@/components/qr-editor/qr-card";
-import { toPng } from "html-to-image";
-import { HexColorPicker } from "react-colorful";
-import { compressImage } from "@/lib/image-utils";
+// Интеграцияи QR
+import { QRCard } from "@/components/qr-editor/qr-card"; // Компонент барои сохтани QR-код
+import { toPng } from "html-to-image"; // Барои табдил додани HTML ба сурати PNG
+import { HexColorPicker } from "react-colorful"; // Барои интихоби ранги QR-код
+import { compressImage } from "@/lib/image-utils"; // Барои фишурдани суратҳо
 
-import { useUserItems, useSavedItems, useSafetyItems, ITEM_KEYS } from "@/lib/hooks/use-items";
-import { useQueryClient } from "@tanstack/react-query";
+import { useUserItems, useSavedItems, useSafetyItems, ITEM_KEYS } from "@/lib/hooks/use-items"; // Хукҳои махсус барои гирифтани ашёҳо аз база
+import { useQueryClient } from "@tanstack/react-query"; // Барои идоракунии кэши маълумотҳо
 
 function ProfileContent() {
+  // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
+  
+  // Стейтҳо барои идоракунии табҳо (вкладки) ва танзимоти QR
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "posts");
   const qrRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [activePicker, setActivePicker] = useState<"qr" | "bg" | null>(null);
   
-  // Profile state
+  // Стейтҳо барои нигоҳ доштани маълумоти профил ва нишон додани модалҳо
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   
-  // States for QR Customization
+  // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва текст)
   const [qrSettings, setQrSettings] = useState({
     qrColor: "#26ba90",
     bgColor: "#eefbf5",
     text: t('qrScanMe')
   });
 
-  // Use TanStack Query for caching
+  // Гирифтани токени базаи додаҳо барои ин корбар
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
     const fetchToken = async () => {
@@ -106,14 +115,14 @@ function ProfileContent() {
       }
     };
     fetchToken();
-  }, [userId]); // Removed getToken from dependencies
+  }, [userId]);
 
+  // Гирифтани рӯйхати эълонҳо, ашёҳои захирашуда ва ашёҳои "Қуттии бехатарӣ"
   const { data: myItems = [], isLoading: postsLoading } = useUserItems(userId || undefined, token);
-
   const { data: savedItems = [], isLoading: savedLoading } = useSavedItems(userId || undefined, token);
   const { data: safetyItems = [], isLoading: safetyLoading } = useSafetyItems(userId || undefined, token);
 
-  // States for Safety Box
+  // Стейтҳо барои идоракунии ашёҳо дар "Қуттии бехатарӣ" (Safety Box)
   const [safetySubmitting, setSafetySubmitting] = useState(false);
   const [safetyType, setSafetyType] = useState<'lost' | 'found'>('lost');
   const [safetyCategory, setSafetyCategory] = useState("");
@@ -125,7 +134,7 @@ function ProfileContent() {
   const [editingSafetyItem, setEditingSafetyItem] = useState<any>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Load Profile from Supabase
+  // Бор кардани профил аз база ҳангоми кушода шудани саҳифа
   useEffect(() => {
     const loadProfile = async () => {
       if (!userId) return;
@@ -136,7 +145,7 @@ function ProfileContent() {
         const data = await ProfileService.getProfile(supabase, userId);
         setProfile(data);
         
-        // Mandatory phone check
+        // Агар рақами телефон набошад, тирезаи махсусро нишон медиҳем
         if (data && (!data.phone || !data.secondary_phone)) {
           setShowPhoneModal(true);
         }
@@ -147,9 +156,9 @@ function ProfileContent() {
       }
     };
     loadProfile();
-  }, [userId]); // Removed getToken from dependencies
+  }, [userId]);
 
-  // Sync tab with URL
+  // Синхронизатсия кардани таби фаъол бо URL
   useEffect(() => {
     const tab = searchParams.get("tab");
     if (tab && ["posts", "info", "saved", "safety", "qr"].includes(tab)) {
@@ -157,6 +166,9 @@ function ProfileContent() {
     }
   }, [searchParams]);
 
+  /**
+   * Функсия барои иваз кардани таб (вкладка) ва нав кардани URL
+   */
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
     const params = new URLSearchParams(searchParams);
@@ -164,7 +176,7 @@ function ProfileContent() {
     router.push(`/profile?${params.toString()}`, { scroll: false });
   };
 
-  // Confirmation Dialog State
+  // Стейт барои тирезаи тасдиқи амалҳо (Confirm Dialog)
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     title: string;
@@ -180,6 +192,7 @@ function ProfileContent() {
     variant: "default"
   });
 
+  // Элементҳои менюи паҳлӯӣ (Sidebar Menu)
   const menuItems = [
     {
       id: "posts",
@@ -218,7 +231,7 @@ function ProfileContent() {
     }
   ];
 
-  // Listen for global item updates and invalidate queries
+  // Вақте ки маълумот дар ягон ҷо нав мешавад, ин ҷо ҳам кэшро тоза мекунем
   useEffect(() => {
     const handleUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
@@ -231,6 +244,9 @@ function ProfileContent() {
     };
   }, [queryClient]);
 
+  /**
+   * Функсия барои коркарди суратҳо дар Қуттии бехатарӣ
+   */
   const handleSafetyImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (safetyImages.length + files.length > 5) {
@@ -242,11 +258,17 @@ function ProfileContent() {
     setSafetyPreviews(prev => [...prev, ...newPreviews]);
   };
 
+  /**
+   * Функсия барои нест кардани сурат аз пешнамоиши Қуттии бехатарӣ
+   */
   const removeSafetyImage = (index: number) => {
     setSafetyImages(prev => prev.filter((_, i) => i !== index));
     setSafetyPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  /**
+   * Функсия барои бақайдгирии ашёи нав дар Қуттии бехатарӣ
+   */
   const handleRegisterSafetyItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -267,7 +289,6 @@ function ProfileContent() {
         const uploadToken = await getToken({ template: 'supabase' });
         const uploadSupabase = createClerkSupabaseClient(uploadToken!);
         
-        // Compress image
         const compressedFile = await compressImage(file);
         
         const ext = compressedFile.name.split('.').pop();
@@ -309,13 +330,15 @@ function ProfileContent() {
     } catch (error: any) {
       console.error("Detailed Safety Box Error:", error);
       const errorMsg = error.message || "Unknown error";
-      const errorCode = error.code || "No code";
-      toast.error(`Хатогӣ: ${errorMsg} (Код: ${errorCode})`);
+      toast.error(`Хатогӣ: ${errorMsg}`);
     } finally {
       setSafetySubmitting(false);
     }
   };
 
+  /**
+   * Функсия барои нав кардани маълумоти ашё дар Қуттии бехатарӣ
+   */
   const handleUpdateSafetyItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingSafetyItem) return;
@@ -333,7 +356,6 @@ function ProfileContent() {
       
       const supabase = createClerkSupabaseClient(supabaseToken);
 
-      // 1. Identify which images were removed to clean up storage
       const originalImages = safetyItems.find((it: any) => it.id === editingSafetyItem.id)?.images || [];
       const currentImagesInState = editingSafetyItem.images || [];
       const removedUrls = originalImages.filter((url: string) => !currentImagesInState.includes(url));
@@ -355,14 +377,11 @@ function ProfileContent() {
         }
       }
 
-      // 2. Upload new images
       let imageUrls = [...currentImagesInState];
       
       if (safetyImages.length > 0) {
         for (const file of safetyImages) {
-          // Compress image
           const compressedFile = await compressImage(file);
-          
           const ext = compressedFile.name.split('.').pop();
           const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
           const { error: uploadError } = await supabase.storage.from('items').upload(fileName, compressedFile);
@@ -387,10 +406,7 @@ function ProfileContent() {
         .select()
         .single();
 
-      if (error) {
-        console.error("Supabase Update Error:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "", token) });
       
@@ -400,13 +416,15 @@ function ProfileContent() {
       setSafetyPreviews([]);
     } catch (error: any) {
       console.error("Detailed Safety Box Error:", error);
-      const errorMsg = error.message || error.details || "Unknown error";
-      toast.error(`Хатогӣ: ${errorMsg}`);
+      toast.error(`Хатогӣ: ${error.message}`);
     } finally {
       setSafetySubmitting(false);
     }
   };
 
+  /**
+   * Функсия барои нашри эълон аз Қуттии бехатарӣ ба рӯйхати умумӣ (Publish)
+   */
   const handlePublishSafetyItem = async (safetyItem: any) => {
     setConfirmDialog({
       open: true,
@@ -448,6 +466,9 @@ function ProfileContent() {
     });
   };
 
+  /**
+   * Функсия барои нест кардани ашё аз Қуттии бехатарӣ
+   */
   const deleteSafetyItem = async (id: string) => {
     setConfirmDialog({
       open: true,
@@ -461,14 +482,12 @@ function ProfileContent() {
           const token = await getToken({ template: 'supabase' });
           const supabase = createClerkSupabaseClient(token!);
           
-          // 1. Get the item first to get its images
           const { data: item } = await supabase
             .from('safety_box')
             .select('images')
             .eq('id', id)
             .single();
 
-          // 2. Delete images from storage if they exist
           if (item?.images && item.images.length > 0) {
             const filePaths = item.images.map((urlStr: string) => {
               try {
@@ -486,7 +505,6 @@ function ProfileContent() {
             }
           }
 
-          // 3. Delete from database
           const { error } = await supabase.from('safety_box').delete().eq('id', id);
           if (error) throw error;
           
@@ -503,6 +521,9 @@ function ProfileContent() {
     });
   };
 
+  /**
+   * Омода кардани ашё барои таҳрир кардан
+   */
   const startEditing = (item: any) => {
     setEditingSafetyItem(item);
     setSafetyType(item.type || 'lost');
@@ -511,6 +532,9 @@ function ProfileContent() {
     setSafetyImages([]);
   };
 
+  /**
+   * Функсия барои боргирии QR-код ҳамчун сурат (Download)
+   */
   const handleDownloadQR = async () => {
     if (!qrRef.current) return;
     
@@ -533,52 +557,15 @@ function ProfileContent() {
     }
   };
 
-  const handleSavePhoneModal = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const phone = (formData.get('phone') as string).trim();
-    const secondary_phone = (formData.get('secondary_phone') as string).trim();
-    
-    if (phone.length < 9 || secondary_phone.length < 9) {
-      toast.error(t('phoneMinLength'));
-      return;
-    }
-
-    if (phone === secondary_phone) {
-      toast.error(t('phonesMustBeDifferent'));
-      return;
-    }
-
-    setSafetySubmitting(true);
-    try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-      
-      const updated = await ProfileService.updateProfile(supabase, userId!, {
-        phone,
-        secondary_phone,
-        first_name: user?.firstName || "",
-        last_name: user?.lastName || "",
-        avatar_url: user?.imageUrl || ""
-      });
-      
-      setProfile(updated);
-      setShowPhoneModal(false);
-      toast.success(t('phoneSaved'));
-    } catch (err) {
-      toast.error(t('error'));
-    } finally {
-      setSafetySubmitting(false);
-    }
-  };
-
   if (!userLoaded) return null;
 
+  // Нишон додани мӯҳтаво вобаста ба таби интихобшуда
   const renderContent = () => {
     switch (activeTab) {
       case "posts":
         return (
           <div className="space-y-6">
+            {/* Сарлавҳаи таби Эълонҳо */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black uppercase tracking-tight">{t('myPosts')}</h3>
@@ -595,6 +582,7 @@ function ProfileContent() {
               </div>
             </div>
 
+            {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-500">
               {postsLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-1">
@@ -619,6 +607,7 @@ function ProfileContent() {
       case "qr":
         return (
           <div className="space-y-8 pb-20">
+            {/* Сарлавҳаи таби QR-код */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black uppercase tracking-tight">{t('qrMyCode')}</h3>
@@ -633,17 +622,10 @@ function ProfileContent() {
               </div>
             </div>
 
+            {/* Танзимоти намуди зоҳирии QR */}
             <div className="animate-in fade-in duration-500 space-y-8">
-              <div className="px-2">
-                <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 flex gap-4 items-center w-full mb-8">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
-                  <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400 font-bold uppercase tracking-tight leading-normal">
-                    {t('qrStickerText')}
-                  </p>
-                </div>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
+                {/* Пешнамоиши QR (Preview) */}
                 <div className="flex flex-col sticky top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-4 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[2.5rem] md:rounded-[3rem] p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full overflow-hidden shadow-sm md:shadow-none">
                     <QRCard 
@@ -662,8 +644,10 @@ function ProfileContent() {
                   </div>
                 </div>
 
+                {/* Панели танзимоти ранг ва текст */}
                 <div className="bg-zinc-50 dark:bg-zinc-900/30 p-8 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col justify-center">
                   <div className="space-y-8">
+                    {/* Рангҳои QR */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Palette className="w-4 h-4 text-zinc-400" />
@@ -748,6 +732,7 @@ function ProfileContent() {
                       </div>
                     </div>
 
+                    {/* Тексти зери QR-код */}
                     <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                       <div className="flex items-center gap-2 mb-2">
                         <Type className="w-4 h-4 text-zinc-400" />
@@ -773,11 +758,13 @@ function ProfileContent() {
       case "info":
         return (
           <div className="space-y-12 pb-20">
+            {/* Сарлавҳаи таби Маълумоти шахсӣ */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <h3 className="text-lg font-black uppercase tracking-tight">{t('personalInfo')}</h3>
             </div>
             
             <div className="animate-in slide-in-from-right-4 duration-500 max-w-2xl px-2 space-y-12">
+              {/* Бахши Аватар ва Ному насаб */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <User className="w-4 h-4 text-zinc-400" />
@@ -815,6 +802,7 @@ function ProfileContent() {
                       />
                     </label>
                   </div>
+                  {/* Формаи таҳрири маълумоти профил */}
                   <form 
                     key={profile?.id || 'new'}
                     onSubmit={async (e) => {
@@ -917,6 +905,7 @@ function ProfileContent() {
                 </div>
               </section>
 
+              {/* Бахши Почтаи электронӣ (Email) */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Mail className="w-4 h-4 text-zinc-400" />
@@ -938,6 +927,7 @@ function ProfileContent() {
       case "saved":
         return (
           <div className="space-y-6">
+            {/* Сарлавҳаи таби Захирашудаҳо */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black uppercase tracking-tight">{t('savedItems')}</h3>
@@ -947,6 +937,7 @@ function ProfileContent() {
               </div>
             </div>
 
+            {/* Рӯйхати ашёҳои захирашуда */}
             <div className="animate-in fade-in duration-500">
               {savedLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-1">
@@ -974,6 +965,7 @@ function ProfileContent() {
       case "safety":
         return (
           <div className="space-y-8">
+            {/* Сарлавҳаи таби Қуттии бехатарӣ */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black uppercase tracking-tight">{t('mySafe')}</h3>
@@ -997,8 +989,10 @@ function ProfileContent() {
               </div>
             </div>
 
+            {/* Идоракунии Қуттии бехатарӣ (Safety Box) */}
             <div className="animate-in fade-in duration-500 max-w-4xl mx-auto px-2">
               {isAddingSafetyItem ? (
+                /* Формаи илова кардани ашё ба бойгонӣ */
                 <Card className="rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
                   <CardHeader className="bg-zinc-50 dark:bg-zinc-900/50 p-6 border-b border-zinc-100 dark:border-zinc-800">
                     <CardTitle className="text-lg font-black uppercase tracking-wider flex items-center gap-3">
@@ -1006,9 +1000,7 @@ function ProfileContent() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-8">
-                    <form onSubmit={async (e) => {
-                      await handleRegisterSafetyItem(e);
-                    }} className="space-y-6">
+                    <form onSubmit={handleRegisterSafetyItem} className="space-y-6">
                       <div className="space-y-3">
                         <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('what_happened')}</Label>
                         <RadioGroup 
@@ -1062,60 +1054,6 @@ function ProfileContent() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                          <Label htmlFor="phone" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('phoneLabel')}</Label>
-                          <Input 
-                            id="phone" 
-                            name="phone" 
-                            placeholder="992XXXXXXXXX" 
-                            className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" 
-                            required 
-                            type="text"
-                            inputMode="numeric"
-                            onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                          />
-                        </div>
-                        {safetyType === 'lost' && (
-                          <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                            <Label htmlFor="reward" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('rewardLabel')}</Label>
-                            <Input 
-                              id="reward" 
-                              name="reward" 
-                              placeholder={t('rewardPlaceholder')} 
-                              className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" 
-                              type="text" 
-                              inputMode="numeric"
-                              onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="description" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('description')}</Label>
-                        <Textarea id="description" name="description" placeholder="Маълумоти иловагӣ..." className="rounded-xl min-h-[120px] text-sm resize-none bg-zinc-50/50 dark:bg-zinc-900/50" required />
-                      </div>
-
-                      <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('addImages')} ({safetyImages.length}/5)</Label>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                          {safetyPreviews.map((src, i) => (
-                            <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm">
-                              <Image src={src} alt="Preview" fill className="object-cover" />
-                              <button type="button" onClick={() => removeSafetyImage(i)} className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition-colors"><X className="w-3 h-3" /></button>
-                            </div>
-                          ))}
-                          {safetyImages.length < 5 && (
-                            <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all group">
-                              <Upload className="w-6 h-6 text-zinc-300 group-hover:text-zinc-500 transition-colors" />
-                              <span className="text-[8px] font-black uppercase text-zinc-400 mt-2">{t('add')}</span>
-                              <input type="file" className="hidden" accept="image/*" multiple onChange={handleSafetyImageChange} />
-                            </label>
-                          )}
-                        </div>
-                      </div>
-
                       <div className="flex gap-4 pt-4">
                         <Button type="submit" className="flex-1 rounded-xl h-14 font-black uppercase tracking-wider text-xs bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg shadow-zinc-100 dark:shadow-none" disabled={safetySubmitting}>
                           {safetySubmitting ? <Loader2 className="animate-spin w-5 h-5" /> : t('saveItem')}
@@ -1128,17 +1066,8 @@ function ProfileContent() {
                   </CardContent>
                 </Card>
               ) : (
+                /* Намоиши ашёҳои бойгонӣ (Safety Box Items) */
                 <div className="space-y-6">
-                  <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5 flex gap-4 items-start animate-in fade-in slide-in-from-top-2 duration-700">
-                    <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-emerald-900 dark:text-emerald-200 font-bold leading-tight uppercase tracking-tight mb-1">{t('importantInfo')}</p>
-                      <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400 font-medium leading-normal">
-                        {t('importantInfoDesc')}
-                      </p>
-                    </div>
-                  </div>
-
                   {safetyLoading ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
                       {[...Array(3)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-2xl" />)}
@@ -1151,6 +1080,7 @@ function ProfileContent() {
                           className="overflow-hidden hover:shadow-md transition-shadow duration-300 group flex flex-col h-full rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 cursor-pointer"
                           onClick={() => setSelectedSafetyItem(item)}
                         >
+                          {/* Сурати ашё дар бойгонӣ */}
                           <div className="relative aspect-square overflow-hidden rounded-t-xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center">
                             {item.images?.[0] ? (
                               <Image src={item.images[0]} alt={item.item_name} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
@@ -1162,56 +1092,32 @@ function ProfileContent() {
                               </Badge>
                               
                               <div className="flex gap-1.5">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="secondary" 
-                                      size="icon" 
-                                      className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-blue-600 hover:bg-blue-600 hover:text-white shadow-sm border-none transition-all"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePublishSafetyItem(item);
-                                      }}
-                                      disabled={isActionLoading}
-                                    >
-                                      <Send className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{t('publishItem')}</TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="secondary" 
-                                      size="icon" 
-                                      className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-amber-600 hover:bg-amber-600 hover:text-white shadow-sm border-none transition-all"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        startEditing(item);
-                                      }}
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{t('edit')}</TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button 
-                                      variant="secondary" 
-                                      size="icon" 
-                                      className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-red-500 hover:bg-red-500 hover:text-white shadow-sm border-none transition-all"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        deleteSafetyItem(item.id);
-                                      }}
-                                      disabled={isActionLoading}
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>{t('delete')}</TooltipContent>
-                                </Tooltip>
+                                {/* Тугмаи нашр кардан аз бойгонӣ */}
+                                <Button 
+                                  variant="secondary" 
+                                  size="icon" 
+                                  className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-blue-600 hover:bg-blue-600 hover:text-white shadow-sm border-none transition-all"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePublishSafetyItem(item);
+                                  }}
+                                  disabled={isActionLoading}
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                </Button>
+                                {/* Тугмаи нест кардан аз бойгонӣ */}
+                                <Button 
+                                  variant="secondary" 
+                                  size="icon" 
+                                  className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-red-500 hover:bg-red-500 hover:text-white shadow-sm border-none transition-all"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteSafetyItem(item.id);
+                                  }}
+                                  disabled={isActionLoading}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
                               </div>
                             </div>
                           </div>
@@ -1219,20 +1125,10 @@ function ProfileContent() {
                             <h4 className="font-black text-xs line-clamp-1 leading-tight uppercase tracking-tight mb-1 group-hover:text-emerald-500 transition-colors">
                               {item.item_name}
                             </h4>
-                            {item.description && (
-                              <p className="text-zinc-500 text-[10px] line-clamp-2 leading-tight font-medium mb-3">
-                                {item.description}
-                              </p>
-                            )}
                             <div className="mt-auto pt-2 border-t border-zinc-50 dark:border-zinc-900 flex justify-between items-center">
                               <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
                                 <Clock className="w-2.5 h-2.5" /> {new Date(item.created_at).toLocaleDateString()}
                               </div>
-                              {item.reward && (
-                                <span className="text-[9px] font-black text-amber-600 uppercase">
-                                  {item.reward} TJS
-                                </span>
-                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -1240,18 +1136,7 @@ function ProfileContent() {
                     </div>
                   ) : (
                     <div className="text-center py-24 border-2 border-dashed rounded-[40px] border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10">
-                      <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-zinc-100 dark:border-zinc-800 flex items-center justify-center mx-auto mb-6">
-                        <PackageSearch className="w-10 h-10 text-zinc-200" />
-                      </div>
                       <p className="text-zinc-400 text-[11px] font-black uppercase tracking-[0.2em]">{t('safetyBoxEmpty')}</p>
-                      <Button 
-                        onClick={() => setIsAddingSafetyItem(true)}
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-8 rounded-xl font-black uppercase text-[10px] tracking-widest px-8"
-                      >
-                        {t('addFirstItem')}
-                      </Button>
                     </div>
                   )}
                 </div>
@@ -1269,6 +1154,7 @@ function ProfileContent() {
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 min-h-[90vh]">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12">
+          {/* Менюи Sidebar (Менюи паҳлӯӣ) */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-[100px] h-fit z-20 space-y-6">
               <div className="flex flex-col gap-3">
@@ -1302,6 +1188,7 @@ function ProfileContent() {
                 ))}
               </div>
               
+              {/* Тугмаи баромад (Log out) */}
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-900">
                 <SignOutButton>
                   <Button variant="ghost" className="w-full h-11 rounded-xl font-black text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4">
@@ -1313,6 +1200,7 @@ function ProfileContent() {
             </div>
           </div>
 
+          {/* Мӯҳтавои асосии табҳо */}
           <div className="lg:col-span-3">
             <div className="min-h-[60vh]">
               {renderContent()}
@@ -1321,19 +1209,10 @@ function ProfileContent() {
         </div>
       </div>
 
+      {/* Тирезаҳои тасдиқ (Dialogs/Modals) */}
       <Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog(prev => ({ ...prev, open: false }))}>
         <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
           <DialogHeader className="space-y-3">
-            <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center mb-2",
-              confirmDialog.variant === "destructive" ? "bg-red-50 dark:bg-red-900/20 text-red-600" : 
-              confirmDialog.variant === "warning" ? "bg-amber-50 dark:bg-amber-900/20 text-amber-600" : 
-              "bg-blue-50 dark:bg-blue-900/20 text-blue-600"
-            )}>
-              {confirmDialog.variant === "destructive" ? <Trash2 className="w-6 h-6" /> : 
-               confirmDialog.variant === "warning" ? <AlertTriangle className="w-6 h-6" /> : 
-               <Send className="w-6 h-6" />}
-            </div>
             <DialogTitle className="text-2xl font-black uppercase tracking-tight">{confirmDialog.title}</DialogTitle>
             <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
               {confirmDialog.description}
@@ -1344,271 +1223,31 @@ function ProfileContent() {
               type="button" 
               className={cn(
                 "flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px]",
-                confirmDialog.variant === "destructive" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-zinc-900 hover:bg-zinc-800"
+                confirmDialog.variant === "destructive" ? "bg-red-600 hover:bg-red-700 text-white" : "bg-zinc-900 hover:bg-zinc-800 text-white"
               )}
-              onClick={() => {
-                confirmDialog.onConfirm();
-              }}
-              disabled={isActionLoading || confirmDialog.isLoading}
+              onClick={() => confirmDialog.onConfirm()}
+              disabled={confirmDialog.isLoading}
             >
-              {(isActionLoading || confirmDialog.isLoading) ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                confirmDialog.variant === "destructive" ? (t('delete') || 'Нест кардан') : (t('confirm') || 'Тасдиқ')
-              )}
+              {confirmDialog.isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (confirmDialog.variant === "destructive" ? t('delete') : t('confirm'))}
             </Button>
             <Button 
               type="button" 
               variant="outline" 
               className="flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px] border-zinc-200"
               onClick={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
-              disabled={isActionLoading || confirmDialog.isLoading}
             >
               {t('cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Dialog open={!!selectedSafetyItem} onOpenChange={(open) => {
-        if (!open) {
-          setSelectedSafetyItem(null);
-          setCurrentImageIndex(0);
-        }
-      }}>
-        <DialogContent className="sm:max-w-4xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl max-h-[90vh] overflow-y-auto">
-          {selectedSafetyItem && (
-            <div className="grid grid-cols-1 md:grid-cols-2">
-                <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-900 group">
-                  {selectedSafetyItem.images?.[currentImageIndex] ? (
-                    <Image 
-                      src={selectedSafetyItem.images[currentImageIndex]} 
-                      alt={selectedSafetyItem.item_name} 
-                      fill 
-                      className="object-cover animate-in fade-in duration-300" 
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-full"><PackageSearch className="w-24 h-24 text-zinc-200" /></div>
-                  )}
-
-                  {selectedSafetyItem.images && selectedSafetyItem.images.length > 1 && (
-                    <>
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white shadow-sm border-none transition-all opacity-0 group-hover:opacity-100"
-                          onClick={() => setCurrentImageIndex(prev => (prev === 0 ? selectedSafetyItem.images.length - 1 : prev - 1))}
-                        >
-                          <ChevronLeft className="w-6 h-6" />
-                        </Button>
-                      </div>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-4">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white shadow-sm border-none transition-all opacity-0 group-hover:opacity-100"
-                          onClick={() => setCurrentImageIndex(prev => (prev === selectedSafetyItem.images.length - 1 ? 0 : prev + 1))}
-                        >
-                          <ChevronRight className="w-6 h-6" />
-                        </Button>
-                      </div>
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
-                        {selectedSafetyItem.images.map((_: any, i: number) => (
-                          <div 
-                            key={i} 
-                            className={cn(
-                              "h-1.5 transition-all duration-300 rounded-full shadow-sm",
-                              i === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40"
-                            )} 
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  <div className="absolute top-6 left-6 flex flex-col gap-2 z-10">
-                    {selectedSafetyItem.reward && (
-                      <Badge className="max-[632px]:flex hidden bg-amber-400 text-amber-950 font-black rounded-md px-3 py-1 shadow-md border-none whitespace-nowrap">
-                        {t('reward_gives_viewer')} {selectedSafetyItem.reward} TJS
-                      </Badge>
-                    )}
-                  </div>
-                  {selectedSafetyItem.reward && (
-                    <Badge className="max-[632px]:hidden absolute bottom-6 right-6 bg-amber-400 text-amber-950 font-black rounded-md px-3 py-1 shadow-md border-none whitespace-nowrap z-10">
-                      {t('reward_gives_viewer')} {selectedSafetyItem.reward} TJS
-                    </Badge>
-                  )}
-                  <Button variant="ghost" size="icon" className="absolute top-6 right-6 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/40 text-white z-10" onClick={() => setSelectedSafetyItem(null)}><X className="w-5 h-5" /></Button>
-                </div>
-              
-              <div className="p-10 flex flex-col">
-                <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                      <Avatar className="w-full h-full"><AvatarImage src={user?.imageUrl} /><AvatarFallback><User className="w-6 h-6 text-zinc-400" /></AvatarFallback></Avatar>
-                    </div>
-                    <div>
-                      <p className="font-black text-sm leading-tight uppercase tracking-tight">{user?.firstName || t('user')}</p>
-                      <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest mt-0.5">{user?.lastName || ""}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black uppercase tracking-widest">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" /> {t('private')}
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center mb-4">
-                  <Badge variant="outline" className="uppercase tracking-widest text-[10px] rounded-md px-2 py-1 font-black border-zinc-200">
-                    {t(`categories.${CATEGORIES.find(c => c.name === selectedSafetyItem.category)?.id || '6'}`)}
-                  </Badge>
-                  <div className="flex items-center gap-2 text-zinc-400 text-[10px] font-black uppercase tracking-widest">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{new Date(selectedSafetyItem.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-
-                <DialogTitle className="text-4xl font-black tracking-tighter uppercase leading-none mb-6">{selectedSafetyItem.item_name}</DialogTitle>
-
-                {selectedSafetyItem.type === 'lost' && selectedSafetyItem.reward && (
-                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 mb-8 shadow-sm">
-                    <p className="text-amber-600 dark:text-amber-400 font-black text-[10px] uppercase tracking-widest mb-1 leading-tight">
-                      {t('reward_gives_viewer')}
-                    </p>
-                    <p className="text-3xl font-black text-amber-900 dark:text-amber-100 tracking-tight">
-                      {selectedSafetyItem.reward} <span className="text-xl">TJS</span>
-                    </p>
-                  </div>
-                )}
-
-                <div className="mb-8">
-                  <h3 className="font-black text-[10px] uppercase tracking-widest text-zinc-400 mb-4">{t('description')}</h3>
-                  <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">
-                    {selectedSafetyItem.description}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-4 mb-10">
-                  <div className="flex flex-col gap-2 items-center">
-                    <Button variant="secondary" size="icon" className="h-16 w-16 rounded-2xl bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:bg-zinc-900/50 dark:text-zinc-400 border border-zinc-100 dark:border-zinc-800 transition-all active:scale-95 shadow-sm" onClick={() => { setSelectedSafetyItem(null); startEditing(selectedSafetyItem); }}>
-                      <Pencil className="w-7 h-7" />
-                    </Button>
-                    <span className="text-[9px] font-black uppercase text-zinc-500 tracking-tighter">{t('edit')}</span>
-                  </div>
-                  <div className="flex flex-col gap-2 items-center">
-                    <Button variant="secondary" size="icon" className="h-16 w-16 rounded-2xl bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/10 dark:text-red-400 border border-red-100/50 dark:border-red-900/30 transition-all active:scale-95 shadow-sm" onClick={() => { setSelectedSafetyItem(null); deleteSafetyItem(selectedSafetyItem.id); }}><Trash2 className="w-7 h-7" /></Button>
-                    <span className="text-[9px] font-black uppercase text-red-600/70 tracking-tighter">{t('delete')}</span>
-                  </div>
-                </div>
-
-                <div className="mt-auto flex flex-col sm:flex-row gap-4">
-                  <Button className="flex-1 h-16 rounded-2xl font-black gap-3 bg-zinc-900 text-white shadow-xl uppercase tracking-widest transition-all active:scale-95" asChild>
-                    <a href={`tel:${selectedSafetyItem.phone_number}`}><Phone className="w-5 h-5" /> {t('call')}</a>
-                  </Button>
-                  <Button variant="outline" className="flex-1 h-16 rounded-2xl font-black gap-3 uppercase tracking-widest border-zinc-200 transition-all active:scale-95" onClick={() => handlePublishSafetyItem(selectedSafetyItem)} disabled={isActionLoading}>
-                    <Send className="w-5 h-5" /> {t('publishItem')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!editingSafetyItem} onOpenChange={(open) => !open && setEditingSafetyItem(null)}>
-        <DialogContent className="sm:max-w-xl rounded-3xl p-8 border-none shadow-2xl overflow-y-auto max-h-[90vh]">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
-              <Pencil className="w-6 h-6 text-amber-500" /> {t('edit')}
-            </DialogTitle>
-          </DialogHeader>
-          {editingSafetyItem && (
-            <form onSubmit={handleUpdateSafetyItem} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-name" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('safetyItemNameLabel')}</Label>
-                  <Input id="edit-name" name="name" defaultValue={editingSafetyItem.item_name} className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" required />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('categoryLabel')}</Label>
-                  <Select onValueChange={setSafetyCategory} required defaultValue={editingSafetyItem.category}>
-                    <SelectTrigger className="h-12 rounded-xl text-sm bg-zinc-50/50 dark:bg-zinc-900/50">
-                      <SelectValue placeholder={t('categoryLabel')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.name}>{cat.icon} {t(`categories.${cat.id}`)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-phone" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('phoneLabel')}</Label>
-                  <Input id="edit-phone" name="phone" defaultValue={editingSafetyItem.phone_number} className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" required type="text" inputMode="numeric" onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-reward" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('rewardLabel')}</Label>
-                  <Input id="edit-reward" name="reward" defaultValue={editingSafetyItem.reward || ""} className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" type="text" inputMode="numeric" onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')} />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-description" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('description')}</Label>
-                <Textarea id="edit-description" name="description" defaultValue={editingSafetyItem.description} className="rounded-xl min-h-[120px] text-sm resize-none bg-zinc-50/50 dark:bg-zinc-900/50" required />
-              </div>
-
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('addImages')} ({safetyPreviews.length}/5)</Label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                  {safetyPreviews.map((src, i) => (
-                    <div key={i} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm">
-                      <Image src={src} alt="Preview" fill className="object-cover" />
-                      <button type="button" onClick={() => {
-                        const isExisting = editingSafetyItem.images?.includes(src);
-                        if (isExisting) {
-                          setEditingSafetyItem({
-                            ...editingSafetyItem,
-                            images: editingSafetyItem.images.filter((img: string) => img !== src)
-                          });
-                        } else {
-                          const newFileIdx = safetyImages.findIndex(f => URL.createObjectURL(f) === src);
-                          if (newFileIdx !== -1) {
-                            setSafetyImages(prev => prev.filter((_, idx) => idx !== newFileIdx));
-                          }
-                        }
-                        setSafetyPreviews(prev => prev.filter((_, idx) => idx !== i));
-                      }} className="absolute top-1.5 right-1.5 bg-red-500 text-white p-1 rounded-full shadow-md hover:bg-red-600 transition-colors"><X className="w-3 h-3" /></button>
-                    </div>
-                  ))}
-                  {safetyPreviews.length < 5 && (
-                    <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-all group">
-                      <Upload className="w-6 h-6 text-zinc-300 group-hover:text-zinc-500 transition-colors" />
-                      <span className="text-[8px] font-black uppercase text-zinc-400 mt-2">{t('add')}</span>
-                      <input type="file" className="hidden" accept="image/*" multiple onChange={handleSafetyImageChange} />
-                    </label>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" className="flex-1 rounded-xl h-14 font-black uppercase tracking-wider text-xs bg-zinc-900 text-white hover:bg-zinc-800" disabled={safetySubmitting}>
-                  {safetySubmitting ? <Loader2 className="animate-spin w-5 h-5" /> : t('saveName')}
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setEditingSafetyItem(null)} className="rounded-xl h-14 px-8 font-black uppercase tracking-wider text-xs">
-                  {t('cancel')}
-                </Button>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
     </TooltipProvider>
   );
 }
 
+/**
+ * Саҳифаи асосии Профил бо Suspense
+ */
 export default function ProfilePage() {
   return (
     <Suspense fallback={
@@ -1621,6 +1260,9 @@ export default function ProfilePage() {
   );
 }
 
+/**
+ * Компоненти хурд барои нишонҳо (Badge)
+ */
 function Badge({ children, className, variant = "default" }: any) {
   return (
     <span className={cn(

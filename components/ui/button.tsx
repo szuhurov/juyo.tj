@@ -1,8 +1,12 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { cva, type VariantProps } from "class-variance-authority"
+/**
+ * Компоненти тугма (Button).
+ * Ин компонент барои сохтани тугмаҳои гуногун бо услубҳои гуногун истифода мешавад.
+ */
+import * as React from "react" // Аз React мегирем
+import { Slot } from "@radix-ui/react-slot" // Барои ҷобаҷогузорӣ
+import { cva, type VariantProps } from "class-variance-authority" // Барои намудҳои тугма
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils" // Ин барои класси CSS
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 border border-transparent disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",

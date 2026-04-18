@@ -1,10 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useAuth, useUser, useClerk } from "@clerk/nextjs";
-import { useLanguage } from "@/lib/language-context";
-import { Button } from "@/components/ui/button";
+/**
+ * Қисмати сарлавҳаи асосии барнома (Header).
+ * Ин компонент паймоиш (navigation), ҷустуҷӯ, ивази забон ва менюи корбарро дар бар мегирад.
+ */
+
+import Link from "next/link"; // Барои гузаштан ба саҳифаҳои дигар
+import { usePathname, useRouter, useSearchParams } from "next/navigation"; // Барои кор бо адрес ва параметрҳои URL
+import { useAuth, useUser, useClerk } from "@clerk/nextjs"; // Барои идоракунии воридшавии корбар
+import { useLanguage } from "@/lib/language-context"; // Барои иваз кардани забони сайт
+import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { 
   Languages, 
   PlusCircle, 
@@ -21,19 +26,19 @@ import {
   List,
   Settings,
   Loader2
-} from "lucide-react";
+} from "lucide-react"; // Иконкаҳои гуногун барои интерфейс
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"; // Барои сохтани менюи кушодашаванда
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@/components/ui/avatar";
+} from "@/components/ui/avatar"; // Барои нишон додани сурати корбар
 import {
   Sheet,
   SheetContent,
@@ -41,40 +46,49 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from "@/components/ui/sheet";
+} from "@/components/ui/sheet"; // Барои менюи мобилӣ (панели паҳлӯӣ)
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+} from "@/components/ui/tooltip"; // Барои маслиҳатҳои кӯтоҳ ҳангоми наздик кардани муш
+import { Input } from "@/components/ui/input"; // Майдони ҷустуҷӯ
+import { useEffect, useState } from "react"; // Барои идоракунии ҳолат ва вақт дар экран
 
 export function Header() {
+  // Хукҳои Next.js барои паймоиш ва гирифтани параметрҳои URL
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Хукҳои Clerk барои идоракунии аутентификатсияи корбар
   const { userId } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
+
+  // Хук барои идоракунии забони барнома
   const { t, locale, setLocale } = useLanguage();
   
+  // Ҳолатҳои дохилии компонент (State)
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || "");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Рӯйхати забонҳои дастрас
   const languages = [
     { code: "tg", label: "Тоҷикӣ" },
     { code: "ru", label: "Русский" },
     { code: "en", label: "English" },
   ];
 
+  // Пайвандҳои асосии паймоиш
   const navLinks = [
     { href: "/", value: "home", label: t('home'), icon: Home },
     { href: "/profile", value: "profile", label: t('profile'), icon: User },
     { href: "/profile?tab=qr", value: "qr", label: "QR-коди ман", icon: QrCode },
   ];
 
+  // Пайвандҳои дохили профили корбар
   const profileLinks = [
     { href: "/profile?tab=posts", label: t('myPosts') || "My Posts", icon: List },
     { href: "/profile?tab=info", label: t('personalInfo') || "Personal Information", icon: User },
@@ -83,12 +97,12 @@ export function Header() {
     { href: "/profile?tab=safety", label: t('mySafe') || "My Safety Box", icon: ShieldCheck },
   ];
 
-  // Close menu when a link is clicked.
+  // Пӯшидани меню ҳангоми пахши пайванд
   const handleLinkClick = () => {
     setIsMenuOpen(false);
   };
 
-  // Handle live search
+  // Идоракунии ҷустуҷӯи зинда бо таъхир (debouncing)
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       const params = new URLSearchParams(searchParams);
@@ -110,12 +124,14 @@ export function Header() {
     <TooltipProvider>
       <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/80 backdrop-blur-md dark:bg-zinc-950/80 border-b border-zinc-100 dark:border-zinc-900/50">
         <div className="container mx-auto flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 gap-2">
+          
+          {/* Қисми чап: Логотип ва паймоиши мизи корӣ */}
           <div className="flex items-center gap-3 sm:gap-8 flex-1 min-w-0">
             <Link href="/" className="flex items-center space-x-2 shrink-0">
               <span className="text-lg sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100 uppercase">JUYO</span>
             </Link>
 
-            {/* Desktop Navigation */}
+            {/* Паймоиши асосӣ барои экранҳои калон */}
             <nav className="hidden lg:flex items-center space-x-1 bg-zinc-100/50 dark:bg-zinc-900/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
               {navLinks.map((link) => {
                 const isQrTab = searchParams.get('tab') === 'qr';
@@ -148,7 +164,7 @@ export function Header() {
               })}
             </nav>
 
-            {/* Global Search Bar (Desktop) */}
+            {/* Сатри ҷустуҷӯ (Desktop) */}
             <div className="hidden md:flex relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
               <Input
@@ -168,8 +184,10 @@ export function Header() {
             </div>
           </div>
 
+          {/* Қисми рост: Интихоби забон ва аутентификатсия */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Desktop: Language THEN Auth */}
+            
+            {/* Интихоби забон ва тугмаҳои вуруд (Desktop) */}
             <div className="hidden sm:flex items-center space-x-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -267,9 +285,9 @@ export function Header() {
               )}
             </div>
 
-            {/* Mobile: Language THEN Sign Up THEN Menu */}
+            {/* Паймоиши мобилӣ */}
             <div className="flex md:hidden items-center gap-1.5">
-              {/* Language Selector (Mobile) */}
+              {/* Интихоби забон (Mobile) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="secondary" size="sm" className="flex gap-1 rounded-md font-black text-zinc-900 dark:text-zinc-100 cursor-pointer border border-emerald-500 ring-2 ring-emerald-500/20 transition-all bg-white dark:bg-zinc-900 shadow-sm h-9 px-2">
@@ -296,7 +314,7 @@ export function Header() {
                 </Button>
               ) : null}
 
-              {/* Mobile Nav Button (Trigger) */}
+              {/* Тугмаи кушодани менюи мобилӣ */}
               <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-lg h-9 w-9 bg-zinc-100 dark:bg-zinc-900">
@@ -309,7 +327,7 @@ export function Header() {
                     <SheetDescription>{t('menuDescription')}</SheetDescription>
                   </SheetHeader>
                   
-                  {/* Menu Top Section with User Profile */}
+                  {/* Профили корбар дар дохили менюи мобилӣ */}
                   <div className="p-6 pt-12 bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800">
                     {userId ? (
                       <div className="flex items-center gap-4">
@@ -347,9 +365,8 @@ export function Header() {
                     )}
                   </div>
 
-                  {/* Menu Links */}
+                  {/* Пайвандҳои менюи мобилӣ */}
                   <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8">
-                    {/* Main Nav Section */}
                     <div className="space-y-2">
                       <h4 className="px-4 text-[10px] font-black text-zinc-400 mb-4">{t('home') || "Main"}</h4>
                       <Link href="/" className="block" onClick={handleLinkClick}>
@@ -380,7 +397,7 @@ export function Header() {
                       </Link>
                     </div>
 
-                    {/* Profile Section (Only if logged in) */}
+                    {/* Қисми профил (танҳо барои корбарони воридшуда) */}
                     {userId && (
                       <div className="space-y-2">
                         <h4 className="px-4 text-[10px] font-black text-zinc-400 mb-4">{t('profile') || "Account"}</h4>
@@ -410,7 +427,7 @@ export function Header() {
                     )}
                   </div>
 
-                  {/* Menu Bottom Section */}
+                  {/* Қисми поёнии менюи мобилӣ */}
                   {userId && (
                     <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
                       <Button 

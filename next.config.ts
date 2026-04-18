@@ -1,3 +1,7 @@
+/**
+ * Танзимоти асосии Next.js барои проект.
+ * Ин ҷо танзимоти барои продакшн, доменҳои суратҳо ва дигар созгузориҳо ҳастанд.
+ */
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

@@ -1,55 +1,68 @@
+/**
+ * Ин саҳифа барои таҳрир кардани эълон ҳаст (Edit Page).
+ * Агар корбар дар эълонаш хато карда бошад ё суратҳои нав илова кардан хоҳад,
+ * вай метавонад аз ин ҷо ҳама чизро нав кунад.
+ */
+
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@clerk/nextjs";
-import { useLanguage } from "@/lib/language-context";
-import { ItemService, CATEGORIES, Item } from "@/lib/services/item-service";
-import { createClerkSupabaseClient } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useEffect, useState, use } from "react"; // Барои кор бо стейт ва эффектҳо
+import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
+import { useAuth } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар
+import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
+import { ItemService, CATEGORIES, Item } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
+import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
+import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { Input } from "@/components/ui/input"; // Компоненти воридкунии матн
+import { Textarea } from "@/components/ui/textarea"; // Компоненти воридкунии матни дароз
+import { Label } from "@/components/ui/label"; // Компоненти тамға
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Барои интихоби як аз якчандто
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Loader2, Plus, X, Upload, ArrowLeft } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+} from "@/components/ui/select"; // Барои рӯйхати интихобшаванда
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Компоненти корт
+import { toast } from "sonner"; // Барои нишон додани хабарҳо
+import { Loader2, Plus, X, Upload, ArrowLeft } from "lucide-react"; // Иконкаҳо
+import Image from "next/image"; // Барои суратҳо
+import Link from "next/link"; // Барои гузаштан ба саҳифаҳо
 
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳо
 
 export default function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
+  // ID-и эълонро аз URL мегирем
   const { id } = use(params);
   const { t } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
   
+  // Стейтҳо барои нигоҳ доштани маълумоти эълон ва ҳолати боргузорӣ (Loading)
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [item, setItem] = useState<Item | null>(null);
   
+  // Стейтҳо барои навъи ашё, категория ва суратҳо
   const [type, setType] = useState<'lost' | 'found'>('lost');
   const [category, setCategory] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<{url: string, isExisting: boolean}[]>([]);
 
+  // Вақте ки саҳифа кушода мешавад, маълумоти эълонро аз база мехонем
   useEffect(() => {
     if (userId) loadItem();
   }, [id, userId]);
 
+  /**
+   * Функсия барои гирифтани маълумоти эълон аз база
+   */
   const loadItem = async () => {
     try {
       setLoading(true);
@@ -64,6 +77,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
 
       if (error) throw error;
       
+      // Агар корбар соҳиби эълон набошад, вайро ба главний мефиристем
       if (data.user_id !== userId) {
         toast.error(t('accessDenied'));
         router.push('/');
@@ -85,6 +99,9 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     }
   };
 
+  /**
+   * Функсия барои коркарди суратҳои нави интихобшуда
+   */
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (previews.length + files.length > 5) {
@@ -97,20 +114,26 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     setPreviews(prev => [...prev, ...newPreviews]);
   };
 
+  /**
+   * Функсия барои нест кардани сурат аз рӯйхати пешнамоиш (Preview)
+   */
   const removeImage = (index: number) => {
     const previewToRemove = previews[index];
     if (!previewToRemove.isExisting) {
-      // Find the index in the 'images' File array
       const fileIndex = previews.filter((p, i) => i < index && !p.isExisting).length;
       setImages(prev => prev.filter((_, i) => i !== fileIndex));
     }
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  /**
+   * Функсияи асосӣ барои сабт кардани тағйирот (Update)
+   */
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId || !item) return;
 
+    // Маълумотро аз форма мегирем
     const formData = new FormData(e.currentTarget);
     const title = (formData.get('title') as string || '').trim();
     const description = (formData.get('description') as string || '').trim();
@@ -118,6 +141,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     const rewardField = formData.get('reward');
     const reward = rewardField ? (rewardField as string).trim() : null;
 
+    // Месанҷем, ки ҳамаи майдонҳо пур шудаанд
     if (!title || !description || !category || !phone) {
       toast.error(t('fillAllFields'));
       return;
@@ -135,7 +159,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       
       let supabase = createClerkSupabaseClient(token);
 
-      // 1. Upload new images if any
+      // 1. Боргузории суратҳои нав ба Облако (Storage)
       const finalImageUrls: string[] = [];
       const newFiles = images;
       let newFileIdx = 0;
@@ -161,19 +185,16 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         }
       }
 
-      // RE-FETCH token before database updates in case uploads took too long
-      // This helps prevent "exp" claim timestamp check failed errors
       token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("Authentication token expired or missing");
       supabase = createClerkSupabaseClient(token);
 
-      // Check if order or set of images changed
       const existingUrls = item.images?.map(img => img.image_url) || [];
       const imagesChanged = hasNewImages || 
                             finalImageUrls.length !== existingUrls.length ||
                             finalImageUrls.some((url, i) => url !== existingUrls[i]);
 
-      // 2. Update item record
+      // 2. Нав кардани маълумоти эълон дар база (Update query)
       const updateData: any = {
         title,
         description,
@@ -183,6 +204,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         reward: reward ? `${reward}` : null
       };
 
+      // Агар суратҳо иваз шуда бошанд, боз ба модерация мефиристем
       if (imagesChanged) {
         updateData.moderation_status = 'pending';
       }
@@ -194,9 +216,8 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
 
       if (updateError) throw updateError;
 
-      // 3. Update images (delete old and insert new)
+      // 3. Тоза кардани суратҳои кӯҳна ва сабти суратҳои нав
       if (imagesChanged) {
-        // Find images that were removed to clean up storage
         const removedUrls = existingUrls.filter(url => !finalImageUrls.includes(url));
         
         if (removedUrls.length > 0) {
@@ -223,8 +244,6 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
           image_url: url
         }));
         await supabase.from('item_images').insert(imageRecords);
-
-        // 4. Moderation handled automatically by Supabase Edge Function
       }
 
       if (imagesChanged) {
@@ -233,7 +252,6 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         toast.success(t('updateSuccess'));
       }
       
-      // Force a full page reload to clear any client-side cache and show fresh data
       window.location.href = `/items/${id}`;
     } catch (error: any) {
       console.error(error);
@@ -254,6 +272,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
+        {/* Тугмаи бекор кардан (Назад) */}
         <Button variant="ghost" asChild className="mb-6 gap-2 rounded-md font-bold">
           <Link href={`/items/${id}`}>
             <ArrowLeft className="w-4 h-4" /> {t('cancel')}
@@ -261,11 +280,13 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         </Button>
 
         <Card className="rounded-2xl overflow-hidden border shadow-xl">
+          {/* Сарлавҳаи форма */}
           <CardHeader className="bg-zinc-900 text-white p-6">
             <CardTitle className="text-2xl font-black uppercase tracking-tight">{t('editItemTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={onSubmit} className="space-y-6">
+              {/* Интихоби навъи эълон (Радио-кнопкаҳо) */}
               <div className="space-y-3">
                 <Label className="text-sm font-black uppercase tracking-wider text-zinc-400">{t('what_happened')}</Label>
                 <RadioGroup 
@@ -296,6 +317,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                 </RadioGroup>
               </div>
 
+              {/* Майдонҳои асосии маълумот (Title, Category, Description) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="title" className="font-bold text-xs uppercase text-zinc-500">{t('titleLabel')}</Label>
@@ -330,6 +352,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                 />
               </div>
 
+              {/* Телефон ва Мукофотпулӣ */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="font-bold text-xs uppercase text-zinc-500">{t('phoneLabel')}</Label>
@@ -364,6 +387,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                 )}
               </div>
 
+              {/* Қисмати идоракунии суратҳо (Image Upload) */}
               <div className="space-y-4">
                 <Label className="font-bold text-xs uppercase text-zinc-500">{t('addImages')} ({previews.length}/5)</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
@@ -396,6 +420,7 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                 </div>
               </div>
 
+              {/* Тугмаи сабт (Submit button) */}
               <Button type="submit" size="lg" className="w-full h-12 rounded-lg text-base font-black bg-zinc-900 hover:bg-zinc-800 mt-4 uppercase tracking-wider text-white" disabled={saving}>
                 {saving ? (
                   <>

@@ -1,27 +1,33 @@
+/**
+ * Ин саҳифаи тафсилоти эълон ҳаст (Item View).
+ * Дар ин ҷо одамон суратҳои ашёро мебинанд, тавсифашро мехонанд ва ба соҳибаш занг мезананд.
+ * Ҳамчунин, соҳиби эълон метавонад ин ҷо эълонашро таҳрир кунад ё нест кунад.
+ */
+
 "use client";
 
-import { useEffect, useState, use, useRef } from "react";
-import { Item, ItemService } from "@/lib/services/item-service";
-import { useLanguage } from "@/lib/language-context";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Phone, Eye, ArrowLeft, ShieldCheck, User, ChevronLeft, ChevronRight, Share2, Bookmark, Pencil, Archive, Trash2, CheckCircle2, ShieldAlert, AlertCircle } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@clerk/nextjs";
-import { createClerkSupabaseClient } from "@/lib/supabase";
+import { useEffect, useState, use, useRef } from "react"; // Барои кор бо стейтҳо ва рефҳо дар саҳифа
+import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо хизматрасониҳои эълонҳо
+import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони барнома
+import { Badge } from "@/components/ui/badge"; // Барои нишон додани нишонҳои хурд дар экран
+import { Button } from "@/components/ui/button"; // Компоненти тугмаи универсалӣ
+import { Card, CardContent } from "@/components/ui/card"; // Барои сохтани блокҳои алоҳида (карточкаҳо)
+import { Skeleton } from "@/components/ui/skeleton"; // Барои ҳолати боргирии муваққатӣ
+import { Calendar, Phone, Eye, ArrowLeft, ShieldCheck, User, ChevronLeft, ChevronRight, Share2, Bookmark, Pencil, Archive, Trash2, CheckCircle2, ShieldAlert, AlertCircle } from "lucide-react"; // Иконкаҳои гуногун барои интерфейс
+import Link from "next/link"; // Барои гузаштан байни саҳифаҳо
+import { useRouter } from "next/navigation"; // Барои идоракунии роутинг дар Next.js
+import Image from "next/image"; // Барои нишон додани суратҳои оптимизатсияшуда
+import { format } from "date-fns"; // Барои формат кардани вақт ва сана
+import { toast } from "sonner"; // Барои нишон додани хабарҳои кӯтоҳ дар экран
+import { cn } from "@/lib/utils"; // Барои пайваст кардани классҳои CSS
+import { useAuth } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбари воридшуда
+import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайвастшавӣ ба базаи Supabase
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳо ҳангоми наздик кардани муш
 
 import {
   Dialog,
@@ -30,28 +36,33 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui/dialog"; // Барои сохтани тирезаҳои модалӣ
 
-import { useItemDetails } from "@/lib/hooks/use-items";
-import { useQueryClient } from "@tanstack/react-query";
+import { useItemDetails } from "@/lib/hooks/use-items"; // Хуки махсус барои гирифтани тафсилоти эълон
+import { useQueryClient } from "@tanstack/react-query"; // Барои идоракунии кэши маълумотҳо
 
 export default function ItemDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  // ID-и эълонро аз параметрҳои URL мегирем
   const { id } = use(params);
   const { t } = useLanguage();
   const router = useRouter();
   const { getToken, userId, isLoaded } = useAuth();
   const queryClient = useQueryClient();
   
-  // Use TanStack Query for caching
+  // Токени базаи додаҳоро дар ин стейт нигоҳ медорем
   const [token, setToken] = useState<string | null>(null);
+
+  // Вақте ки корбар ворид мешавад, токени Supabase-ро мегирем
   useEffect(() => {
     if (isLoaded) {
       getToken({ template: 'supabase' }).then(setToken);
     }
   }, [isLoaded, getToken]);
 
+  // Тафсилоти эълонро аз база мехонем
   const { data: item, isLoading: loading } = useItemDetails(id, token);
   
+  // Стейтҳо барои карусели суратҳо, захира кардан ва дигар амалҳо
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
@@ -59,15 +70,16 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   const [isActionLoading, setIsActionLoading] = useState(false);
   const viewIncremented = useRef(false);
   
-  // Confirmation states
+  // Стейтҳо барои нишон додани модалҳо (тирезаҳои тасдиқ)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
 
+  // Месанҷем, ки оё ин корбар соҳиби ҳамин эълон ҳаст ё не
   const isOwner = userId === item?.user_id;
 
-  // View increment logic
+  // Логика барои зиёд кардани шумораи тамошоҳо (просмотры)
   useEffect(() => {
     if (isLoaded && item && !viewIncremented.current) {
       const isActuallyOwner = userId === item.user_id;
@@ -78,7 +90,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
           viewIncremented.current = true;
           ItemService.incrementView(id).then(() => {
             sessionStorage.setItem(sessionKey, 'true');
-            // Optimistically update local cache
+            // Кэшро нав мекунем, то ки рақам дар экран ҳам тағйир ёбад
             queryClient.setQueryData(['items', 'detail', id], (old: any) => ({
               ...old,
               views: (old?.views || 0) + 1
@@ -90,13 +102,16 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     }
   }, [id, userId, isLoaded, item, queryClient]);
 
-  // Initial saved state check
+  // Месанҷем, ки оё корбар ин эълонро пештар "захира" карда буд ё не
   useEffect(() => {
     if (userId && id) {
       checkInitialSavedState();
     }
   }, [id, userId]);
 
+  /**
+   * Функсия барои санҷиши ҳолати "захирашуда" дар база
+   */
   const checkInitialSavedState = async () => {
     try {
       const token = await getToken({ template: 'supabase' });
@@ -118,6 +133,9 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  /**
+   * Функсия барои илова ё нест кардани эълон аз рӯйхати "Захирашудаҳо"
+   */
   const toggleSave = async () => {
     if (!userId) {
       toast.info(t('pleaseLogin'));
@@ -137,7 +155,6 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
       setIsSaved(saved);
       toast.success(saved ? t('addedToSaved') : t('removedFromSaved'));
       
-      // Invalidate saved items query to refresh profile page cache
       queryClient.invalidateQueries({ queryKey: ['items', 'saved', userId] });
       window.dispatchEvent(new Event('saved-items-updated'));
     } catch (e) {
@@ -148,7 +165,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     }
   };
 
-  // Auto-show blocked info if item is rejected
+  // Агар сурат бо сабаби модерация рад шуда бошад, ба корбар хабар медиҳем
   useEffect(() => {
     if (item?.moderation_status === 'rejected') {
       setShowBlockedInfo(true);
@@ -159,6 +176,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     ? item.images 
     : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
+  // Логикаи карусели автоматӣ (автопрокрутка)
   useEffect(() => {
     if (!isAutoPlaying || images.length <= 1) return;
 
@@ -179,6 +197,9 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  /**
+   * Функсия барои поделиться кардан (Share)
+   */
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -192,6 +213,9 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  /**
+   * Функсия барои нест кардани эълон (Удаление)
+   */
   const handleDelete = async () => {
     setIsActionLoading(true);
     try {
@@ -208,6 +232,9 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  /**
+   * Функсия барои ба бойгонӣ гузоштани эълон (Safety Box)
+   */
   const handleArchive = async () => {
     setIsActionLoading(true);
     try {
@@ -227,6 +254,9 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  /**
+   * Функсия барои тасдиқи он ки ашё ёфт шуд ва дигар эълон лозим нест
+   */
   const handleResolved = async () => {
     setIsActionLoading(true);
     try {
@@ -272,6 +302,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Тугмаи бозгашт (Назад) */}
         <Button variant="ghost" asChild className="mb-6 gap-2 rounded-xl font-black uppercase text-[10px] tracking-widest bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 transition-colors">
           <Link href="/">
             <ArrowLeft className="w-4 h-4" /> {t('home')}
@@ -279,7 +310,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
         </Button>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-          {/* Images Carousel */}
+          {/* Карусели суратҳо (Image Carousel) */}
           <div className="md:sticky md:top-24 space-y-4">
             <div className="relative aspect-square overflow-hidden rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-md bg-zinc-100 dark:bg-zinc-950 group">
               {images.map((img, index) => (
@@ -296,7 +327,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
                 />
               ))}
               
-              {/* Carousel Controls - Always Visible */}
+              {/* Кнопкаҳои идоракунии карусел */}
               {images.length > 1 && (
                 <>
                   <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center text-zinc-800 transition-all hover:bg-white z-20"><ChevronLeft className="w-6 h-6" /></button>
@@ -311,8 +342,9 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          {/* Info */}
+          {/* Маълумот дар бораи ашё (Main Content) */}
           <div className="flex flex-col">
+            {/* Профили соҳиби эълон ва просмотрҳо */}
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -328,7 +360,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {/* Category and Date Row */}
+            {/* Категория ва вақти эҷод */}
             <div className="flex justify-between items-center mb-4">
               <Badge variant="outline" className="uppercase tracking-widest text-[10px] rounded-md px-2 py-1 font-black border-zinc-200">
                 {t(`categories.${item.category}`)}
@@ -340,7 +372,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
             </div>
 
             <div className="flex flex-col mb-4">
-              {/* Title and Status Row */}
+              {/* Сарлавҳа (Заголовок) */}
               <div className="flex justify-between items-start gap-4 mb-2">
                 <h1 className="text-4xl font-black tracking-tighter uppercase leading-none flex-1">{item.title}</h1>
                 <span className={cn(
@@ -354,6 +386,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
+            {/* Нишон додани мукофот (Reward) агар бошад */}
             {item.type === 'lost' && item.reward && (
               <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 mb-8 shadow-sm">
                 <p className="text-amber-600 dark:text-amber-400 font-black text-[10px] uppercase tracking-widest mb-1 leading-tight">
@@ -365,6 +398,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </div>
             )}
 
+            {/* Тавсифи ашё */}
             <div className="mb-8">
               <h3 className="font-black text-[10px] uppercase tracking-widest text-zinc-400 mb-4">{t('description')}</h3>
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">
@@ -372,6 +406,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </p>
             </div>
 
+            {/* Маслиҳатҳои бехатарӣ */}
             <div className="bg-blue-50 dark:bg-blue-950/20 rounded-2xl p-5 mb-8 flex gap-4 items-start border border-blue-100 dark:border-blue-900/30 shadow-sm">
               <ShieldCheck className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
               <div>
@@ -380,7 +415,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {/* Action Buttons - Always Visible with Proper Labels */}
+            {/* Тугмаҳои амалиёт (Амалҳо барои соҳиби эълон ва дигарон) */}
             <div className="flex flex-wrap items-center gap-4 mb-10">
               {isOwner && (
                 <>
@@ -412,6 +447,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
+            {/* Тугмаҳои тамос (Занг задан) */}
             <div className="mt-auto flex flex-col gap-3">
               {isOwner ? (
                 <Button size="lg" className="h-16 w-full rounded-2xl text-base font-black gap-3 bg-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-100 dark:shadow-none uppercase tracking-widest text-white transition-all active:scale-95" onClick={() => setShowResolvedConfirm(true)} disabled={isActionLoading}>
@@ -437,7 +473,8 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        {/* Confirmation Modals */}
+        {/* Тирезаҳои тасдиқ (Confirmation Modals) */}
+        {/* Нест кардан */}
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
           <DialogContent className="rounded-3xl max-w-sm border-none shadow-2xl">
             <DialogHeader>
@@ -451,6 +488,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
           </DialogContent>
         </Dialog>
 
+        {/* Ба бойгонӣ гузоштан */}
         <Dialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
           <DialogContent className="rounded-3xl max-w-sm border-none shadow-2xl">
             <DialogHeader>
@@ -464,6 +502,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
           </DialogContent>
         </Dialog>
 
+        {/* Ҳал шудани мушкил */}
         <Dialog open={showResolvedConfirm} onOpenChange={setShowResolvedConfirm}>
           <DialogContent className="rounded-3xl max-w-sm border-none shadow-2xl">
             <DialogHeader>
@@ -477,6 +516,7 @@ export default function ItemDetailsPage({ params }: { params: Promise<{ id: stri
           </DialogContent>
         </Dialog>
 
+        {/* Агар сурат блок шуда бошад */}
         <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
           <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
             <DialogHeader className="space-y-3">

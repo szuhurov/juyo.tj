@@ -1,4 +1,8 @@
-import { QueryClient } from "@tanstack/react-query";
+/**
+ * Танзимоти React Query барои идоракунии маълумот.
+ * Кэш ва навсозии автоматии маълумотро таъмин мекунад.
+ */
+import { QueryClient } from "@tanstack/react-query"; // Ин барои кэши маълумотҳост
 
 export const queryClient = new QueryClient({
   defaultOptions: {

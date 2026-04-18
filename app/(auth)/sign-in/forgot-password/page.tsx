@@ -1,21 +1,29 @@
+/**
+ * Саҳифаи барқарорсозии парол (Forgot Password).
+ * Ин файл барои иваз кардани пароли гумшуда бо ёрии Clerk хизмат мекунад.
+ * Раванд: фиристодани код ба почта -> ворид кардани код ва пароли нав.
+ */
 "use client";
 
-import { useSignIn, useClerk } from "@clerk/nextjs";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import Link from "next/link";
-import { Loader2, Mail, Lock, Key, ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { useLanguage } from "@/lib/language-context";
+import { useSignIn, useClerk } from "@clerk/nextjs"; // Барои воридшавӣ ва идоракунии Clerk
+import { useState } from "react"; // Барои нигоҳ доштани маълумот дар стейт
+import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаи дигар
+import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { Input } from "@/components/ui/input"; // Компоненти воридкунии матн
+import { Label } from "@/components/ui/label"; // Компоненти тамға
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"; // Компонентҳои корт
+import { toast } from "sonner"; // Барои нишон додани хабарҳо
+import Link from "next/link"; // Барои пайвандҳо
+import { Loader2, Mail, Lock, Key, ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react"; // Иконкаҳо
+import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 
 export default function ForgotPasswordPage() {
+  // Хукҳои асосӣ
   const { t } = useLanguage();
   const { signIn } = useSignIn();
   const { setActive } = useClerk();
+
+  // Состояниеҳо (States) барои идоракунии форма
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +34,10 @@ export default function ForgotPasswordPage() {
 
   if (!signIn) return null;
 
+  /**
+   * Функсия барои оғози раванди барқарорсозӣ (Шабакаи аввал).
+   * Запрос барои фиристодани код ба почтаи электронӣ.
+   */
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
@@ -42,6 +54,10 @@ export default function ForgotPasswordPage() {
       .finally(() => setPending(false));
   }
 
+  /**
+   * Функсия барои тасдиқи код ва пароли нав (Шабакаи дуюм).
+   * Ин ҷо пароли нав дар система сабт мешавад.
+   */
   async function reset(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
@@ -66,6 +82,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4">
+      {/* Карточкаи асосии UI */}
       <Card className="w-full max-w-md border-zinc-200 dark:border-zinc-800 shadow-2xl rounded-xl overflow-hidden bg-white dark:bg-zinc-950">
         <CardHeader className="space-y-1 bg-zinc-900 text-white p-8 text-center">
           <CardTitle className="text-2xl font-black uppercase tracking-tighter">{t('auth.resetPassword')}</CardTitle>
@@ -73,8 +90,11 @@ export default function ForgotPasswordPage() {
             {successfulCreation ? t('auth.enterNewPassword') : t('auth.enterEmail')}
           </CardDescription>
         </CardHeader>
+        
         <CardContent className="p-8">
+          {/* Логикаи иваз кардани форма: вобаста ба successfulCreation */}
           {!successfulCreation ? (
+            // Формаи аввал: Ворид кардани почта
             <form onSubmit={create} className="space-y-5">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">E-mail</Label>
@@ -104,6 +124,7 @@ export default function ForgotPasswordPage() {
               </Button>
             </form>
           ) : (
+            // Формаи дуюм: Ворид кардани код ва пароли нав
             <form onSubmit={reset} className="space-y-5">
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">{t('verificationCode')}</Label>
@@ -131,6 +152,7 @@ export default function ForgotPasswordPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  {/* Тугмаи нишон додани парол (Show/Hide) */}
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
@@ -161,6 +183,7 @@ export default function ForgotPasswordPage() {
             </form>
           )}
         </CardContent>
+        
         <CardFooter className="p-8 pt-0 flex flex-col items-center justify-center border-t border-zinc-100 dark:border-zinc-900 bg-zinc-50/50 dark:bg-zinc-900/30">
           <Link href="/sign-in" className="text-xs font-bold text-zinc-500 uppercase tracking-tight flex items-center hover:text-zinc-900 dark:hover:text-white transition-colors">
             <ArrowLeft className="mr-1 h-3 w-3" />
