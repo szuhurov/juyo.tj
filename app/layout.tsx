@@ -5,6 +5,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { LanguageProvider } from "@/lib/language-context";
 import { Toaster } from "@/components/ui/sonner";
 import { NetworkStatus } from "@/components/network-status";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -96,6 +98,8 @@ export default function RootLayout({
             <LanguageProvider>
               <NetworkStatus />
               {children}
+              <Analytics />
+              <SpeedInsights />
               <Toaster position="top-center" richColors />
             </LanguageProvider>
           </QueryProvider>
