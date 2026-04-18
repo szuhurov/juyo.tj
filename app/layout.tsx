@@ -11,10 +11,66 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: "JUYO",
-  description: "Platform for lost and found items in Tajikistan",
-};
+import { QueryProvider } from "@/components/query-provider";
+import { translations } from "@/lib/translations";
+import { cookies } from "next/headers";
+
+export async function generateMetadata() {
+  const cookieStore = await cookies();
+  const savedLocale = cookieStore.get("juyo-locale")?.value || "tg";
+  const locale = ["tg", "ru", "en"].includes(savedLocale) ? savedLocale : "tg";
+
+  const t = translations[locale];
+
+  return {
+    title: {
+      default: t.seoTitle,
+      template: "%s | JUYO.TJ"
+    },
+    description: t.seoDesc,
+    keywords: [
+      "juyo", "juyo.tj", "гумшуда", "ёфтшуда", "Тоҷикистон", "Душанбе", 
+      "поиск вещей", "бюро находок", "Таджикистан", "потерянные вещи",
+      "lost and found Tajikistan", "find lost items", "Dushanbe"
+    ],
+    authors: [{ name: "JUYO Team" }],
+    metadataBase: new URL("https://juyo.tj"),
+    alternates: {
+      canonical: "/",
+      languages: {
+        'tg-TJ': '/tg',
+        'ru-RU': '/ru',
+        'en-US': '/en',
+      },
+    },
+    openGraph: {
+      type: "website",
+      locale: savedLocale === 'ru' ? 'ru_RU' : savedLocale === 'en' ? 'en_US' : 'tg_TJ',
+      url: "https://juyo.tj",
+      siteName: "JUYO.TJ",
+      title: t.seoTitle,
+      description: t.seoDesc,
+      images: [
+        {
+          url: "/logo.png",
+          width: 1200,
+          height: 630,
+          alt: "JUYO.TJ",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t.seoTitle,
+      description: t.seoDesc,
+      images: ["/logo.png"],
+    },
+    icons: {
+      icon: "/icon.tsx",
+    }
+  };
+}
+
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -22,8 +78,6 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
 };
-
-import { QueryProvider } from "@/components/query-provider";
 
 export default function RootLayout({
   children,

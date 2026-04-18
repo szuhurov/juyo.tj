@@ -23,9 +23,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Update document title when locale changes
+  useEffect(() => {
+    const t = translations[locale];
+    if (t && t.seoTitle) {
+      document.title = t.seoTitle;
+    }
+  }, [locale]);
+
   const setAndSaveLocale = (newLocale: Locale) => {
     setLocale(newLocale);
     localStorage.setItem("juyo-locale", newLocale);
+    // Save to cookie for server-side access (generateMetadata)
+    document.cookie = `juyo-locale=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
   };
 
   const t = (key: string, params?: Record<string, any>) => {

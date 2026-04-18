@@ -265,6 +265,10 @@ export const translations: Record<string, any> = {
     permissionGallery: 'Лутфан дар танзимоти телефон иҷозати дастрасӣ ба галереяро фаъол кунед.',
     saveBtn: 'ЗАХИРА КАРДАН',
 
+    // SEO
+    seoTitle: 'JUYO.TJ — Ёфтани чизҳои гумшуда дар Тоҷикистон',
+    seoDesc: 'Аввалин платформаи муосир барои ёфтани чизҳои гумшуда ва баргардонидани ашёи ёфтшуда дар Тоҷикистон. Бо истифода аз коди QR ва системаи бехатар.',
+
     // Safety Box
     safetyBoxTitle: 'Сандуқчаи ман',
     safetyBoxDesc: 'Ашёҳои муҳимро инҷо нигоҳ доред',
@@ -578,6 +582,10 @@ export const translations: Record<string, any> = {
     qrAlbumSuccess: 'Стикер сохранен в альбом "JUYO"!',
     permissionGallery: 'Пожалуйста, разрешите доступ к галерее в настройках телефона.',
     saveBtn: 'СОХРАНИТЬ',
+
+    // SEO
+    seoTitle: 'JUYO.TJ — Поиск потерянных вещей в Таджикистане',
+    seoDesc: 'Первая современная платформа для поиска потерянных и найденных вещей в Таджикистане. С использованием QR-кодов и системы безопасности.',
 
     // Safety Box
     safetyBoxTitle: 'Мой Сейф',
@@ -896,6 +904,10 @@ export const translations: Record<string, any> = {
     qrAlbumSuccess: 'Sticker saved to "JUYO" album!',
     permissionGallery: 'Please enable gallery access in phone settings.',
     saveBtn: 'SAVE STICKER',
+
+    // SEO
+    seoTitle: 'JUYO.TJ — Lost and Found Items in Tajikistan',
+    seoDesc: 'The first modern platform for lost and found items in Tajikistan. Featuring QR code stickers and a secure safety box.',
 
     // Safety Box
     safetyBoxTitle: 'My Safety Box',
