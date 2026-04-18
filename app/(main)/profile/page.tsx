@@ -636,9 +636,9 @@ function ProfileContent() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-stretch px-2">
-                <div className="flex flex-col">
-                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[3rem] p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full h-full overflow-hidden">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
+                <div className="flex flex-col sticky top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-4 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[2.5rem] md:rounded-[3rem] p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full overflow-hidden shadow-sm md:shadow-none">
                     <QRCard 
                       id={user?.id || ""} 
                       settings={{
