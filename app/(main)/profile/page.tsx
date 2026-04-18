@@ -67,6 +67,7 @@ import {
 import { QRCard } from "@/components/qr-editor/qr-card";
 import { toPng } from "html-to-image";
 import { HexColorPicker } from "react-colorful";
+import { compressImage } from "@/lib/image-utils";
 
 import { useUserItems, useSavedItems, useSafetyItems, ITEM_KEYS } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
@@ -266,9 +267,12 @@ function ProfileContent() {
         const uploadToken = await getToken({ template: 'supabase' });
         const uploadSupabase = createClerkSupabaseClient(uploadToken!);
         
-        const ext = file.name.split('.').pop();
+        // Compress image
+        const compressedFile = await compressImage(file);
+        
+        const ext = compressedFile.name.split('.').pop();
         const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const { error: uploadError } = await uploadSupabase.storage.from('items').upload(fileName, file);
+        const { error: uploadError } = await uploadSupabase.storage.from('items').upload(fileName, compressedFile);
         if (uploadError) throw uploadError;
         const { data: { publicUrl } } = uploadSupabase.storage.from('items').getPublicUrl(fileName);
         imageUrls.push(publicUrl);
@@ -356,9 +360,12 @@ function ProfileContent() {
       
       if (safetyImages.length > 0) {
         for (const file of safetyImages) {
-          const ext = file.name.split('.').pop();
+          // Compress image
+          const compressedFile = await compressImage(file);
+          
+          const ext = compressedFile.name.split('.').pop();
           const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-          const { error: uploadError } = await supabase.storage.from('items').upload(fileName, file);
+          const { error: uploadError } = await supabase.storage.from('items').upload(fileName, compressedFile);
           if (uploadError) throw uploadError;
           const { data: { publicUrl } } = supabase.storage.from('items').getPublicUrl(fileName);
           imageUrls.push(publicUrl);

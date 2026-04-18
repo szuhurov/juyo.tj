@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/language-context";
 import { ItemService, CATEGORIES } from "@/lib/services/item-service";
 import { ProfileService } from "@/lib/services/profile-service";
 import { createClerkSupabaseClient } from "@/lib/supabase";
+import { compressImage } from "@/lib/image-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -112,12 +113,15 @@ function AddItemForm() {
 
       const imageUrls = [];
       for (const file of images) {
-        const ext = file.name.split('.').pop();
+        // Compress image before upload
+        const compressedFile = await compressImage(file);
+        
+        const ext = compressedFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
         
         const { error: uploadError } = await supabase.storage
           .from('items')
-          .upload(fileName, file);
+          .upload(fileName, compressedFile);
         
         if (uploadError) throw uploadError;
         
