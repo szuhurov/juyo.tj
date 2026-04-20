@@ -26,7 +26,7 @@ const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function PublicQRPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { t, language } = useLanguage();
+  const { t, locale } = useLanguage();
   
   const [profile, setProfile] = useState<any>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -95,8 +95,8 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
             <div className="h-1 w-12 bg-emerald-500 mx-auto rounded-full" />
           </div>
           <p className="text-zinc-400 font-bold text-[10px] uppercase tracking-widest leading-relaxed">
-            {language === 'tg' ? 'Барои амнияти бештар маълумоти шахсӣ пинҳон аст.' : 
-             language === 'ru' ? 'Личные данные скрыты в целях безопасности.' : 
+            {locale === 'tg' ? 'Барои амнияти бештар маълумоти шахсӣ пинҳон аст.' : 
+             locale === 'ru' ? 'Личные данные скрыты в целях безопасности.' : 
              'Personal data is hidden for security reasons.'}
           </p>
           <Button asChild className="mt-8 rounded-2xl font-black uppercase tracking-widest text-[10px] h-14 px-10 bg-zinc-900 text-white shadow-xl hover:bg-zinc-800 transition-all active:scale-95">
