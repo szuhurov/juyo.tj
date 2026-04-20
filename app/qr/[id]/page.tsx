@@ -19,12 +19,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Phone, ShieldCheck, User, PackageSearch, QrCode, Loader2, Languages } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -73,25 +67,27 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
   }
 
   const LanguageSwitcher = () => (
-    <div className="fixed top-4 right-4 z-50">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="rounded-full w-10 h-10 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <Languages className="w-4 h-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="rounded-2xl p-2 min-w-[140px] border-zinc-100 dark:border-zinc-800 shadow-2xl">
-          <DropdownMenuItem onClick={() => setLocale('tg')} className={cn("rounded-xl font-bold px-4 py-3 cursor-pointer", locale === 'tg' && "bg-zinc-100 dark:bg-zinc-800")}>
-            Тоҷикӣ
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setLocale('ru')} className={cn("rounded-xl font-bold px-4 py-3 cursor-pointer", locale === 'ru' && "bg-zinc-100 dark:bg-zinc-800")}>
-            Русский
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setLocale('en')} className={cn("rounded-xl font-bold px-4 py-3 cursor-pointer", locale === 'en' && "bg-zinc-100 dark:bg-zinc-800")}>
-            English
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
+      <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 shadow-xl border border-zinc-200 dark:border-zinc-800">
+        {[
+          { id: 'tg', label: 'Тоҷикӣ' },
+          { id: 'ru', label: 'Русский' },
+          { id: 'en', label: 'English' }
+        ].map((lang) => (
+          <button
+            key={lang.id}
+            onClick={() => setLocale(lang.id as any)}
+            className={cn(
+              "px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all duration-300",
+              locale === lang.id 
+                ? "bg-emerald-500 text-white shadow-lg scale-105" 
+                : "bg-transparent text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            )}
+          >
+            {lang.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
@@ -133,7 +129,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
       <LanguageSwitcher />
-      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 pt-20 pb-12">
+      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 pt-32 pb-12">
         <div className="container mx-auto px-4 text-center">
           <div className="relative inline-block mb-6">
             <Avatar className="w-32 h-32 border-4 border-white dark:border-zinc-800 shadow-2xl rounded-[2.5rem] overflow-hidden">
@@ -172,7 +168,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
             )}
 
             {profile.secondary_phone && (
-              <Button size="lg" variant="outline" className="w-full max-w-xs h-14 px-10 rounded-2xl border-2 border-zinc-200 dark:border-zinc-800 font-black uppercase tracking-widest gap-3 transition-all active:scale-95" asChild>
+              <Button size="lg" variant="outline" className="w-full max-w-xs h-14 px-10 rounded-2xl border-2 border-zinc-900 dark:border-zinc-100 font-black uppercase tracking-widest gap-3 transition-all active:scale-95 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100" asChild>
                 <a href={`tel:${profile.secondary_phone}`}>
                   <Phone className="w-4 h-4" />
                   {t('contactSecondary')}

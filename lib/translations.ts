@@ -128,6 +128,7 @@ export const translations: Record<string, any> = {
     qrActivatedSuccess: 'QR-профил фаъол шуд',
     qrDeactivatedSuccess: 'QR-профил ғайрифаъол шуд',
     qrProfileInactive: 'Ин QR-код муваққатан аз ҷониби соҳибаш (%{name}) ғайрифаъол карда шудааст.',
+    contactSecondary: 'Занг ба наздикон',
     additionalInfo: 'Маълумоти иловагӣ...',
     foundUserItem: 'Шумо ашёи %{name}-ро ёфтед. Лутфан бо ӯ тамос гиред, то ашёро баргардонед.',
 
@@ -481,6 +482,7 @@ export const translations: Record<string, any> = {
     qrActivatedSuccess: 'QR-профиль активирован',
     qrDeactivatedSuccess: 'QR-профиль деактивирован',
     qrProfileInactive: 'Этот QR-код временно деактивирован владельцем (%{name}).',
+    contactSecondary: 'Связаться с близкими',
     additionalInfo: 'Дополнительная информация...',
     foundUserItem: 'Вы нашли вещь пользователя %{name}. Пожалуйста, свяжитесь с ним, чтобы вернуть находку.',
     phoneRequiredTitle: 'Необходим номер телефона',

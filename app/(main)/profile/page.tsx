@@ -610,11 +610,11 @@ function ProfileContent() {
           <div className="space-y-8 pb-20">
             {/* Сарлавҳаи таби QR-код */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <h3 className="text-lg font-black uppercase tracking-tight">{t('qrMyCode')}</h3>
-                <div className="flex items-center gap-6">
+                <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
                   {/* iOS Style Toggle */}
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-center sm:items-end gap-1">
                     <div className="flex items-center gap-3">
                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
                         {profile?.is_qr_active ? t('qrStatusActive') : t('qrStatusInactive')}
@@ -697,21 +697,23 @@ function ProfileContent() {
             <div className="animate-in fade-in duration-500 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
-                <div className="flex flex-col sticky top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-4 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[2.5rem] md:rounded-[3rem] p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full overflow-hidden shadow-sm md:shadow-none">
-                    <QRCard 
-                      id={user?.id || ""} 
-                      settings={{
-                        qrColor: qrSettings.qrColor,
-                        bgColor: qrSettings.bgColor,
-                        borderRadius: "medium",
-                        shadow: "soft",
-                        hasBorder: false,
-                        pattern: "none",
-                        text: qrSettings.text
-                      }} 
-                      innerRef={qrRef}
-                    />
+                <div className="flex flex-col sticky top-[150px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-4 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[2rem] md:rounded-[3rem] p-4 sm:p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full max-w-sm mx-auto overflow-hidden shadow-sm md:shadow-none transition-all duration-300">
+                    <div className="scale-75 sm:scale-100 origin-center transition-transform duration-300">
+                      <QRCard 
+                        id={user?.id || ""} 
+                        settings={{
+                          qrColor: qrSettings.qrColor,
+                          bgColor: qrSettings.bgColor,
+                          borderRadius: "medium",
+                          shadow: "soft",
+                          hasBorder: false,
+                          pattern: "none",
+                          text: qrSettings.text
+                        }} 
+                        innerRef={qrRef}
+                      />
+                    </div>
                   </div>
                 </div>
 
