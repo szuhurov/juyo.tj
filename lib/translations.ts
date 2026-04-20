@@ -965,7 +965,3 @@ export const translations: Record<string, any> = {
     },
   }
 };
-our consent has been accepted'
-    },
-  }
-};
