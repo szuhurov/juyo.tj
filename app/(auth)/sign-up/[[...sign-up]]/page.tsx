@@ -15,9 +15,9 @@ export default function Page() {
 
   // Рӯйхати забонҳо барои тугмаҳо
   const languages = [
-    { code: "tg", label: "TG" },
-    { code: "ru", label: "RU" },
-    { code: "en", label: "EN" },
+    { code: "tg", label: "Тоҷикӣ" },
+    { code: "ru", label: "Русский" },
+    { code: "en", label: "English" },
   ];
 
   return (
@@ -32,7 +32,7 @@ export default function Page() {
             variant={locale === lang.code ? "default" : "outline"}
             size="sm"
             onClick={() => setLocale(lang.code as any)}
-            className={`font-black rounded-lg w-12 h-9 transition-all ${
+            className={`font-bold rounded-lg px-4 h-9 transition-all text-[11px] sm:text-xs ${
               locale === lang.code 
                 ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md" 
                 : "bg-white dark:bg-zinc-900 text-zinc-600 hover:text-zinc-900 border-zinc-200 dark:border-zinc-800"
