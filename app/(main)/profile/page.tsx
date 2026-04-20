@@ -698,8 +698,8 @@ function ProfileContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
                 <div className="flex flex-col sticky top-[150px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[1rem] md:rounded-[3rem] p-2 sm:p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full max-w-[160px] aspect-square sm:max-w-sm mx-auto overflow-hidden shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-[0.5] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
+                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-xl md:rounded-[3rem] p-1 sm:p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full max-w-[120px] sm:max-w-sm mx-auto overflow-hidden shadow-sm md:shadow-none transition-all duration-300">
+                    <div className="scale-[0.55] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
                       <QRCard 
                         id={user?.id || ""} 
                         settings={{
