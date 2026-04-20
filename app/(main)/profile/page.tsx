@@ -697,9 +697,9 @@ function ProfileContent() {
             <div className="animate-in fade-in duration-500 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
-                <div className="flex flex-col sticky top-[150px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-4 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[2rem] md:rounded-[3rem] p-4 sm:p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full max-w-sm mx-auto overflow-hidden shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-75 sm:scale-100 origin-center transition-transform duration-300">
+                <div className="flex flex-col sticky top-[150px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-2 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                  <div className="bg-zinc-100 dark:bg-zinc-900 rounded-[1.5rem] md:rounded-[3rem] p-3 sm:p-8 md:p-12 flex items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 w-full max-w-[220px] sm:max-w-sm mx-auto overflow-hidden shadow-sm md:shadow-none transition-all duration-300">
+                    <div className="scale-[0.65] sm:scale-100 origin-center transition-transform duration-300">
                       <QRCard 
                         id={user?.id || ""} 
                         settings={{
