@@ -97,6 +97,7 @@ function ProfileContent() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+  const [showSecurityInfo, setShowSecurityInfo] = useState(false);
   
   // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва текст)
   const [qrSettings, setQrSettings] = useState({
