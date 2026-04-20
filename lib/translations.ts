@@ -465,6 +465,14 @@ export const translations: Record<string, any> = {
     qrStickerText: 'Текст стикера',
     qrFooterText: 'Текст внизу',
     qrInputPlaceholder: 'Введите текст...',
+    qrStatusActive: 'Активен',
+    qrStatusInactive: 'Неактивен',
+    qrSecurityQuestion: 'Что это? Для чего это нужно?',
+    qrSecurityTitle: 'Режим безопасности',
+    qrSecurityLong: 'Эта кнопка — ваш "щит" конфиденциальности. Мы рекомендуем включать её только тогда, когда ваша вещь действительно потеряна. В остальное время держите её выключенной — это не позволит посторонним сканировать QR-код и узнавать ваш номер телефона без причины. Ваша безопасность — наш приоритет!',
+    qrActivatedSuccess: 'QR-профиль активирован',
+    qrDeactivatedSuccess: 'QR-профиль деактивирован',
+    qrProfileInactive: 'Этот QR-код временно деактивирован владельцем (%{name}).',
     additionalInfo: 'Дополнительная информация...',
     foundUserItem: 'Вы нашли вещь пользователя %{name}. Пожалуйста, свяжитесь с ним, чтобы вернуть находку.',
     phoneRequiredTitle: 'Необходим номер телефона',
@@ -954,6 +962,10 @@ export const translations: Record<string, any> = {
       link: 'Terms of Service and Privacy',
       error: 'Please accept the terms',
       success: 'Your consent has been accepted'
+    },
+  }
+};
+our consent has been accepted'
     },
   }
 };

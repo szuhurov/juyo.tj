@@ -668,7 +668,7 @@ function ProfileContent() {
 
               {/* Security Info Modal */}
               <Dialog open={showSecurityInfo} onOpenChange={setShowSecurityInfo}>
-                <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl overflow-hidden relative">
+                <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-[2.5rem] p-8 border-none shadow-2xl overflow-hidden bg-white dark:bg-zinc-900 outline-none">
                   <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
                   <DialogHeader className="space-y-4 text-center">
                     <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
@@ -681,7 +681,7 @@ function ProfileContent() {
                       {t('qrSecurityLong')}
                     </DialogDescription>
                   </DialogHeader>
-                  <DialogFooter className="mt-6">
+                  <DialogFooter className="mt-6 sm:justify-center">
                     <Button 
                       onClick={() => setShowSecurityInfo(false)}
                       className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"
