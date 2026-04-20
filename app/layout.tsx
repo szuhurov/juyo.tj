@@ -63,7 +63,7 @@ export async function generateMetadata() {
       description: t.seoDesc,
       images: [
         {
-          url: "/logo.png",
+          url: "/logo.jpg",
           width: 1200,
           height: 630,
           alt: "JUYO.TJ",
@@ -74,10 +74,12 @@ export async function generateMetadata() {
       card: "summary_large_image",
       title: t.seoTitle,
       description: t.seoDesc,
-      images: ["/logo.png"],
+      images: ["/logo.jpg"],
     },
     icons: {
-      icon: "/icon.tsx",
+      icon: "/logo.jpg",
+      shortcut: "/logo.jpg",
+      apple: "/logo.jpg",
     }
   };
 }

@@ -36,19 +36,37 @@ export function MandatoryPhoneModal() {
       
       try {
         const token = await getToken({ template: 'supabase' });
-        const supabase = createClerkSupabaseClient(token!);
-        const data = await ProfileService.getProfile(supabase, userId);
-        
-        const isMissingData = 
-          !data?.phone || 
-          !data?.secondary_phone || 
-          !data?.secondary_phone_type ||
-          data?.accepted_terms !== true || 
-          !data?.accepted_at || 
-          !data?.terms_version;
+        if (!token) return;
 
-        if (data && isMissingData) {
+        const supabase = createClerkSupabaseClient(token);
+        
+        // Маҷбур мекунем, ки маълумоти охиринро аз сервер гирад (бе кэш)
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error("Supabase error:", error);
+          return;
+        }
+
+        // Санҷиши ҳамаи майдонҳои ҳатмӣ
+        const isMissingData = 
+          !data.phone || 
+          data.phone.trim() === "" ||
+          !data.secondary_phone || 
+          data.secondary_phone.trim() === "" ||
+          !data.secondary_phone_type ||
+          data.accepted_terms !== true || 
+          !data.accepted_at || 
+          !data.terms_version;
+
+        if (isMissingData) {
           setShowModal(true);
+        } else {
+          setShowModal(false);
         }
       } catch (err) {
         console.error("Error checking profile status:", err);
