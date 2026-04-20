@@ -39,6 +39,7 @@ export const translations: Record<string, any> = {
     alreadyHaveAccount: 'Аллакай ҳисоб доред?',
     newUser: 'Корбари нав ҳастед?',
     signupSubtitle: 'Ҳисоби нави худро эҷод кунед',
+    signupInstructions: 'Лутфан почтаи электронии худро ворид кунед ва рамзи қавӣ созед. Пас аз пахш кардани тугмаи \'Бақайдгирӣ\', ба почтаи шумо коди тасдиқи 6-рақама фиристода мешавад, онро ворид кунед ва тамом. Ё бо тугмаи Google ворид шавед.',
     loginSubtitle: 'Ба ҳисоби худ ворид шавед',
     forgotPassword: 'Рамзро фаромӯш кардед?',
     forgotPass: {
@@ -393,6 +394,7 @@ export const translations: Record<string, any> = {
     alreadyHaveAccount: 'Уже есть аккаунт?',
     newUser: 'Новый пользователь?',
     signupSubtitle: 'Создайте свой новый аккаунт',
+    signupInstructions: 'Пожалуйста, введите адрес электронной почты и создайте надежный пароль. После нажатия кнопки «Регистрация» на вашу почту будет отправлен 6-значный код подтверждения, введите его и всё. Или войдите с помощью Google.',
     loginSubtitle: 'Войдите в свой аккаунт',
     forgotPassword: 'Забыли пароль?',
     forgotPass: {
@@ -969,13 +971,6 @@ export const translations: Record<string, any> = {
       title: 'Terms Confirmation',
       description: 'To continue using the application, you must agree to our terms and conditions.',
       checkbox: 'I consent to the processing of my personal data and confirm that I am 18 years of age or older',
-      button: 'CONTINUE',
-      link: 'Terms of Service and Privacy',
-      error: 'Please accept the terms',
-      success: 'Your consent has been accepted'
-    },
-  }
-};
       button: 'CONTINUE',
       link: 'Terms of Service and Privacy',
       error: 'Please accept the terms',
