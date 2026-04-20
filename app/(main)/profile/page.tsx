@@ -611,15 +611,85 @@ function ProfileContent() {
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-black uppercase tracking-tight">{t('qrMyCode')}</h3>
-                <Button 
-                  onClick={handleDownloadQR}
-                  disabled={isDownloading}
-                  className="rounded-lg h-9 px-6 font-black uppercase text-[10px] tracking-widest gap-2 bg-zinc-900 text-white shadow-md hover:bg-zinc-800"
-                >
-                  {isDownloading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                  {t('save')}
-                </Button>
+                <div className="flex items-center gap-6">
+                  {/* iOS Style Toggle */}
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        {profile?.is_qr_active ? t('qrStatusActive') : t('qrStatusInactive')}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const token = await getToken({ template: 'supabase' });
+                            const supabase = createClerkSupabaseClient(token!);
+                            const newState = !profile?.is_qr_active;
+                            const updated = await ProfileService.updateProfile(supabase, userId!, {
+                              is_qr_active: newState
+                            });
+                            setProfile(updated);
+                            toast.success(newState ? t('qrActivatedSuccess') : t('qrDeactivatedSuccess'));
+                          } catch (err) {
+                            toast.error(t('error'));
+                          }
+                        }}
+                        className={cn(
+                          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                          profile?.is_qr_active ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            profile?.is_qr_active ? "translate-x-5" : "translate-x-0"
+                          )}
+                        />
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => setShowSecurityInfo(true)}
+                      className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2"
+                    >
+                      {t('qrSecurityQuestion')}
+                    </button>
+                  </div>
+
+                  <Button 
+                    onClick={handleDownloadQR}
+                    disabled={isDownloading}
+                    className="rounded-lg h-9 px-6 font-black uppercase text-[10px] tracking-widest gap-2 bg-zinc-900 text-white shadow-md hover:bg-zinc-800"
+                  >
+                    {isDownloading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                    {t('save')}
+                  </Button>
+                </div>
               </div>
+
+              {/* Security Info Modal */}
+              <Dialog open={showSecurityInfo} onOpenChange={setShowSecurityInfo}>
+                <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl overflow-hidden relative">
+                  <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
+                  <DialogHeader className="space-y-4 text-center">
+                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+                      <ShieldCheck className="w-8 h-8 text-emerald-500" />
+                    </div>
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+                      {t('qrSecurityTitle')}
+                    </DialogTitle>
+                    <DialogDescription className="text-zinc-600 dark:text-zinc-400 font-bold text-base leading-relaxed">
+                      {t('qrSecurityLong')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="mt-6">
+                    <Button 
+                      onClick={() => setShowSecurityInfo(false)}
+                      className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"
+                    >
+                      {t('ok')}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Танзимоти намуди зоҳирии QR */}

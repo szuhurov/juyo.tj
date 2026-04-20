@@ -14,6 +14,7 @@ export interface Profile {
   phone?: string;
   secondary_phone?: string;
   secondary_phone_type?: string;
+  is_qr_active?: boolean;
   accepted_terms?: boolean;
   accepted_at?: string;
   terms_version?: string;
@@ -61,7 +62,7 @@ export const ProfileService = {
   async getPublicProfile(supabaseClient: any, userId: string) {
     const { data, error } = await supabaseClient
       .from('profiles')
-      .select('first_name, last_name, avatar_url, phone, secondary_phone')
+      .select('first_name, last_name, avatar_url, phone, secondary_phone, is_qr_active')
       .eq('id', userId)
       .single();
 
