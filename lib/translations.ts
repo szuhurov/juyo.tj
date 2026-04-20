@@ -979,5 +979,3 @@ export const translations: Record<string, any> = {
     },
   }
 };
- }
-};
