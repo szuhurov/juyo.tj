@@ -747,6 +747,7 @@ export const translations: Record<string, any> = {
     alreadyHaveAccount: 'Already have an account?',
     newUser: 'New user?',
     signupSubtitle: 'Create your new account',
+    signupInstructions: 'Please enter your email address and create a strong password. After clicking the \'Sign Up\' button, a 6-digit confirmation code will be sent to your email, enter it and you\'re done. Or sign in with Google.',
     loginSubtitle: 'Log in to your account',
     forgotPassword: 'Forgot password?',
     forgotPass: {
@@ -968,6 +969,13 @@ export const translations: Record<string, any> = {
       title: 'Terms Confirmation',
       description: 'To continue using the application, you must agree to our terms and conditions.',
       checkbox: 'I consent to the processing of my personal data and confirm that I am 18 years of age or older',
+      button: 'CONTINUE',
+      link: 'Terms of Service and Privacy',
+      error: 'Please accept the terms',
+      success: 'Your consent has been accepted'
+    },
+  }
+};
       button: 'CONTINUE',
       link: 'Terms of Service and Privacy',
       error: 'Please accept the terms',
