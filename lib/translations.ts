@@ -749,7 +749,7 @@ export const translations: Record<string, any> = {
     alreadyHaveAccount: 'Already have an account?',
     newUser: 'New user?',
     signupSubtitle: 'Create your new account',
-    signupInstructions: 'Please enter your email address and create a strong password. After clicking the \'Sign Up\' button, a 6-digit confirmation code will be sent to your email, enter it and you\'re done. Or sign in with Google.',
+    signupInstructions: 'Easiest way: click the Google button to sign in. Alternatively, enter your email address and create a strong password. After clicking the \'Sign Up\' button, a 6-digit confirmation code will be sent to your email, enter it and you\'re done.',
     loginSubtitle: 'Log in to your account',
     loginInstructions: 'If you already have an account, enter your email and password. If you don\'t have an account, go to %{link}.',
     forgotPassword: 'Forgot password?',
@@ -978,4 +978,6 @@ export const translations: Record<string, any> = {
       success: 'Your consent has been accepted'
     },
   }
+};
+ }
 };
