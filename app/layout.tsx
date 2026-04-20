@@ -63,10 +63,10 @@ export async function generateMetadata() {
       description: t.seoDesc,
       images: [
         {
-          url: "/logo.jpg",
+          url: "https://juyo.tj/logo.jpg",
           width: 1200,
           height: 630,
-          alt: "JUYO.TJ",
+          alt: "JUYO.TJ - Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда",
         },
       ],
     },
@@ -74,7 +74,7 @@ export async function generateMetadata() {
       card: "summary_large_image",
       title: t.seoTitle,
       description: t.seoDesc,
-      images: ["/logo.jpg"],
+      images: ["https://juyo.tj/logo.jpg"],
     },
     icons: {
       icon: "/logo.jpg",
