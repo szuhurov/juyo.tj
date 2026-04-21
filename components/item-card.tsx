@@ -73,11 +73,8 @@ export function ItemCard({ item }: { item: Item }) {
 
   // Функсия барои нишон додани модал агар эълон блок шуда бошад
   const handleCardClick = (e: React.MouseEvent) => {
-    if (isOwner && item.moderation_status === 'rejected') {
-      e.preventDefault();
-      e.stopPropagation();
-      setShowBlockedInfo(true);
-    }
+    // Акнун мо танҳо иҷозат медиҳем, ки истифодабаранда ба саҳифа гузарад
+    // Модал дар саҳифаи тафсилот (ItemDetailsClient) нишон дода мешавад
   };
 
   // Санҷиши ин ки эълон дар рӯйхати "маъқулдоштаҳо" ҳаст ё не (База)

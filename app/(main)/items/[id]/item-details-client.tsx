@@ -85,6 +85,12 @@ export default function ItemDetailsClient({ id }: { id: string }) {
     }
   }, [id, userId]);
 
+  useEffect(() => {
+    if (isLoaded && item && isOwner && item.moderation_status === 'rejected') {
+      setShowBlockedInfo(true);
+    }
+  }, [isLoaded, item, isOwner]);
+
   const checkInitialSavedState = async () => {
     try {
       const token = await getToken({ template: 'supabase' });
@@ -270,6 +276,35 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           <DialogContent className="rounded-3xl border-none shadow-2xl">
             <DialogHeader><DialogTitle className="text-emerald-600 font-black uppercase">{t('resolved')}</DialogTitle></DialogHeader>
             <DialogFooter className="flex gap-3"><Button variant="outline" onClick={() => setShowResolvedConfirm(false)}>{t('cancel')}</Button><Button className="bg-emerald-600" onClick={handleResolved}>{t('resolved')}</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Модал барои нишон додани сабаби блок шудани сурат */}
+        <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
+          <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
+            <DialogHeader className="space-y-3">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-red-50 dark:bg-red-900/20 text-red-600">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tight text-red-600">{t('imageBlockedTitle')}</DialogTitle>
+              <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
+                {t('imageBlockedDesc')}
+                {item?.moderation_result && (
+                  <span className="mt-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold text-xs uppercase italic block">
+                    &quot;{t(item.moderation_result)}&quot;
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="pt-2">
+              <Button 
+                type="button" 
+                className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white"
+                onClick={() => setShowBlockedInfo(false)}
+              >
+                {t('ok')}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
