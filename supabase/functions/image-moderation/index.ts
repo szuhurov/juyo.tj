@@ -38,8 +38,10 @@ Deno.serve(async (req) => {
     // 2. Кӯшиши тафтиш тавассути Sightengine
     for (const img of images) {
       try {
+        // Илова кардани моделҳои нав: face-attributes, text-content, scam, gore
+        const models = "nudity-2.1,wad,offensive,gore,face-attributes,text-content,scam"
         const response = await fetch(
-          `https://api.sightengine.com/1.0/check.json?url=${encodeURIComponent(img.image_url)}&models=nudity-2.0,wad,offensive&api_user=${SIGHTENGINE_API_USER}&api_secret=${SIGHTENGINE_API_SECRET}`
+          `https://api.sightengine.com/1.0/check.json?url=${encodeURIComponent(img.image_url)}&models=${models}&api_user=${SIGHTENGINE_API_USER}&api_secret=${SIGHTENGINE_API_SECRET}`
         )
         const data = await response.json()
         
@@ -47,11 +49,45 @@ Deno.serve(async (req) => {
           throw new Error(data.error?.message || "API limit or error")
         }
 
-        if (data.nudity && (data.nudity.sexual_activity > 0.1 || data.nudity.sexual_display > 0.1)) {
-          isSafe = false; rejectionReason = 'Inappropriate content (nudity)'; break;
-        } else if (data.weapon > 0.2) {
-          isSafe = false; rejectionReason = 'Inappropriate content (weapons)'; break;
+        // --- САНҶИШҲОИ САХТГИРОНА ---
+
+        // 1. Бараҳнагӣ (Nudity) - Лимити сахттар (0.05)
+        if (data.nudity && (data.nudity.sexual_activity > 0.05 || data.nudity.sexual_display > 0.05 || data.nudity.erotica > 0.1)) {
+          isSafe = false; rejectionReason = 'Мундариҷаи номуносиб (бараҳнагӣ ё эротика)'; break;
+        } 
+        
+        // 2. Силоҳ, Алкогол ва Маводи мухаддир (WAD)
+        else if (data.weapon > 0.1) {
+          isSafe = false; rejectionReason = 'Намоиши силоҳ манъ аст'; break;
+        } else if (data.alcohol > 0.1) {
+          isSafe = false; rejectionReason = 'Намоиши машрубот (алкогол) манъ аст'; break;
+        } else if (data.drugs > 0.1) {
+          isSafe = false; rejectionReason = 'Намоиши маводи мухаддир ё маводи шубҳанок манъ аст'; break;
         }
+
+        // 3. Мундариҷаи таҳқиромез ва хушунат (Offensive & Gore)
+        else if (data.offensive && data.offensive.prob > 0.2) {
+          isSafe = false; rejectionReason = 'Рамзҳо ё имову ишораҳои таҳқиромез пайдо шуд'; break;
+        } else if (data.gore && data.gore.prob > 0.2) {
+          isSafe = false; rejectionReason = 'Намоиши хушунат ва саҳнаҳои даҳшатнок манъ аст'; break;
+        }
+
+        // 4. Мавҷудияти одамон (Faces)
+        else if (data.faces && data.faces.length > 0) {
+          isSafe = false; rejectionReason = 'Дар расм чеҳраи одам пайдо шуд. Лутфан танҳо расми маҳсулотро гузоред.'; break;
+        }
+
+        // 5. Матни рӯи расм (Рақами телефон, Email, Линк)
+        else if (data.text && (data.text.has_phone || data.text.has_email || data.text.has_link)) {
+          let type = data.text.has_phone ? 'рақами телефон' : (data.text.has_email ? 'email' : 'линк');
+          isSafe = false; rejectionReason = `Дар рӯи расм ${type} навишта шудааст. Ин хатарнок аст.`; break;
+        }
+
+        // 6. Қаллобӣ (Known Scams)
+        else if (data.scam && data.scam.prob > 0.5) {
+          isSafe = false; rejectionReason = 'Ин расм ҳамчун расми шубҳанок ё қаллобӣ муайян карда шуд'; break;
+        }
+
       } catch (e) {
         // АГАР ХАТО ШУД (ЛИМИТ ТАМОМ ШУД) - МО ИДОМА МЕДИҲЕМ (BYPASS)
         console.error("Sightengine Error, auto-approving...", e.message)
