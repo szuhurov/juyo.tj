@@ -14,12 +14,10 @@ Deno.serve(async (req) => {
     const { record } = payload 
     itemId = record.id
 
-    // Танҳо эълонҳое, ки дар ҳолати 'pending' ҳастанд, тафтиш мешаванд
     if (record.moderation_status !== 'pending') {
       return new Response("Not pending", { status: 200 })
     }
 
-    // 1. Интизории кӯтоҳ (3 сония), то расмҳо пурра бор шаванд
     await new Promise(resolve => setTimeout(resolve, 3000))
 
     const { data: images } = await supabase
@@ -28,16 +26,14 @@ Deno.serve(async (req) => {
       .eq('item_id', itemId)
 
     if (!images || images.length === 0) {
-      // Агар расм набошад, эълонро Approved мекунем (чун чизе барои санҷиш нест)
       await supabase.from('items').update({ moderation_status: 'approved' }).eq('id', itemId)
       return new Response("No images, approved", { status: 200 })
     }
 
     let isSafe = true;
-    let rejectionReason = null;
+    let rejectionKey = null;
     let apiErrorOccurred = false;
 
-    // 2. Тафтиши ҳар як расм бо қоидаҳои НИҲОЯТ САХТ
     for (const img of images) {
       try {
         const models = "nudity-2.1,wad,offensive,gore,face-attributes,text-content,scam"
@@ -50,76 +46,74 @@ Deno.serve(async (req) => {
           throw new Error(data.error?.message || "API error")
         }
 
-        // --- ФИЛТРҲОИ ЭКСТРЕМАЛӢ (НИҲОЯТ САХТ) ---
-
-        // 1. Бараҳнагӣ ва Эротика (Ҳатто шубҳаи хурд рад мешавад)
-        if (data.nudity && (data.nudity.sexual_activity > 0.01 || data.nudity.sexual_display > 0.01 || data.nudity.erotica > 0.05)) {
-          isSafe = false; rejectionReason = 'Мундариҷаи номуносиб ё эротикӣ'; break;
+        // 1. Nudity
+        if (data.nudity && (data.nudity.sexual_activity > 0.2 || data.nudity.sexual_display > 0.2 || data.nudity.erotica > 0.3)) {
+          isSafe = false; rejectionKey = 'mod_nudity'; break;
         } 
         
-        // 2. Силоҳ, Алкогол ва Маводи мухаддир (WAD) - 0.05 ҳадди ниҳоӣ
-        else if (data.weapon > 0.05) {
-          isSafe = false; rejectionReason = 'Намоиши силоҳ (ҳатто бозича) манъ аст'; break;
-        } else if (data.alcohol > 0.05) {
-          isSafe = false; rejectionReason = 'Намоиши машрубот манъ аст'; break;
-        } else if (data.drugs > 0.05) {
-          isSafe = false; rejectionReason = 'Намоиши маводи мухаддир ё доруҳо манъ аст'; break;
+        // 2. WAD
+        const wad = data.wad;
+        if (wad) {
+          if (wad.weapons > 0.1) { isSafe = false; rejectionKey = 'mod_weapon'; break; }
+          if (wad.alcohol > 0.2) { isSafe = false; rejectionKey = 'mod_alcohol'; break; }
+          if (wad.drugs > 0.1) { isSafe = false; rejectionKey = 'mod_drugs'; break; }
         }
 
-        // 3. Таҳқир, Хун ва Хушунат (Gore)
-        else if (data.offensive && data.offensive.prob > 0.1) {
-          isSafe = false; rejectionReason = 'Рамзҳо ё имову ишораҳои таҳқиромез'; break;
-        } else if (data.gore && data.gore.prob > 0.1) {
-          isSafe = false; rejectionReason = 'Намоиши хушунат ё саҳнаҳои нохуш'; break;
+        // 3. Offensive & Gore
+        if (data.offensive && data.offensive.prob > 0.3) {
+          isSafe = false; rejectionKey = 'mod_offensive'; break;
+        }
+        if (data.gore && data.gore.prob > 0.3) {
+          isSafe = false; rejectionKey = 'mod_gore'; break;
         }
 
-        // 4. Одам (Face Detection) - АГАР ҲАТТО ЯК ЧЕҲРА БОШАД, РАД МЕКУНЕМ
-        else if (data.faces && data.faces.length > 0) {
-          isSafe = false; rejectionReason = 'Дар расм одам пайдо шуд. Лутфан танҳо расми маҳсулотро гузоред.'; break;
+        // 4. Faces (Including faces on documents)
+        if (data.faces && data.faces.length > 0) {
+          isSafe = false; rejectionKey = 'mod_faces'; break;
         }
 
-        // 5. Матни хатарнок (Рақам, Email, Link)
-        else if (data.text && (data.text.has_phone || data.text.has_email || data.text.has_link)) {
-          isSafe = false; rejectionReason = 'Дар рӯи расм рақами телефон ё линк навишта шудааст.'; break;
+        // 5. Text (Phones/Emails)
+        const text = data.text;
+        if (text && (text.personal?.length > 0 || text.link?.length > 0)) {
+          const hasContact = text.personal.some((p: any) => p.type === 'phone' || p.type === 'email');
+          if (hasContact) {
+            isSafe = false; rejectionKey = 'mod_text'; break;
+          }
         }
 
-        // 6. Қаллобӣ (Scam)
-        else if (data.scam && data.scam.prob > 0.3) {
-          isSafe = false; rejectionReason = 'Ин расм шубҳанок аст (эҳтимоли қаллобӣ)'; break;
+        // 6. Scam
+        if (data.scam && data.scam.prob > 0.5) {
+          isSafe = false; rejectionKey = 'mod_scam'; break;
         }
 
       } catch (e) {
         console.error("Sightengine API Error:", e.message)
         apiErrorOccurred = true;
-        break; // Агар API кор накунад, тафтишро қатъ мекунем
+        break;
       }
     }
 
-    // 3. ҚАРОРИ НИҲОӢ (СТРАТЕГИЯИ БЕХАТАР)
     if (apiErrorOccurred) {
-      // АГАР ХАТОИ API ШУД - ЭЪЛОНРО APPROVED НАМЕКУНЕМ!
-      // Онро дар ҳолати 'pending' мемонем ва сабабашро менависем
       await supabase.from('items').update({ 
-        moderation_status: 'pending', // Ба ҳолати интизорӣ бармегардонем
-        moderation_result: 'Хатои техникӣ ҳангоми тафтиш. Мунтазири тафтиши дастӣ.'
+        moderation_status: 'pending',
+        moderation_result: 'mod_error_api'
       }).eq('id', itemId)
-      return new Response("API Error, remains pending", { status: 200 })
+      return new Response("API Error", { status: 200 })
     }
 
     const finalStatus = isSafe ? 'approved' : 'rejected'
     await supabase.from('items').update({ 
       moderation_status: finalStatus,
-      moderation_result: rejectionReason 
+      moderation_result: rejectionKey 
     }).eq('id', itemId)
 
     return new Response(JSON.stringify({ success: true, status: finalStatus }), { status: 200 })
 
   } catch (error: any) {
-    // Дар ҳолати хатои критиқии код низ APPROVED намекунем
     if (itemId) {
       await supabase.from('items').update({ 
         moderation_status: 'pending',
-        moderation_result: 'System Error: ' + error.message
+        moderation_result: 'mod_error_system'
       }).eq('id', itemId)
     }
     return new Response(JSON.stringify({ error: error.message }), { status: 500 })

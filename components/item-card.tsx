@@ -74,6 +74,8 @@ export function ItemCard({ item }: { item: Item }) {
   // Функсия барои нишон додани модал агар эълон блок шуда бошад
   const handleCardClick = (e: React.MouseEvent) => {
     if (isOwner && item.moderation_status === 'rejected') {
+      e.preventDefault();
+      e.stopPropagation();
       setShowBlockedInfo(true);
     }
   };
@@ -410,18 +412,29 @@ export function ItemCard({ item }: { item: Item }) {
               {t('imageBlockedDesc')}
               {item.moderation_result && (
                 <span className="mt-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold text-xs uppercase italic block">
-                  &quot;{item.moderation_result}&quot;
+                  &quot;{t(item.moderation_result)}&quot;
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="pt-2">
+          <DialogFooter className="flex-row gap-3 pt-2">
             <Button 
               type="button" 
-              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white"
+              variant="outline"
+              className="flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px] border-zinc-200"
               onClick={() => setShowBlockedInfo(false)}
             >
-              {t('ok')}
+              {t('cancel')}
+            </Button>
+            <Button 
+              type="button" 
+              className="flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                setShowBlockedInfo(false);
+                router.push(`/items/${item.id}`);
+              }}
+            >
+              {t('viewItem')}
             </Button>
           </DialogFooter>
         </DialogContent>
