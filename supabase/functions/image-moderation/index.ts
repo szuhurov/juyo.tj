@@ -67,9 +67,17 @@ Deno.serve(async (req) => {
           isSafe = false; rejectionKey = 'mod_gore'; break;
         }
 
-        // 4. Faces (Including faces on documents)
+        // 4. Faces (Allow small faces on documents/background, block only portraits/selfies)
         if (data.faces && data.faces.length > 0) {
-          isSafe = false; rejectionKey = 'mod_faces'; break;
+          const hasLargeFace = data.faces.some((face: any) => {
+            // Ҳисоби ҳаҷми чеҳра нисбат ба сурат (normalized coordinates 0 to 1)
+            const faceArea = (face.x2 - face.x1) * (face.y2 - face.y1);
+            return faceArea > 0.20; // Агар чеҳра аз 20% зиёди суратро гирад, блок мекунем
+          });
+
+          if (hasLargeFace) {
+            isSafe = false; rejectionKey = 'mod_faces'; break;
+          }
         }
 
         // 5. Text (Phones/Emails)

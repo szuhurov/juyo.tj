@@ -17,10 +17,10 @@ const inter = Inter({
   subsets: ["latin", "cyrillic"],
   variable: "--font-inter",
 });
-
 import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
+import { getClerkLocalization } from "@/lib/clerk-localization"; // Функсияи тарҷумаи Clerk
 
 /**
  * Функсия барои тавлиди динамикии метамаълумот вобаста ба забони интихобшудаи корбар.
@@ -94,20 +94,35 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const savedLocale = cookieStore.get("juyo-locale")?.value || "tg";
+  const locale = ["tg", "ru", "en"].includes(savedLocale) ? savedLocale : "tg";
+  const clerkLocale = getClerkLocalization(locale);
+
   return (
-    <ClerkProvider>
+    <ClerkProvider 
+      localization={clerkLocale}
+      appearance={{
+        elements: {
+          footer: "hidden",
+          footerAction: "pb-4"
+        }
+      }}
+    >
       <html
-        lang="en"
+        lang={locale}
         className={`${inter.variable} h-full antialiased`}
         suppressHydrationWarning
       >
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
-          <QueryProvider>
+          <QueryProvider 
+        
+          >
             <LanguageProvider>
               {/* Нишондиҳандаи ҳолати шабака ва ҷузъҳои глобалии барнома */}
               <NetworkStatus />

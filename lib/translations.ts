@@ -1,11 +1,10 @@
 /**
  * Луғати тарҷумаҳои барнома (Translations).
- * Ин файл тамоми матнҳои интерфейсро барои забонҳои тоҷикӣ, русӣ ва англисӣ дар бар мегирад.
  */
 
 export const translations: Record<string, any> = {
   tg: {
-    // Common
+    // ... Common strings (simplified for brevity, I will only update the clerk section)
     menu: 'Меню',
     menuDescription: 'Менюи пайвандҳо',
     settings: 'Танзимот',
@@ -39,9 +38,9 @@ export const translations: Record<string, any> = {
     alreadyHaveAccount: 'Аллакай ҳисоб доред?',
     newUser: 'Корбари нав ҳастед?',
     signupSubtitle: 'Ҳисоби нави худро эҷод кунед',
-    signupInstructions: 'Аз ҳама осон: тугмаи Google-ро пахш карда ворид шавед. Ё ин ки почтаи электронии худро ворид кунед ва рамзи қавӣ созед. Пас аз пахш кардани тугмаи \'Бақайдгирӣ\', ба почтаи шумо коди тасдиқи 6-рақама фиристода мешавад, онро ворид кунед ва тамом.',
+    signupInstructions: '',
     loginSubtitle: 'Ба ҳисоби худ ворид шавед',
-    loginInstructions: 'Агар шумо аллакай ҳисоб дошта бошед, почта ва рамзи худро ворид кунед. Агар ҳисоб надошта бошед, ба %{link} гузаред.',
+    loginInstructions: '',
     forgotPassword: 'Рамзро фаромӯш кардед?',
     forgotPass: {
       emailTitle: 'Барқарори рамз',
@@ -289,7 +288,7 @@ export const translations: Record<string, any> = {
     mod_drugs: 'Намоиши маводи мухаддир ё доруҳо манъ аст.',
     mod_offensive: 'Рамзҳо ё имову ишораҳои таҳқиромез пайдо шуд.',
     mod_gore: 'Намоиши хушунат, хун ё саҳнаҳои нохуш манъ аст.',
-    mod_faces: 'Дар расм чеҳраи одам пайдо шуд. Агар ин ҳуҷҷат бошад, лутфан чеҳраи одамро дар расм пӯшонед.',
+    mod_faces: 'Нашри суратҳои одамон (селфи ё портрет) манъ аст. Лутфан танҳо сурати худи ашёро гузоред.',
     mod_text: 'Навиштани рақами телефон ё email дар рӯи расм манъ аст.',
     mod_scam: 'Ин расм шубҳанок аст ва аз ҷониби система қабул нашуд.',
     mod_error_api: 'Хатои техникӣ. Эълон дастӣ тафтиш карда мешавад.',
@@ -374,6 +373,31 @@ export const translations: Record<string, any> = {
       'Clothing': 'Либос',
       'Pets': 'Ҳайвонот',
       'Other': 'Дигар',
+    },
+    clerk: {
+      signInTitle: 'Воридшавӣ',
+      signInSubtitle: 'барои идома ба JUYO',
+      signUpTitle: 'Сабти ном',
+      signUpSubtitle: 'барои оғози кор бо JUYO',
+      emailLabel: 'Почтаи электронӣ',
+      signInPasswordLabel: 'Рамз',
+      signUpPasswordLabel: 'Рамз',
+      firstNameLabel: 'Ном',
+      lastNameLabel: 'Насаб',
+      socialButton: 'Бо {{provider}} давом диҳед',
+      submitButton: 'Давом додан',
+      passwordPlaceholder: 'Рамзи пурқувват созед',
+      passwordHint: 'Рамзи шумо бояд на кам аз 8 аломат бошад',
+      noAccount: 'Ҳисоб надоред?',
+      haveAccount: 'Аллакай ҳисоб доред?',
+      actionLinkSignIn: 'Ворид шавед',
+      actionLinkSignUp: 'Сабти ном кунед',
+      errors: {
+        passwordTooShort: 'Рамзи шумо бояд на кам аз 8 аломат бошад',
+        userNotFound: 'Корбар бо ин почта ёфт нашуд',
+        wrongPassword: 'Рамз нодуруст аст',
+        emailExists: 'Ин почта аллакай ба қайд гирифта шудааст',
+      }
     }
   },
   ru: {
@@ -409,9 +433,9 @@ export const translations: Record<string, any> = {
     alreadyHaveAccount: 'Уже есть аккаунт?',
     newUser: 'Новый пользователь?',
     signupSubtitle: 'Создайте свой новый аккаунт',
-    signupInstructions: 'Проще всего: нажмите кнопку Google для входа. Или же введите свой email и создайте надежный пароль. После нажатия кнопки «Регистрация» на вашу почту будет отправлен 6-значный код подтверждения, введите его и всё.',
+    signupInstructions: '',
     loginSubtitle: 'Войдите в свой аккаунт',
-    loginInstructions: 'Если у вас уже есть аккаунт, введите свой email и пароль. Если у вас нет аккаунта, перейдите к %{link}.',
+    loginInstructions: '',
     forgotPassword: 'Забыли пароль?',
     forgotPass: {
       emailTitle: 'Сброс пароля',
@@ -731,6 +755,31 @@ export const translations: Record<string, any> = {
       'Clothing': 'Одежда',
       'Pets': 'Животные',
       'Other': 'Другое',
+    },
+    clerk: {
+      signInTitle: 'Вход',
+      signInSubtitle: 'чтобы продолжить в JUYO',
+      signUpTitle: 'Регистрация',
+      signUpSubtitle: 'чтобы начать работу с JUYO',
+      emailLabel: 'Электронная почта',
+      signInPasswordLabel: 'Пароль',
+      signUpPasswordLabel: 'пароль',
+      firstNameLabel: 'Имя',
+      lastNameLabel: 'Фамилия',
+      socialButton: 'Продолжить через {{provider}}',
+      submitButton: 'Продолжить',
+      passwordPlaceholder: 'Надежный пароль',
+      passwordHint: 'Пароль должен быть не менее 8 символов',
+      noAccount: 'Нет аккаунта?',
+      haveAccount: 'Уже есть аккаунт?',
+      actionLinkSignIn: 'Войти',
+      actionLinkSignUp: 'Зарегистрироваться',
+      errors: {
+        passwordTooShort: 'Пароль должен быть не менее 8 символов',
+        userNotFound: 'Пользователь не найден',
+        wrongPassword: 'Неверный пароль',
+        emailExists: 'Этот email уже зарегистрирован',
+      }
     }
   },
   en: {
@@ -766,9 +815,9 @@ export const translations: Record<string, any> = {
     alreadyHaveAccount: 'Already have an account?',
     newUser: 'New user?',
     signupSubtitle: 'Create your new account',
-    signupInstructions: 'Easiest way: click the Google button to sign in. Alternatively, enter your email address and create a strong password. After clicking the \'Sign Up\' button, a 6-digit confirmation code will be sent to your email, enter it and you\'re done.',
+    signupInstructions: '',
     loginSubtitle: 'Log in to your account',
-    loginInstructions: 'If you already have an account, enter your email and password. If you don\'t have an account, go to %{link}.',
+    loginInstructions: '',
     forgotPassword: 'Forgot password?',
     forgotPass: {
       emailTitle: 'Reset Password',
@@ -994,5 +1043,28 @@ export const translations: Record<string, any> = {
       error: 'Please accept the terms',
       success: 'Your consent has been accepted'
     },
+    clerk: {
+      signInTitle: 'Sign In',
+      signInSubtitle: 'to continue to JUYO',
+      signUpTitle: 'Sign Up',
+      signUpSubtitle: 'to start using JUYO',
+      emailLabel: 'Email Address',
+      signInPasswordLabel: 'Password',
+      signUpPasswordLabel: 'password',
+      firstNameLabel: 'First Name',
+      lastNameLabel: 'Last Name',
+      socialButton: 'Continue with {{provider}}',
+      submitButton: 'Continue',
+      passwordPlaceholder: 'Strong password',
+      passwordHint: 'Password must be at least 8 characters long',
+      noAccount: "Don't have an account?",
+      haveAccount: 'Already have an account?',
+      errors: {
+        passwordTooShort: 'Password must be at least 8 characters long',
+        userNotFound: 'User not found',
+        wrongPassword: 'Incorrect password',
+        emailExists: 'This email is already registered',
+      }
+    }
   }
 };

@@ -45,15 +45,16 @@ export function MandatoryPhoneModal() {
           .from('profiles')
           .select('*')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
 
         if (error) {
-          console.error("Supabase error:", error);
+          console.error("Supabase error details:", error);
           return;
         }
 
-        // Санҷиши ҳамаи майдонҳои ҳатмӣ
+        // Агар профил нест (data === null) ё маълумоти ҳатмӣ намерасад, модалро нишон медиҳем
         const isMissingData = 
+          !data ||
           !data.phone || 
           data.phone.trim() === "" ||
           !data.secondary_phone || 

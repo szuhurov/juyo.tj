@@ -4,14 +4,22 @@
  */
 "use client";
 
-import { SignUp } from "@clerk/nextjs"; // Барои сабти номи корбар
-import { useLanguage } from "@/lib/language-context"; // Барои иваз кардани забони сайт
-import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Card } from "@/components/ui/card"; // Барои сохтани блоки дастурамал
-import { Info } from "lucide-react"; // Иконкаи маълумот
+import { SignUp } from "@clerk/nextjs";
+import { useLanguage } from "@/lib/language-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { Phone, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
+
+
 
   // Рӯйхати забонҳо барои тугмаҳо
   const languages = [
@@ -20,18 +28,22 @@ export default function Page() {
     { code: "en", label: "English" },
   ];
 
+
+
   return (
-    // Контейнер барои дар марказ (center) нишон додани форма ва дастурамал
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
-      
-      {/* Қисмати ивази забон пеш аз бақайдгирӣ */}
-      <div className="flex gap-2 mb-6">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-950 py-12">
+      {/* Қисмати ивази забон */}
+      <div className="flex gap-2 mb-8">
         {languages.map((lang) => (
           <Button
             key={lang.code}
             variant={locale === lang.code ? "default" : "outline"}
             size="sm"
-            onClick={() => setLocale(lang.code as any)}
+            onClick={() => {
+              setLocale(lang.code as any);
+              // Забонро дар куки захира мекунем ва саҳифаро нав мекунем
+              setTimeout(() => window.location.reload(), 100);
+            }}
             className={`font-bold rounded-lg px-4 h-9 transition-all text-[11px] sm:text-xs ${
               locale === lang.code 
                 ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md" 
@@ -43,21 +55,13 @@ export default function Page() {
         ))}
       </div>
 
-      {/* Блоки дастурамал барои фаҳмондани раванди регистрация */}
-      <Card className="max-w-[400px] w-full p-4 mb-8 border-emerald-100 bg-emerald-50/50 dark:bg-emerald-950/10 dark:border-emerald-900/30 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <div className="flex gap-3 items-start">
-          <div className="mt-0.5 shrink-0 p-1.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg">
-            <Info className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+      <div className="w-full max-w-[420px] mt-12">
+        <div className="animate-in fade-in zoom-in-95 duration-700 flex flex-col items-center">
+        
+          <div className="w-full flex justify-center">
+            <SignUp />
           </div>
-          <p className="text-[11px] sm:text-xs font-bold text-emerald-900 dark:text-emerald-300 leading-relaxed uppercase tracking-tight">
-            {t('signupInstructions')}
-          </p>
         </div>
-      </Card>
-
-      {/* Виҷети тайёри Clerk барои регистрация */}
-      <div className="w-full max-w-[400px] flex justify-center">
-        <SignUp />
       </div>
     </div>
   );

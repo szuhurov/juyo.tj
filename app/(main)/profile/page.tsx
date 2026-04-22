@@ -1064,20 +1064,21 @@ function ProfileContent() {
 
             {/* Идоракунии Қуттии бехатарӣ (Safety Box) */}
             <div className="animate-in fade-in duration-500 max-w-4xl mx-auto px-2">
-              {isAddingSafetyItem ? (
-                /* Формаи илова кардани ашё ба бойгонӣ */
+              {isAddingSafetyItem || editingSafetyItem ? (
+                /* Формаи илова кардан ё таҳрир кардани ашё */
                 <Card className="rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
                   <CardHeader className="bg-zinc-50 dark:bg-zinc-900/50 p-6 border-b border-zinc-100 dark:border-zinc-800">
                     <CardTitle className="text-lg font-black uppercase tracking-wider flex items-center gap-3">
-                      <Briefcase className="w-5 h-5 text-amber-500" /> {t('registerNewItem')}
+                      <Briefcase className="w-5 h-5 text-amber-500" /> 
+                      {editingSafetyItem ? t('edit') : t('registerNewItem')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-8">
-                    <form onSubmit={handleRegisterSafetyItem} className="space-y-6">
+                    <form onSubmit={editingSafetyItem ? handleUpdateSafetyItem : handleRegisterSafetyItem} className="space-y-6">
                       <div className="space-y-3">
                         <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('what_happened')}</Label>
                         <RadioGroup 
-                          defaultValue="lost" 
+                          value={safetyType}
                           onValueChange={(val) => setSafetyType(val as 'lost' | 'found')}
                           className="grid grid-cols-2 gap-4"
                         >
@@ -1106,8 +1107,8 @@ function ProfileContent() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label htmlFor="name" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('safetyItemNameLabel')}</Label>
-                          <Input id="name" name="name" placeholder={t('safetyItemNamePlaceholder')} className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" required />
+                          <Label htmlFor="name" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('titleLabel')}</Label>
+                          <Input id="name" name="name" defaultValue={editingSafetyItem?.item_name || ""} placeholder={t('safetyItemNamePlaceholder')} className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" required />
                         </div>
                         
                         <div className="space-y-2">
@@ -1127,11 +1128,76 @@ function ProfileContent() {
                         </div>
                       </div>
 
+                      <div className="space-y-2">
+                        <Label htmlFor="description" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('description')}</Label>
+                        <Textarea id="description" name="description" defaultValue={editingSafetyItem?.description || ""} placeholder={t('safetyItemDescPlaceholder')} className="rounded-xl min-h-[100px] text-sm bg-zinc-50/50 dark:bg-zinc-900/50" required />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('phoneLabel')}</Label>
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                            <Input 
+                              id="phone" 
+                              name="phone" 
+                              placeholder={t('phonePlaceholder')} 
+                              defaultValue={editingSafetyItem?.phone_number || profile?.phone || ""}
+                              className="rounded-xl h-12 pl-10 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" 
+                              required 
+                            />
+                          </div>
+                        </div>
+                        
+                        {safetyType === 'lost' && (
+                          <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
+                            <Label htmlFor="reward" className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">{t('rewardLabel')}</Label>
+                            <Input id="reward" name="reward" defaultValue={editingSafetyItem?.reward || ""} placeholder={t('rewardPlaceholder')} className="rounded-xl h-12 text-sm bg-zinc-50/50 dark:bg-zinc-900/50" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                          {t('addImages')} ({safetyPreviews.length}/5)
+                        </Label>
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                          {safetyPreviews.map((preview, index) => (
+                            <div key={index} className="relative aspect-square rounded-2xl overflow-hidden border-2 border-zinc-100 dark:border-zinc-800 shadow-sm group">
+                              <Image src={preview} alt="preview" fill className="object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (editingSafetyItem) {
+                                    // Агар таҳрир бошад, аз стейти editingSafetyItem.images нест мекунем
+                                    const newImages = editingSafetyItem.images.filter((_: any, i: number) => i !== index);
+                                    setEditingSafetyItem({...editingSafetyItem, images: newImages});
+                                    setSafetyPreviews(newImages);
+                                  } else {
+                                    removeSafetyImage(index);
+                                  }
+                                }}
+                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                          {safetyPreviews.length < 5 && (
+                            <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 cursor-pointer transition-all group">
+                              <PlusCircle className="w-6 h-6 text-zinc-300 group-hover:text-zinc-400 transition-colors" />
+                              <span className="text-[8px] font-black uppercase text-zinc-400 mt-2">{t('add')}</span>
+                              <input type="file" className="hidden" accept="image/*" multiple onChange={handleSafetyImageChange} />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+
                       <div className="flex gap-4 pt-4">
                         <Button type="submit" className="flex-1 rounded-xl h-14 font-black uppercase tracking-wider text-xs bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg shadow-zinc-100 dark:shadow-none" disabled={safetySubmitting}>
-                          {safetySubmitting ? <Loader2 className="animate-spin w-5 h-5" /> : t('saveItem')}
+                          {safetySubmitting ? <Loader2 className="animate-spin w-5 h-5" /> : (editingSafetyItem ? t('updateBtn') : t('saveItem'))}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => setIsAddingSafetyItem(false)} className="rounded-xl h-14 px-8 font-black uppercase tracking-wider text-xs">
+                        <Button type="button" variant="outline" onClick={() => { setIsAddingSafetyItem(false); setEditingSafetyItem(null); setSafetyPreviews([]); setSafetyImages([]); }} className="rounded-xl h-14 px-8 font-black uppercase tracking-wider text-xs">
                           {t('cancel')}
                         </Button>
                       </div>
@@ -1151,7 +1217,10 @@ function ProfileContent() {
                         <Card 
                           key={item.id} 
                           className="overflow-hidden hover:shadow-md transition-shadow duration-300 group flex flex-col h-full rounded-xl border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 cursor-pointer"
-                          onClick={() => setSelectedSafetyItem(item)}
+                          onClick={() => {
+                            setSelectedSafetyItem(item);
+                            setCurrentImageIndex(0);
+                          }}
                         >
                           {/* Сурати ашё дар бойгонӣ */}
                           <div className="relative aspect-square overflow-hidden rounded-t-xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center">
@@ -1160,12 +1229,14 @@ function ProfileContent() {
                             ) : <PackageSearch className="w-12 h-12 text-zinc-200" />}
                             
                             <div className="absolute top-2 left-2 right-2 flex justify-between items-center">
-                              <Badge className="bg-white/90 backdrop-blur text-black text-[9px] font-black rounded px-2 py-0.5 border-none shadow-sm uppercase tracking-tighter">
+                              <Badge className={cn(
+                                "backdrop-blur text-white text-[9px] font-black rounded px-2 py-0.5 border-none shadow-sm uppercase tracking-tighter",
+                                item.type === 'lost' ? "bg-red-500/80" : "bg-emerald-500/80"
+                              )}>
                                  {t(`categories.${CATEGORIES.find(c => c.name === item.category)?.id || '6'}`)}
                               </Badge>
                               
-                              <div className="flex gap-1.5">
-                                {/* Тугмаи нашр кардан аз бойгонӣ */}
+                              <div className="flex gap-1">
                                 <Button 
                                   variant="secondary" 
                                   size="icon" 
@@ -1178,11 +1249,22 @@ function ProfileContent() {
                                 >
                                   <Send className="w-3.5 h-3.5" />
                                 </Button>
-                                {/* Тугмаи нест кардан аз бойгонӣ */}
                                 <Button 
                                   variant="secondary" 
                                   size="icon" 
-                                  className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-red-500 hover:bg-red-500 hover:text-white shadow-sm border-none transition-all"
+                                  className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-amber-600 hover:bg-amber-600 hover:text-white shadow-sm border-none transition-all"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEditing(item);
+                                  }}
+                                  disabled={isActionLoading}
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button 
+                                  variant="secondary" 
+                                  size="icon" 
+                                  className="h-7 w-7 rounded-lg bg-white/90 backdrop-blur text-red-600 hover:bg-red-600 hover:text-white shadow-sm border-none transition-all"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     deleteSafetyItem(item.id);
@@ -1195,13 +1277,18 @@ function ProfileContent() {
                             </div>
                           </div>
                           <CardContent className="p-3 flex-1 flex flex-col">
-                            <h4 className="font-black text-xs line-clamp-1 leading-tight uppercase tracking-tight mb-1 group-hover:text-emerald-500 transition-colors">
+                            <h4 className="font-black text-[11px] line-clamp-1 leading-tight uppercase tracking-tight mb-1 group-hover:text-emerald-500 transition-colors">
                               {item.item_name}
                             </h4>
                             <div className="mt-auto pt-2 border-t border-zinc-50 dark:border-zinc-900 flex justify-between items-center">
-                              <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400 uppercase tracking-wider">
-                                <Clock className="w-2.5 h-2.5" /> {new Date(item.created_at).toLocaleDateString()}
+                              <div className="flex items-center gap-1.5 text-[8px] font-bold text-zinc-400 uppercase tracking-wider">
+                                <Clock className="w-2 h-2" /> {new Date(item.created_at).toLocaleDateString()}
                               </div>
+                              {item.reward && (
+                                <div className="text-[10px] font-black text-emerald-600">
+                                  {item.reward}
+                                </div>
+                              )}
                             </div>
                           </CardContent>
                         </Card>
@@ -1215,6 +1302,161 @@ function ProfileContent() {
                 </div>
               )}
             </div>
+
+            {/* Модалкаи тафсилоти ашёи Сандуқча (Detailed View) */}
+            <Dialog open={!!selectedSafetyItem} onOpenChange={(open) => !open && setSelectedSafetyItem(null)}>
+              <DialogContent className="max-w-2xl p-0 overflow-hidden border-none rounded-[2rem] bg-white dark:bg-zinc-950 shadow-2xl max-h-[90vh] flex flex-col">
+                {selectedSafetyItem && (
+                  <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
+                    {/* Карусели суратҳо */}
+                    <div className="relative aspect-[4/3] bg-zinc-100 dark:bg-zinc-900 shrink-0">
+                      {selectedSafetyItem.images && selectedSafetyItem.images.length > 0 ? (
+                        <>
+                          <Image 
+                            src={selectedSafetyItem.images[currentImageIndex]} 
+                            alt={selectedSafetyItem.item_name} 
+                            fill 
+                            className="object-cover"
+                          />
+                          {selectedSafetyItem.images.length > 1 && (
+                            <div className="absolute inset-x-4 bottom-4 flex justify-center gap-1.5">
+                              {selectedSafetyItem.images.map((_: any, i: number) => (
+                                <button 
+                                  key={i} 
+                                  onClick={() => setCurrentImageIndex(i)}
+                                  className={cn(
+                                    "h-1.5 rounded-full transition-all",
+                                    currentImageIndex === i ? "w-6 bg-white" : "w-1.5 bg-white/50"
+                                  )}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 opacity-0 hover:opacity-100 transition-opacity">
+                            <Button 
+                              size="icon" 
+                              variant="secondary" 
+                              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur"
+                              onClick={() => setCurrentImageIndex(prev => prev === 0 ? selectedSafetyItem.images.length - 1 : prev - 1)}
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              variant="secondary" 
+                              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur"
+                              onClick={() => setCurrentImageIndex(prev => prev === selectedSafetyItem.images.length - 1 ? 0 : prev + 1)}
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-zinc-300 gap-4">
+                          <PackageSearch className="w-20 h-20 opacity-20" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">{t('noData')}</span>
+                        </div>
+                      )}
+                      
+                      <button 
+                        onClick={() => setSelectedSafetyItem(null)}
+                        className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur flex items-center justify-center text-white transition-all z-10"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+
+                      <div className="absolute top-4 left-4">
+                        <Badge className={cn(
+                          "px-3 py-1 text-[10px] font-black uppercase tracking-tight border-none shadow-lg",
+                          selectedSafetyItem.type === 'lost' ? "bg-red-600" : "bg-emerald-600"
+                        )}>
+                          {t(selectedSafetyItem.type || 'lost')}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Маълумот ва Тугмаҳо */}
+                    <div className="p-6 sm:p-8 space-y-6">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2 py-0.5 rounded text-[8px] font-black bg-zinc-100 dark:bg-zinc-800 text-zinc-500 uppercase tracking-wider">
+                              {t(`categories.${CATEGORIES.find(c => c.name === selectedSafetyItem.category)?.id || '6'}`)}
+                            </span>
+                            <span className="text-[10px] font-bold text-zinc-400">
+                              {new Date(selectedSafetyItem.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <DialogTitle className="text-xl sm:text-2xl font-black uppercase tracking-tight leading-none text-zinc-900 dark:text-white">
+                            {selectedSafetyItem.item_name}
+                          </DialogTitle>
+                        </div>
+                        {selectedSafetyItem.reward && (
+                          <div className="text-right shrink-0">
+                            <div className="text-[8px] font-black text-zinc-400 uppercase tracking-widest mb-1">{t('reward')}</div>
+                            <div className="text-lg sm:text-xl font-black text-emerald-600">{selectedSafetyItem.reward}</div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800">
+                          <div className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-2">{t('description')}</div>
+                          <DialogDescription className="text-sm font-medium text-zinc-600 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap">
+                            {selectedSafetyItem.description || t('noData')}
+                          </DialogDescription>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/20">
+                          <div className="h-10 w-10 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-sm">
+                            <Phone className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest">{t('phoneLabel')}</div>
+                            <div className="text-sm font-black text-blue-700 dark:text-blue-400">+{selectedSafetyItem.phone_number}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-2">
+                        <Button 
+                          onClick={() => {
+                            const item = selectedSafetyItem;
+                            setSelectedSafetyItem(null);
+                            handlePublishSafetyItem(item);
+                          }}
+                          className="flex-1 h-12 sm:h-14 rounded-2xl bg-zinc-900 text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2 shadow-xl hover:bg-zinc-800"
+                        >
+                          <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t('publish')}
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            const item = selectedSafetyItem;
+                            setSelectedSafetyItem(null);
+                            startEditing(item);
+                          }}
+                          variant="outline"
+                          className="h-12 sm:h-14 rounded-2xl border-zinc-200 text-zinc-700 font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2"
+                        >
+                          <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t('edit')}
+                        </Button>
+                        <Button 
+                          onClick={() => {
+                            const id = selectedSafetyItem.id;
+                            setSelectedSafetyItem(null);
+                            deleteSafetyItem(id);
+                          }}
+                          variant="ghost"
+                          className="h-12 sm:h-14 rounded-2xl text-red-500 hover:bg-red-50 font-black uppercase tracking-widest text-[9px] sm:text-[10px] gap-2"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {t('delete')}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
         );
 
