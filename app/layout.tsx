@@ -36,27 +36,42 @@ export async function generateMetadata() {
   return {
     title: {
       default: t.seoTitle,
-      template: "%s | JUYO.TJ"
+      template: "%s | JUYO.TJ",
     },
     description: t.seoDesc,
     keywords: [
-      "juyo", "juyo.tj", "гумшуда", "ёфтшуда", "Тоҷикистон", "Душанбе", 
-      "поиск вещей", "бюро находок", "Таджикистан", "потерянные вещи",
-      "lost and found Tajikistan", "find lost items", "Dushanbe"
+      "juyo",
+      "juyo.tj",
+      "гумшуда",
+      "ёфтшуда",
+      "Тоҷикистон",
+      "Душанбе",
+      "поиск вещей",
+      "бюро находок",
+      "Таджикистан",
+      "потерянные вещи",
+      "lost and found Tajikistan",
+      "find lost items",
+      "Dushanbe",
     ],
     authors: [{ name: "JUYO Team" }],
     metadataBase: new URL("https://juyo.tj"),
     alternates: {
       canonical: "/",
       languages: {
-        'tg-TJ': '/tg',
-        'ru-RU': '/ru',
-        'en-US': '/en',
+        "tg-TJ": "/tg",
+        "ru-RU": "/ru",
+        "en-US": "/en",
       },
     },
     openGraph: {
       type: "website",
-      locale: savedLocale === 'ru' ? 'ru_RU' : savedLocale === 'en' ? 'en_US' : 'tg_TJ',
+      locale:
+        savedLocale === "ru"
+          ? "ru_RU"
+          : savedLocale === "en"
+            ? "en_US"
+            : "tg_TJ",
       url: "https://juyo.tj",
       siteName: "JUYO.TJ",
       title: t.seoTitle,
@@ -80,7 +95,7 @@ export async function generateMetadata() {
       icon: "/logo.jpg",
       shortcut: "/logo.jpg",
       apple: "/logo.jpg",
-    }
+    },
   };
 }
 
@@ -105,14 +120,9 @@ export default async function RootLayout({
   const clerkLocale = getClerkLocalization(locale);
 
   return (
-    <ClerkProvider 
+    <ClerkProvider
       localization={clerkLocale}
-      appearance={{
-        elements: {
-          footer: "hidden",
-          footerAction: "pb-4"
-        }
-      }}
+       
     >
       <html
         lang={locale}
@@ -120,9 +130,7 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
-          <QueryProvider 
-        
-          >
+          <QueryProvider>
             <LanguageProvider>
               {/* Нишондиҳандаи ҳолати шабака ва ҷузъҳои глобалии барнома */}
               <NetworkStatus />

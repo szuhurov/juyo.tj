@@ -34,6 +34,7 @@ export const getClerkLocalization = (locale: string) => {
     formFieldLabel__lastName: t.lastNameLabel,
     formFieldPlaceholder__password: t.passwordPlaceholder,
     formFieldHintText__password: t.passwordHint,
+
     
     unstable__errors: {
       password_too_short: t.errors.passwordTooShort,

@@ -19,16 +19,12 @@ import { toast } from "sonner";
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
 
-
-
   // Рӯйхати забонҳо барои тугмаҳо
   const languages = [
     { code: "tg", label: "Тоҷикӣ" },
     { code: "ru", label: "Русский" },
     { code: "en", label: "English" },
   ];
-
-
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-950 py-12">
@@ -45,8 +41,8 @@ export default function Page() {
               setTimeout(() => window.location.reload(), 100);
             }}
             className={`font-bold rounded-lg px-4 h-9 transition-all text-[11px] sm:text-xs ${
-              locale === lang.code 
-                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md" 
+              locale === lang.code
+                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md"
                 : "bg-white dark:bg-zinc-900 text-zinc-600 hover:text-zinc-900 border-zinc-200 dark:border-zinc-800"
             }`}
           >
@@ -57,9 +53,13 @@ export default function Page() {
 
       <div className="w-full max-w-[420px] mt-12">
         <div className="animate-in fade-in zoom-in-95 duration-700 flex flex-col items-center">
-        
           <div className="w-full flex justify-center">
-            <SignUp />
+            <SignUp
+              signInUrl="/sign-in"
+              appearance={{
+                theme: "simple",
+              }}
+            />
           </div>
         </div>
       </div>

@@ -21,8 +21,8 @@ export default function Page() {
 
   return (
     // Контейнер барои марказонидани (center) формаи воридшавӣ
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
-    {/* Қисмати ивази забон */}
+    <div className="min-h-screen flex flex-col items-center justify-center  bg-zinc-50 dark:bg-zinc-950">
+      {/* Қисмати ивази забон */}
       <div className="flex gap-2 mb-8">
         {languages.map((lang) => (
           <Button
@@ -35,20 +35,24 @@ export default function Page() {
               setTimeout(() => window.location.reload(), 100);
             }}
             className={`font-bold rounded-lg px-4 h-9 transition-all text-[11px] sm:text-xs ${
-              locale === lang.code 
-                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md" 
+              locale === lang.code
+                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md"
                 : "bg-white dark:bg-zinc-900 text-zinc-600 hover:text-zinc-900 border-zinc-200 dark:border-zinc-800"
             }`}
           >
             {lang.label}
           </Button>
         ))}
-      </div>      
-  
+      </div>
 
       {/* Виҷети тайёри Clerk барои логин */}
       <div className="w-full max-w-[400px] flex justify-center">
-        <SignIn />
+        <SignIn
+          signUpUrl="/sign-up"
+          appearance={{
+            theme: "simple",
+          }}
+        />{" "}
       </div>
     </div>
   );
