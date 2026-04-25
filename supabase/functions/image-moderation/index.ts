@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
           const hasLargeFace = data.faces.some((face: any) => {
             // Ҳисоби ҳаҷми чеҳра нисбат ба сурат (normalized coordinates 0 to 1)
             const faceArea = (face.x2 - face.x1) * (face.y2 - face.y1);
-            return faceArea > 0.20; // Агар чеҳра аз 20% зиёди суратро гирад, блок мекунем
+            return faceArea > 0.08; // Агар чеҳра аз 8% зиёди суратро гирад, блок мекунем
           });
 
           if (hasLargeFace) {
