@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select"; // Рӯйхати интихобшаванда (выпадающий список)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Барои сохтани блоки асосии форма
 import { toast } from "sonner"; // Барои нишон додани паёмҳои муваққатӣ
-import { Loader2, Plus, X, Upload } from "lucide-react"; // Иконкаҳои лозимӣ барои интерфейс
+import { Loader2, Plus, X, Upload, ArrowLeft } from "lucide-react"; // Иконкаҳои лозимӣ барои интерфейс
 import Image from "next/image"; // Барои нишон додани пешнамоиши суратҳо
 
 import {
@@ -197,7 +197,19 @@ function AddItemForm() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
+      {/* Back Button */}
+      <div className="mb-4 flex items-center">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm" 
+          onClick={() => router.back()}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </div>
+
       <Card className="rounded-2xl overflow-hidden border shadow-xl">
         {/* Сарлавҳаи форма */}
         <CardHeader className="bg-zinc-900 text-white p-6">

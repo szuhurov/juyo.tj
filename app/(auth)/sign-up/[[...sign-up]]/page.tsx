@@ -7,17 +7,12 @@
 import { SignUp } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useState } from "react";
-import { Phone, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
+  const router = useRouter();
 
   // Рӯйхати забонҳо барои тугмаҳо
   const languages = [
@@ -27,7 +22,19 @@ export default function Page() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-950 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-white dark:bg-zinc-950 py-12 relative">
+      {/* Тугмаи Ба қафо */}
+      <div className="absolute top-6 left-4 sm:left-8">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => router.back()}
+          className="rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </Button>
+      </div>
+
       {/* Қисмати ивази забон */}
       <div className="flex gap-2 mb-8">
         {languages.map((lang) => (

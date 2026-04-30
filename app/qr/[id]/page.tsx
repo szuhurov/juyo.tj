@@ -16,9 +16,10 @@ import { useLanguage } from "@/lib/language-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Phone, ShieldCheck, User, PackageSearch, QrCode, Loader2, Languages } from "lucide-react";
+import { Phone, ShieldCheck, User, PackageSearch, QrCode, Loader2, Languages, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -27,6 +28,7 @@ const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
 export default function PublicQRPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { t, locale, setLocale } = useLanguage();
+  const router = useRouter();
   
   const [profile, setProfile] = useState<any>(null);
   const [items, setItems] = useState<Item[]>([]);
@@ -67,7 +69,16 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
   }
 
   const LanguageSwitcher = () => (
-    <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
+    <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-8">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        onClick={() => router.back()}
+        className="h-10 w-10 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-xl border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
+
       <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 shadow-xl border border-zinc-200 dark:border-zinc-800">
         {[
           { id: 'tg', label: 'Тоҷикӣ' },

@@ -136,101 +136,85 @@ export function MandatoryPhoneModal() {
   return (
     <Dialog open={showModal} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[90vh] overflow-hidden flex flex-col" 
+        className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col [&>button]:hidden" 
         onPointerDownOutside={(e) => e.preventDefault()} 
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        {/* STICKY HEADER БО ИНТИХОБИ ЗАБОН ВА ХУРУҶ */}
-        <div className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-100 dark:border-zinc-800 px-6 py-3 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={async () => {
-              setShowModal(false);
-              await signOut();
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-red-50 text-zinc-500 hover:text-red-600 transition-all group"
-          >
-            <LogOut className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            <span className="text-[10px] font-black uppercase tracking-tight">{t('signOut')}</span>
-          </button>
-          
-          <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl shrink-0">
-            {[
-              { code: 'tg', label: 'TJ' },
-              { code: 'ru', label: 'RU' },
-              { code: 'en', label: 'EN' }
-            ].map((lang) => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setLocale(lang.code as any)}
-                className={cn(
-                  "px-4 py-1.5 rounded-lg text-[10px] font-black transition-all duration-200",
-                  locale === lang.code 
-                    ? "bg-white dark:bg-zinc-800 text-red-600 shadow-sm" 
-                    : "text-zinc-400 hover:text-zinc-600"
-                )}
-              >
-                {lang.label}
-              </button>
-            ))}
-          </div>
+        {/* Language Switcher at the top */}
+        <div className="flex justify-center gap-2 pt-6 px-4">
+          {[
+            { code: 'tg', label: 'Тоҷикӣ' },
+            { code: 'ru', label: 'Русский' },
+            { code: 'en', label: 'English' }
+          ].map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => {
+                setLocale(lang.code as any);
+                // Саҳифаро нав мекунем, то тарҷумаҳои Clerk ҳам нав шаванд
+                setTimeout(() => window.location.reload(), 100);
+              }}
+              className={cn(
+                "px-3 py-2 rounded-xl text-[9px] font-black transition-all duration-300 flex-1 max-w-[100px]",
+                locale === lang.code 
+                  ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-105" 
+                  : "bg-zinc-100 dark:bg-zinc-900 text-zinc-400 hover:text-zinc-600"
+              )}
+            >
+              {lang.label}
+            </button>
+          ))}
         </div>
 
-        <div className="overflow-y-auto flex-1 px-8 py-6 space-y-6">
-          <DialogHeader className="space-y-1 text-left">
-            <DialogTitle className="text-xl font-black uppercase tracking-tight leading-tight text-zinc-900 dark:text-white">
+        <div className="overflow-y-auto flex-1 px-8 pt-6 pb-4 space-y-4 text-center">
+          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-500">
+            <Phone className="w-7 h-7 text-emerald-500" />
+          </div>
+          
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
               {t('phoneRequiredTitle')}
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
+            <p className="text-zinc-400 font-bold text-[10px] uppercase tracking-widest leading-none">
               {t('phoneRequiredDesc')}
-            </DialogDescription>
+            </p>
           </DialogHeader>
 
-          <form onSubmit={handleSaveData} id="mandatory-form" className="space-y-6">
-            <div className="space-y-4">
-              {/* РАҚАМИ АСОСӢ */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+          <form onSubmit={handleSaveData} id="mandatory-form" className="space-y-4 text-left">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-widest ml-2">
                   {t('phoneLabel')}
                 </Label>
-                <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300 group-focus-within:text-red-600 transition-colors" />
-                  <Input 
-                    name="phone" 
-                    placeholder={t('phonePlaceholder')} 
-                    className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 dark:border-zinc-800 focus:border-red-600 transition-all outline-none" 
-                    required 
-                    inputMode="numeric"
-                    onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                  />
-                </div>
+                <Input 
+                  name="phone" 
+                  placeholder="XXXXXXXXX" 
+                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
+                  required 
+                  inputMode="numeric"
+                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                />
               </div>
 
-              {/* РАҚАМИ ДУЮМ */}
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+              <div className="space-y-1">
+                <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-widest ml-2">
                   {t('phoneSecondaryLabel')}
                 </Label>
-                <div className="relative group">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-300 group-focus-within:text-red-600 transition-colors" />
-                  <Input 
-                    name="secondary_phone" 
-                    placeholder={t('phoneSecondaryPlaceholder')} 
-                    className="h-14 pl-11 rounded-2xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-widest border-2 border-zinc-100 dark:border-zinc-800 focus:border-red-600 transition-all outline-none" 
-                    required 
-                    inputMode="numeric"
-                    onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                  />
-                </div>
+                <Input 
+                  name="secondary_phone" 
+                  placeholder="XXXXXXXXX" 
+                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
+                  required 
+                  inputMode="numeric"
+                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                />
               </div>
             </div>
 
-            {/* ИНТИХОБИ СОҲИБИ РАҚАМ */}
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase text-zinc-900 dark:text-zinc-100 tracking-widest ml-1 leading-tight">
-                {t('phoneSecondaryTypeLabel')}
-              </Label>
+            <div className="space-y-2">
+              <p className="text-[8px] font-black uppercase text-zinc-400 text-center tracking-widest px-2">
+                {t('phoneSecondaryNote')}
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 {['father', 'mother', 'brother', 'sister'].map((type) => (
                   <button
@@ -238,31 +222,28 @@ export function MandatoryPhoneModal() {
                     type="button"
                     onClick={() => setSecondaryType(type)}
                     className={cn(
-                      "flex items-center justify-center py-3 px-2 rounded-xl border-2 transition-all duration-200",
+                      "flex items-center justify-center py-2.5 rounded-xl transition-all duration-300 font-black uppercase text-[9px] tracking-wider",
                       secondaryType === type 
-                        ? "border-red-600 bg-red-50 dark:bg-red-900/10 text-red-600 font-black" 
-                        : "border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 hover:border-red-200"
+                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]" 
+                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200"
                     )}
                   >
-                    <span className="text-[11px] uppercase tracking-tight">
-                      {t(`phoneSecondaryTypes.${type}`)}
-                    </span>
+                    {t(`phoneSecondaryTypes.${type}`)}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* ҚАБУЛИ ШАРТҲО */}
-            <div className="flex items-center space-x-3 px-1 pt-2">
+            <div className="flex items-center space-x-2 px-1">
               <Checkbox 
                 id="terms-check-compact" 
                 checked={acceptedTerms} 
                 onCheckedChange={(val) => setAcceptedTerms(!!val)}
-                className="border-2 border-red-600 data-[state=checked]:bg-red-600 h-6 w-6 rounded-lg"
+                className="border-none bg-zinc-100 dark:bg-zinc-800 data-[state=checked]:bg-emerald-500 h-5 w-5 rounded-md transition-colors"
               />
               <Label 
                 htmlFor="terms-check-compact" 
-                className="text-[10px] font-extrabold leading-tight cursor-pointer text-zinc-400 uppercase tracking-tighter"
+                className="text-[8px] font-black leading-tight cursor-pointer text-zinc-400 uppercase tracking-widest"
               >
                 {t('terms.checkbox')}
               </Label>
@@ -270,16 +251,26 @@ export function MandatoryPhoneModal() {
           </form>
         </div>
 
-        {/* STICKY FOOTER БО ТУГМА */}
-        <div className="px-6 py-5 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800">
+        <div className="px-8 pb-8 pt-2 bg-white dark:bg-zinc-950">
           <Button 
             type="submit" 
             form="mandatory-form"
-            className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-sm bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-200 dark:shadow-none transition-all active:scale-95 disabled:opacity-50"
+            className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
             disabled={loading || !acceptedTerms || !secondaryType}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}
           </Button>
+          
+          <button
+            type="button"
+            onClick={async () => {
+              setShowModal(false);
+              await signOut();
+            }}
+            className="w-full mt-4 text-[8px] font-black uppercase tracking-[0.3em] text-red-500 hover:text-red-600 transition-colors"
+          >
+            {t('signOut')}
+          </button>
         </div>
       </DialogContent>
     </Dialog>

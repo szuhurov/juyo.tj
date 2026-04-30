@@ -15,7 +15,7 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.actionLinkSignUp,
       },
       password: {
-        title: t.signInPasswordLabel, // Акнун дар Sign In танҳо "Рамз" ё "Пароль" мебарояд
+        title: t.signInPasswordLabel,
       }
     },
     signUp: {
@@ -32,6 +32,9 @@ export const getClerkLocalization = (locale: string) => {
     formFieldLabel__password: t.signUpPasswordLabel, // Ин барои SignUp ҳамчун "Рамзи пурқувват..." мебарояд
     formFieldLabel__firstName: t.firstNameLabel,
     formFieldLabel__lastName: t.lastNameLabel,
+    formFieldPlaceholder__emailAddress: t.emailLabel,
+    formFieldPlaceholder__firstName: t.firstNameLabel,
+    formFieldPlaceholder__lastName: t.lastNameLabel,
     formFieldPlaceholder__password: t.passwordPlaceholder,
     formFieldHintText__password: t.passwordHint,
 

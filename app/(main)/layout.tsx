@@ -5,6 +5,7 @@
  */
 
 import { Header } from "@/components/header";
+import { MobileNavbar } from "@/components/mobile-navbar";
 import { MandatoryPhoneModal } from "@/components/mandatory-phone-modal";
 import { Suspense } from "react";
 
@@ -24,16 +25,19 @@ export default function MainLayout({
       <MandatoryPhoneModal />
 
       {/* Ин ҷо мӯҳтавои асосии саҳифаҳо мебарояд (Main Content) */}
-      <main className="flex-1 pt-14 sm:pt-16">
+      <main className="flex-1 pt-14 sm:pt-16 pb-20 md:pb-0">
         {children}
       </main>
 
-      {/* Поёни сайт (Footer) */}
-      <footer className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12">
+      {/* Поёни сайт (Footer) - Ҳамеша дар паси Navbar-и мобилӣ мемонад ё дар мобил пинҳон мешавад */}
+      <footer className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12 mb-20 md:mb-0 hidden md:block">
         <div className="container mx-auto px-4 text-center text-zinc-500 text-sm">
-          <p>© {new Date().getFullYear()} JUYO.TJ - All rights reserved.</p>
+          <p>© 2026 JUYO.TJ - All rights reserved.</p>
         </div>
       </footer>
+
+      {/* Навбари мобилӣ (Bottom Navigation) */}
+      <MobileNavbar />
     </div>
   );
 }

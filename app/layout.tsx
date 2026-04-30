@@ -122,7 +122,8 @@ export default async function RootLayout({
   return (
     <ClerkProvider
       localization={clerkLocale}
-       
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
     >
       <html
         lang={locale}
@@ -131,7 +132,7 @@ export default async function RootLayout({
       >
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
           <QueryProvider>
-            <LanguageProvider>
+            <LanguageProvider initialLocale={locale as any}>
               {/* Нишондиҳандаи ҳолати шабака ва ҷузъҳои глобалии барнома */}
               <NetworkStatus />
               {children}

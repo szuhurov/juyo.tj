@@ -19,8 +19,14 @@ interface LanguageContextType {
 // Сохтани Контекст барои дастрасии глобалӣ ба забон дар тамоми барнома
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>("tg");
+export function LanguageProvider({ 
+  children, 
+  initialLocale = "tg" 
+}: { 
+  children: ReactNode;
+  initialLocale?: Locale;
+}) {
+  const [locale, setLocale] = useState<Locale>(initialLocale);
 
   // Бори аввал хондани забони интихобшуда аз хотираи браузер (localStorage)
   useEffect(() => {

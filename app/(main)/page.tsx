@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, Suspense, useEffect } from "react"; // Барои кор бо ҳолатҳо ва вақт дар экран
+import { useState, Suspense, useEffect, useMemo } from "react"; // Барои кор бо ҳолатҳо ва вақт дар экран
 import { ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои гирифтани маълумоти эълонҳо ва категорияҳо
 import { ItemCard } from "@/components/item-card"; // Барои нишон додани ҳар як эълон дар алоҳидагӣ
 import { useLanguage } from "@/lib/language-context"; // Барои иваз кардани забони сайт
@@ -21,35 +21,13 @@ import { Search, X } from "lucide-react"; // Иконкаҳои ҷустуҷӯ �
 function HomeContent() {
   // Хукҳо барои забон, роутинг ва параметрҳои URL
   const { t } = useLanguage();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || "";
   const queryClient = useQueryClient();
   
-  // Стейтҳо барои ҷустуҷӯ, интихоби категория ва навъи эълон (гумшуда/ёфтшуда)
-  const [searchValue, setSearchValue] = useState(searchQuery);
+  // Стейтҳо барои интихоби категория ва навъи эълон (гумшуда/ёфтшуда)
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
-
-  // Вақте ки дар URL ҷустуҷӯ иваз мешавад, стейти моро нав мекунад
-  useEffect(() => {
-    setSearchValue(searchQuery);
-  }, [searchQuery]);
-
-  // Логикаи ҷустуҷӯ бо таъхир (Debounce), то ки серверро зиёд запрос нафиристем
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      const params = new URLSearchParams(searchParams);
-      if (searchValue) {
-        params.set('q', searchValue);
-      } else {
-        params.delete('q');
-      }
-      router.push(`/?${params.toString()}`);
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchValue]);
 
   // Агар дар ягон ҷои дигар эълонҳо нав шаванд, ин ҷо ҳам кэшро нав мекунем
   useEffect(() => {
@@ -64,38 +42,22 @@ function HomeContent() {
     };
   }, [queryClient]);
 
-  // Запрос ба база барои гирифтани рӯйхати эълонҳо
-  const { data: items = [], isLoading, isPlaceholderData } = useItems({ 
+  // Memoize filters to prevent unnecessary re-renders of useItems
+  const filters = useMemo(() => ({ 
     category: category === "All" ? undefined : category,
     type: itemType || undefined,
     search: searchQuery
-  });
+  }), [category, itemType, searchQuery]);
+
+  // Запрос ба база барои гирифтани рӯйхати эълонҳо
+  const { data: items = [], isLoading, isPlaceholderData } = useItems(filters);
 
   return (
     <div className="pb-18">
-      {/* Қисмати Филтрҳо ва Ҷустуҷӯ (Header/Filters) */}
+      {/* Қисмати Филтрҳо (Header/Filters) */}
       <div className="fixed top-14 sm:top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
-        <div className="container mx-auto px-4 pb-1.5 pt-0">
-          {/* Поиск барои мобилка */}
-          <div className="md:hidden relative mb-3 mt-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-            <Input
-              placeholder={t('search')}
-              className="pl-9 h-11 rounded-xl bg-zinc-100/80 dark:bg-zinc-900/80 border-none focus-visible:ring-2 focus-visible:ring-emerald-500/20 transition-all text-base"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-            {searchValue && (
-              <button 
-                onClick={() => setSearchValue("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3 mt-3 md:mt-0 md:mb-2">
+        <div className="container mx-auto px-4 py-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 md:py-0 md:h-12">
             {/* Кнопкаҳои категорияҳо */}
             <div className="flex items-center overflow-x-auto no-scrollbar -mx-1 px-1">
               <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
@@ -171,7 +133,7 @@ function HomeContent() {
       </div>
 
       {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо (Main Content / Grid) */}
-      <div className="container mx-auto px-4 pt-[195px] md:pt-[70px]">
+      <div className="container mx-auto px-4 pt-[135px] md:pt-[55px]">
         {isLoading && items.length === 0 ? (
         /* Вақте ки маълумот бор шуда истодааст (Loading state) */
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">

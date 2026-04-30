@@ -8,9 +8,12 @@
 import { SignIn } from "@clerk/nextjs"; // Барои ворид шудан ба профил
 import { useLanguage } from "@/lib/language-context"; // Барои иваз кардани забони сайт
 import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
+  const router = useRouter();
 
   // Рӯйхати забонҳо барои тугмаҳо
   const languages = [
@@ -21,7 +24,19 @@ export default function Page() {
 
   return (
     // Контейнер барои марказонидани (center) формаи воридшавӣ
-    <div className="min-h-screen flex flex-col items-center justify-center  bg-zinc-50 dark:bg-zinc-950">
+    <div className="min-h-screen flex flex-col items-center justify-center  bg-zinc-50 dark:bg-zinc-950 p-4 relative">
+      {/* Тугмаи Ба қафо */}
+      <div className="absolute top-6 left-4 sm:left-8">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => router.back()}
+          className="rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </Button>
+      </div>
+
       {/* Қисмати ивази забон */}
       <div className="flex gap-2 mb-8">
         {languages.map((lang) => (
