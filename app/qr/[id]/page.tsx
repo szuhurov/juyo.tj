@@ -69,16 +69,7 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
   }
 
   const LanguageSwitcher = () => (
-    <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-8">
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        onClick={() => router.back()}
-        className="h-10 w-10 rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md shadow-xl border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90"
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </Button>
-
+    <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center px-4 sm:px-8">
       <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 shadow-xl border border-zinc-200 dark:border-zinc-800">
         {[
           { id: 'tg', label: 'Тоҷикӣ' },

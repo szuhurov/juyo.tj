@@ -49,13 +49,12 @@ import {
   Phone,
   Pencil,
   QrCode,
-  Settings,
+  Menu as MenuIcon,
   Download,
   RefreshCw,
   Palette,
   Type,
   ChevronLeft,
-  ArrowLeft,
 } from "lucide-react"; // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
 import Image from "next/image"; // Барои нишон додани суратҳои оптимизатсияшуда
@@ -261,7 +260,7 @@ function ProfileContent() {
     {
       id: "guide",
       title: t("aboutApp"),
-      icon: Settings,
+      icon: MenuIcon,
       color: "text-zinc-600",
       bg: "bg-zinc-50 dark:bg-zinc-900/20",
     },
@@ -279,6 +278,18 @@ function ProfileContent() {
       window.removeEventListener("items-updated", handleUpdate);
     };
   }, [queryClient]);
+
+  // Click outside to close color picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (activePicker && !target.closest('.color-picker-container') && !target.closest('.color-trigger')) {
+        setActivePicker(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [activePicker]);
 
   /**
    * Функсия барои коркарди суратҳо дар Қуттии бехатарӣ
@@ -625,7 +636,6 @@ function ProfileContent() {
         cacheBust: true,
         pixelRatio: 4, // Баланд бардоштани сифат барои чоп
         skipFonts: false,
-        backgroundColor: qrSettings.bgColor,
         style: {
           transform: "scale(1)",
           transformOrigin: "top left",
@@ -652,17 +662,6 @@ function ProfileContent() {
       case "posts":
         return (
           <div className="space-y-6">
-            {/* Back Button */}
-            <div className="px-4 py-2 sm:px-0 mb-2 flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm"
-                onClick={() => router.push("/profile")}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </div>
             {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-500">
               {postsLoading ? (
@@ -721,17 +720,6 @@ function ProfileContent() {
       case "qr":
         return (
           <div className="space-y-8 pb-20">
-            {/* Back Button */}
-            <div className="px-4 py-2 sm:px-0 mb-2 flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm"
-                onClick={() => router.push("/profile")}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </div>
             {/* Сарлавҳаи таби QR-код */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -739,75 +727,79 @@ function ProfileContent() {
                   {t("qrMyCode")}
                 </h3>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full sm:w-auto">
-                  <Button
-                    onClick={handleDownloadQR}
-                    disabled={isDownloading}
-                    className="rounded-lg h-12 sm:h-9 px-6 font-black uppercase text-[10px] tracking-widest gap-2 bg-zinc-900 text-white shadow-md hover:bg-zinc-800 w-full sm:w-auto order-first sm:order-last"
-                  >
-                    {isDownloading ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5" />
-                    )}
-                    {t("save")}
-                  </Button>
-
                   {/* iOS Style Toggle - Hidden on mobile header, shown in settings */}
-                  <div className="hidden sm:flex flex-col items-center sm:items-end gap-1">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                        {profile?.is_qr_active
-                          ? t("qrStatusActive")
-                          : t("qrStatusInactive")}
-                      </span>
-                      <button
-                        onClick={async () => {
-                          try {
-                            const token = await getToken({
-                              template: "supabase",
-                            });
-                            const supabase = createClerkSupabaseClient(token!);
-                            const newState = !profile?.is_qr_active;
-                            const updated = await ProfileService.updateProfile(
-                              supabase,
-                              userId!,
-                              {
-                                is_qr_active: newState,
-                              },
-                            );
-                            setProfile(updated);
-                            toast.success(
-                              newState
-                                ? t("qrActivatedSuccess")
-                                : t("qrDeactivatedSuccess"),
-                            );
-                          } catch (err) {
-                            toast.error(t("error"));
-                          }
-                        }}
-                        className={cn(
-                          "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                          profile?.is_qr_active
-                            ? "bg-emerald-500"
-                            : "bg-zinc-300 dark:bg-zinc-700",
-                        )}
-                      >
-                        <span
+                  <div className="hidden sm:flex items-center gap-4">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                          {profile?.is_qr_active
+                            ? t("qrStatusActive")
+                            : t("qrStatusInactive")}
+                        </span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const token = await getToken({
+                                template: "supabase",
+                              });
+                              const supabase = createClerkSupabaseClient(token!);
+                              const newState = !profile?.is_qr_active;
+                              const updated = await ProfileService.updateProfile(
+                                supabase,
+                                userId!,
+                                {
+                                  is_qr_active: newState,
+                                },
+                              );
+                              setProfile(updated);
+                              toast.success(
+                                newState
+                                  ? t("qrActivatedSuccess")
+                                  : t("qrDeactivatedSuccess"),
+                              );
+                            } catch (err) {
+                              toast.error(t("error"));
+                            }
+                          }}
                           className={cn(
-                            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
                             profile?.is_qr_active
-                              ? "translate-x-5"
-                              : "translate-x-0",
+                              ? "bg-emerald-500"
+                              : "bg-zinc-300 dark:bg-zinc-700",
                           )}
-                        />
+                        >
+                          <span
+                            className={cn(
+                              "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                              profile?.is_qr_active
+                                ? "translate-x-5"
+                                : "translate-x-0",
+                            )}
+                          />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setShowSecurityInfo(true)}
+                        className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2"
+                      >
+                        {t("qrSecurityQuestion")}
                       </button>
                     </div>
-                    <button
-                      onClick={() => setShowSecurityInfo(true)}
-                      className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2"
+                    
+                    <Button
+                      onClick={handleDownloadQR}
+                      disabled={isDownloading}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[10px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-sm"
                     >
-                      {t("qrSecurityQuestion")}
-                    </button>
+                      {isDownloading ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      {t("download")}
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -846,7 +838,7 @@ function ProfileContent() {
             <div className="animate-in fade-in duration-500 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
-                <div className="flex flex-col sticky top-[150px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   <div className="bg-transparent sm:bg-zinc-100 sm:dark:bg-zinc-900 rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
                     <div className="scale-[0.8] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
                       <QRCard
@@ -854,7 +846,7 @@ function ProfileContent() {
                         settings={{
                           qrColor: qrSettings.qrColor,
                           bgColor: qrSettings.bgColor,
-                          borderRadius: "medium",
+                          borderRadius: "large",
                           shadow: "soft",
                           hasBorder: false,
                           pattern: "none",
@@ -868,32 +860,49 @@ function ProfileContent() {
                 </div>
 
                 {/* Панели танзимоти ранг ва текст */}
-                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-4 sm:p-8 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col justify-center">
+                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-4 sm:p-8 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col justify-center relative">
                   <div className="space-y-8">
                     {/* Рангҳои QR */}
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Palette className="w-4 h-4 text-zinc-400" />
-                        <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400">
-                          {t("qrColors")}
-                        </h4>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Palette className="w-4 h-4 text-zinc-400" />
+                          <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400">
+                            {t("qrColors")}
+                          </h4>
+                        </div>
+                        
+                        {/* Install Button for Mobile - Hidden on Desktop */}
+                        <Button
+                          onClick={handleDownloadQR}
+                          disabled={isDownloading}
+                          variant="outline"
+                          size="sm"
+                          className="sm:hidden h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[9px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-sm"
+                        >
+                          {isDownloading ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Download className="w-3.5 h-3.5" />
+                          )}
+                          {t("download")}
+                        </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
                         <div className="flex sm:contents gap-2">
                           <div className="space-y-2 relative flex-1 sm:flex-none">
                             <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
                               {t("qrColorLabel")}
                             </Label>
-                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800 color-trigger">
                               <button
                                 className="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-100 dark:border-zinc-800 shrink-0 shadow-sm transition-transform active:scale-95"
                                 style={{ backgroundColor: qrSettings.qrColor }}
-                                onClick={() =>
-                                  setActivePicker(
-                                    activePicker === "qr" ? null : "qr",
-                                  )
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActivePicker(activePicker === "qr" ? null : "qr");
+                                }}
                               />
                               <Input
                                 value={qrSettings.qrColor}
@@ -915,15 +924,14 @@ function ProfileContent() {
                             <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
                               {t("qrBgLabel")}
                             </Label>
-                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800 color-trigger">
                               <button
                                 className="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-100 dark:border-zinc-800 shrink-0 shadow-sm transition-transform active:scale-95"
                                 style={{ backgroundColor: qrSettings.bgColor }}
-                                onClick={() =>
-                                  setActivePicker(
-                                    activePicker === "bg" ? null : "bg",
-                                  )
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActivePicker(activePicker === "bg" ? null : "bg");
+                                }}
                               />
                               <Input
                                 value={qrSettings.bgColor}
@@ -943,45 +951,49 @@ function ProfileContent() {
                         </div>
 
                         {(activePicker === "qr" || activePicker === "bg") && (
-                          <div className="fixed inset-x-0 bottom-0 sm:absolute sm:inset-auto sm:top-full sm:left-0 z-[60] sm:mb-20 p-0 bg-white dark:bg-zinc-900 sm:rounded-2xl shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
-                            <div className="flex flex-row p-0 gap-0 justify-center items-start">
-                              <div className="flex-1 space-y-0">
-                                <p className="text-[8px] font-black uppercase text-zinc-400 text-center py-2 bg-zinc-50 dark:bg-zinc-800/50 sm:hidden border-b border-zinc-100 dark:border-zinc-800">
+                          <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-900 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 color-picker-container overflow-hidden">
+                            <div className="flex flex-row p-0 gap-0 justify-center items-stretch h-full">
+                              <div className="flex-1 flex flex-col">
+                                <p className="text-[9px] font-black uppercase text-zinc-400 text-center py-3 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800 tracking-widest">
                                   {t("qrColorLabel")}
                                 </p>
-                                <HexColorPicker
-                                  color={qrSettings.qrColor}
-                                  onChange={(color) =>
-                                    setQrSettings({
-                                      ...qrSettings,
-                                      qrColor: color,
-                                    })
-                                  }
-                                  className="!w-full !h-48 sm:!w-[200px] sm:!h-[200px] !rounded-none"
-                                />
+                                <div className="p-4 flex justify-center bg-white dark:bg-zinc-900 flex-1 items-center">
+                                  <HexColorPicker
+                                    color={qrSettings.qrColor}
+                                    onChange={(color) =>
+                                      setQrSettings({
+                                        ...qrSettings,
+                                        qrColor: color,
+                                      })
+                                    }
+                                    className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
+                                  />
+                                </div>
                               </div>
-                              <div className="flex-1 space-y-0 border-l border-zinc-100 dark:border-zinc-800">
-                                <p className="text-[8px] font-black uppercase text-zinc-400 text-center py-2 bg-zinc-50 dark:bg-zinc-800/50 sm:hidden border-b border-zinc-100 dark:border-zinc-800">
+                              <div className="flex-1 flex flex-col border-l border-zinc-100 dark:border-zinc-800">
+                                <p className="text-[9px] font-black uppercase text-zinc-400 text-center py-3 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800 tracking-widest">
                                   {t("qrBgLabel")}
                                 </p>
-                                <HexColorPicker
-                                  color={qrSettings.bgColor}
-                                  onChange={(color) =>
-                                    setQrSettings({
-                                      ...qrSettings,
-                                      bgColor: color,
-                                    })
-                                  }
-                                  className="!w-full !h-48 sm:!w-[200px] sm:!h-[200px] !rounded-none"
-                                />
+                                <div className="p-4 flex justify-center bg-white dark:bg-zinc-900 flex-1 items-center">
+                                  <HexColorPicker
+                                    color={qrSettings.bgColor}
+                                    onChange={(color) =>
+                                      setQrSettings({
+                                        ...qrSettings,
+                                        bgColor: color,
+                                      })
+                                    }
+                                    className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
+                                  />
+                                </div>
                               </div>
                             </div>
-                            <div className="p-4 bg-white dark:bg-zinc-950 pb-24 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
+                            <div className="p-4 bg-zinc-50 dark:bg-zinc-950/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
                               <Button
-                                className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[12px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-xl"
+                                className="w-full h-12 sm:h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
                                 onClick={() => setActivePicker(null)}
                               >
-                                OK
+                                {t("download") || "Захира кардан"}
                               </Button>
                             </div>
                           </div>
@@ -1090,17 +1102,6 @@ function ProfileContent() {
       case "guide":
         return (
           <div className="space-y-8 pb-20">
-            {/* Back Button */}
-            <div className="px-4 py-2 sm:px-0 mb-2 flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm"
-                onClick={() => router.back()}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </div>
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <h3 className="text-lg font-black uppercase tracking-tight">
                 {t("aboutApp") || "Оид ба JUYO"}
@@ -1189,17 +1190,6 @@ function ProfileContent() {
       case "info":
         return (
           <div className="space-y-12 pb-20">
-            {/* Back Button */}
-            <div className="px-4 py-2 sm:px-0 mb-2 flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm"
-                onClick={() => router.back()}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </div>
             {/* Сарлавҳаи таби Маълумоти шахсӣ */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <h3 className="text-lg font-black uppercase tracking-tight">
@@ -1423,17 +1413,6 @@ function ProfileContent() {
       case "saved":
         return (
           <div className="space-y-6">
-            {/* Back Button */}
-            <div className="px-4 py-2 sm:px-0 mb-2 flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm"
-                onClick={() => router.back()}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </div>
             {/* Сарлавҳаи таби Захирашудаҳо */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
@@ -1482,17 +1461,6 @@ function ProfileContent() {
       case "safety":
         return (
           <div className="space-y-8">
-            {/* Back Button */}
-            <div className="px-4 py-2 sm:px-0 mb-2 flex items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm"
-                onClick={() => router.back()}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </div>
             {/* Сарлавҳаи таби Қуттии бехатарӣ */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
@@ -2134,24 +2102,22 @@ function ProfileContent() {
 
             <div className="flex items-center gap-2">
               <Button
-                asChild
+                onClick={() => handleTabChange("info")}
                 className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase text-[10px] tracking-wider border-none shadow-none"
               >
-                <Link href="/profile/edit">
-                  <Pencil className="w-3.5 h-3.5 mr-2" />
-                  {t("edit") || "Edit"}
-                </Link>
+                <Pencil className="w-3.5 h-3.5 mr-2" />
+                {t("edit") || "Edit"}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase text-[10px] tracking-wider border-none shadow-none gap-2">
-                    <Settings className="w-4 h-4" />
+                    <MenuIcon className="w-4 h-4" />
                     {t("settings") || "Settings"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 rounded-xl shadow-xl p-2 border-zinc-100 dark:border-zinc-800"
+                  className="w-56 rounded-xl shadow-xl p-2 border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"
                 >
                   {menuItems.map((item) => (
                     <DropdownMenuItem
@@ -2164,7 +2130,9 @@ function ProfileContent() {
                           : "text-zinc-500",
                       )}
                     >
-                      <item.icon className="w-4 h-4" />
+                      <div className={cn("p-1.5 rounded-md", item.bg, item.color)}>
+                        <item.icon className="w-3.5 h-3.5" />
+                      </div>
                       {item.title}
                     </DropdownMenuItem>
                   ))}
@@ -2172,7 +2140,9 @@ function ProfileContent() {
                   <DropdownMenuItem className="p-0">
                     <SignOutButton>
                       <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-red-500 font-bold text-[11px] uppercase tracking-wider">
-                        <LogOut className="w-4 h-4" />
+                        <div className="p-1.5 rounded-md bg-red-50 dark:bg-red-900/20">
+                          <LogOut className="w-3.5 h-3.5" />
+                        </div>
                         {t("signOut")}
                       </button>
                     </SignOutButton>

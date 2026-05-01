@@ -133,10 +133,10 @@ function HomeContent() {
       </div>
 
       {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо (Main Content / Grid) */}
-      <div className="container mx-auto px-4 pt-[135px] md:pt-[55px]">
+      <div className="container mx-auto px-2 sm:px-4 pt-[135px] md:pt-[55px]">
         {isLoading && items.length === 0 ? (
         /* Вақте ки маълумот бор шуда истодааст (Loading state) */
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="space-y-3">
               <Skeleton className="aspect-square w-full rounded-xl" />
@@ -147,7 +147,7 @@ function HomeContent() {
         </div>
       ) : items.length > 0 ? (
         /* Намоиши эълонҳо дар сетка */
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6">
           {items.map((item: any) => (
             <ItemCard key={item.id} item={item} />
           ))}

@@ -20,8 +20,11 @@ import {
   LogOut,
   QrCode,
   PlusCircle,
-  ArrowLeft,
   Settings,
+  Menu,
+  LayoutGrid,
+  Briefcase,
+  Bookmark,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -280,10 +283,80 @@ export function Header() {
             </div>
 
             {/* Login Button Mobile Only (Агар корбар ворид нашуда бошад) */}
-            {!userId && (
+            {!userId ? (
               <Button size="sm" className="sm:hidden rounded-md font-bold text-[10px] h-9 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 px-3 capitalize" asChild>
                 <Link href="/sign-up">{t('signup')}</Link>
               </Button>
+            ) : (
+              /* Mobile Menu Button (Агар корбар ворид шуда бошад) */
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" size="sm" className="sm:hidden h-9 w-9 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+                    <Menu className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 rounded-2xl p-2 shadow-xl border-zinc-200/50 dark:border-zinc-800/50">
+                  <div className="p-1 space-y-0.5">
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/profile?tab=posts')} 
+                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                    >
+                      <LayoutGrid className="mr-3 h-4 w-4 text-blue-500" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">{t('myPosts')}</span>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/profile?tab=info')} 
+                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                    >
+                      <User className="mr-3 h-4 w-4 text-indigo-500" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">{t('personalInfo')}</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/profile?tab=qr')} 
+                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                    >
+                      <QrCode className="mr-3 h-4 w-4 text-purple-500" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">{t('qrMyCode')}</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/profile?tab=saved')} 
+                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                    >
+                      <Bookmark className="mr-3 h-4 w-4 text-emerald-500" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">{t('savedItems')}</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/profile?tab=safety')} 
+                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                    >
+                      <Briefcase className="mr-3 h-4 w-4 text-amber-500" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">{t('mySafe')}</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem 
+                      onClick={() => router.push('/profile?tab=guide')} 
+                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                    >
+                      <Menu className="mr-3 h-4 w-4 text-zinc-500" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">{t('aboutApp')}</span>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2 my-1" />
+                    
+                    <DropdownMenuItem 
+                      onClick={() => signOut(() => router.push("/"))} 
+                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-red-50 dark:focus:bg-red-950/30 transition-colors group"
+                    >
+                      <LogOut className="mr-3 h-4 w-4 text-red-500" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-red-600">{t('signOut')}</span>
+                    </DropdownMenuItem>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>

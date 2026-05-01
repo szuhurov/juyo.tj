@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select"; // Барои рӯйхати интихобшаванда
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Компоненти корт
 import { toast } from "sonner"; // Барои нишон додани хабарҳо
-import { Loader2, Plus, X, Upload, ArrowLeft } from "lucide-react"; // Иконкаҳо
+import { Loader2, Plus, X, Upload } from "lucide-react"; // Иконкаҳо
 import Image from "next/image"; // Барои суратҳо
 import Link from "next/link"; // Барои гузаштан ба саҳифаҳо
 
@@ -272,13 +272,6 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        {/* Тугмаи бекор кардан (Назад) */}
-        <Button variant="ghost" asChild className="mb-6 gap-2 rounded-md font-bold">
-          <Link href={`/items/${id}`}>
-            <ArrowLeft className="w-4 h-4" /> {t('cancel')}
-          </Link>
-        </Button>
-
         <Card className="rounded-2xl overflow-hidden border shadow-xl">
           {/* Сарлавҳаи форма */}
           <CardHeader className="bg-zinc-900 text-white p-6">

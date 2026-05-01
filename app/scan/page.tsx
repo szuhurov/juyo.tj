@@ -85,19 +85,10 @@ export default function ScanPage() {
   }, [router, t]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-zinc-900 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-50">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => router.back()}
-          className="text-white hover:bg-zinc-900 rounded-full"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </Button>
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col pt-12">
+      {/* Title only */}
+      <div className="text-center mb-8">
         <h1 className="font-black uppercase tracking-widest text-sm">{t('scannerTitle')}</h1>
-        <div className="w-10" />
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-8">

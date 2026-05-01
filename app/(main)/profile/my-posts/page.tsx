@@ -92,11 +92,8 @@ export default function MyPostsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
-      {/* Сарлавҳаи саҳифа ва тугмаи "Назад" */}
+      {/* Сарлавҳаи саҳифа */}
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" asChild className="rounded-full">
-          <Link href="/profile"><ArrowLeft className="w-5 h-5" /></Link>
-        </Button>
         <h1 className="text-2xl font-black uppercase tracking-tight">{t('myPosts')}</h1>
       </div>
 

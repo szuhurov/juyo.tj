@@ -212,18 +212,6 @@ export default function ItemDetailsClient({ id }: { id: string }) {
   return (
     <TooltipProvider>
       <div className="mx-auto max-w-6xl md:pt-8 md:px-4">
-        {/* Back Button */}
-        <div className="px-4 py-2 sm:px-0 mb-2 flex items-center">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm" 
-            onClick={() => router.back()}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-
         {/* Layout Grid: Desktop use columns, Mobile use stacking with sticky effect */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12 items-start relative">
           

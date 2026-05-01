@@ -79,7 +79,7 @@ export function ItemCard({ item }: { item: Item }) {
 
   // Санҷиши ин ки эълон дар рӯйхати "маъқулдоштаҳо" ҳаст ё не (База)
   const checkSavedStatus = async () => {
-    if (!userId) return;
+    if (!userId || !item?.id) return;
     
     try {
       const token = await getToken({ template: 'supabase' });
@@ -93,10 +93,18 @@ export function ItemCard({ item }: { item: Item }) {
         .eq('item_id', item.id)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        // Агар хатогии Supabase бошад, танҳо дар ҳолати лозим лог мекунем
+        if (error.code !== 'PGRST116') { // maybeSingle empty result is fine
+          console.warn("Supabase check error:", error.message);
+        }
+        setIsSaved(false);
+        return;
+      }
+      
       setIsSaved(!!data);
     } catch (e: any) {
-      console.error("Error checking saved status:", e);
+      // Хомӯш кардани хатогиҳои ночиз дар консол
       setIsSaved(false);
     }
   };
@@ -322,30 +330,32 @@ export function ItemCard({ item }: { item: Item }) {
             </div>
 
             {/* Контенти карточка: Сарлавҳа ва Тавсиф */}
-            <CardContent className="p-3 pb-1">
+            <CardContent className="p-2 pb-1">
               <div className="flex flex-col gap-0.5">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-black text-xs line-clamp-1 leading-tight group-hover:text-emerald-500 transition-colors uppercase tracking-tight flex-1">
+                <div className="flex justify-between items-center gap-2">
+                  <h3 className="font-black text-[10px] sm:text-xs line-clamp-1 leading-tight group-hover:text-emerald-500 transition-colors uppercase tracking-tight flex-1">
                     {item.title}
                   </h3>
-                  <div className="flex items-center gap-1 text-zinc-400 text-[9px] ml-2 shrink-0">
-                    <Eye className="w-3 h-3" />
+                  <div className="flex items-center gap-1 text-zinc-400 text-[8px] shrink-0">
+                    <Eye className="w-2.5 h-2.5" />
                     <span>{item.views || 0}</span>
                   </div>
                 </div>
                 
-                <p className="text-zinc-500 text-[10px] line-clamp-2 leading-tight">
+                <p className="text-zinc-500 text-[9px] sm:text-[10px] line-clamp-1 leading-tight">
                   {item.description}
                 </p>
               </div>
             </CardContent>
 
             {/* Футери карточка: Сана ва тугмаҳои амалиёт */}
-            <CardFooter className="px-3 pb-3  flex flex-col mt-auto">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-zinc-400 text-[9px] font-bold uppercase tracking-wider border-t border-zinc-50 dark:border-zinc-900 pt-1.5 w-full gap-1.5">
+            <CardFooter className="px-2 pb-2 flex flex-col mt-auto">
+              <div className="flex flex-row items-center justify-between text-zinc-400 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider border-t border-zinc-50 dark:border-zinc-900 pt-1.5 w-full gap-1.5">
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="w-2.5 h-2.5" />
-                  <span>{exactDate}</span>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="w-2.5 h-2.5" />
+                    <span>{exactDate}</span>
+                  </div>
                 </div>
                 
                 <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 self-stretch sm:self-auto justify-between sm:justify-end bg-zinc-50/50 dark:bg-zinc-900/50 p-1 sm:p-0 rounded-lg sm:bg-transparent">

@@ -197,25 +197,13 @@ function AddItemForm() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-4 sm:py-8 max-w-2xl">
-      {/* Back Button */}
-      <div className="mb-4 flex items-center">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-9 w-9 rounded-xl flex items-center justify-center bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border border-zinc-100 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-90 shadow-sm" 
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-      </div>
-
-      <Card className="rounded-2xl overflow-hidden border shadow-xl">
+    <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-8 max-w-4xl">
+      <Card className="rounded-none sm:rounded-2xl overflow-hidden border-none sm:border shadow-none sm:shadow-xl min-h-screen sm:min-h-0">
         {/* Сарлавҳаи форма */}
-        <CardHeader className="bg-zinc-900 text-white p-6">
-          <CardTitle className="text-2xl font-black uppercase tracking-tight">{t('addItemTitle')}</CardTitle>
+        <CardHeader className="bg-zinc-900 text-white p-6 sm:p-8">
+          <CardTitle className="text-2xl sm:text-3xl font-black uppercase tracking-tight">{t('addItemTitle')}</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-6 sm:p-8">
           <form onSubmit={onSubmit} className="space-y-6">
             {/* Интихоби навъи эълон (Гумшуда ё Ёфтшуда) */}
             <div className="space-y-3">
