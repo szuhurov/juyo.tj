@@ -665,13 +665,13 @@ function ProfileContent() {
             {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-500">
               {postsLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-1">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6 px-1">
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="aspect-square rounded-2xl" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-1">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6 px-1">
                   {myItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -694,13 +694,13 @@ function ProfileContent() {
             {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-500">
               {postsLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-1">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6 px-1">
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="aspect-square rounded-2xl" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 px-1">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6 px-1">
                   {myItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -840,7 +840,7 @@ function ProfileContent() {
                 {/* Пешнамоиши QR (Preview) */}
                 <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   <div className="bg-transparent sm:bg-zinc-100 sm:dark:bg-zinc-900 rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-[0.8] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
+                    <div className="scale-[0.95] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
                         settings={{

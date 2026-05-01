@@ -92,9 +92,14 @@ export async function generateMetadata() {
       images: ["https://juyo.tj/logo.jpg"],
     },
     icons: {
-      icon: "/logo.jpg",
+      icon: [
+        { url: "/logo.jpg" },
+        { url: "/logo.jpg", sizes: "32x32", type: "image/jpeg" },
+      ],
       shortcut: "/logo.jpg",
-      apple: "/logo.jpg",
+      apple: [
+        { url: "/logo.jpg", sizes: "180x180", type: "image/jpeg" },
+      ],
     },
   };
 }
