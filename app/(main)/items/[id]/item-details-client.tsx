@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Calendar, Phone, Eye, ArrowLeft, ShieldCheck, User, 
   ChevronLeft, ChevronRight, Share2, Bookmark, Pencil, 
-  Archive, Trash2, CheckCircle2, ShieldAlert 
+  Archive, Trash2, CheckCircle2, ShieldAlert, Loader2 
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
