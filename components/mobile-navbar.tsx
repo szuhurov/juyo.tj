@@ -19,7 +19,7 @@ export function MobileNavbar() {
 
   const navItems = [
     {
-      label: t('home'),
+      label: t("home"),
       href: "/",
       icon: Home,
     },
@@ -30,7 +30,7 @@ export function MobileNavbar() {
       icon: QrCode,
     },
     {
-      label: t('addItemTitle'),
+      label: t("addItemTitle"),
       href: "/items/add",
       icon: PlusCircle,
       isMain: true,
@@ -42,7 +42,7 @@ export function MobileNavbar() {
     },
     {
       id: "profile",
-      label: t('profile'),
+      label: t("profile"),
       href: "/profile",
       icon: User,
       isProfile: true,
@@ -51,12 +51,18 @@ export function MobileNavbar() {
 
   const handleNavClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
-    const isProtected = href.includes('/profile') || href.includes('/items/add');
-    
+    const isProtected =
+      href.includes("/profile") || href.includes("/items/add");
+
     if (isProtected && !userId) {
       router.push("/sign-up");
     } else {
-      router.push(href);
+      // If navigating to profile from mobile navbar, ensure we reset to main posts tab
+      const target = href === "/profile" ? "/profile?tab=posts" : href;
+      router.push(target);
+      try {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (e) {}
     }
   };
 
@@ -65,12 +71,15 @@ export function MobileNavbar() {
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item) => {
           let isActive = pathname === item.href;
-          if (item.id === 'qr') {
-            isActive = pathname === '/profile' && searchParams.get('tab') === 'qr';
-          } else if (item.id === 'profile') {
-            isActive = pathname === '/profile' && (!searchParams.get('tab') || searchParams.get('tab') !== 'qr');
+          if (item.id === "qr") {
+            isActive =
+              pathname === "/profile" && searchParams.get("tab") === "qr";
+          } else if (item.id === "profile") {
+            isActive =
+              pathname === "/profile" &&
+              (!searchParams.get("tab") || searchParams.get("tab") !== "qr");
           }
-          
+
           if (item.isProfile) {
             return (
               <button
@@ -78,17 +87,23 @@ export function MobileNavbar() {
                 onClick={(e) => handleNavClick(item.href, e)}
                 className={cn(
                   "flex flex-col items-center justify-center min-w-[64px] h-full gap-1 transition-all",
-                  isActive ? "text-zinc-900 dark:text-white" : "text-zinc-400"
+                  isActive ? "text-zinc-900 dark:text-white" : "text-zinc-400",
                 )}
               >
-                <div className={cn(
-                  "p-0.5 rounded-full border-2 transition-all",
-                  isActive ? "border-zinc-900 dark:border-white" : "border-transparent"
-                )}>
+                <div
+                  className={cn(
+                    "p-0.5 rounded-full border-2 transition-all",
+                    isActive
+                      ? "border-zinc-900 dark:border-white"
+                      : "border-transparent",
+                  )}
+                >
                   <Avatar className="h-6 w-6">
                     <AvatarImage src={user?.imageUrl} />
                     <AvatarFallback className="text-[10px] bg-zinc-100 dark:bg-zinc-800">
-                      {user?.firstName?.charAt(0) || <User className="h-4 w-4" />}
+                      {user?.firstName?.charAt(0) || (
+                        <User className="h-4 w-4" />
+                      )}
                     </AvatarFallback>
                   </Avatar>
                 </div>
@@ -116,10 +131,12 @@ export function MobileNavbar() {
               onClick={(e) => handleNavClick(item.href, e)}
               className={cn(
                 "flex flex-col items-center justify-center min-w-[64px] h-full gap-1 transition-all active:scale-90",
-                isActive ? "text-zinc-900 dark:text-white" : "text-zinc-400"
+                isActive ? "text-zinc-900 dark:text-white" : "text-zinc-400",
               )}
             >
-              <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
+              <item.icon
+                className={cn("h-6 w-6", isActive && "stroke-[2.5px]")}
+              />
             </button>
           );
         })}
