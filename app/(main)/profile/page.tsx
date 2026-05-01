@@ -846,7 +846,7 @@ function ProfileContent() {
                         settings={{
                           qrColor: qrSettings.qrColor,
                           bgColor: qrSettings.bgColor,
-                          borderRadius: "large",
+                          borderRadius: "medium",
                           shadow: "soft",
                           hasBorder: false,
                           pattern: "none",
