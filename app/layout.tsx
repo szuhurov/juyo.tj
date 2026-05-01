@@ -93,10 +93,10 @@ export async function generateMetadata() {
     },
     icons: {
       icon: [
-        { url: "/logo.jpg" },
-        { url: "/logo.jpg", sizes: "32x32", type: "image/jpeg" },
+        { url: "/favicon.ico" },
+        { url: "/logo.jpg", type: "image/jpeg" },
       ],
-      shortcut: "/logo.jpg",
+      shortcut: "/favicon.ico",
       apple: [
         { url: "/logo.jpg", sizes: "180x180", type: "image/jpeg" },
       ],
