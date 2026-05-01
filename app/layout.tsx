@@ -93,12 +93,12 @@ export async function generateMetadata() {
     },
     icons: {
       icon: [
-        { url: "/favicon.ico" },
-        { url: "/logo.jpg", type: "image/jpeg" },
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/icon.png", type: "image/png", sizes: "512x512" },
       ],
       shortcut: "/favicon.ico",
       apple: [
-        { url: "/logo.jpg", sizes: "180x180", type: "image/jpeg" },
+        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
       ],
     },
   };
