@@ -1,7 +1,3 @@
-/**
- * Ин файл барои тавлиди худкори харитаи сайт (sitemap.xml) хидмат мекунад.
- * Харитаи сайт ба ботҳои ҷустуҷӯӣ барои пайдо кардани тамоми саҳифаҳои муҳим кӯмак мекунад.
- */
 import { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
@@ -27,12 +23,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1 : 0.8,
   }))
 
-  // Агар калидҳо набошанд, танҳо роҳҳои статикиро бармегардонем
+  // Агар калидҳо набошанд (масалан ҳангоми Build), танҳо роҳҳои статикиро бармегардонем
   if (!supabaseUrl || !supabaseKey) {
-    console.warn("Supabase keys missing during sitemap generation. Returning static routes only.");
     return staticRoutes;
   }
   
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
-    // ... rest of the dynamic logic
+
+    // 2. Гирифтани ID-и ҳамаи эълонҳои тасдиқшуда аз база
+    const { data: items } = await supabase
+      .from('items')
+      .select('id, updated_at')
+      .eq('moderation_status', 'approved')
+      .eq('is_resolved', false);
+
+    // 3. Сохтани URL-ҳо барои ҳар як эълон
+    const itemUrls = (items || []).map((item) => ({
+      url: `${baseUrl}/items/${item.id}`,
+      lastModified: new Date(item.updated_at || new Date()),
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
+    }));
+
+    return [
+      ...staticRoutes,
+      ...itemUrls,
+    ];
+  } catch (error) {
+    console.error("Error generating sitemap:", error);
+    return staticRoutes;
+  }
+}
