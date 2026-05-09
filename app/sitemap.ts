@@ -12,28 +12,10 @@ import { createClient } from '@supabase/supabase-js'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://juyo.tj'
   
-  // Пайвастшавӣ ба Supabase (бевосита дар ин ҷо барои суръат)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // 1. Гирифтани ID-и ҳамаи эълонҳои тасдиқшуда аз база
-  const { data: items } = await supabase
-    .from('items')
-    .select('id, updated_at')
-    .eq('moderation_status', 'approved')
-    .eq('is_resolved', false)
-
-  // 2. Сохтани URL-ҳо барои ҳар як эълон
-  const itemUrls = (items || []).map((item) => ({
-    url: `${baseUrl}/items/${item.id}`,
-    lastModified: new Date(item.updated_at || new Date()),
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }))
-
-  // 3. Роҳҳои статикии сайт
+  // 1. Роҳҳои статикии сайт
   const staticRoutes = [
     '',
     '/profile',
@@ -44,9 +26,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: 'daily' as const,
     priority: route === '' ? 1 : 0.8,
   }))
- 
-  return [
-    ...staticRoutes,
-    ...itemUrls,
-  ]
-}
+
+  // Агар калидҳо набошанд, танҳо роҳҳои статикиро бармегардонем
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("Supabase keys missing during sitemap generation. Returning static routes only.");
+    return staticRoutes;
+  }
+  
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    // ... rest of the dynamic logic
