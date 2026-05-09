@@ -216,9 +216,9 @@ export default function ItemDetailsClient({ id }: { id: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12 items-start relative">
           
           {/* Галереяи суратҳо: Sticky on Mobile and Desktop */}
-          <div className="sticky top-0 md:top-24 z-0 w-full p-4 md:p-0 flex items-center justify-center">
+          <div className="sticky top-0 md:top-24 z-0 w-full p-0 md:p-0 flex items-center justify-center">
             <div 
-              className="relative aspect-square w-full max-w-[600px] overflow-hidden rounded-[32px] md:rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 group shadow-xl"
+              className="relative aspect-square w-full max-w-[600px] overflow-hidden rounded-none md:rounded-[32px] border-b md:border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 group shadow-xl"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -236,7 +236,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
               
               {/* Нишондиҳандаи саҳифа (Dots) */}
               {images.length > 1 && (
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20">
+                <div className="absolute bottom-10 md:bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20">
                   {images.map((_, i) => (
                     <div key={i} className={cn("w-1.5 h-1.5 rounded-full transition-all", i === currentImageIndex ? "bg-white w-4" : "bg-white/40")} />
                   ))}
@@ -246,8 +246,8 @@ export default function ItemDetailsClient({ id }: { id: string }) {
               {/* Restore Navigation Arrows */}
               {images.length > 1 && (
                 <div className="flex md:block">
-                  <button onClick={() => setCurrentImageIndex((p) => (p - 1 + images.length) % images.length)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center z-20 hover:bg-white transition-colors shadow-sm"><ChevronLeft className="w-6 h-6" /></button>
-                  <button onClick={() => setCurrentImageIndex((p) => (p + 1) % images.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center z-20 hover:bg-white transition-colors shadow-sm"><ChevronRight className="w-6 h-6" /></button>
+                  <button onClick={() => setCurrentImageIndex((p) => (p - 1 + images.length) % images.length)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center z-20 hover:bg-white transition-colors shadow-sm hidden md:flex"><ChevronLeft className="w-6 h-6" /></button>
+                  <button onClick={() => setCurrentImageIndex((p) => (p + 1) % images.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center z-20 hover:bg-white transition-colors shadow-sm hidden md:flex"><ChevronRight className="w-6 h-6" /></button>
                 </div>
               )}
 
@@ -258,7 +258,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           </div>
 
           {/* Маълумоти эълон: Scrolls OVER image on mobile */}
-          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-6 md:mt-0 px-5 pt-8 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
+          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-[2.5rem] md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
@@ -288,17 +288,17 @@ export default function ItemDetailsClient({ id }: { id: string }) {
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">{item.description}</p>
             </div>
 
-            {/* Management Buttons for Owner (Wait for Auth to Load) */}
-            <div className="flex flex-wrap items-center gap-4 mb-10">
+            {/* Management Buttons for Owner - Compact for Mobile Row */}
+            <div className="flex flex-row items-center gap-2.5 mb-10 overflow-x-auto no-scrollbar pb-1">
               {isLoaded && isOwner && (
                 <>
-                  <Button variant="secondary" size="icon" className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm" asChild><Link href={`/items/${id}/edit`}><Pencil className="w-6 h-6 md:w-7 md:h-7" /></Link></Button>
-                  <Button variant="secondary" size="icon" className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-amber-50 dark:bg-amber-900/10 text-amber-600 border border-amber-100/50 shadow-sm" onClick={() => setShowArchiveConfirm(true)} disabled={isActionLoading}><Archive className="w-6 h-6 md:w-7 md:h-7" /></Button>
-                  <Button variant="secondary" size="icon" className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm" onClick={() => setShowDeleteConfirm(true)} disabled={isActionLoading}><Trash2 className="w-6 h-6 md:w-7 md:h-7" /></Button>
+                  <Button variant="secondary" size="icon" className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm" asChild><Link href={`/items/${id}/edit`}><Pencil className="w-5 h-5 md:w-7 md:h-7" /></Link></Button>
+                  <Button variant="secondary" size="icon" className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-amber-50 dark:bg-amber-900/10 text-amber-600 border border-amber-100/50 shadow-sm" onClick={() => setShowArchiveConfirm(true)} disabled={isActionLoading}><Archive className="w-5 h-5 md:w-7 md:h-7" /></Button>
+                  <Button variant="secondary" size="icon" className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm" onClick={() => setShowDeleteConfirm(true)} disabled={isActionLoading}><Trash2 className="w-5 h-5 md:w-7 md:h-7" /></Button>
                 </>
               )}
-              <Button variant="secondary" size="icon" className="h-14 w-14 md:h-16 md:w-16 rounded-2xl bg-blue-50 dark:bg-blue-900/10 text-blue-600 border border-blue-100/50 shadow-sm" onClick={handleShare}><Share2 className="w-6 h-6 md:w-7 md:h-7" /></Button>
-              <Button variant="secondary" size="icon" className={cn("h-14 w-14 md:h-16 md:w-16 rounded-2xl transition-all border shadow-sm", isSaved ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100")} onClick={toggleSave} disabled={isToggling}><Bookmark className={cn("w-6 h-6 md:w-7 md:h-7", isSaved && "fill-emerald-600")} /></Button>
+              <Button variant="secondary" size="icon" className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-blue-50 dark:bg-blue-900/10 text-blue-600 border border-blue-100/50 shadow-sm" onClick={handleShare}><Share2 className="w-5 h-5 md:w-7 md:h-7" /></Button>
+              <Button variant="secondary" size="icon" className={cn("h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl transition-all border shadow-sm", isSaved ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100")} onClick={toggleSave} disabled={isToggling}><Bookmark className={cn("w-5 h-5 md:w-7 md:h-7", isSaved && "fill-emerald-600")} /></Button>
             </div>
 
             <div className="mt-auto flex flex-col gap-3">

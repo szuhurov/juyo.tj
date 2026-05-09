@@ -57,7 +57,6 @@ export function MobileNavbar() {
     if (isProtected && !userId) {
       router.push("/sign-up");
     } else {
-      // If navigating to profile from mobile navbar, ensure we reset to main posts tab
       const target = href === "/profile" ? "/profile?tab=posts" : href;
       router.push(target);
       try {
@@ -67,7 +66,7 @@ export function MobileNavbar() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-t border-zinc-100 dark:bg-zinc-950/80 dark:border-zinc-900 md:hidden pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-zinc-100 dark:bg-zinc-950 dark:border-zinc-900 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
       <div className="flex items-center justify-around h-14 px-2">
         {navItems.map((item) => {
           let isActive = pathname === item.href;
@@ -111,31 +110,17 @@ export function MobileNavbar() {
             );
           }
 
-          if (item.isMain) {
-            return (
-              <button
-                key={item.href}
-                onClick={(e) => handleNavClick(item.href, e)}
-                className="flex flex-col items-center justify-center min-w-[64px] h-full -mt-6"
-              >
-                <div className="bg-zinc-900 dark:bg-white p-3 rounded-2xl shadow-lg shadow-zinc-200 dark:shadow-none transition-transform active:scale-90">
-                  <item.icon className="h-6 w-6 text-white dark:text-zinc-900" />
-                </div>
-              </button>
-            );
-          }
-
           return (
             <button
               key={item.href}
               onClick={(e) => handleNavClick(item.href, e)}
               className={cn(
-                "flex flex-col items-center justify-center min-w-[64px] h-full gap-1 transition-all active:scale-90",
+                "flex flex-col items-center justify-center min-w-[50px] h-full gap-1 transition-all active:scale-90",
                 isActive ? "text-zinc-900 dark:text-white" : "text-zinc-400",
               )}
             >
               <item.icon
-                className={cn("h-6 w-6", isActive && "stroke-[2.5px]")}
+                className={cn("h-5 w-5", isActive && "stroke-[2.5px]")}
               />
             </button>
           );

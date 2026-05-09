@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
         }
 
         // 1. Nudity
-        if (data.nudity && (data.nudity.sexual_activity > 0.2 || data.nudity.sexual_display > 0.2 || data.nudity.erotica > 0.3)) {
+        if (data.nudity && (data.nudity.sexual_activity > 0 || data.nudity.sexual_display > 0 || data.nudity.erotica > 0)) {
           isSafe = false; rejectionKey = 'mod_nudity'; break;
         } 
         

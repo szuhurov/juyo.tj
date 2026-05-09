@@ -6,30 +6,25 @@
 
 "use client";
 
-import { useState, Suspense, useEffect, useMemo } from "react"; // Барои кор бо ҳолатҳо ва вақт дар экран
-import { ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои гирифтани маълумоти эълонҳо ва категорияҳо
-import { ItemCard } from "@/components/item-card"; // Барои нишон додани ҳар як эълон дар алоҳидагӣ
-import { useLanguage } from "@/lib/language-context"; // Барои иваз кардани забони сайт
-import { cn } from "@/lib/utils"; // Барои якҷоя кардани классҳои CSS
-import { Skeleton } from "@/components/ui/skeleton"; // Барои нишон додани ҳолати боргирӣ (загрузка)
-import { useSearchParams, useRouter } from "next/navigation"; // Барои кор бо адрес ва параметрҳои URL
-import { useItems } from "@/lib/hooks/use-items"; // Хуки махсус барои гирифтани рӯйхати эълонҳо
-import { useQueryClient } from "@tanstack/react-query"; // Барои идора кардани кэши маълумотҳо
-import { Input } from "@/components/ui/input"; // Компоненти майдони воридкунии матн
-import { Search, X } from "lucide-react"; // Иконкаҳои ҷустуҷӯ ва нест кардан
+import { useState, Suspense, useEffect, useMemo } from "react"; 
+import { ItemService, CATEGORIES } from "@/lib/services/item-service"; 
+import { ItemCard } from "@/components/item-card"; 
+import { useLanguage } from "@/lib/language-context"; 
+import { cn } from "@/lib/utils"; 
+import { Skeleton } from "@/components/ui/skeleton"; 
+import { useSearchParams } from "next/navigation"; 
+import { useItems } from "@/lib/hooks/use-items"; 
+import { useQueryClient } from "@tanstack/react-query"; 
 
 function HomeContent() {
-  // Хукҳо барои забон, роутинг ва параметрҳои URL
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || "";
   const queryClient = useQueryClient();
   
-  // Стейтҳо барои интихоби категория ва навъи эълон (гумшуда/ёфтшуда)
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
 
-  // Агар дар ягон ҷои дигар эълонҳо нав шаванд, ин ҷо ҳам кэшро нав мекунем
   useEffect(() => {
     const handleUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
@@ -42,22 +37,20 @@ function HomeContent() {
     };
   }, [queryClient]);
 
-  // Memoize filters to prevent unnecessary re-renders of useItems
   const filters = useMemo(() => ({ 
     category: category === "All" ? undefined : category,
     type: itemType || undefined,
     search: searchQuery
   }), [category, itemType, searchQuery]);
 
-  // Запрос ба база барои гирифтани рӯйхати эълонҳо
-  const { data: items = [], isLoading, isPlaceholderData } = useItems(filters);
+  const { data: items = [], isLoading } = useItems(filters);
 
   return (
     <div className="pb-18">
       {/* Қисмати Филтрҳо (Header/Filters) */}
       <div className="fixed top-14 sm:top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
-        <div className="container mx-auto px-4 py-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 md:py-0 md:h-12">
+        <div className="max-w-[1600px] mx-auto px-4 py-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 py-2 md:py-0 md:h-12">
             {/* Кнопкаҳои категорияҳо */}
             <div className="flex items-center overflow-x-auto no-scrollbar -mx-1 px-1">
               <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
@@ -132,28 +125,24 @@ function HomeContent() {
         </div>
       </div>
 
-      {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо (Main Content / Grid) */}
-      <div className="container mx-auto px-2 sm:px-4 pt-[135px] md:pt-[55px]">
-        {isLoading && items.length === 0 ? (
-        /* Вақте ки маълумот бор шуда истодааст (Loading state) */
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6">
+      {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо */}
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[100px] md:pt-[55px]">
+        {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="space-y-3">
               <Skeleton className="aspect-square w-full rounded-xl" />
               <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-4 w-1/2" />
             </div>
           ))}
         </div>
       ) : items.length > 0 ? (
-        /* Намоиши эълонҳо дар сетка */
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {items.map((item: any) => (
             <ItemCard key={item.id} item={item} />
           ))}
         </div>
       ) : (
-        /* Агар ягон чиз ёфт нашуд */
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
           <h3 className="text-xl font-black mb-2 uppercase tracking-tight">{t('noItemsFound')}</h3>
           <p className="text-zinc-500 text-sm">{t('noItemsSubtitle')}</p>
@@ -164,9 +153,6 @@ function HomeContent() {
   );
 }
 
-/**
- * Компоненти асосии HomePage
- */
 export default function HomePage() {
   return (
     <Suspense fallback={<div className="container mx-auto px-4 py-20 text-center"><Skeleton className="h-10 w-48 mx-auto" /></div>}>

@@ -55,7 +55,9 @@ import {
   Palette,
   Type,
   ChevronLeft,
-} from "lucide-react"; // Иконкаҳои гуногун барои интерфейс
+  Search,
+  } from "lucide-react";
+ // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
 import Image from "next/image"; // Барои нишон додани суратҳои оптимизатсияшуда
 import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
@@ -1104,85 +1106,125 @@ function ProfileContent() {
           <div className="space-y-8 pb-20">
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <h3 className="text-lg font-black uppercase tracking-tight">
-                {t("aboutApp") || "Оид ба JUYO"}
+                {t("aboutApp") || "Оид ба JUYU"}
               </h3>
             </div>
 
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10 px-2">
               {/* Mission */}
-              <section className="space-y-4">
+              <section className="space-y-6">
                 <div className="bg-zinc-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full -mr-16 -mt-16" />
                   <h4 className="text-2xl font-black uppercase tracking-tight mb-4 relative z-10">
-                    {t("aboutJuyoTitle")}
+                    📍 Реальная проблема в Таджикистане
                   </h4>
-                  <p className="text-zinc-400 font-bold leading-relaxed relative z-10">
-                    {t("aboutJuyoDesc")}
-                  </p>
+                  <div className="text-zinc-400 font-bold leading-relaxed relative z-10 space-y-4">
+                    <p>Сегодня многие люди теряют свои вещи или находят потерянные предметы в общественных местах:</p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>такси</li>
+                      <li>рестораны</li>
+                      <li>университеты</li>
+                      <li>парки</li>
+                      <li>торговые центры</li>
+                    </ul>
+                    <p>Например, кто-то находит телефон, ключи, кошелек или документы, но не знает, куда их отнести и как найти владельца.</p>
+                    <p>С другой стороны, человек, потерявший вещь, не знает, с чего начать поиск.</p>
+                  </div>
                 </div>
               </section>
 
-              {/* Main Functions */}
+              {/* Solution */}
+              <section className="space-y-6">
+                <h4 className="text-2xl font-black uppercase tracking-tight px-4">
+                  💡 Наше решение — Juyu
+                </h4>
+                <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-4">
+                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">Juyu — это платформа, которая помогает:</p>
+                  <ul className="list-disc list-inside space-y-2 text-zinc-600 dark:text-zinc-400 font-bold ml-2">
+                    <li>людям, которые <span className="text-emerald-600">нашли вещь</span></li>
+                    <li>и людям, которые <span className="text-red-600">потеряли вещь</span></li>
+                  </ul>
+                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">размещать объявления и находить друг друга.</p>
+                </div>
+              </section>
+
+              {/* How it works */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-[2rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 space-y-3">
-                  <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center">
-                    <QrCode className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <h5 className="font-black uppercase text-xs tracking-wider">
-                    {t("qrSafetyTitle")}
-                  </h5>
-                  <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
-                    {t("qrSafetyDesc")}
-                  </p>
-                </div>
-
-                <div className="p-6 rounded-[2rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 space-y-3">
-                  <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center">
-                    <Briefcase className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <h5 className="font-black uppercase text-xs tracking-wider">
-                    {t("safetyBoxTitle")}
-                  </h5>
-                  <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
-                    {t("safetyBoxDesc")}
-                  </p>
-                </div>
-
-                <div className="p-6 rounded-[2rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 space-y-3">
+                <div className="p-8 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 space-y-4">
                   <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
-                    <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                    <PackageSearch className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h5 className="font-black uppercase text-xs tracking-wider">
-                    {t("aiModerationTitle")}
-                  </h5>
-                  <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
-                    {t("aiModerationDesc")}
-                  </p>
+                  <h5 className="font-black uppercase text-sm tracking-wider">🔎 Если вы нашли вещь:</h5>
+                  <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
+                    <li>Сначала ищете в приложении (возможно, владелец уже разместил объявление).</li>
+                    <li>Если объявления нет, вы можете сами опубликовать пост.</li>
+                    <li>Владелец сможет найти ваш пост и связаться с вами.</li>
+                  </ol>
+                </div>
+
+                <div className="p-8 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 space-y-4">
+                  <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
+                    <Search className="w-6 h-6 text-red-600" />
+                  </div>
+                  <h5 className="font-black uppercase text-sm tracking-wider">🔍 Если вы потеряли вещь:</h5>
+                  <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
+                    <li>Создаете пост.</li>
+                    <li>Ищете свою вещь через поиск.</li>
+                    <li>Если кто-то ее нашел, вы можете быстро связаться.</li>
+                  </ol>
                 </div>
               </div>
 
-              {/* Steps */}
+              {/* QR System */}
               <section className="space-y-6">
-                <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400 ml-4">
-                  {t("howToStartTitle")}
+                <h4 className="text-2xl font-black uppercase tracking-tight px-4">
+                  🏷 QR Code System
                 </h4>
-                <div className="space-y-4">
-                  {[
-                    { step: "01", text: t("step1") },
-                    { step: "02", text: t("step2") },
-                    { step: "03", text: t("step3") },
-                  ].map((item, i) => (
-                    <div key={i} className="flex gap-4 p-4 items-center">
-                      <span className="text-2xl font-black text-zinc-200 dark:text-zinc-800">
-                        {item.step}
-                      </span>
-                      <p className="text-xs font-bold text-zinc-600 dark:text-zinc-400">
-                        {item.text}
-                      </p>
-                    </div>
-                  ))}
+                <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-6">
+                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">Для большей безопасности каждый пользователь может создать <span className="text-purple-600">1 персональный QR-код</span> для своего аккаунта.</p>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                    {['Ключи', 'Кошелек', 'Ноутбук', 'Сумка', 'Питомец'].map((item, i) => (
+                      <div key={i} className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 text-center text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                    <h5 className="font-black uppercase text-xs">Как это работает?</h5>
+                    <ul className="text-sm text-zinc-500 font-medium space-y-2 list-disc list-inside">
+                      <li>Пользователь скачивает QR-код и прикрепляет к вещам.</li>
+                      <li>Нашедший сканирует код — открывается страница владельца.</li>
+                      <li>Отображаются контактные данные и ваше сообщение (напр. "Вознаграждение гарантируется").</li>
+                    </ul>
+                    <p className="text-xs font-black text-emerald-600 uppercase tracking-widest pt-2">✅ Преимущество: Один код для всех вещей.</p>
+                  </div>
                 </div>
               </section>
+
+              {/* Safety Box & Goal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-8 rounded-[2.5rem] bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
+                  <h5 className="font-black uppercase text-sm tracking-wider flex items-center gap-2">
+                    <Briefcase className="w-5 h-5 text-amber-600" />
+                    📦 Safety Box
+                  </h5>
+                  <p className="text-sm text-amber-900/60 dark:text-amber-200/60 font-medium leading-relaxed">
+                    Сохраните информацию о ценных вещах заранее. Если вещь потеряется — объявление публикуется в 1 клик.
+                  </p>
+                </div>
+                <div className="p-8 rounded-[2.5rem] bg-zinc-900 text-white space-y-4 shadow-xl">
+                  <h5 className="font-black uppercase text-sm tracking-wider flex items-center gap-2">
+                    <PlusCircle className="w-5 h-5 text-emerald-500" />
+                    🚀 Главная цель
+                  </h5>
+                  <p className="text-sm text-zinc-400 font-bold leading-relaxed">
+                    Создать сообщество взаимопомощи, где потерянные вещи возвращаются владельцам быстрее.
+                  </p>
+                  <p className="text-xs font-black text-emerald-500 uppercase tracking-[0.2em] pt-2">Juyu — от людей для людей.</p>
+                </div>
+              </div>
             </div>
           </div>
         );

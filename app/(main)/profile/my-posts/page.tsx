@@ -91,29 +91,29 @@ export default function MyPostsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="max-w-[1600px] mx-auto px-2 sm:px-4 py-8">
       {/* Сарлавҳаи саҳифа */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4 mb-8 px-2 sm:px-0">
         <h1 className="text-2xl font-black uppercase tracking-tight">{t('myPosts')}</h1>
       </div>
 
       {loading ? (
         /* Намоиши скелетон ҳангоми боргузории маълумот */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-xl" />)}
         </div>
       ) : items.length > 0 ? (
         /* Рендеринги рӯйхати эълонҳои ман */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {items.map((item) => (
             <div key={item.id} className="relative group">
               <ItemCard item={item} />
               {/* Тугмаи нест кардан дар болои корт */}
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+              <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-2">
                 <Button 
                   variant="destructive" 
                   size="icon" 
-                  className="h-8 w-8 rounded-lg shadow-lg"
+                  className="h-8 w-8 rounded-lg shadow-lg bg-red-600/90 backdrop-blur-sm border-none"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
