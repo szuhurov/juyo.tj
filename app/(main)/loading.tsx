@@ -12,7 +12,7 @@ export default function Loading() {
         {/* Логотипи асосӣ дар марказ */}
         <div className="relative w-32 h-32 mb-4">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="JUYO Logo"
             fill
             className="object-contain"

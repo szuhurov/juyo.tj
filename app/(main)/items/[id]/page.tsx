@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const typeText = item.type === 'lost' ? t.lost : t.found;
     const title = `${typeText}: ${item.title} | JUYO.TJ`;
     const description = item.description?.substring(0, 160) || t.seoDesc;
-    const imageUrl = item.images?.[0]?.image_url || "https://juyo.tj/logo.jpg";
+    const imageUrl = item.images?.[0]?.image_url || "https://juyo.tj/logo.png";
 
     return {
       title,
