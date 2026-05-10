@@ -57,9 +57,6 @@ export function MandatoryPhoneModal() {
           !data ||
           !data.phone || 
           data.phone.trim() === "" ||
-          !data.secondary_phone || 
-          data.secondary_phone.trim() === "" ||
-          !data.secondary_phone_type ||
           data.accepted_terms !== true || 
           !data.accepted_at || 
           !data.terms_version;
@@ -85,22 +82,11 @@ export function MandatoryPhoneModal() {
       return;
     }
 
-    if (!secondaryType) {
-      toast.error(t('fillAllFields'));
-      return;
-    }
-
     const formData = new FormData(e.currentTarget);
     const phone = (formData.get('phone') as string).trim();
-    const secondary_phone = (formData.get('secondary_phone') as string).trim();
     
-    if (phone.length < 9 || secondary_phone.length < 9) {
+    if (phone.length < 9) {
       toast.error(t('phoneMinLength'));
-      return;
-    }
-
-    if (phone === secondary_phone) {
-      toast.error(t('phonesMustBeDifferent'));
       return;
     }
 
@@ -111,8 +97,6 @@ export function MandatoryPhoneModal() {
       
       await ProfileService.updateProfile(supabase, userId!, {
         phone,
-        secondary_phone,
-        secondary_phone_type: secondaryType,
         accepted_terms: true,
         accepted_at: new Date().toISOString(),
         terms_version: "v1.0",
@@ -195,58 +179,6 @@ export function MandatoryPhoneModal() {
                   onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                 />
               </div>
-
-              <div className="space-y-1">
-                <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-widest ml-2">
-                  {t('phoneSecondaryLabel')}
-                </Label>
-                <Input 
-                  name="secondary_phone" 
-                  placeholder="XXXXXXXXX" 
-                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
-                  required 
-                  inputMode="numeric"
-                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <p className="text-[8px] font-black uppercase text-zinc-400 text-center tracking-widest px-2">
-                {t('phoneSecondaryNote')}
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {['father', 'mother', 'brother', 'sister'].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setSecondaryType(type)}
-                    className={cn(
-                      "flex items-center justify-center py-2.5 rounded-xl transition-all duration-300 font-black uppercase text-[9px] tracking-wider",
-                      secondaryType === type 
-                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]" 
-                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200"
-                    )}
-                  >
-                    {t(`phoneSecondaryTypes.${type}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 px-1">
-              <Checkbox 
-                id="terms-check-compact" 
-                checked={acceptedTerms} 
-                onCheckedChange={(val) => setAcceptedTerms(!!val)}
-                className="border-none bg-zinc-100 dark:bg-zinc-800 data-[state=checked]:bg-emerald-500 h-5 w-5 rounded-md transition-colors"
-              />
-              <Label 
-                htmlFor="terms-check-compact" 
-                className="text-[8px] font-black leading-tight cursor-pointer text-zinc-400 uppercase tracking-widest"
-              >
-                {t('terms.checkbox')}
-              </Label>
             </div>
           </form>
         </div>
@@ -256,7 +188,7 @@ export function MandatoryPhoneModal() {
             type="submit" 
             form="mandatory-form"
             className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
-            disabled={loading || !acceptedTerms || !secondaryType}
+            disabled={loading || !acceptedTerms}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}
           </Button>

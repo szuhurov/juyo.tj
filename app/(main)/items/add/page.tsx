@@ -28,8 +28,9 @@ import {
 } from "@/components/ui/select"; // Рӯйхати интихобшаванда (выпадающий список)
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Барои сохтани блоки асосии форма
 import { toast } from "sonner"; // Барои нишон додани паёмҳои муваққатӣ
-import { Loader2, Plus, X, Upload, ArrowLeft } from "lucide-react"; // Иконкаҳои лозимӣ барои интерфейс
+import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert } from "lucide-react"; // Иконкаҳои лозимӣ барои интерфейс
 import Image from "next/image"; // Барои нишон додани пешнамоиши суратҳо
+import { cn } from "@/lib/utils";
 
 import {
   Tooltip,
@@ -37,6 +38,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳои кӯтоҳ
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function AddItemForm() {
   // Хукҳо барои забон, роутинг ва аутентификатсияи корбар
@@ -51,6 +61,8 @@ function AddItemForm() {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [phone, setPhone] = useState("");
+  const [showSafetyModal, setShowSafetyModal] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<any>(null);
 
   // Вақте ки саҳифа бор мешавад, рақами телефони корбарро аз профилаш мегирем
   useEffect(() => {
@@ -95,21 +107,19 @@ function AddItemForm() {
   };
 
   /**
-   * Функсияи асосӣ барои сабти эълон (Submit)
+   * Функсия барои нишон додани модалкаи амниятӣ пеш аз сабт
    */
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePreSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId) return;
 
-    // Маълумотро аз форма мегирем
     const formData = new FormData(e.currentTarget);
     const title = (formData.get('title') as string).trim();
     const description = (formData.get('description') as string).trim();
-    const phone = (formData.get('phone') as string).trim();
+    const currentPhone = (formData.get('phone') as string).trim();
     const reward = (formData.get('reward') as string || "").trim();
 
-    // Проверкаи майдонҳои ҳатмӣ
-    if (!title || !description || !category || !phone) {
+    if (!title || !description || !category || !currentPhone) {
       toast.error(t('fillAllFields'));
       return;
     }
@@ -124,7 +134,21 @@ function AddItemForm() {
       return;
     }
 
+    setPendingFormData({ title, description, phone: currentPhone, reward });
+    setShowSafetyModal(true);
+  };
+
+  /**
+   * Функсияи асосӣ барои сабти эълон (Submit)
+   */
+  const onFinalSubmit = async () => {
+    if (!userId || !pendingFormData) return;
+    
+    setShowSafetyModal(false);
     setLoading(true);
+    
+    const { title, description, phone, reward } = pendingFormData;
+
     try {
       let token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("Authentication token missing");
@@ -193,6 +217,7 @@ function AddItemForm() {
       toast.error(error.message || t('error'));
     } finally {
       setLoading(false);
+      setPendingFormData(null);
     }
   };
 
@@ -204,7 +229,7 @@ function AddItemForm() {
           <CardTitle className="text-2xl sm:text-3xl font-black uppercase tracking-tight">{t('addItemTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="p-6 sm:p-8">
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={handlePreSubmit} className="space-y-6">
             {/* Интихоби навъи эълон (Гумшуда ё Ёфтшуда) */}
             <div className="space-y-3">
               <Label className="text-sm font-black uppercase tracking-wider text-zinc-400">{t('what_happened')}</Label>
@@ -352,6 +377,41 @@ function AddItemForm() {
           </form>
         </CardContent>
       </Card>
+
+      {/* Модалкаи амниятӣ пеш аз нашр */}
+      <Dialog open={showSafetyModal} onOpenChange={setShowSafetyModal}>
+        <DialogContent className="sm:max-w-md rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="p-8 space-y-6 text-center">
+            <div className={cn(
+              "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-2 animate-in zoom-in duration-500",
+              type === 'found' ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-red-50 dark:bg-red-900/20"
+            )}>
+              <ShieldAlert className={cn("w-8 h-8", type === 'found' ? "text-emerald-500" : "text-red-500")} />
+            </div>
+
+            <DialogHeader className="space-y-3">
+              <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+                {type === 'found' ? t('safetyPostModal.foundTitle') : t('safetyPostModal.lostTitle')}
+              </DialogTitle>
+              <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-[13px] leading-relaxed">
+                {type === 'found' ? t('safetyPostModal.foundDesc') : t('safetyPostModal.lostDesc')}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="px-8 pb-8">
+            <Button
+              onClick={onFinalSubmit}
+              className={cn(
+                "w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] text-white shadow-xl transition-all active:scale-95 border-none",
+                type === 'found' ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10" : "bg-red-600 hover:bg-red-700 shadow-red-600/10"
+              )}
+            >
+              {t('safetyPostModal.confirmBtn')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

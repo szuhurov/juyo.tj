@@ -50,7 +50,7 @@ function HomeContent() {
       {/* Қисмати Филтрҳо (Header/Filters) */}
       <div className="fixed top-14 sm:top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
         <div className="max-w-[1600px] mx-auto px-4 py-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 py-2 md:py-0 md:h-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 py-1 md:py-0 md:h-12">
             {/* Кнопкаҳои категорияҳо */}
             <div className="flex items-center overflow-x-auto no-scrollbar -mx-1 px-1">
               <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
@@ -126,7 +126,7 @@ function HomeContent() {
       </div>
 
       {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо */}
-      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[100px] md:pt-[55px]">
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[110px] md:pt-[55px]">
         {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {[...Array(8)].map((_, i) => (

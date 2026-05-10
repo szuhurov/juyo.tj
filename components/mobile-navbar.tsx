@@ -97,11 +97,11 @@ export function MobileNavbar() {
                       : "border-transparent",
                   )}
                 >
-                  <Avatar className="h-6 w-6">
+                  <Avatar className="h-7 w-7">
                     <AvatarImage src={user?.imageUrl} />
                     <AvatarFallback className="text-[10px] bg-zinc-100 dark:bg-zinc-800">
                       {user?.firstName?.charAt(0) || (
-                        <User className="h-4 w-4" />
+                        <User className="h-5 w-5" />
                       )}
                     </AvatarFallback>
                   </Avatar>
@@ -120,7 +120,7 @@ export function MobileNavbar() {
               )}
             >
               <item.icon
-                className={cn("h-5 w-5", isActive && "stroke-[2.5px]")}
+                className={cn("h-6 w-6", isActive && "stroke-[2.5px]")}
               />
             </button>
           );

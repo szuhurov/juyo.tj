@@ -13,7 +13,7 @@ type Locale = "tg" | "ru" | "en";
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, params?: Record<string, any>) => string;
+  t: (key: string, params?: Record<string, any>) => any;
 }
 
 // Сохтани Контекст барои дастрасии глобалӣ ба забон дар тамоми барнома
@@ -85,7 +85,7 @@ export function LanguageProvider({
       }
     }
 
-    if (typeof value !== 'string') return key;
+    if (typeof value !== 'string') return value;
 
     // Иваз кардани параметрҳо дар дохили матн (масалан, %{name})
     if (params) {
@@ -94,7 +94,7 @@ export function LanguageProvider({
       });
     }
 
-    return value as string;
+    return value;
   };
 
   return (

@@ -123,6 +123,9 @@ function ProfileContent() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showSecurityInfo, setShowSecurityInfo] = useState(false);
+  const [showSecondaryPhoneModal, setShowSecondaryPhoneModal] = useState(false);
+  const [secondaryLoading, setSecondaryLoading] = useState(false);
+  const [secondaryType, setSecondaryType] = useState<string>("");
 
   // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва текст)
   const [qrSettings, setQrSettings] = useState({
@@ -146,8 +149,8 @@ function ProfileContent() {
         const data = await ProfileService.getProfile(supabase, userId);
         setProfile(data);
 
-        // Агар рақами телефон набошад, тирезаи махсусро нишон медиҳем
-        if (data && (!data.phone || !data.secondary_phone)) {
+        // Агар рақами телефон набошад, тирезаи махсусро нишон медиҳем (ТАНҲО рақами асосӣ)
+        if (data && (!data.phone || data.phone.trim() === "")) {
           setShowPhoneModal(true);
         }
       } catch (err) {
@@ -627,6 +630,12 @@ function ProfileContent() {
    * Функсия барои боргирии QR-код ҳамчун сурат (Download)
    */
   const handleDownloadQR = async () => {
+    // Агар рақами дуюм набошад, аввал онро мепурсем
+    if (!profile?.secondary_phone || !profile?.secondary_phone_type) {
+      setShowSecondaryPhoneModal(true);
+      return;
+    }
+
     if (!qrRef.current) return;
 
     setIsDownloading(true);
@@ -654,6 +663,55 @@ function ProfileContent() {
       toast.error(t("error"));
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  /**
+   * Функсия барои захира кардани рақами дуюм ва давом додани боргирӣ
+   */
+  const handleSaveSecondaryPhone = async (
+    e: React.FormEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault();
+    if (!secondaryType) {
+      toast.error(t("fillAllFields"));
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const secondary_phone = (formData.get("secondary_phone") as string).trim();
+
+    if (secondary_phone.length < 9) {
+      toast.error(t("phoneMinLength"));
+      return;
+    }
+
+    if (secondary_phone === profile?.phone) {
+      toast.error(t("phonesMustBeDifferent"));
+      return;
+    }
+
+    setSecondaryLoading(true);
+    try {
+      const supabaseToken = await getToken({ template: "supabase" });
+      const supabase = createClerkSupabaseClient(supabaseToken!);
+
+      const updated = await ProfileService.updateProfile(supabase, userId!, {
+        secondary_phone,
+        secondary_phone_type: secondaryType,
+      });
+
+      setProfile(updated);
+      setShowSecondaryPhoneModal(false);
+      toast.success(t("success"));
+
+      // Пас аз захира, боргириро оғоз мекунем
+      setTimeout(() => handleDownloadQR(), 500);
+    } catch (err) {
+      console.error("Error saving secondary phone:", err);
+      toast.error(t("error"));
+    } finally {
+      setSecondaryLoading(false);
     }
   };
   if (!userLoaded) return null;
@@ -866,30 +924,21 @@ function ProfileContent() {
                   <div className="space-y-8">
                     {/* Рангҳои QR */}
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-2">
-                          <Palette className="w-4 h-4 text-zinc-400" />
-                          <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400">
-                            {t("qrColors")}
-                          </h4>
-                        </div>
-                        
-                        {/* Install Button for Mobile - Hidden on Desktop */}
-                        <Button
-                          onClick={handleDownloadQR}
-                          disabled={isDownloading}
-                          variant="outline"
-                          size="sm"
-                          className="sm:hidden h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[9px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-sm"
-                        >
-                          {isDownloading ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <Download className="w-3.5 h-3.5" />
-                          )}
-                          {t("download")}
-                        </Button>
-                      </div>
+                      {/* Install Button for Mobile - Hidden on Desktop */}
+                      <Button
+                        onClick={handleDownloadQR}
+                        disabled={isDownloading}
+                        variant="outline"
+                        size="sm"
+                        className="sm:hidden w-full h-10 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[10px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-md mb-2"
+                      >
+                        {isDownloading ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5" />
+                        )}
+                        {t("download")}
+                      </Button>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
                         <div className="flex sm:contents gap-2">
@@ -953,13 +1002,10 @@ function ProfileContent() {
                         </div>
 
                         {(activePicker === "qr" || activePicker === "bg") && (
-                          <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-900 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 color-picker-container overflow-hidden">
+                          <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 color-picker-container overflow-hidden">
                             <div className="flex flex-row p-0 gap-0 justify-center items-stretch h-full">
-                              <div className="flex-1 flex flex-col">
-                                <p className="text-[9px] font-black uppercase text-zinc-400 text-center py-3 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800 tracking-widest">
-                                  {t("qrColorLabel")}
-                                </p>
-                                <div className="p-4 flex justify-center bg-white dark:bg-zinc-900 flex-1 items-center">
+                              <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950">
+                                <div className="p-0 flex justify-center flex-1 items-center">
                                   <HexColorPicker
                                     color={qrSettings.qrColor}
                                     onChange={(color) =>
@@ -972,11 +1018,8 @@ function ProfileContent() {
                                   />
                                 </div>
                               </div>
-                              <div className="flex-1 flex flex-col border-l border-zinc-100 dark:border-zinc-800">
-                                <p className="text-[9px] font-black uppercase text-zinc-400 text-center py-3 bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800 tracking-widest">
-                                  {t("qrBgLabel")}
-                                </p>
-                                <div className="p-4 flex justify-center bg-white dark:bg-zinc-900 flex-1 items-center">
+                              <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 border-l border-zinc-100 dark:border-zinc-800">
+                                <div className="p-0 flex justify-center flex-1 items-center">
                                   <HexColorPicker
                                     color={qrSettings.bgColor}
                                     onChange={(color) =>
@@ -990,12 +1033,12 @@ function ProfileContent() {
                                 </div>
                               </div>
                             </div>
-                            <div className="p-4 bg-zinc-50 dark:bg-zinc-950/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
+                            <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
                               <Button
                                 className="w-full h-12 sm:h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
                                 onClick={() => setActivePicker(null)}
                               >
-                                {t("download") || "Захира кардан"}
+                                {t("save") || "Захира кардан"}
                               </Button>
                             </div>
                           </div>
@@ -1005,12 +1048,6 @@ function ProfileContent() {
 
                     {/* Тексти зери QR-код */}
                     <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Type className="w-4 h-4 text-zinc-400" />
-                        <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400">
-                          {t("qrStickerText")}
-                        </h4>
-                      </div>
                       <div className="space-y-2">
                         <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
                           {t("qrFooterText")}
@@ -1116,19 +1153,10 @@ function ProfileContent() {
                 <div className="bg-zinc-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full -mr-16 -mt-16" />
                   <h4 className="text-2xl font-black uppercase tracking-tight mb-4 relative z-10">
-                    📍 Реальная проблема в Таджикистане
+                    {t("guide.problemTitle")}
                   </h4>
                   <div className="text-zinc-400 font-bold leading-relaxed relative z-10 space-y-4">
-                    <p>Сегодня многие люди теряют свои вещи или находят потерянные предметы в общественных местах:</p>
-                    <ul className="list-disc list-inside space-y-1 ml-2">
-                      <li>такси</li>
-                      <li>рестораны</li>
-                      <li>университеты</li>
-                      <li>парки</li>
-                      <li>торговые центры</li>
-                    </ul>
-                    <p>Например, кто-то находит телефон, ключи, кошелек или документы, но не знает, куда их отнести и как найти владельца.</p>
-                    <p>С другой стороны, человек, потерявший вещь, не знает, с чего начать поиск.</p>
+                    <p>{t("guide.problemDesc")}</p>
                   </div>
                 </div>
               </section>
@@ -1136,15 +1164,20 @@ function ProfileContent() {
               {/* Solution */}
               <section className="space-y-6">
                 <h4 className="text-2xl font-black uppercase tracking-tight px-4">
-                  💡 Наше решение — Juyu
+                  {t("guide.solutionTitle")}
                 </h4>
                 <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-4">
-                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">Juyu — это платформа, которая помогает:</p>
-                  <ul className="list-disc list-inside space-y-2 text-zinc-600 dark:text-zinc-400 font-bold ml-2">
-                    <li>людям, которые <span className="text-emerald-600">нашли вещь</span></li>
-                    <li>и людям, которые <span className="text-red-600">потеряли вещь</span></li>
-                  </ul>
-                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">размещать объявления и находить друг друга.</p>
+                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">
+                    {t("guide.solutionDesc1")}
+                    <span className="text-emerald-600">
+                      {t("guide.solutionDesc2")}
+                    </span>
+                    {t("guide.solutionDesc3")}
+                    <span className="text-red-600">
+                      {t("guide.solutionDesc4")}
+                    </span>
+                    {t("guide.solutionDesc5")}
+                  </p>
                 </div>
               </section>
 
@@ -1154,11 +1187,13 @@ function ProfileContent() {
                   <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
                     <PackageSearch className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h5 className="font-black uppercase text-sm tracking-wider">🔎 Если вы нашли вещь:</h5>
+                  <h5 className="font-black uppercase text-sm tracking-wider">
+                    {t("guide.foundTitle")}
+                  </h5>
                   <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
-                    <li>Сначала ищете в приложении (возможно, владелец уже разместил объявление).</li>
-                    <li>Если объявления нет, вы можете сами опубликовать пост.</li>
-                    <li>Владелец сможет найти ваш пост и связаться с вами.</li>
+                    <li>{t("guide.foundStep1")}</li>
+                    <li>{t("guide.foundStep2")}</li>
+                    <li>{t("guide.foundStep3")}</li>
                   </ol>
                 </div>
 
@@ -1166,63 +1201,86 @@ function ProfileContent() {
                   <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
                     <Search className="w-6 h-6 text-red-600" />
                   </div>
-                  <h5 className="font-black uppercase text-sm tracking-wider">🔍 Если вы потеряли вещь:</h5>
+                  <h5 className="font-black uppercase text-sm tracking-wider">
+                    {t("guide.lostTitle")}
+                  </h5>
                   <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
-                    <li>Создаете пост.</li>
-                    <li>Ищете свою вещь через поиск.</li>
-                    <li>Если кто-то ее нашел, вы можете быстро связаться.</li>
+                    <li>{t("guide.lostStep1")}</li>
+                    <li>{t("guide.lostStep2")}</li>
+                    <li>{t("guide.lostStep3")}</li>
                   </ol>
                 </div>
               </div>
 
               {/* QR System */}
               <section className="space-y-6">
-                <h4 className="text-2xl font-black uppercase tracking-tight px-4">
-                  🏷 QR Code System
-                </h4>
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-6">
-                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">Для большей безопасности каждый пользователь может создать <span className="text-purple-600">1 персональный QR-код</span> для своего аккаунта.</p>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-                    {['Ключи', 'Кошелек', 'Ноутбук', 'Сумка', 'Питомец'].map((item, i) => (
-                      <div key={i} className="bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800 text-center text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                        {item}
+                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full -mr-32 -mt-32" />
+                  <h4 className="text-2xl font-black uppercase tracking-tight mb-4 relative z-10">
+                    {t("guide.qrSystemTitle")}
+                  </h4>
+                  <p className="text-zinc-400 font-bold mb-8 relative z-10">
+                    {t("guide.qrSystemDesc")}
+                  </p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 relative z-10">
+                    {(t("guide.qrItems") as string[]).map((item, i) => (
+                      <div
+                        key={i}
+                        className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl text-center border border-white/10"
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                          {item}
+                        </p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <h5 className="font-black uppercase text-xs">Как это работает?</h5>
-                    <ul className="text-sm text-zinc-500 font-medium space-y-2 list-disc list-inside">
-                      <li>Пользователь скачивает QR-код и прикрепляет к вещам.</li>
-                      <li>Нашедший сканирует код — открывается страница владельца.</li>
-                      <li>Отображаются контактные данные и ваше сообщение (напр. "Вознаграждение гарантируется").</li>
+                  <div className="mt-12 p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4 relative z-10">
+                    <h5 className="font-black uppercase text-xs tracking-[0.2em] text-emerald-400">
+                      {t("guide.qrHowTitle")}
+                    </h5>
+                    <ul className="space-y-3">
+                      <li className="flex gap-3 text-sm text-zinc-300 font-medium">
+                        <span className="text-emerald-500 font-black">1.</span>
+                        {t("guide.qrHowStep1")}
+                      </li>
+                      <li className="flex gap-3 text-sm text-zinc-300 font-medium">
+                        <span className="text-emerald-500 font-black">2.</span>
+                        {t("guide.qrHowStep2")}
+                      </li>
+                      <li className="flex gap-3 text-sm text-zinc-300 font-medium">
+                        <span className="text-emerald-500 font-black">3.</span>
+                        {t("guide.qrHowStep3")}
+                      </li>
                     </ul>
-                    <p className="text-xs font-black text-emerald-600 uppercase tracking-widest pt-2">✅ Преимущество: Один код для всех вещей.</p>
+                  </div>
+
+                  <div className="mt-6 flex justify-center relative z-10">
+                    <div className="bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-2xl border border-emerald-500/20 font-black uppercase text-[10px] tracking-widest">
+                      {t("guide.qrAdvantage")}
+                    </div>
                   </div>
                 </div>
               </section>
 
-              {/* Safety Box & Goal */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-8 rounded-[2.5rem] bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
-                  <h5 className="font-black uppercase text-sm tracking-wider flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-amber-600" />
-                    📦 Safety Box
+              {/* Goal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
+                <div className="p-8 rounded-[2.5rem] bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
+                  <h5 className="font-black uppercase text-sm tracking-wider text-amber-600">
+                    {t("guide.safetyBoxGoalTitle")}
                   </h5>
-                  <p className="text-sm text-amber-900/60 dark:text-amber-200/60 font-medium leading-relaxed">
-                    Сохраните информацию о ценных вещах заранее. Если вещь потеряется — объявление публикуется в 1 клик.
+                  <p className="text-sm text-amber-700/70 dark:text-amber-500/70 font-bold leading-relaxed">
+                    {t("guide.safetyBoxGoalDesc")}
                   </p>
                 </div>
                 <div className="p-8 rounded-[2.5rem] bg-zinc-900 text-white space-y-4 shadow-xl">
-                  <h5 className="font-black uppercase text-sm tracking-wider flex items-center gap-2">
-                    <PlusCircle className="w-5 h-5 text-emerald-500" />
-                    🚀 Главная цель
+                  <h5 className="font-black uppercase text-sm tracking-wider text-emerald-400">
+                    {t("guide.mainGoalTitle")}
                   </h5>
                   <p className="text-sm text-zinc-400 font-bold leading-relaxed">
-                    Создать сообщество взаимопомощи, где потерянные вещи возвращаются владельцам быстрее.
+                    {t("guide.mainGoalDesc")}
                   </p>
-                  <p className="text-xs font-black text-emerald-500 uppercase tracking-[0.2em] pt-2">Juyu — от людей для людей.</p>
                 </div>
               </div>
             </div>
@@ -2307,6 +2365,96 @@ function ProfileContent() {
               {t("cancel")}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Модалкаи ҳатмии рақами дуюм ҳангоми насби QR */}
+      <Dialog
+        open={showSecondaryPhoneModal}
+        onOpenChange={setShowSecondaryPhoneModal}
+      >
+        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
+          <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-500">
+              <Phone className="w-8 h-8 text-blue-500" />
+            </div>
+
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+                {t("qrSecondaryModal.title")}
+              </DialogTitle>
+              <DialogDescription className="text-zinc-500 font-bold text-[11px] leading-relaxed">
+                {t("qrSecondaryModal.desc")}
+              </DialogDescription>
+            </DialogHeader>
+
+            <form
+              onSubmit={handleSaveSecondaryPhone}
+              id="secondary-phone-form"
+              className="space-y-6 text-left"
+            >
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                    {t("qrSecondaryModal.label")}
+                  </Label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Input
+                      name="secondary_phone"
+                      placeholder={t("qrSecondaryModal.placeholder")}
+                      className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all outline-none"
+                      required
+                      inputMode="numeric"
+                      onChange={(e) =>
+                        (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {["father", "mother", "brother", "sister"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setSecondaryType(type)}
+                      className={cn(
+                        "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black uppercase text-[10px] tracking-wider",
+                        secondaryType === type
+                          ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
+                      )}
+                    >
+                      {t(`phoneSecondaryTypes.${type}`)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div className="px-8 pb-8 pt-2">
+            <Button
+              type="submit"
+              form="secondary-phone-form"
+              className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+              disabled={secondaryLoading || !secondaryType}
+            >
+              {secondaryLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+              ) : (
+                t("qrSecondaryModal.saveBtn")
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setShowSecondaryPhoneModal(false)}
+              className="w-full mt-2 text-[9px] font-black uppercase tracking-widest text-zinc-400"
+            >
+              {t("cancel")}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </TooltipProvider>

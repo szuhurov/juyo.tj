@@ -308,10 +308,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                 </Button>
               ) : (
                 <>
-                  <Button size="lg" className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg" asChild><a href={`tel:${item.phone_number}`}><Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('call')} (1)</a></Button>
-                  {item.profiles?.secondary_phone && (
-                    <Button size="lg" variant="outline" className="h-14 md:h-16 w-full rounded-2xl font-black border-2 shadow-sm" asChild><a href={`tel:${item.profiles.secondary_phone}`}><Phone className="w-5 h-5 md:w-6 md:h-6 mr-2 text-emerald-600" /> {t('call')} (2)</a></Button>
-                  )}
+                  <Button size="lg" className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg" asChild><a href={`tel:${item.phone_number}`}><Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('call')}</a></Button>
                 </>
               )}
             </div>
