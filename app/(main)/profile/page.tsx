@@ -725,13 +725,13 @@ function ProfileContent() {
             {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-500">
               {postsLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 -mx-2 sm:mx-0">
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="aspect-square rounded-2xl" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 -mx-2 sm:mx-0">
                   {myItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -754,13 +754,13 @@ function ProfileContent() {
             {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-500">
               {postsLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 -mx-2 sm:mx-0">
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="aspect-square rounded-2xl" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 -mx-2 sm:mx-0">
                   {myItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -920,7 +920,7 @@ function ProfileContent() {
                 </div>
 
                 {/* Панели танзимоти ранг ва текст */}
-                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-4 sm:p-8 rounded-[2.5rem] border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col justify-center relative">
+                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-4 sm:p-8 -mx-6 sm:mx-0 rounded-none sm:rounded-[2.5rem] border-y sm:border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col justify-center relative">
                   <div className="space-y-8">
                     {/* Рангҳои QR */}
                     <div className="space-y-4">

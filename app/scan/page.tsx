@@ -37,7 +37,67 @@ export default function ScanPage() {
   };
 
   useEffect(() => {
-    // ... rest of startScanner logic stays same, I will wrap the component return
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCodeRef.current = html5QrCode;
+
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+          },
+          (decodedText) => {
+            if (mounted) {
+              html5QrCode.stop().then(() => {
+                toast.success(t('qrDetected'));
+                // Agar URL boshad
+                if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+                  window.location.href = decodedText;
+                } else {
+                  // ID boshad
+                  router.push(`/qr/${decodedText}`);
+                }
+              }).catch(err => {
+                console.error("Failed to stop scanner", err);
+              });
+            }
+          },
+          (errorMessage) => {
+            // Ignore parse errors as they happen constantly when no QR is in view
+          }
+        );
+
+        if (mounted) {
+          setIsScanning(true);
+          setIsInitializing(false);
+        }
+      } catch (err) {
+        console.error("Scanner error", err);
+        if (mounted) {
+          setError(t('cameraError') || 'Camera permission denied or camera not found.');
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    // Add a slight delay to ensure the DOM element is fully ready before starting
+    const timeoutId = setTimeout(() => {
+      startScanner();
+    }, 500);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+      if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+        html5QrCodeRef.current.stop().catch(console.error);
+      }
+    };
   }, [router, t]);
 
   return (

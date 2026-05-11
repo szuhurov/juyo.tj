@@ -32,7 +32,7 @@ export default function MainLayout({
       {/* Поёни сайт (Footer) - Ҳамеша дар паси Navbar-и мобилӣ мемонад ё дар мобил пинҳон мешавад */}
       <footer className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12 mb-20 md:mb-0 hidden md:block">
         <div className="max-w-[1600px] mx-auto px-4 text-center text-zinc-500 text-sm">
-          <p>© 2026 JUYO.TJ - All rights reserved.</p>
+          <p>© 2026 juyo - All rights reserved.</p>
         </div>
       </footer>
 

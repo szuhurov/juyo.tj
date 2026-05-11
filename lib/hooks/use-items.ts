@@ -77,8 +77,17 @@ export function useSavedItems(userId?: string, token?: string | null) {
       return ItemService.getSavedItems(supabase, userId);
     },
     enabled: !!userId && !!token,
-    staleTime: 0,
+    staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
   });
+}
+
+/**
+ * Хук барои санҷидани он ки оё ашё захира шудааст.
+ * Ин хук аз кэши useSavedItems истифода мебарад ва дархости зиёдатӣ намекунад.
+ */
+export function useIsItemSaved(itemId: string, userId?: string) {
+  const { data: savedItems = [] } = useSavedItems(userId);
+  return savedItems.some((item: any) => item.id === itemId);
 }
 
 // Хук барои гирифтани ашёҳо аз сандуқчаи амниятӣ (Safety Box)

@@ -27,6 +27,7 @@ export const getClerkLocalization = (locale: string) => {
       },
     },
     socialButtonsBlockButton: t.socialButton,
+    dividerText: t.dividerText,
     formButtonPrimary: t.submitButton,
     formFieldLabel__emailAddress: t.emailLabel,
     formFieldLabel__password: t.signUpPasswordLabel, // Ин барои SignUp ҳамчун "Рамзи пурқувват..." мебарояд

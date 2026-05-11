@@ -382,11 +382,8 @@ function AddItemForm() {
       <Dialog open={showSafetyModal} onOpenChange={setShowSafetyModal}>
         <DialogContent className="sm:max-w-md rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
           <div className="p-8 space-y-6 text-center">
-            <div className={cn(
-              "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-2 animate-in zoom-in duration-500",
-              type === 'found' ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-red-50 dark:bg-red-900/20"
-            )}>
-              <ShieldAlert className={cn("w-8 h-8", type === 'found' ? "text-emerald-500" : "text-red-500")} />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-2 animate-in zoom-in duration-500 bg-red-50 dark:bg-red-900/20">
+              <ShieldAlert className="w-8 h-8 text-red-500" />
             </div>
 
             <DialogHeader className="space-y-3">
@@ -402,10 +399,7 @@ function AddItemForm() {
           <div className="px-8 pb-8">
             <Button
               onClick={onFinalSubmit}
-              className={cn(
-                "w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] text-white shadow-xl transition-all active:scale-95 border-none",
-                type === 'found' ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10" : "bg-red-600 hover:bg-red-700 shadow-red-600/10"
-              )}
+              className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] text-white shadow-xl transition-all active:scale-95 border-none bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
             >
               {t('safetyPostModal.confirmBtn')}
             </Button>

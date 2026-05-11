@@ -315,8 +315,8 @@ export const translations: Record<string, any> = {
     saveBtn: 'ЗАХИРА КАРДАН',
 
     // SEO
-    seoTitle: 'JUYO.TJ — Ёфтани чизҳои гумшуда дар Тоҷикистон',
-    seoDesc: 'Аввалин платформаи муосир барои ёфтани чизҳои гумшуда ва баргардонидани ашёи ёфтшуда дар Тоҷикистон. Бо истифода аз коди QR ва системаи бехатар.',
+    seoTitle: 'juyo — Платформа барои ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон',
+    seoDesc: 'роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд, метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд. Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад, то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.',
 
     // Safety Box
     safetyBoxTitle: 'Сандуқчаи ман',
@@ -448,6 +448,7 @@ export const translations: Record<string, any> = {
       haveAccount: 'Аллакай ҳисоб доред?',
       actionLinkSignIn: 'Ворид шавед',
       actionLinkSignUp: 'Сабти ном кунед',
+      dividerText: 'ё',
       errors: {
         passwordTooShort: 'Рамзи шумо бояд на кам аз 8 аломат бошад',
         userNotFound: 'Корбар бо ин почта ёфт нашуд',
@@ -769,8 +770,8 @@ export const translations: Record<string, any> = {
     saveBtn: 'СОХРАНИТЬ',
 
     // SEO
-    seoTitle: 'JUYO.TJ — Поиск потерянных вещей в Таджикистане',
-    seoDesc: 'Первая современная платформа для поиска потерянных и найденных вещей в Таджикистане. С использованием QR-кодов и системы безопасности.',
+    seoTitle: 'juyo — Платформа для поиска потерянных и найденных вещей в Таджикистане',
+    seoDesc: 'быстрый способ найти и вернуть потерянные вещи в Таджикистане. В этом приложении люди, нашедшие вещи, и люди, потерявшие свои вещи, могут размещать объявления и связываться друг с другом. Также есть возможность прикрепить личный QR-код к ценным вещам, чтобы в случае потери нашедшие могли быстро связаться и вернуть их.',
 
     // Safety Box
     safetyBoxTitle: 'Мой Сейф',
@@ -902,6 +903,7 @@ export const translations: Record<string, any> = {
       haveAccount: 'Уже есть аккаунт?',
       actionLinkSignIn: 'Войти',
       actionLinkSignUp: 'Зарегистрироваться',
+      dividerText: 'или',
       errors: {
         passwordTooShort: 'Пароль должен быть не менее 8 символов',
         userNotFound: 'Пользователь не найден',
@@ -1220,8 +1222,8 @@ export const translations: Record<string, any> = {
     saveBtn: 'SAVE STICKER',
 
     // SEO
-    seoTitle: 'JUYO.TJ — Lost and Found Items in Tajikistan',
-    seoDesc: 'The first modern platform for lost and found items in Tajikistan. Featuring QR code stickers and a secure safety box.',
+    seoTitle: 'juyo — Platform for finding lost and found items in Tajikistan',
+    seoDesc: 'a fast way to find and return lost items in Tajikistan. In this app, people who found items and people who lost their items can post announcements and connect with each other. There is also the possibility to attach a personal QR code to valuable items so that in case of loss, finders can quickly contact and return them.',
 
     // Safety Box
     safetyBoxTitle: 'My Safety Box',
@@ -1353,6 +1355,7 @@ export const translations: Record<string, any> = {
       haveAccount: 'Already have an account?',
       actionLinkSignIn: 'Sign In',
       actionLinkSignUp: 'Sign Up',
+      dividerText: 'or',
       errors: {
         passwordTooShort: 'Password must be at least 8 characters long',
         userNotFound: 'User with this email not found',

@@ -43,7 +43,7 @@ function HomeContent() {
     search: searchQuery
   }), [category, itemType, searchQuery]);
 
-  const { data: items = [], isLoading } = useItems(filters);
+  const { data: items = [], isLoading, isFetching } = useItems(filters);
 
   return (
     <div className="pb-18">
@@ -126,7 +126,10 @@ function HomeContent() {
       </div>
 
       {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо */}
-      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[110px] md:pt-[55px]">
+      <div className={cn(
+        "max-w-[1600px] mx-auto px-2 sm:px-4 pt-[110px] md:pt-[55px] transition-opacity duration-300",
+        isFetching && !isLoading ? "opacity-60 grayscale-[0.2]" : "opacity-100"
+      )}>
         {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {[...Array(8)].map((_, i) => (

@@ -36,7 +36,7 @@ export async function generateMetadata() {
   return {
     title: {
       default: t.seoTitle,
-      template: "%s | JUYO.TJ",
+      template: "%s | juyo",
     },
     description: t.seoDesc,
     keywords: [
@@ -73,7 +73,7 @@ export async function generateMetadata() {
             ? "en_US"
             : "tg_TJ",
       url: "https://juyo.tj",
-      siteName: "JUYO.TJ",
+      siteName: "JUYO",
       title: t.seoTitle,
       description: t.seoDesc,
       images: [

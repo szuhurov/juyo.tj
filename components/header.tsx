@@ -81,6 +81,11 @@ export function Header() {
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
+      const currentQ = searchParams.get('q') || "";
+      
+      // Пешгирии такрори беҳуда: агар ҷустуҷӯ тағйир наёфта бошад, ҳеҷ кор намекунем
+      if (searchValue === currentQ) return;
+
       const params = new URLSearchParams(searchParams);
       if (searchValue) {
         params.set('q', searchValue);
@@ -91,7 +96,7 @@ export function Header() {
       if (pathname === '/' || (searchValue && pathname === '/')) {
         router.push(`/?${params.toString()}`);
       }
-    }, 300);
+    }, 200);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchValue, pathname, router, searchParams]);
