@@ -39,6 +39,7 @@ export default function ScanPage() {
   useEffect(() => {
     let mounted = true;
 
+// Оғози танзимоти сканнер бо параметрҳои TypeScript
     const startScanner = async () => {
       try {
         const html5QrCode = new Html5Qrcode("reader", {
