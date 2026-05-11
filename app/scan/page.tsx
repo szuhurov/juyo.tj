@@ -42,7 +42,8 @@ export default function ScanPage() {
     const startScanner = async () => {
       try {
         const html5QrCode = new Html5Qrcode("reader", {
-          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+          verbose: false
         });
         html5QrCodeRef.current = html5QrCode;
 
