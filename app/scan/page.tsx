@@ -41,7 +41,9 @@ export default function ScanPage() {
 
     const startScanner = async () => {
       try {
-        const html5QrCode = new Html5Qrcode("reader");
+        const html5QrCode = new Html5Qrcode("reader", {
+          formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
+        });
         html5QrCodeRef.current = html5QrCode;
 
         await html5QrCode.start(
@@ -50,7 +52,6 @@ export default function ScanPage() {
             fps: 10,
             qrbox: { width: 250, height: 250 },
             aspectRatio: 1.0,
-            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE]
           },
           (decodedText) => {
             if (mounted) {
