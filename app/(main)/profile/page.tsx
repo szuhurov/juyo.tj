@@ -2375,8 +2375,8 @@ function ProfileContent() {
       >
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
           <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-500">
-              <Phone className="w-8 h-8 text-blue-500" />
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-500">
+              <Phone className="w-8 h-8 text-emerald-500" />
             </div>
 
             <DialogHeader className="space-y-2">
@@ -2403,7 +2403,7 @@ function ProfileContent() {
                     <Input
                       name="secondary_phone"
                       placeholder={t("qrSecondaryModal.placeholder")}
-                      className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all outline-none"
+                      className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
                       required
                       inputMode="numeric"
                       onChange={(e) =>
@@ -2413,22 +2413,27 @@ function ProfileContent() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {["father", "mother", "brother", "sister"].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setSecondaryType(type)}
-                      className={cn(
-                        "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black uppercase text-[10px] tracking-wider",
-                        secondaryType === type
-                          ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
-                      )}
-                    >
-                      {t(`phoneSecondaryTypes.${type}`)}
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                    {t("qrSecondaryModal.ownerQuestion")}
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["father", "mother", "brother", "sister", "spouse"].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setSecondaryType(type)}
+                        className={cn(
+                          "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black uppercase text-[10px] tracking-wider",
+                          secondaryType === type
+                            ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]"
+                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
+                        )}
+                      >
+                        {t(`phoneSecondaryTypes.${type}`)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </form>
@@ -2438,7 +2443,7 @@ function ProfileContent() {
             <Button
               type="submit"
               form="secondary-phone-form"
-              className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] bg-blue-600 hover:bg-blue-700 text-white shadow-xl shadow-blue-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+              className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
               disabled={secondaryLoading || !secondaryType}
             >
               {secondaryLoading ? (

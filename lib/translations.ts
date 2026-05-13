@@ -182,7 +182,7 @@ export const translations: Record<string, any> = {
     profile: 'Профил',
     search: 'Ҷустуҷӯ...',
     cancel: 'Бекор кардан',
-    ok: 'OK',
+    ok: 'ФАҲМИДАМ',
     delete: 'Нест кардан',
     warning: 'Ҳушдор',
     loading: 'Дар ҳоли боргирӣ...',
@@ -255,7 +255,8 @@ export const translations: Record<string, any> = {
       father: 'Падар',
       mother: 'Модар',
       brother: 'Бародар',
-      sister: 'Хоҳар'
+      sister: 'Хоҳар',
+      spouse: 'Ҳамсар'
     },
     phoneSecondaryNote: '',
     phonePlaceholder: '992XXXXXXXXX',
@@ -285,6 +286,7 @@ export const translations: Record<string, any> = {
       checkbox: 'Ман ба коркарди маълумоти шахсии худ розӣ ҳастам ва тасдиқ мекунам, ки синнам аз 18 боло аст',
       button: 'ИДОМА ДОДАН',
       link: 'Шартҳои истифода ва махфият',
+      content: 'Рақами телефони шумо танҳо барои он лозим аст, ки ёбандаи ашё тавонад бо шумо тамос гирад. Ин маълумот барои дигар мақсадҳо истифода намешавад.',
       error: 'Лутфан шартҳоро қабул кунед',
       success: 'Розигии шумо қабул шуд'
     },
@@ -400,6 +402,7 @@ export const translations: Record<string, any> = {
       label: 'Рақами наздикон',
       placeholder: '992XXXXXXXXX',
       saveBtn: 'НАСБ',
+      ownerQuestion: 'Рақам ба кӣ тааллуқ дорад?',
     },
     safetyPostModal: {
       foundTitle: '🛡️ Амният ва санҷиш',
@@ -444,16 +447,26 @@ export const translations: Record<string, any> = {
       submitButton: 'Давом додан',
       passwordPlaceholder: 'Рамзи пурқувват созед',
       passwordHint: 'Рамзи шумо бояд на кам аз 8 аломат бошад',
+      signInPasswordSubtitle: 'Рамзи худро, ки ҳангоми сабти ном сохта будед, ворид кунед. Агар сабти ном накардаед, аввал сабти ном кунед.',
+      forgotPasswordLabel: 'Рамзро фаромӯш кардед?',
+      useAnotherMethod: 'Истифодаи усули дигар',
+      passwordSuccess: 'Рамзи шумо ба ҳама талаботҳо ҷавобгӯ аст',
+      passwordPwned: 'Ин рамз қаблан дар натиҷаи ҳамлаҳои рақамӣ фош шудааст ва истифодааш хатарнок аст. Лутфан рамзи дигареро интихоб кунед.',
       noAccount: 'Ҳисоб надоред?',
       haveAccount: 'Аллакай ҳисоб доред?',
       actionLinkSignIn: 'Ворид шавед',
       actionLinkSignUp: 'Сабти ном кунед',
       dividerText: 'ё',
+      verifyEmailTitle: 'Санҷиши почта',
+      verifyEmailSubtitle: 'Коди санҷиширо, ки ба почтаи шумо фиристода шуд, ворид кунед',
+      resendCode: 'Кодро нагирифтед? Дубора фиристодан',
       errors: {
         passwordTooShort: 'Рамзи шумо бояд на кам аз 8 аломат бошад',
         userNotFound: 'Корбар бо ин почта ёфт нашуд',
         wrongPassword: 'Рамз нодуруст аст',
         emailExists: 'Ин почта аллакай ба қайд гирифта шудааст',
+        incorrectCode: 'Коди воридшуда нодуруст аст',
+        tooManyRequests: 'Кӯшишҳои зиёд. Лутфан каме сабр кунед ва дубора санҷед.',
       }
     }
   },
@@ -607,7 +620,8 @@ export const translations: Record<string, any> = {
       father: 'Отец',
       mother: 'Мать',
       brother: 'Брат',
-      sister: 'Сестра'
+      sister: 'Сестра',
+      spouse: 'Супруг(а)'
     },
     phoneSecondaryNote: '',
     phonePlaceholder: '992XXXXXXXXX',
@@ -650,7 +664,7 @@ export const translations: Record<string, any> = {
     profile: 'Профиль',
     search: 'Поиск...',
     cancel: 'Отмена',
-    ok: 'OK',
+    ok: 'ПОНЯТНО',
     delete: 'Удалить',
     warning: 'Предупреждение',
     loading: 'Загрузка...',
@@ -737,6 +751,7 @@ export const translations: Record<string, any> = {
       checkbox: 'Я согласен на обработку моих персональных данных и подтверждаю, что мне исполнилось 18 лет или больше',
       button: 'ПРОДОЛЖИТЬ',
       link: 'Условия использования и конфиденциальности',
+      content: 'Ваш номер телефона нужен только для того, чтобы нашедший мог связаться с вами. Эта информация не будет использована в других целях.',
       error: 'Пожалуйста, примите условия',
       success: 'Ваше согласие принято'
     },
@@ -855,6 +870,7 @@ export const translations: Record<string, any> = {
       label: 'Номер близких',
       placeholder: '992XXXXXXXXX',
       saveBtn: 'СКАЧАТЬ',
+      ownerQuestion: 'Кому принадлежит номер?',
     },
     safetyPostModal: {
       foundTitle: '🛡️ Безопасность и проверка',
@@ -899,6 +915,7 @@ export const translations: Record<string, any> = {
       submitButton: 'Продолжить',
       passwordPlaceholder: 'Надежный пароль',
       passwordHint: 'Пароль должен быть не менее 8 символов',
+      signInPasswordSubtitle: 'Введите пароль, который вы создали при регистрации. Если вы не зарегистрированы, сначала зарегистрируйтесь.',
       noAccount: 'Нет аккаунта?',
       haveAccount: 'Уже есть аккаунт?',
       actionLinkSignIn: 'Войти',
@@ -1089,7 +1106,7 @@ export const translations: Record<string, any> = {
     profile: 'Profile',
     search: 'Search...',
     cancel: 'Cancel',
-    ok: 'OK',
+    ok: 'UNDERSTOOD',
     delete: 'Delete',
     warning: 'Warning',
     loading: 'Loading...',
@@ -1162,7 +1179,8 @@ export const translations: Record<string, any> = {
       father: 'Father',
       mother: 'Mother',
       brother: 'Brother',
-      sister: 'Sister'
+      sister: 'Sister',
+      spouse: 'Spouse'
     },
     phoneSecondaryNote: '',
     phonePlaceholder: '992XXXXXXXXX',
@@ -1192,6 +1210,7 @@ export const translations: Record<string, any> = {
       checkbox: 'I consent to the processing of my personal data and confirm that I am 18 years of age or older',
       button: 'CONTINUE',
       link: 'Terms of Service and Privacy',
+      content: 'Your phone number is only needed so that the finder of the item can contact you. This information will not be used for other purposes.',
       error: 'Please accept the terms',
       success: 'Your consent has been accepted'
     },
@@ -1307,6 +1326,7 @@ export const translations: Record<string, any> = {
       label: 'Relative number',
       placeholder: '992XXXXXXXXX',
       saveBtn: 'DOWNLOAD',
+      ownerQuestion: 'Who does the number belong to?',
     },
     safetyPostModal: {
       foundTitle: '🛡️ Safety and Verification',
@@ -1351,6 +1371,7 @@ export const translations: Record<string, any> = {
       submitButton: 'Continue',
       passwordPlaceholder: 'Create a strong password',
       passwordHint: 'Password must be at least 8 characters long',
+      signInPasswordSubtitle: 'Enter the password you created during registration. If you have not registered, please sign up first.',
       noAccount: "Don't have an account?",
       haveAccount: 'Already have an account?',
       actionLinkSignIn: 'Sign In',

@@ -18,6 +18,7 @@ import { Phone, Loader2, LogOut } from "lucide-react"; // Иконкаҳо
 import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
 import { Checkbox } from "@/components/ui/checkbox"; // Компоненти чексбокс
 import { cn } from "@/lib/utils"; // Барои пайваст кардани стилҳо
+import Link from "next/link";
 
 export function MandatoryPhoneModal() {
   const { user, isLoaded: userLoaded } = useUser();
@@ -29,6 +30,7 @@ export function MandatoryPhoneModal() {
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [secondaryType, setSecondaryType] = useState<string>("");
+  const [showTermsDetails, setShowTermsDetails] = useState(false);
 
   useEffect(() => {
     const checkStatus = async () => {
@@ -135,8 +137,6 @@ export function MandatoryPhoneModal() {
               key={lang.code}
               onClick={() => {
                 setLocale(lang.code as any);
-                // Саҳифаро нав мекунем, то тарҷумаҳои Clerk ҳам нав шаванд
-                setTimeout(() => window.location.reload(), 100);
               }}
               className={cn(
                 "px-3 py-2 rounded-xl text-[9px] font-black transition-all duration-300 flex-1 max-w-[100px]",
@@ -179,9 +179,55 @@ export function MandatoryPhoneModal() {
                   onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                 />
               </div>
+
+              <div className="flex items-start space-x-3 pt-2 px-1">
+                <Checkbox 
+                  id="terms" 
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                  className="mt-1 border-2 border-zinc-200 dark:border-zinc-800 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 rounded-md transition-all duration-300"
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <Label
+                    htmlFor="terms"
+                    className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 leading-relaxed cursor-pointer select-none"
+                  >
+                    {t('terms.checkbox')}
+                  </Label>
+                  <button 
+                    type="button"
+                    className="text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
+                    onClick={() => setShowTermsDetails(true)}
+                  >
+                    {t('terms.link')}
+                  </button>
+                </div>
+              </div>
             </div>
           </form>
         </div>
+
+        {/* Terms Details Dialog */}
+        <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
+          <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
+            <DialogHeader className="space-y-3">
+              <DialogTitle className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+                {t('terms.link')}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+                {t('terms.content')}
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowTermsDetails(false)}
+              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
+            >
+              {t('ok')}
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         <div className="px-8 pb-8 pt-2 bg-white dark:bg-zinc-950">
           <Button 

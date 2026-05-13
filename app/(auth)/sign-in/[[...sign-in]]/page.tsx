@@ -45,7 +45,7 @@ export default function Page() {
               size="sm"
               onClick={() => {
                 setLocale(lang.code as any);
-                setTimeout(() => window.location.reload(), 100);
+                router.refresh();
               }}
               className={`font-bold rounded-lg px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
                 locale === lang.code
