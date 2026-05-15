@@ -249,7 +249,7 @@ export function ItemCard({ item }: { item: Item }) {
             item.moderation_status === 'rejected' && isOwner && "opacity-75 grayscale-[0.5]"
           )}>
             {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
-            <div className="relative aspect-square overflow-hidden rounded-t-xl">
+            <div className="relative aspect-square overflow-hidden rounded-xl">
               {images.map((img, index) => (
                 <Image
                   key={index}
@@ -262,12 +262,42 @@ export function ItemCard({ item }: { item: Item }) {
                   )}
                 />
               ))}
+
+              {/* Overlay (Title, Description, Date) - Ҳоло барои ҳамаи размерҳо */}
+              <div 
+                className="absolute inset-x-0 bottom-0 bg-black/40 backdrop-blur-md p-3 pt-14 flex flex-col gap-1 z-10"
+                style={{ 
+                  maskImage: 'linear-gradient(to top, black 0%, black 60%, transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to top, black 0%, black 60%, transparent 100%)'
+                }}
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white drop-shadow-md">
+                    {item.title}
+                  </h3>
+                  <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/20 px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-white/10">
+                    <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                    <span>{exactDate}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center gap-2">
+                  <p className="text-white text-[10px] sm:text-xs line-clamp-1 leading-tight font-medium flex-1 drop-shadow-sm opacity-90">
+                    {item.description}
+                  </p>
+                  {item.views > 0 && (
+                    <div className="flex items-center gap-1 text-white/80 text-[8px] sm:text-[10px] shrink-0 drop-shadow-sm">
+                      <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                      <span>{item.views}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
               
               {/* Статус: Гумшуда ё Ёфтшуда */}
               <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 h-6 flex items-center">
                 <Badge
                   className={cn(
-                    "uppercase font-black rounded-md text-[10px] px-2.5 py-1 shadow-lg border-none whitespace-nowrap",
+                    "uppercase font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap",
                     item.type === 'lost'
                       ? "bg-red-600 text-white hover:bg-red-700"
                       : "bg-emerald-600 text-white hover:bg-emerald-700"
@@ -277,28 +307,61 @@ export function ItemCard({ item }: { item: Item }) {
                 </Badge>
               </div>
 
-              {/* Тугмаи Сав (Bookmark) барои мобилка */}
-              <div className="absolute top-2 right-2 z-10 sm:hidden">
+              {/* Тугмаҳои амалиёт (Actions) */}
+              <div className="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
+                {/* Тугмаи Сав (Bookmark) - Барои ҳама ба ғайр аз соҳибаш */}
+                {!isOwner && (
+                  <button 
+                    onClick={toggleSave}
+                    disabled={isToggling}
+                    className={cn(
+                      "p-1.5 sm:p-2 rounded-full backdrop-blur-md transition-all shadow-md border border-white/10",
+                      isSaved 
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-black/30 text-white hover:bg-black/50"
+                    )}
+                  >
+                    <Bookmark className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isSaved && "fill-current")} />
+                  </button>
+                )}
+
+                {/* Тугмаҳои махсус барои соҳиби эълон */}
+                {isOwner && (
+                  <>
+                    <button 
+                      onClick={handleEdit}
+                      className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-blue-600 transition-all shadow-md border border-white/10"
+                    >
+                      <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                    <button 
+                      onClick={handleArchiveClick}
+                      className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-amber-600 transition-all shadow-md border border-white/10"
+                    >
+                      <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                    <button 
+                      onClick={handleDelete}
+                      className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-red-600 transition-all shadow-md border border-white/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                  </>
+                )}
+                
+                {/* Тугмаи Шеар (Share) - Барои ҳама ҳамеша намоён */}
                 <button 
-                  onClick={(e) => {
-                    toggleSave(e);
-                  }}
-                  disabled={isToggling}
-                  className={cn(
-                    "p-1.5 rounded-full backdrop-blur-md transition-all shadow-md",
-                    isSaved 
-                      ? "bg-emerald-500 text-white" 
-                      : "bg-black/20 text-white hover:bg-black/40"
-                  )}
+                  onClick={handleShare}
+                  className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-black/50 transition-all shadow-md border border-white/10"
                 >
-                  <Bookmark className={cn("w-3.5 h-3.5", isSaved && "fill-current")} />
+                  <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
               </div>
 
               {/* Мукофот (Reward) агар бошад */}
               {item.type === 'lost' && item.reward && (
-                <div className="absolute bottom-2 right-2 sm:top-3 sm:right-3 z-10 h-6 flex items-center justify-end">
-                  <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[10px] px-2.5 py-1 shadow-lg border-none whitespace-nowrap">
+                <div className="absolute bottom-16 sm:bottom-20 right-2 z-20 h-6 flex items-center justify-end">
+                  <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
                     {t('reward_gives_viewer')} {item.reward} TJS
                   </Badge>
                 </div>
@@ -306,7 +369,7 @@ export function ItemCard({ item }: { item: Item }) {
 
               {/* Оверлей барои модерацияи сурат */}
               {isOwner && item.moderation_status === 'pending' && (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-20">
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-30">
                   <div className="bg-white/90 dark:bg-zinc-900/90 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-pulse">
                     <Clock className="w-8 h-8 text-amber-500" />
                     <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider">
@@ -318,7 +381,7 @@ export function ItemCard({ item }: { item: Item }) {
 
               {/* Оверлей агар сурат рад шуда бошад */}
               {isOwner && item.moderation_status === 'rejected' && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-4 z-20">
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-4 z-30">
                   <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3">
                     <ShieldAlert className="w-8 h-8 text-red-600" />
                     <span className="text-[10px] font-black uppercase text-red-600 tracking-wider">
@@ -328,81 +391,6 @@ export function ItemCard({ item }: { item: Item }) {
                 </div>
               )}
             </div>
-
-            {/* Контенти карточка: Сарлавҳа ва Тавсиф */}
-            <CardContent className="p-2 pb-1">
-              <div className="flex flex-col gap-0.5">
-                <div className="flex justify-between items-center gap-2">
-                  <h3 className="font-black text-[10px] sm:text-xs line-clamp-1 leading-tight group-hover:text-emerald-500 transition-colors uppercase tracking-tight flex-1">
-                    {item.title}
-                  </h3>
-                  <div className="flex items-center gap-1 text-zinc-400 text-[8px] shrink-0">
-                    <Eye className="w-2.5 h-2.5" />
-                    <span>{item.views || 0}</span>
-                  </div>
-                </div>
-                
-                <p className="text-zinc-500 text-[9px] sm:text-[10px] line-clamp-1 leading-tight">
-                  {item.description}
-                </p>
-              </div>
-            </CardContent>
-
-            {/* Футери карточка: Сана ва тугмаҳои амалиёт */}
-            <CardFooter className="px-2 pb-2 flex flex-col mt-auto">
-              <div className="flex flex-row items-center justify-between text-zinc-400 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider border-t border-zinc-50 dark:border-zinc-900 pt-1.5 w-full gap-1.5">
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-2.5 h-2.5" />
-                    <span>{exactDate}</span>
-                  </div>
-                </div>
-                
-                <div className="hidden sm:flex items-center gap-1 sm:gap-1.5 self-stretch sm:self-auto justify-between sm:justify-end bg-zinc-50/50 dark:bg-zinc-900/50 p-1 sm:p-0 rounded-lg sm:bg-transparent">
-                  {isActionLoading ? (
-                    <div className="w-full flex justify-center py-1">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-zinc-400" />
-                    </div>
-                  ) : (
-                    <>
-                      {/* Тугмаҳо барои соҳиби эълон */}
-                      <div className="flex items-center gap-1">
-                        {isOwner && (
-                          <>
-                            <button onClick={handleEdit} className="p-1.5 rounded-md hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={handleArchiveClick} className="p-1.5 rounded-md hover:text-amber-600 hover:bg-amber-50 transition-colors">
-                              <Archive className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={handleDelete} className="p-1.5 rounded-md hover:text-red-600 hover:bg-red-50 transition-colors">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* Тугмаҳои Шеар ва Сав */}
-                      <div className="flex items-center gap-1">
-                        <button onClick={handleShare} className="p-1.5 rounded-md hover:text-blue-600 hover:bg-blue-50 transition-colors">
-                          <Share2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button 
-                          onClick={toggleSave}
-                          disabled={isToggling}
-                          className={cn(
-                            "p-1.5 rounded-md transition-colors",
-                            isSaved ? "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20" : "hover:text-emerald-600 hover:bg-emerald-50"
-                          )}
-                        >
-                          <Bookmark className={cn("w-3.5 h-3.5 transition-all", isSaved && "fill-emerald-500")} />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </CardFooter>
           </Card>
         </Link>
       </div>

@@ -48,16 +48,16 @@ function HomeContent() {
   return (
     <div className="pb-18">
       {/* Қисмати Филтрҳо (Header/Filters) */}
-      <div className="fixed top-14 sm:top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
-        <div className="max-w-[1600px] mx-auto px-4 py-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1 py-1 md:py-0 md:h-12">
+      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-1 pb-1.5 sm:py-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-1 md:h-14">
             {/* Кнопкаҳои категорияҳо */}
             <div className="flex items-center overflow-x-auto no-scrollbar -mx-1 px-1">
-              <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+              <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                 <button
                   onClick={() => setCategory("All")}
                   className={cn(
-                    "px-4 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap",
+                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap",
                     category === "All"
                       ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
                       : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -70,7 +70,7 @@ function HomeContent() {
                     key={cat.id}
                     onClick={() => setCategory(cat.name)}
                     className={cn(
-                      "px-3 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
                       category === cat.name
                         ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
                         : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -84,12 +84,12 @@ function HomeContent() {
             </div>
 
             {/* Интихоби навъ: Гумшуда ё Ёфтшуда */}
-            <div className="flex items-center self-end md:self-auto">
-              <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-1 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+            <div className="flex items-center self-end md:self-auto mb-0.5 md:mb-0">
+              <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                 <button
                   onClick={() => setItemType(null)}
                   className={cn(
-                    "px-4 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer",
+                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
                     itemType === null
                       ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
                       : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -100,7 +100,7 @@ function HomeContent() {
                 <button
                   onClick={() => setItemType('lost')}
                   className={cn(
-                    "px-4 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer",
+                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
                     itemType === 'lost'
                       ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
                       : "text-red-500 hover:text-red-600"
@@ -111,7 +111,7 @@ function HomeContent() {
                 <button
                   onClick={() => setItemType('found')}
                   className={cn(
-                    "px-4 h-8 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer",
+                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
                     itemType === 'found'
                       ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
                       : "text-emerald-500 hover:text-emerald-600"
@@ -127,9 +127,10 @@ function HomeContent() {
 
       {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо */}
       <div className={cn(
-        "max-w-[1600px] mx-auto px-2 sm:px-4 pt-[110px] md:pt-[55px] transition-opacity duration-300",
+        "max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px] transition-opacity duration-300",
         isFetching && !isLoading ? "opacity-60 grayscale-[0.2]" : "opacity-100"
       )}>
+
         {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {[...Array(8)].map((_, i) => (

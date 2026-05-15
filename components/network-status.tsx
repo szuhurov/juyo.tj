@@ -55,10 +55,11 @@ export function NetworkStatus() {
   return (
     <div
       className={cn(
-        "fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out overflow-hidden",
+        "fixed top-0 left-0 right-0 z-[7000] transition-all duration-500 ease-in-out overflow-hidden",
         isVisible ? "h-10" : "h-0"
       )}
     >
+
       {/* Контейнери баннер: сурх барои офлайн, сабз барои онлайн */}
       <div
         className={cn(

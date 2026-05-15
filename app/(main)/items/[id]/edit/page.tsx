@@ -29,6 +29,7 @@ import { toast } from "sonner"; // Барои нишон додани хабар
 import { Loader2, Plus, X, Upload } from "lucide-react"; // Иконкаҳо
 import Image from "next/image"; // Барои суратҳо
 import Link from "next/link"; // Барои гузаштан ба саҳифаҳо
+import { compressImage } from "@/lib/image-utils";
 
 import {
   Tooltip,
@@ -171,12 +172,16 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         } else {
           hasNewImages = true;
           const file = newFiles[newFileIdx++];
-          const ext = file.name.split('.').pop();
+          
+          // Фишурдани сурат пеш аз боргузорӣ
+          const compressedFile = await compressImage(file);
+          
+          const ext = compressedFile.name.split('.').pop();
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
           
           const { error: uploadError } = await supabase.storage
             .from('items')
-            .upload(fileName, file);
+            .upload(fileName, compressedFile);
           
           if (uploadError) throw uploadError;
           

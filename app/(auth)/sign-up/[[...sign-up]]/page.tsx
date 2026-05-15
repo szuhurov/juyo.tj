@@ -9,6 +9,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getClerkLocalization } from "@/lib/clerk-localization";
 
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
@@ -61,8 +62,9 @@ export default function Page() {
           <div className="w-full flex justify-center">
             <SignUp
               signInUrl="/sign-in"
+              localization={getClerkLocalization(locale)}
               appearance={{
-                // Removed theme: "simple" to use default Clerk theme
+                // Танзимоти намуди зоҳирӣ агар лозим бошад
               }}
             />
           </div>

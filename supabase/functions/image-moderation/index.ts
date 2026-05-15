@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     for (const img of images) {
       try {
-        const models = "nudity-2.1,wad,offensive,gore,face-attributes,text-content,scam"
+        const models = "nudity-2.1,wad,offensive,gore,face-attributes,text-content,scam,tobacco"
         const response = await fetch(
           `https://api.sightengine.com/1.0/check.json?url=${encodeURIComponent(img.image_url)}&models=${models}&api_user=${SIGHTENGINE_API_USER}&api_secret=${SIGHTENGINE_API_SECRET}`
         )
@@ -46,24 +46,36 @@ Deno.serve(async (req) => {
           throw new Error(data.error?.message || "API error")
         }
 
-        // 1. Nudity
-        if (data.nudity && (data.nudity.sexual_activity > 0 || data.nudity.sexual_display > 0 || data.nudity.erotica > 0)) {
-          isSafe = false; rejectionKey = 'mod_nudity'; break;
+        // 1. Nudity & Sex Toys
+        const nudity = data.nudity;
+        if (nudity) {
+          const isExplicit = (nudity.sexual_activity >= 0.95 || nudity.sexual_display >= 0.95 || nudity.erotica >= 0.95);
+          const isSexToy = nudity.suggestive_classes?.sextoy >= 0.8;
+
+          if (isExplicit || isSexToy) {
+            isSafe = false;
+            rejectionKey = 'mod_nudity';
+            break;
+          }
         } 
         
-        // 2. WAD
+        // 2. WAD (Weapons, Alcohol, Drugs) & Tobacco
         const wad = data.wad;
         if (wad) {
-          if (wad.weapons > 0.1) { isSafe = false; rejectionKey = 'mod_weapon'; break; }
-          if (wad.alcohol > 0.2) { isSafe = false; rejectionKey = 'mod_alcohol'; break; }
-          if (wad.drugs > 0.1) { isSafe = false; rejectionKey = 'mod_drugs'; break; }
+          if (wad.weapons >= 0.5) { isSafe = false; rejectionKey = 'mod_weapon'; break; }
+          if (wad.alcohol >= 0.01) { isSafe = false; rejectionKey = 'mod_alcohol'; break; }
+          if (wad.drugs >= 0.01) { isSafe = false; rejectionKey = 'mod_drugs'; break; }
+        }
+
+        if (data.tobacco && data.tobacco.prob >= 0.01) {
+          isSafe = false; rejectionKey = 'mod_tobacco'; break; 
         }
 
         // 3. Offensive & Gore
-        if (data.offensive && data.offensive.prob > 0.3) {
+        if (data.offensive && data.offensive.prob >= 0.5) {
           isSafe = false; rejectionKey = 'mod_offensive'; break;
         }
-        if (data.gore && data.gore.prob > 0.3) {
+        if (data.gore && data.gore.prob >= 0.5) {
           isSafe = false; rejectionKey = 'mod_gore'; break;
         }
 

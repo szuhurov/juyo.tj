@@ -122,10 +122,11 @@ export function MandatoryPhoneModal() {
   return (
     <Dialog open={showModal} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col [&>button]:hidden" 
+        className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[6000] max-h-[98vh] overflow-hidden flex flex-col [&>button]:hidden" 
         onPointerDownOutside={(e) => e.preventDefault()} 
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
+
         {/* Language Switcher at the top */}
         <div className="flex justify-center gap-2 pt-6 px-4">
           {[

@@ -39,51 +39,94 @@ export default function ScanPage() {
   useEffect(() => {
     let mounted = true;
 
-// Оғози танзимоти сканнер бо параметрҳои TypeScript
+    // Оғози танзимоти сканнер бо параметрҳои TypeScript
     const startScanner = async () => {
       try {
+        // 1. Тафтиши дастгирии медиа-дастгоҳҳо дар браузер/WebView
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setError(t('cameraNotSupported') || 'Браузери шумо камераро дастгирӣ намекунад.');
+          setIsInitializing(false);
+          return;
+        }
+
         const html5QrCode = new Html5Qrcode("reader", {
           formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
           verbose: false
         });
         html5QrCodeRef.current = html5QrCode;
 
-        await html5QrCode.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0,
-          },
-          (decodedText) => {
-            if (mounted) {
-              html5QrCode.stop().then(() => {
-                toast.success(t('qrDetected'));
-                // Agar URL boshad
-                if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
-                  window.location.href = decodedText;
-                } else {
-                  // ID boshad
-                  router.push(`/qr/${decodedText}`);
+        // Конфигуратсияи сканнер
+        const config = {
+          fps: 15,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+        };
+
+        // 2. Кӯшиши оғози стандартӣ бо facingMode (камераи ақиб)
+        try {
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => {
+              if (mounted) {
+                html5QrCode.stop().then(() => {
+                  toast.success(t('qrDetected'));
+                  if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+                    window.location.href = decodedText;
+                  } else {
+                    router.push(`/qr/${decodedText}`);
+                  }
+                }).catch(err => console.error("Failed to stop scanner", err));
+              }
+            },
+            () => {} // Игнори хатогиҳои парсинг
+          );
+        } catch (initialErr) {
+          console.warn("Facing mode failed, trying to list cameras...", initialErr);
+          
+          // 3. Fallback: Рӯйхати камераҳоро мегирем ва камераи охиринро интихоб мекунем
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            // Камераи охирин одатан камераи ақиб дар дастгоҳҳои Android/iOS мебошад
+            const lastCameraId = cameras[cameras.length - 1].id;
+            await html5QrCode.start(
+              lastCameraId,
+              config,
+              (decodedText) => {
+                if (mounted) {
+                  html5QrCode.stop().then(() => {
+                    toast.success(t('qrDetected'));
+                    if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+                      window.location.href = decodedText;
+                    } else {
+                      router.push(`/qr/${decodedText}`);
+                    }
+                  }).catch(err => console.error("Failed to stop scanner", err));
                 }
-              }).catch(err => {
-                console.error("Failed to stop scanner", err);
-              });
-            }
-          },
-          (errorMessage) => {
-            // Ignore parse errors as they happen constantly when no QR is in view
+              },
+              () => {}
+            );
+          } else {
+            throw new Error("No cameras found or permission denied");
           }
-        );
+        }
 
         if (mounted) {
           setIsScanning(true);
           setIsInitializing(false);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Scanner error", err);
         if (mounted) {
-          setError(t('cameraError') || 'Camera permission denied or camera not found.');
+          const errorMsg = err.message || "";
+          // Ташхиси хатогиҳо барои WebView
+          if (errorMsg.includes("NotAllowedError") || errorMsg.includes("Permission denied")) {
+            setError(t('cameraErrorPermission') || 'Ба камера иҷозат дода нашудааст. Лутфан дар танзимоти барнома/браузер иҷозат диҳед.');
+          } else if (errorMsg.includes("NotFoundError") || errorMsg.includes("No cameras found")) {
+            setError(t('cameraNotFound') || 'Камера ёфт нашуд ё WebView ба он дастрасӣ надорад.');
+          } else {
+            setError(t('cameraError') || 'Хатогӣ ҳангоми фаъолсозии камера. Лутфан саҳифаро нав кунед.');
+          }
           setIsInitializing(false);
         }
       }

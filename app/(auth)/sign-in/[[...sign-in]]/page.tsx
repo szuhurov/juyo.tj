@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/language-context"; // Барои иваз к�
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { getClerkLocalization } from "@/lib/clerk-localization";
 
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
@@ -63,8 +64,9 @@ export default function Page() {
       <div className="w-full max-w-[400px] flex justify-center -mt-4 sm:-mt-6">
         <SignIn
           signUpUrl="/sign-up"
+          localization={getClerkLocalization(locale)}
           appearance={{
-            // Removed theme: "simple" to use default Clerk theme
+            // Танзимоти намуди зоҳирӣ агар лозим бошад
           }}
         />
       </div>

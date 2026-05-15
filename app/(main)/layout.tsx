@@ -25,7 +25,7 @@ export default function MainLayout({
       <MandatoryPhoneModal />
 
       {/* Ин ҷо мӯҳтавои асосии саҳифаҳо мебарояд (Main Content) */}
-      <main className="flex-1 pt-14 sm:pt-16 pb-20 md:pb-0">
+      <main className="flex-1 pt-12 sm:pt-16 pb-20 md:pb-0">
         {children}
       </main>
 
@@ -37,7 +37,9 @@ export default function MainLayout({
       </footer>
 
       {/* Навбари мобилӣ (Bottom Navigation) */}
-      <MobileNavbar />
+      <Suspense fallback={<div className="fixed bottom-0 left-0 right-0 h-14 bg-white border-t md:hidden" />}>
+        <MobileNavbar />
+      </Suspense>
     </div>
   );
 }

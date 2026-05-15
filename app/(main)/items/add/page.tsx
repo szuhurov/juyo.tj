@@ -1,70 +1,72 @@
 /**
  * Ин саҳифа барои илова кардани эълони нав ҳаст (Add Item Page).
- * Дар ин ҷо корбар метавонад дар бораи чизи гумкардааш ё ёфтааш хабар диҳад.
- * Мо суратҳоро пеш аз бор кардан фишурда (сжать) мекунем, то ки база пур нашавад.
+ * Дар ин ҷо мо формаро ба чанд қадам (steps) ҷудо кардем, то ки истифодааш осон ва зебо бошад.
  */
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react"; // Барои идоракунии ҳолатҳо ва боргирии муваққатӣ
-import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар пас аз сабт
-import { useAuth, useClerk } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда
-import { useLanguage } from "@/lib/language-context"; // Барои дастрасӣ ба тарҷумаҳо ва забон
-import { ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо базаи эълонҳо ва рӯйхати категорияҳо
-import { ProfileService } from "@/lib/services/profile-service"; // Барои гирифтани маълумоти профили корбар
-import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
-import { compressImage } from "@/lib/image-utils"; // Барои хурд кардани ҳаҷми суратҳо пеш аз бор кардан
-import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Input } from "@/components/ui/input"; // Майдони воридкунии маълумоти кӯтоҳ
-import { Textarea } from "@/components/ui/textarea"; // Майдони воридкунии матни дароз
-import { Label } from "@/components/ui/label"; // Сарлавҳаҳо барои майдонҳои форма
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Барои интихоби як вариант аз чандто
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
+import { useLanguage } from "@/lib/language-context";
+import { ItemService, CATEGORIES } from "@/lib/services/item-service";
+import { ProfileService } from "@/lib/services/profile-service";
+import { createClerkSupabaseClient } from "@/lib/supabase";
+import { compressImage } from "@/lib/image-utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Рӯйхати интихобшаванда (выпадающий список)
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Барои сохтани блоки асосии форма
-import { toast } from "sonner"; // Барои нишон додани паёмҳои муваққатӣ
-import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert } from "lucide-react"; // Иконкаҳои лозимӣ барои интерфейс
-import Image from "next/image"; // Барои нишон додани пешнамоиши суратҳо
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert, CheckCircle2 } from "lucide-react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
-
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳои кӯтоҳ
-
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 
 function AddItemForm() {
-  // Хукҳо барои забон, роутинг ва аутентификатсияи корбар
   const { t } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
   
-  // Стейтҳо барои маълумоти форма ва раванди боргузорӣ (Loading)
+  // Ҳолатҳои форма (Form States)
+  const [step, setStep] = useState(1);
+  const totalSteps = 4;
   const [loading, setLoading] = useState(false);
-  const [type, setType] = useState<'lost' | 'found'>('lost');
+  
+  // Маълумоти эълон
+  const [type, setType] = useState<'lost' | 'found' | null>(null);
+  const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
+  const [description, setDescription] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [phone, setPhone] = useState("");
+  const [reward, setReward] = useState("");
+  
   const [showSafetyModal, setShowSafetyModal] = useState(false);
-  const [pendingFormData, setPendingFormData] = useState<any>(null);
 
-  // Вақте ки саҳифа бор мешавад, рақами телефони корбарро аз профилаш мегирем
+  // Боргузории рақами телефон аз профил
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -83,9 +85,6 @@ function AddItemForm() {
     fetchProfile();
   }, [userId, getToken]);
 
-  /**
-   * Функсия барои коркарди суратҳои интихобшуда
-   */
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 5) {
@@ -98,86 +97,73 @@ function AddItemForm() {
     setPreviews(prev => [...prev, ...newPreviews]);
   };
 
-  /**
-   * Функсия барои нест кардани сурат аз пешнамоиш (Preview)
-   */
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  /**
-   * Функсия барои нишон додани модалкаи амниятӣ пеш аз сабт
-   */
-  const handlePreSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!userId) return;
+  // Санҷиши қадамҳо пеш аз гузаштан
+  const nextStep = () => {
+    if (step === 1) {
+      if (!type) {
+        toast.error(t('fillAllFields'));
+        return;
+      }
+      setStep(2);
+    } else if (step === 2) {
+      if (!title.trim() || !category || !description.trim()) {
+        toast.error(t('fillAllFields'));
+        return;
+      }
+      setStep(3);
+    } else if (step === 3) {
+      if (images.length === 0) {
+        toast.error(t('atLeastOneImage'));
+        return;
+      }
+      setStep(4);
+    }
+  };
 
-    const formData = new FormData(e.currentTarget);
-    const title = (formData.get('title') as string).trim();
-    const description = (formData.get('description') as string).trim();
-    const currentPhone = (formData.get('phone') as string).trim();
-    const reward = (formData.get('reward') as string || "").trim();
+  const prevStep = () => {
+    if (step > 1) setStep(step - 1);
+  };
 
-    if (!title || !description || !category || !currentPhone) {
+  const handlePreSubmit = () => {
+    if (!phone.trim()) {
       toast.error(t('fillAllFields'));
       return;
     }
-
     if (type === 'lost' && reward && isNaN(Number(reward))) {
       toast.error(t('rewardOnlyNumbers'));
       return;
     }
-
-    if (images.length === 0) {
-      toast.error(t('atLeastOneImage'));
-      return;
-    }
-
-    setPendingFormData({ title, description, phone: currentPhone, reward });
     setShowSafetyModal(true);
   };
 
-  /**
-   * Функсияи асосӣ барои сабти эълон (Submit)
-   */
   const onFinalSubmit = async () => {
-    if (!userId || !pendingFormData) return;
+    if (!userId) return;
     
     setShowSafetyModal(false);
     setLoading(true);
     
-    const { title, description, phone, reward } = pendingFormData;
-
     try {
       let token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("Authentication token missing");
       
       let supabase = createClerkSupabaseClient(token);
 
-      // Боргузории суратҳо ба Облако (Storage) бо фишурдасозӣ
       const imageUrls = [];
       for (const file of images) {
         const compressedFile = await compressImage(file);
-        
         const ext = compressedFile.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('items')
-          .upload(fileName, compressedFile);
-        
+        const { error: uploadError } = await supabase.storage.from('items').upload(fileName, compressedFile);
         if (uploadError) throw uploadError;
-        
         const { data: { publicUrl } } = supabase.storage.from('items').getPublicUrl(fileName);
         imageUrls.push(publicUrl);
       }
 
-      token = await getToken({ template: 'supabase' });
-      if (!token) throw new Error("Authentication token expired or missing");
-      supabase = createClerkSupabaseClient(token);
-
-      // Тайёр кардани объекти эълони нав
       const itemData = {
         user_id: userId,
         title,
@@ -191,21 +177,11 @@ function AddItemForm() {
         moderation_status: 'pending'
       };
 
-      // Сабти эълон дар база (Insert query)
-      const { data: item, error: itemError } = await supabase
-        .from('items')
-        .insert([itemData])
-        .select()
-        .single();
-
+      const { data: item, error: itemError } = await supabase.from('items').insert([itemData]).select().single();
       if (itemError) throw itemError;
 
-      // Сабти истиноди суратҳо дар таблицаи алоҳида
       if (imageUrls.length > 0) {
-        const imageRecords = imageUrls.map(url => ({
-          item_id: item.id,
-          image_url: url
-        }));
+        const imageRecords = imageUrls.map(url => ({ item_id: item.id, image_url: url }));
         await supabase.from('item_images').insert(imageRecords);
       }
 
@@ -217,189 +193,243 @@ function AddItemForm() {
       toast.error(error.message || t('error'));
     } finally {
       setLoading(false);
-      setPendingFormData(null);
     }
   };
 
   return (
-    <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-8 max-w-4xl">
-      <Card className="rounded-none sm:rounded-2xl overflow-hidden border-none sm:border shadow-none sm:shadow-xl min-h-screen sm:min-h-0">
-        {/* Сарлавҳаи форма */}
-        <CardHeader className="bg-zinc-900 text-white p-6 sm:p-8">
-          <CardTitle className="text-2xl sm:text-3xl font-black uppercase tracking-tight">{t('addItemTitle')}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 sm:p-8">
-          <form onSubmit={handlePreSubmit} className="space-y-6">
-            {/* Интихоби навъи эълон (Гумшуда ё Ёфтшуда) */}
-            <div className="space-y-3">
-              <Label className="text-sm font-black uppercase tracking-wider text-zinc-400">{t('what_happened')}</Label>
+    <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-6 max-w-xl h-[calc(100vh-144px)] sm:h-auto flex flex-col">
+      <Card className="flex-1 rounded-none sm:rounded-[2.5rem] overflow-hidden border-none sm:border shadow-none sm:shadow-2xl flex flex-col bg-white">
+        {/* Step Indicator */}
+        <div className="bg-zinc-900 px-6 py-4 flex items-center justify-between border-b border-zinc-800">
+          <div className="flex gap-1.5 flex-1 max-w-[200px]">
+            {Array.from({ length: totalSteps }).map((_, i) => (
+              <div 
+                key={i} 
+                className={cn(
+                  "h-1 rounded-full flex-1 transition-all duration-500",
+                  step > i + 1 ? "bg-emerald-500" : step === i + 1 ? "bg-white" : "bg-zinc-700"
+                )}
+              />
+            ))}
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-4">
+            {t('step', { current: step, total: totalSteps })}
+          </span>
+        </div>
+
+        <CardContent className="p-6 sm:p-10 flex-1 flex flex-col justify-center overflow-y-auto scrollbar-none">
+          {/* Step 1: Type Selection */}
+          {step === 1 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-black uppercase tracking-tight">{t('what_happened')}</h2>
+              </div>
               <RadioGroup 
-                defaultValue="lost" 
                 onValueChange={(val) => setType(val as 'lost' | 'found')}
-                className="grid grid-cols-2 gap-4"
+                className="grid grid-cols-1 gap-4"
               >
-                <div>
+                <div className="relative">
                   <RadioGroupItem value="lost" id="lost" className="peer sr-only" />
                   <Label
                     htmlFor="lost"
-                    className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-red-600 peer-data-[state=checked]:bg-red-50 cursor-pointer transition-all"
+                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-6 hover:bg-zinc-50 peer-data-[state=checked]:border-red-500 peer-data-[state=checked]:bg-red-50/30 cursor-pointer transition-all group"
                   >
-                    <span className="text-2xl mb-1">🔍</span>
-                    <span className="font-bold text-sm uppercase">{t('lost')}</span>
+                    <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🔍</div>
+                    <div className="flex-1">
+                      <span className="block font-black text-lg uppercase leading-none mb-1">{t('lost')}</span>
+                      <span className="text-zinc-500 text-xs font-bold">{t('lost_desc')}</span>
+                    </div>
+                    <div className="w-6 h-6 rounded-full border-2 border-zinc-200 peer-data-[state=checked]:border-red-500 peer-data-[state=checked]:bg-red-500 flex items-center justify-center transition-colors">
+                      <div className="w-2 h-2 rounded-full bg-white opacity-0 peer-data-[state=checked]:opacity-100 transition-opacity" />
+                    </div>
                   </Label>
                 </div>
-                <div>
+                <div className="relative">
                   <RadioGroupItem value="found" id="found" className="peer sr-only" />
                   <Label
                     htmlFor="found"
-                    className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-emerald-50 cursor-pointer transition-all"
+                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-6 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-500 peer-data-[state=checked]:bg-emerald-50/30 cursor-pointer transition-all group"
                   >
-                    <span className="text-2xl mb-1">🎁</span>
-                    <span className="font-bold text-sm uppercase">{t('found')}</span>
+                    <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🎁</div>
+                    <div className="flex-1">
+                      <span className="block font-black text-lg uppercase leading-none mb-1">{t('found')}</span>
+                      <span className="text-zinc-500 text-xs font-bold">{t('found_desc')}</span>
+                    </div>
+                    <div className="w-6 h-6 rounded-full border-2 border-zinc-200 peer-data-[state=checked]:border-emerald-500 peer-data-[state=checked]:bg-emerald-500 flex items-center justify-center transition-colors">
+                      <div className="w-2 h-2 rounded-full bg-white opacity-0 peer-data-[state=checked]:opacity-100 transition-opacity" />
+                    </div>
                   </Label>
                 </div>
               </RadioGroup>
             </div>
+          )}
 
-            {/* Майдонҳои Сарлавҳа ва Категория */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Step 2: Basic Info */}
+          {step === 2 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="space-y-2">
-                <Label htmlFor="title" className="font-bold text-xs uppercase text-zinc-500">{t('titleLabel')}</Label>
-                <Input id="title" name="title" placeholder={t('titleLabel')} className="rounded-lg h-11" required />
+                <Label className="font-black text-[10px] uppercase tracking-[0.2em] text-zinc-400">{t('titleLabel')}</Label>
+                <Input 
+                  placeholder={t('titleLabel')} 
+                  className="rounded-2xl h-14 bg-zinc-50 border-none text-lg font-bold focus-visible:ring-zinc-900" 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category" className="font-bold text-xs uppercase text-zinc-500">{t('categoryLabel')}</Label>
-                <Select onValueChange={setCategory} required>
-                  <SelectTrigger className="h-11 rounded-lg">
+                <Label className="font-black text-[10px] uppercase tracking-[0.2em] text-zinc-400">{t('categoryLabel')}</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger className="h-14 rounded-2xl bg-zinc-50 border-none text-lg font-bold focus:ring-zinc-900">
                     <SelectValue placeholder={t('categoryLabel')} />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
+                  <SelectContent className="rounded-3xl border-none shadow-2xl">
                     {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name} className="rounded-md">
-                        {cat.icon} {t(`categories.${cat.id}`)}
+                      <SelectItem key={cat.id} value={cat.name} className="rounded-xl py-3 font-bold">
+                        <span className="mr-2">{cat.icon}</span> {t(`categories.${cat.id}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            {/* Тавсифи ашё */}
-            <div className="space-y-2">
-              <Label htmlFor="description" className="font-bold text-xs uppercase text-zinc-500">{t('description')}</Label>
-              <Textarea 
-                id="description" 
-                name="description" 
-                placeholder={t('description')} 
-                className="rounded-lg min-h-[100px] resize-none" 
-                required 
-              />
-            </div>
-
-            {/* Телефон ва Мукофотпулӣ */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="phone" className="font-bold text-xs uppercase text-zinc-500">{t('phoneLabel')}</Label>
-                <Input 
-                  id="phone" 
-                  name="phone" 
-                  placeholder={t('phonePlaceholder')} 
-                  className="rounded-lg h-11" 
-                  required 
-                  type="text" 
-                  inputMode="numeric"
-                  value={phone || ""}
-                  onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                <Label className="font-black text-[10px] uppercase tracking-[0.2em] text-zinc-400">{t('description')}</Label>
+                <Textarea 
+                  placeholder={t('description')} 
+                  className="rounded-2xl min-h-[140px] bg-zinc-50 border-none text-lg font-bold focus-visible:ring-zinc-900 resize-none" 
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
-              {type === 'lost' && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                  <Label htmlFor="reward" className="font-bold text-xs uppercase text-zinc-500">
-                    {t('reward_gives_input')}
-                  </Label>
-                  <Input 
-                    id="reward" 
-                    name="reward" 
-                    placeholder={t('rewardPlaceholder')} 
-                    className="rounded-lg h-11" 
-                    type="text" 
-                    inputMode="numeric" 
-                    onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
-                  />
-                </div>
-              )}
             </div>
+          )}
 
-            {/* Боргузории суратҳо (Photo Upload) */}
-            <div className="space-y-4">
-              <Label className="font-bold text-xs uppercase text-zinc-500">{t('addImages')} ({images.length}/5)</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {/* Step 3: Photos */}
+          {step === 3 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-black uppercase tracking-tight">{t('addImages')}</h2>
+                <p className="text-zinc-500 text-sm font-medium">{t('maxImages')}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
                 {previews.map((src, i) => (
-                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden border group">
+                  <div key={i} className="relative aspect-square rounded-3xl overflow-hidden border-4 border-white shadow-lg group">
                     <Image src={src} alt="Preview" fill className="object-cover" />
                     <button 
                       type="button"
                       onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-xl shadow-xl active:scale-90 transition-all"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
                 {images.length < 5 && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
-                        <Upload className="w-5 h-5 text-zinc-400 mb-1" />
-                        <span className="text-[8px] text-zinc-400 font-bold uppercase">{t('pickImage')}</span>
-                        <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
-                      </label>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{t('maxImages')}</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  <label className="aspect-square flex flex-col items-center justify-center border-4 border-dashed border-zinc-100 rounded-3xl cursor-pointer hover:bg-zinc-50 transition-all active:scale-95 group">
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all">
+                      <Plus className="w-6 h-6" />
+                    </div>
+                    <span className="mt-3 text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('pickImage')}</span>
+                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
+                  </label>
                 )}
               </div>
             </div>
+          )}
 
-            {/* Тугмаи нашр кардан (Publish) */}
-            <Button type="submit" size="lg" className="w-full h-12 rounded-lg text-base font-black bg-zinc-900 hover:bg-zinc-800 mt-4 uppercase tracking-wider text-white" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  {t('loading')}
-                </>
-              ) : (
-                t('publishBtn')
-              )}
-            </Button>
-          </form>
+          {/* Step 4: Contact & Reward */}
+          {step === 4 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+              <div className="text-center space-y-2">
+                <h2 className="text-2xl font-black uppercase tracking-tight">{t('phoneRequiredTitle')}</h2>
+                <p className="text-zinc-500 text-sm font-medium">{t('phoneRequiredDesc')}</p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="font-black text-[10px] uppercase tracking-[0.2em] text-zinc-400">{t('phoneLabel')}</Label>
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-zinc-400">+992</span>
+                    <Input 
+                      className="rounded-2xl h-14 bg-zinc-50 border-none text-xl font-black pl-16 focus-visible:ring-zinc-900" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                      inputMode="numeric"
+                      maxLength={9}
+                    />
+                  </div>
+                </div>
+
+                {type === 'lost' && (
+                  <div className="space-y-2">
+                    <Label className="font-black text-[10px] uppercase tracking-[0.2em] text-zinc-400">{t('reward_gives_input')}</Label>
+                    <div className="relative">
+                      <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-zinc-400">TJS</span>
+                      <Input 
+                        placeholder="0"
+                        className="rounded-2xl h-14 bg-zinc-50 border-none text-xl font-black pr-14 focus-visible:ring-zinc-900" 
+                        value={reward}
+                        onChange={(e) => setReward(e.target.value.replace(/[^0-9]/g, ''))}
+                        inputMode="numeric"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
+
+        {/* Navigation Footer */}
+        <div className="p-6 sm:p-10 bg-white flex gap-4">
+          {step > 1 && (
+            <Button 
+              variant="outline" 
+              size="lg" 
+              onClick={prevStep}
+              className="rounded-2xl h-14 px-8 border-2 font-black uppercase tracking-widest text-[11px] hover:bg-zinc-50"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              {t('back')}
+            </Button>
+          )}
+          <Button 
+            size="lg" 
+            onClick={step === totalSteps ? handlePreSubmit : nextStep}
+            className={cn(
+              "flex-1 rounded-2xl h-14 font-black uppercase tracking-[0.2em] text-[11px] shadow-xl active:scale-95 transition-all duration-700",
+              step === totalSteps ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : "bg-zinc-900 hover:bg-zinc-800 shadow-zinc-900/20",
+              step === 1 && type && "bg-emerald-500 animate-[pulse_3s_cubic-bezier(0.4,0,0.6,1)_infinite] shadow-emerald-500/40 -translate-y-6 ring-8 ring-emerald-500/10"
+            )}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (step === totalSteps ? t('publishBtn') : t('next'))}
+          </Button>
+        </div>
       </Card>
 
-      {/* Модалкаи амниятӣ пеш аз нашр */}
+      {/* Safety Modal */}
       <Dialog open={showSafetyModal} onOpenChange={setShowSafetyModal}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
-          <div className="p-8 space-y-6 text-center">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-2 animate-in zoom-in duration-500 bg-red-50 dark:bg-red-900/20">
-              <ShieldAlert className="w-8 h-8 text-red-500" />
+        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="p-10 space-y-6 text-center">
+            <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-2 animate-in zoom-in duration-500 bg-red-50 dark:bg-red-900/20">
+              <ShieldAlert className="w-10 h-10 text-red-500" />
             </div>
 
-            <DialogHeader className="space-y-3">
-              <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+            <div className="space-y-3">
+              <DialogTitle className="text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
                 {type === 'found' ? t('safetyPostModal.foundTitle') : t('safetyPostModal.lostTitle')}
               </DialogTitle>
-              <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-[13px] leading-relaxed">
+              <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
                 {type === 'found' ? t('safetyPostModal.foundDesc') : t('safetyPostModal.lostDesc')}
-              </DialogDescription>
-            </DialogHeader>
+              </p>
+            </div>
           </div>
 
-          <div className="px-8 pb-8">
+          <div className="px-10 pb-10">
             <Button
               onClick={onFinalSubmit}
-              className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] text-white shadow-xl transition-all active:scale-95 border-none bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
+              className="w-full h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs text-white shadow-xl transition-all active:scale-95 border-none bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
             >
               {t('safetyPostModal.confirmBtn')}
             </Button>
@@ -410,9 +440,6 @@ function AddItemForm() {
   );
 }
 
-/**
- * Саҳифаи асосии AddItem бо Suspense
- */
 export default function AddItemPage() {
   return (
     <TooltipProvider>

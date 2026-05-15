@@ -51,22 +51,29 @@ export function MobileNavbar() {
 
   const handleNavClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
-    const isProtected =
-      href.includes("/profile") || href.includes("/items/add");
+    try {
+      const isProtected =
+        href.includes("/profile") || href.includes("/items/add");
 
-    if (isProtected && !userId) {
-      router.push("/sign-up");
-    } else {
-      const target = href === "/profile" ? "/profile?tab=posts" : href;
-      router.push(target);
-      try {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } catch (e) {}
+      if (isProtected && !userId) {
+        router.push("/sign-up");
+      } else {
+        const target = href === "/profile" ? "/profile?tab=posts" : href;
+        router.push(target);
+        // Бехатар гардонидани scrollTo
+        if (typeof window !== 'undefined') {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }
+    } catch (err) {
+      console.error("Navigation error:", err);
+      // Fallback: Агар router кор накунад, истифодаи window.location
+      window.location.href = href;
     }
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-zinc-100 dark:bg-zinc-950 dark:border-zinc-900 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-[5000] bg-white border-t border-zinc-100 dark:bg-zinc-950 dark:border-zinc-900 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pointer-events-auto">
       <div className="flex items-center justify-around h-14 px-2">
         {navItems.map((item) => {
           let isActive = pathname === item.href;

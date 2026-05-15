@@ -55,7 +55,13 @@ export const getClerkLocalization = (locale: string) => {
       password: {
         title: t.signUpPasswordLabel,
         subtitle: t.passwordHint,
+        placeholder: t.passwordPlaceholder,
         successText: t.passwordSuccess,
+        requirement__minCharacters: t.passwordRequirementMinCharacters,
+        requirement__lowercase: t.passwordRequirementLowercase,
+        requirement__uppercase: t.passwordRequirementUppercase,
+        requirement__number: t.passwordRequirementNumber,
+        requirement__specialCharacter: t.passwordRequirementSpecialCharacter,
       }
     },
     signIn: {
@@ -98,13 +104,18 @@ export const getClerkLocalization = (locale: string) => {
     dividerText: t.dividerText,
     formButtonPrimary: t.submitButton,
     formFieldLabel__emailAddress: t.emailLabel,
-    formFieldLabel__password: t.signUpPasswordLabel,
+    formFieldLabel__password: t.signInPasswordLabel,
     formFieldLabel__firstName: t.firstNameLabel,
     formFieldLabel__lastName: t.lastNameLabel,
+    // Ҳам 'Placeholder' ва ҳам 'InputPlaceholder'-ро илова мекунем барои боварӣ
     formFieldPlaceholder__emailAddress: t.emailLabel,
     formFieldPlaceholder__firstName: t.firstNameLabel,
     formFieldPlaceholder__lastName: t.lastNameLabel,
     formFieldPlaceholder__password: t.passwordPlaceholder,
+    formFieldInputPlaceholder__emailAddress: t.emailLabel,
+    formFieldInputPlaceholder__firstName: t.firstNameLabel,
+    formFieldInputPlaceholder__lastName: t.lastNameLabel,
+    formFieldInputPlaceholder__password: t.passwordPlaceholder,
     formFieldHintText__password: t.passwordHint,
     formFieldSuccessText__password: t.passwordSuccess,
 

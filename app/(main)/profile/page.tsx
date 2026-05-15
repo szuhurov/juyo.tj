@@ -627,15 +627,9 @@ function ProfileContent() {
   };
 
   /**
-   * Функсия барои боргирии QR-код ҳамчун сурат (Download)
+   * Логикаи асосии боргирии QR-код (барои он ки аз ду ҷой истифода барем)
    */
-  const handleDownloadQR = async () => {
-    // Агар рақами дуюм набошад, аввал онро мепурсем
-    if (!profile?.secondary_phone || !profile?.secondary_phone_type) {
-      setShowSecondaryPhoneModal(true);
-      return;
-    }
-
+  const executeQRDownload = async () => {
     if (!qrRef.current) return;
 
     setIsDownloading(true);
@@ -647,12 +641,15 @@ function ProfileContent() {
         cacheBust: true,
         pixelRatio: 4, // Баланд бардоштани сифат барои чоп
         skipFonts: false,
+        backgroundColor: null, // Ин имкон медиҳад, ки кунҷҳои rounded шаффоф монанд
         style: {
           transform: "scale(1)",
           transformOrigin: "top left",
+          borderRadius: "0.8rem", // Боварӣ ҳосил мекунем, ки кунҷҳо мудаввар мемонанд (medium)
         },
       });
 
+      // Стандарт боргирӣ (Desktop ва Mobile)
       const link = document.createElement("a");
       link.download = `juyo-qr-sticker.png`;
       link.href = dataUrl;
@@ -664,6 +661,19 @@ function ProfileContent() {
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  /**
+   * Функсия барои боргирии QR-код ҳамчун сурат (Download)
+   */
+  const handleDownloadQR = async () => {
+    // Агар рақами дуюм набошад, аввал онро мепурсем
+    if (!profile?.secondary_phone || !profile?.secondary_phone_type) {
+      setShowSecondaryPhoneModal(true);
+      return;
+    }
+
+    await executeQRDownload();
   };
 
   /**
@@ -705,8 +715,8 @@ function ProfileContent() {
       setShowSecondaryPhoneModal(false);
       toast.success(t("success"));
 
-      // Пас аз захира, боргириро оғоз мекунем
-      setTimeout(() => handleDownloadQR(), 500);
+      // Пас аз захира, мустақиман боргириро иҷро мекунем бе тафтиши иловагӣ
+      await executeQRDownload();
     } catch (err) {
       console.error("Error saving secondary phone:", err);
       toast.error(t("error"));
@@ -714,6 +724,7 @@ function ProfileContent() {
       setSecondaryLoading(false);
     }
   };
+
   if (!userLoaded) return null;
 
   // Нишон додани мӯҳтаво вобаста ба таби интихобшуда

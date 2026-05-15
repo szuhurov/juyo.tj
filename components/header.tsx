@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function Header() {
   const pathname = usePathname();
@@ -104,12 +105,12 @@ export function Header() {
   return (
     <TooltipProvider>
       <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/80 backdrop-blur-md dark:bg-zinc-950/80 border-b border-zinc-100 dark:border-zinc-900/50">
-        <div className="w-full max-w-[1600px] mx-auto flex h-14 sm:h-16 items-center px-3 sm:px-4 gap-2 sm:gap-4">
+        <div className="w-full max-w-[1600px] mx-auto flex h-12 sm:h-16 items-center px-3 sm:px-4 gap-2 sm:gap-4">
           
           {/* Қисми чап: Логотип ва Паймоиш */}
           <div className="flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
             <Link href="/" className="flex items-center space-x-2 shrink-0">
-              <span className="text-lg sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100 uppercase">JUYO</span>
+              <span className="text-base sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100 uppercase">JUYO</span>
             </Link>
 
             {/* Паймоиши асосӣ барои Desktop */}
@@ -158,19 +159,19 @@ export function Header() {
 
           {/* Қисми миёна: Сатри ҷустуҷӯ (Марказонидашуда) */}
           <div className={`flex-[2] sm:flex-[1.5] max-w-xl relative ${pathname !== '/' ? 'invisible pointer-events-none' : 'block'}`}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             <Input
               placeholder={t('search')}
-              className="pl-9 h-9 rounded-2xl sm:rounded-full bg-zinc-100/50 border border-zinc-200 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-xs w-full"
+              className="pl-8 h-8 rounded-xl sm:rounded-full bg-zinc-100/50 border border-zinc-200 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-[10px] w-full"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
             {searchValue && (
               <button 
                 onClick={() => setSearchValue("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3 w-3" />
               </button>
             )}
           </div>

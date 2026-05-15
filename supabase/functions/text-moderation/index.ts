@@ -31,7 +31,24 @@ const TAJIK_BLACKLIST = [
   "ланат",
   "ланати",
   "бадбахт",
-  "лаънат"
+  "лаънат",
+
+  // Drugs & Medications (Tajik/Slang)
+  "nasha",
+  "nasha-nasha",
+  "taryok",
+  "taryak",
+  "geroin",
+  "bang",
+  "paxan",
+  "doru",
+  "nashvador",
+  "наша",
+  "тарёк",
+  "тарёқ",
+  "героин",
+  "банг",
+  "дору"
 ];
 
 // Функсия барои тоза кардани матн ва омодасозии он барои санҷиш
@@ -82,6 +99,7 @@ Deno.serve(async (req) => {
       'text': textToCheck.toLowerCase(),
       'lang': 'en,ru',
       'mode': 'standard',
+      'categories': 'profanity,drugs,medical',
       'api_user': SIGHTENGINE_API_USER!,
       'api_secret': SIGHTENGINE_API_SECRET!
     });
@@ -90,13 +108,35 @@ Deno.serve(async (req) => {
     const data = await response.json();
 
     if (data.status === 'success') {
-      if (data.profanity.matches.length > 0) {
+      // Санҷиши ҳақорат (Profanity)
+      if (data.profanity?.matches?.length > 0) {
         const word = data.profanity.matches[0].word;
         await supabase.from('items').update({ 
           moderation_status: 'rejected',
-          moderation_result: `mod_offensive_text:${word}` 
+          moderation_result: `mod_offensive_text_profanity` 
         }).eq('id', id);
-        return new Response("Rejected by Sightengine", { status: 200 });
+        return new Response("Rejected (Profanity)", { status: 200 });
+      }
+
+      // Санҷиши маводи мухаддир (Drugs)
+      if (data.text?.detections?.drugs?.matches?.length > 0) {
+        await supabase.from('items').update({ 
+          moderation_status: 'rejected',
+          moderation_result: `mod_drugs` 
+        }).eq('id', id);
+        return new Response("Rejected (Drugs)", { status: 200 });
+      }
+
+      // Санҷиши доруҳои хатарнок (Medical - High intensity only)
+      const medicalMatches = data.text?.detections?.medical?.matches || [];
+      const hasDangerousMeds = medicalMatches.some((m: any) => m.intensity === 'high');
+      
+      if (hasDangerousMeds) {
+        await supabase.from('items').update({ 
+          moderation_status: 'rejected',
+          moderation_result: `mod_drugs` 
+        }).eq('id', id);
+        return new Response("Rejected (Medical)", { status: 200 });
       }
     }
 
