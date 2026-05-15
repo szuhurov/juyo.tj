@@ -641,7 +641,7 @@ function ProfileContent() {
         cacheBust: true,
         pixelRatio: 4, // Баланд бардоштани сифат барои чоп
         skipFonts: false,
-        backgroundColor: null, // Ин имкон медиҳад, ки кунҷҳои rounded шаффоф монанд
+        backgroundColor: undefined, // Ин имкон медиҳад, ки кунҷҳои rounded шаффоф монанд
         style: {
           transform: "scale(1)",
           transformOrigin: "top left",
