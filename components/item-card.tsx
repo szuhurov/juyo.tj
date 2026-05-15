@@ -378,7 +378,7 @@ export function ItemCard({ item }: { item: Item }) {
 
               {/* Мукофот (Reward) агар бошад - Дар мобил ба поён наздик ба сана */}
               {item.type === 'lost' && item.reward && (
-                <div className="absolute bottom-14 sm:bottom-16 right-2 z-20 h-6 flex items-center justify-end">
+                <div className="absolute bottom-[50px] sm:bottom-[60px] right-2 z-20 h-6 flex items-center justify-end">
                   <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[8px] sm:text-[10px] px-1.5 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
                     {t('reward_gives_viewer')} {item.reward} TJS
                   </Badge>
