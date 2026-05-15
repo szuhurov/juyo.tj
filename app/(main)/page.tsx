@@ -48,7 +48,7 @@ function HomeContent() {
   return (
     <div className="pb-18">
       {/* Қисмати Филтрҳо (Header/Filters) */}
-      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-900">
+      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-100 dark:border-zinc-900">
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-1 pb-1.5 sm:py-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-1 md:h-14">
             {/* Кнопкаҳои категорияҳо */}
@@ -141,7 +141,7 @@ function HomeContent() {
           ))}
         </div>
       ) : items.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6" style={{ contentVisibility: 'auto' } as any}>
           {items.map((item: any) => (
             <ItemCard key={item.id} item={item} />
           ))}

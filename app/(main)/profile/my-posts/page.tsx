@@ -104,7 +104,7 @@ export default function MyPostsPage() {
         </div>
       ) : items.length > 0 ? (
         /* Рендеринги рӯйхати эълонҳои ман */
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6" style={{ contentVisibility: 'auto' } as any}>
           {items.map((item) => (
             <div key={item.id} className="relative group">
               <ItemCard item={item} />

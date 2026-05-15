@@ -56,20 +56,23 @@ export function ItemCard({ item }: { item: Item }) {
     ? item.images 
     : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
-  // Эффект барои автоматикӣ иваз шудани суратҳо ва санҷиши статус
+  // Состояние барои фаъол будани ротатсияи суратҳо (танҳо ҳангоми ховер)
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Эффект барои автоматикӣ иваз шудани суратҳо (танҳо ҳангоми ховер барои суръатбахшӣ)
   useEffect(() => {
     if (userId) {
       checkSavedStatus();
     }
 
-    if (images.length <= 1) return;
+    if (images.length <= 1 || !isHovered) return;
 
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
+    }, 2500);
 
     return () => clearInterval(interval);
-  }, [images.length, item.id, userId]);
+  }, [images.length, item.id, userId, isHovered]);
 
   // Функсия барои нишон додани модал агар эълон блок шуда бошад
   const handleCardClick = (e: React.MouseEvent) => {
@@ -242,7 +245,14 @@ export function ItemCard({ item }: { item: Item }) {
 
   return (
     <>
-      <div onClick={handleCardClick} className="h-full">
+      <div 
+        onClick={handleCardClick} 
+        className="h-full"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onPointerEnter={() => setIsHovered(true)}
+        onPointerLeave={() => setIsHovered(false)}
+      >
         <Link href={`/items/${item.id}`}>
           <Card className={cn(
             "overflow-hidden hover:shadow-md transition-shadow duration-300 group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
@@ -250,20 +260,29 @@ export function ItemCard({ item }: { item: Item }) {
           )}>
             {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
             <div className="relative aspect-square overflow-hidden rounded-xl">
-              {images.map((img, index) => (
-                <Image
-                  key={index}
-                  src={img.image_url}
-                  alt={item.title}
-                  fill
-                  className={cn(
-                    "object-cover transition-all duration-700 ease-in-out group-hover:scale-105",
-                    index === currentImageIndex ? "opacity-100" : "opacity-0"
-                  )}
-                />
-              ))}
+              {/* Оптимизатсияи намоиши суратҳо: Танҳо сурати фаъол ва навбатиро нишон медиҳем */}
+              {images.map((img, index) => {
+                // Танҳо сурати фаъол ё навбатиро рендер мекунем барои сарфаи хотира
+                if (Math.abs(index - currentImageIndex) > 1 && !(currentImageIndex === images.length - 1 && index === 0)) {
+                  return null;
+                }
+                return (
+                  <Image
+                    key={index}
+                    src={img.image_url}
+                    alt={item.title}
+                    fill
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                    className={cn(
+                      "object-cover transition-opacity duration-500 ease-in-out group-hover:scale-105",
+                      index === currentImageIndex ? "opacity-100" : "opacity-0"
+                    )}
+                    priority={index === 0}
+                  />
+                );
+              })}
 
-              {/* Overlay (Title, Description, Date) - Ҳоло барои ҳамаи размерҳо */}
+              {/* Overlay (Title, Description, Date) */}
               <div 
                 className="absolute inset-x-0 bottom-0 bg-black/40 backdrop-blur-md p-3 pt-14 flex flex-col gap-1 z-10"
                 style={{ 
@@ -275,7 +294,7 @@ export function ItemCard({ item }: { item: Item }) {
                   <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white drop-shadow-md">
                     {item.title}
                   </h3>
-                  <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/20 px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-white/10">
+                  <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/40 px-1.5 py-0.5 rounded-md border border-white/10">
                     <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     <span>{exactDate}</span>
                   </div>
@@ -309,40 +328,39 @@ export function ItemCard({ item }: { item: Item }) {
 
               {/* Тугмаҳои амалиёт (Actions) */}
               <div className="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
-                {/* Тугмаи Сав (Bookmark) - Барои ҳама ба ғайр аз соҳибаш */}
-                {!isOwner && (
-                  <button 
-                    onClick={toggleSave}
-                    disabled={isToggling}
-                    className={cn(
-                      "p-1.5 sm:p-2 rounded-full backdrop-blur-md transition-all shadow-md border border-white/10",
-                      isSaved 
-                        ? "bg-emerald-500 text-white" 
-                        : "bg-black/30 text-white hover:bg-black/50"
-                    )}
-                  >
-                    <Bookmark className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isSaved && "fill-current")} />
-                  </button>
-                )}
+                {/* Тугмаи Сав (Bookmark) - Дар мобил барои ҳама намоён, дар десктоп барои соҳиб пинҳон */}
+                <button 
+                  onClick={toggleSave}
+                  disabled={isToggling}
+                  className={cn(
+                    "p-1.5 sm:p-2 rounded-full backdrop-blur-md transition-all shadow-md border border-white/10",
+                    isSaved 
+                      ? "bg-emerald-500 text-white" 
+                      : "bg-black/30 text-white hover:bg-black/50",
+                    isOwner && "sm:hidden"
+                  )}
+                >
+                  <Bookmark className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isSaved && "fill-current")} />
+                </button>
 
-                {/* Тугмаҳои махсус барои соҳиби эълон */}
+                {/* Тугмаҳои махсус барои соҳиби эълон (Танҳо дар Desktop намоён мешаванд) */}
                 {isOwner && (
                   <>
                     <button 
                       onClick={handleEdit}
-                      className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-blue-600 transition-all shadow-md border border-white/10"
+                      className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-blue-600 transition-all shadow-md border border-white/10"
                     >
                       <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                     <button 
                       onClick={handleArchiveClick}
-                      className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-amber-600 transition-all shadow-md border border-white/10"
+                      className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-amber-600 transition-all shadow-md border border-white/10"
                     >
                       <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                     <button 
                       onClick={handleDelete}
-                      className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-red-600 transition-all shadow-md border border-white/10"
+                      className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-red-600 transition-all shadow-md border border-white/10"
                     >
                       <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
@@ -358,10 +376,10 @@ export function ItemCard({ item }: { item: Item }) {
                 </button>
               </div>
 
-              {/* Мукофот (Reward) агар бошад */}
+              {/* Мукофот (Reward) агар бошад - Дар мобил ба поён наздик ба сана */}
               {item.type === 'lost' && item.reward && (
-                <div className="absolute bottom-16 sm:bottom-20 right-2 z-20 h-6 flex items-center justify-end">
-                  <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
+                <div className="absolute bottom-14 sm:bottom-16 right-2 z-20 h-6 flex items-center justify-end">
+                  <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[8px] sm:text-[10px] px-1.5 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
                     {t('reward_gives_viewer')} {item.reward} TJS
                   </Badge>
                 </div>
