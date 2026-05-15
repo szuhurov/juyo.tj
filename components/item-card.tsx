@@ -284,7 +284,7 @@ export function ItemCard({ item }: { item: Item }) {
                   <p className="text-white text-[10px] sm:text-xs line-clamp-1 leading-tight font-medium flex-1 drop-shadow-sm opacity-90">
                     {item.description}
                   </p>
-                  {item.views > 0 && (
+                  {item.views !== undefined && item.views > 0 && (
                     <div className="flex items-center gap-1 text-white/80 text-[8px] sm:text-[10px] shrink-0 drop-shadow-sm">
                       <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       <span>{item.views}</span>
