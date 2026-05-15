@@ -55,7 +55,7 @@ export const getClerkLocalization = (locale: string) => {
       password: {
         title: t.signUpPasswordLabel,
         subtitle: t.passwordHint,
-        placeholder: t.passwordPlaceholder,
+        placeholder: t.signUpPasswordPlaceholder,
         successText: t.passwordSuccess,
         requirement__minCharacters: t.passwordRequirementMinCharacters,
         requirement__lowercase: t.passwordRequirementLowercase,
@@ -74,6 +74,7 @@ export const getClerkLocalization = (locale: string) => {
       password: {
         title: t.signInPasswordLabel,
         subtitle: t.signInPasswordSubtitle,
+        placeholder: t.signInPasswordPlaceholder,
         actionLink: t.useAnotherMethod,
         footerActionLink: t.forgotPasswordLabel,
         actionText: 'Аввал сабти ном кунед',
@@ -111,11 +112,11 @@ export const getClerkLocalization = (locale: string) => {
     formFieldPlaceholder__emailAddress: t.emailLabel,
     formFieldPlaceholder__firstName: t.firstNameLabel,
     formFieldPlaceholder__lastName: t.lastNameLabel,
-    formFieldPlaceholder__password: t.passwordPlaceholder,
+    formFieldPlaceholder__password: t.signInPasswordPlaceholder,
     formFieldInputPlaceholder__emailAddress: t.emailLabel,
     formFieldInputPlaceholder__firstName: t.firstNameLabel,
     formFieldInputPlaceholder__lastName: t.lastNameLabel,
-    formFieldInputPlaceholder__password: t.passwordPlaceholder,
+    formFieldInputPlaceholder__password: t.signInPasswordPlaceholder,
     formFieldHintText__password: t.passwordHint,
     formFieldSuccessText__password: t.passwordSuccess,
 

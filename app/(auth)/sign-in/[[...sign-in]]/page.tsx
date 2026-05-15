@@ -64,7 +64,6 @@ export default function Page() {
       <div className="w-full max-w-[400px] flex justify-center -mt-4 sm:-mt-6">
         <SignIn
           signUpUrl="/sign-up"
-          localization={getClerkLocalization(locale)}
           appearance={{
             // Танзимоти намуди зоҳирӣ агар лозим бошад
           }}
