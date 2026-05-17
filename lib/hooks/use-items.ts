@@ -43,7 +43,7 @@ export function useItemDetails(id: string, token?: string | null) {
       return ItemService.getItemDetails(id, supabaseClient);
     },
     // Усули "Pro": Истифодаи маълумот аз ҳамаи кэшҳо (Home, Profile, Saved) барои боршавии лаҳзавӣ
-    initialData: () => {
+    placeholderData: () => {
       // 1. Ҷустуҷӯ дар рӯйхатҳои умумӣ (Home)
       const allLists = queryClient.getQueriesData<Item[]>({ queryKey: ITEM_KEYS.lists() });
       for (const [_, list] of allLists) {
@@ -66,10 +66,6 @@ export function useItemDetails(id: string, token?: string | null) {
       }
 
       return undefined;
-    },
-    initialDataUpdatedAt: () => {
-      // Муайян кардани вақти охирини навсозии маълумот дар кэш
-      return queryClient.getQueryState(ITEM_KEYS.lists())?.dataUpdatedAt;
     },
     enabled: !!id,
     staleTime: 1000 * 30, // 30 сония маълумоти кэшшуда "тоза" ҳисоб мешавад
