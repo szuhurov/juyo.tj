@@ -286,9 +286,9 @@ export function ItemCard({ item }: { item: Item }) {
               );
             })}
 
-            {/* Overlay (Title, Description, Date) - Smooth transition without blur */}
+            {/* Overlay (Title, Description, Date) - Smooth transition with increased height */}
             <div 
-              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-12 flex flex-col gap-1 z-10 pointer-events-none"
+              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent p-3 pt-20 flex flex-col gap-1 z-10 pointer-events-none"
             >
               <div className="flex justify-between items-start gap-2">
                 <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white drop-shadow-md">

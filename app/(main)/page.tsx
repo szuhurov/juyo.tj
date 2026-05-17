@@ -68,13 +68,6 @@ function HomeContent() {
 
   return (
     <div className="pb-18">
-      {/* Нишондиҳандаи боргузории лаҳзавӣ дар боло (Top Progress Bar) */}
-      {(isFetching || isTyping) && (
-        <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-emerald-500/10 overflow-hidden">
-          <div className="h-full bg-emerald-500 animate-[loading_1s_ease-in-out_infinite] w-full origin-left"></div>
-        </div>
-      )}
-
       {/* Қисмати Филтрҳо (Header/Filters) */}
       <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-100 dark:border-zinc-900">
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-1 pb-1.5 sm:py-0">
