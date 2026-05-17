@@ -70,16 +70,31 @@ export default async function PublicQRPage({ params }: Props) {
     );
   }
 
+  // Агар QR ФАЪОЛ БОШАД - САҲИФАИ ПУРРА
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
-      {/* Шапкаи сабук */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-800 px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-black tracking-tighter text-zinc-900 dark:text-white uppercase">JUYO</span>
-        </Link>
-        <div className="flex gap-2">
-          <Link href={`/?lang=tg`} className="text-[10px] font-bold text-zinc-500">TG</Link>
-          <Link href={`/?lang=ru`} className="text-[10px] font-bold text-zinc-500">RU</Link>
+      
+      {/* Селектори забон - Дизайни аслӣ */}
+      <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center px-4 sm:px-8">
+        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 shadow-xl border border-zinc-200 dark:border-zinc-800">
+          {[
+            { id: 'tg', label: 'Тоҷикӣ' },
+            { id: 'ru', label: 'Русский' },
+            { id: 'en', label: 'English' }
+          ].map((lang) => (
+            <Link
+              key={lang.id}
+              href={`/qr/${id}?lang=${lang.id}`}
+              className={cn(
+                "px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all duration-300",
+                locale === lang.id 
+                  ? "bg-emerald-500 text-white shadow-lg scale-105" 
+                  : "bg-transparent text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              )}
+            >
+              {lang.label}
+            </Link>
+          ))}
         </div>
       </div>
 
