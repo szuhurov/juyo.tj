@@ -44,6 +44,7 @@ import {
   X,
   Send,
   ShieldCheck,
+  ShieldAlert,
   PlusCircle,
   AlertTriangle,
   Phone,
@@ -91,6 +92,7 @@ import { toPng } from "html-to-image"; // Барои табдил додани H
 import { HexColorPicker } from "react-colorful"; // Барои интихоби ранги QR-код
 import { compressImage } from "@/lib/image-utils"; // Барои фишурдани суратҳо
 
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   useUserItems,
   useSavedItems,
@@ -126,6 +128,8 @@ function ProfileContent() {
   const [showSecondaryPhoneModal, setShowSecondaryPhoneModal] = useState(false);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
   const [secondaryType, setSecondaryType] = useState<string>("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsDetails, setShowTermsDetails] = useState(false);
 
   // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва текст)
   const [qrSettings, setQrSettings] = useState({
@@ -649,7 +653,16 @@ function ProfileContent() {
         },
       });
 
-      // Стандарт боргирӣ (Desktop ва Mobile)
+      // Агар дар дохили React Native WebView бошад
+      if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
+        (window as any).ReactNativeWebView.postMessage(
+          JSON.stringify({ type: "DOWNLOAD_QR", payload: dataUrl })
+        );
+        toast.success(t("qrSavedSuccess"));
+        return;
+      }
+
+      // Стандарт боргирӣ (Desktop ва Mobile Web Browser)
       const link = document.createElement("a");
       link.download = `juyo-qr-sticker.png`;
       link.href = dataUrl;
@@ -667,8 +680,13 @@ function ProfileContent() {
    * Функсия барои боргирии QR-код ҳамчун сурат (Download)
    */
   const handleDownloadQR = async () => {
-    // Агар рақами дуюм набошад, аввал онро мепурсем
-    if (!profile?.secondary_phone || !profile?.secondary_phone_type) {
+    const isMissingData = 
+      !profile?.phone || 
+      !profile?.secondary_phone || 
+      !profile?.secondary_phone_type || 
+      profile?.accepted_terms !== true;
+
+    if (isMissingData) {
       setShowSecondaryPhoneModal(true);
       return;
     }
@@ -677,26 +695,42 @@ function ProfileContent() {
   };
 
   /**
-   * Функсия барои захира кардани рақами дуюм ва давом додани боргирӣ
+   * Функсия барои захира кардани маълумоти амниятӣ ва давом додани боргирӣ
    */
   const handleSaveSecondaryPhone = async (
     e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
-    if (!secondaryType) {
+    
+    const needsPhone = !profile?.phone;
+    const needsSecondary = !profile?.secondary_phone || !profile?.secondary_phone_type;
+    const needsTerms = profile?.accepted_terms !== true;
+
+    if (needsTerms && !acceptedTerms) {
+      toast.error(t('terms.error') || "Лутфан шартҳоро қабул кунед");
+      return;
+    }
+
+    if (needsSecondary && !secondaryType) {
       toast.error(t("fillAllFields"));
       return;
     }
 
     const formData = new FormData(e.currentTarget);
-    const secondary_phone = (formData.get("secondary_phone") as string).trim();
+    const phone = ((formData.get("phone") as string) || "").trim();
+    const secondary_phone = ((formData.get("secondary_phone") as string) || "").trim();
 
-    if (secondary_phone.length < 9) {
+    if (needsPhone && phone.length < 9) {
       toast.error(t("phoneMinLength"));
       return;
     }
 
-    if (secondary_phone === profile?.phone) {
+    if (needsSecondary && secondary_phone.length < 9) {
+      toast.error(t("phoneMinLength"));
+      return;
+    }
+
+    if (needsPhone && needsSecondary && phone === secondary_phone) {
       toast.error(t("phonesMustBeDifferent"));
       return;
     }
@@ -706,10 +740,19 @@ function ProfileContent() {
       const supabaseToken = await getToken({ template: "supabase" });
       const supabase = createClerkSupabaseClient(supabaseToken!);
 
-      const updated = await ProfileService.updateProfile(supabase, userId!, {
-        secondary_phone,
-        secondary_phone_type: secondaryType,
-      });
+      const updates: any = {};
+      if (needsPhone) updates.phone = phone;
+      if (needsSecondary) {
+        updates.secondary_phone = secondary_phone;
+        updates.secondary_phone_type = secondaryType;
+      }
+      if (needsTerms) {
+        updates.accepted_terms = true;
+        updates.accepted_at = new Date().toISOString();
+        updates.terms_version = "v1.0";
+      }
+
+      const updated = await ProfileService.updateProfile(supabase, userId!, updates);
 
       setProfile(updated);
       setShowSecondaryPhoneModal(false);
@@ -718,7 +761,7 @@ function ProfileContent() {
       // Пас аз захира, мустақиман боргириро иҷро мекунем бе тафтиши иловагӣ
       await executeQRDownload();
     } catch (err) {
-      console.error("Error saving secondary phone:", err);
+      console.error("Error saving profile setup:", err);
       toast.error(t("error"));
     } finally {
       setSecondaryLoading(false);
@@ -2379,7 +2422,7 @@ function ProfileContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Модалкаи ҳатмии рақами дуюм ҳангоми насби QR */}
+      {/* Модалкаи ҳатмии рақами телефон ва амният ҳангоми насби QR */}
       <Dialog
         open={showSecondaryPhoneModal}
         onOpenChange={setShowSecondaryPhoneModal}
@@ -2387,7 +2430,7 @@ function ProfileContent() {
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
           <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
             <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-500">
-              <Phone className="w-8 h-8 text-emerald-500" />
+              <ShieldCheck className="w-8 h-8 text-emerald-500" />
             </div>
 
             <DialogHeader className="space-y-2">
@@ -2404,48 +2447,105 @@ function ProfileContent() {
               id="secondary-phone-form"
               className="space-y-6 text-left"
             >
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
-                    {t("qrSecondaryModal.label")}
-                  </Label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                    <Input
-                      name="secondary_phone"
-                      placeholder={t("qrSecondaryModal.placeholder")}
-                      className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
-                      required
-                      inputMode="numeric"
-                      onChange={(e) =>
-                        (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
-                      }
-                    />
+              <div className="space-y-6">
+                {/* Рақами асосӣ (агар набошад) */}
+                {(!profile?.phone || profile.phone.trim() === "") && (
+                  <div className="space-y-1.5">
+                    <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                      {t("phoneLabel")}
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                      <Input
+                        name="phone"
+                        placeholder="XXXXXXXXX"
+                        className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                        required
+                        inputMode="numeric"
+                        onChange={(e) =>
+                          (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="space-y-3">
-                  <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
-                    {t("qrSecondaryModal.ownerQuestion")}
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["father", "mother", "brother", "sister", "spouse"].map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setSecondaryType(type)}
-                        className={cn(
-                          "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black uppercase text-[10px] tracking-wider",
-                          secondaryType === type
-                            ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]"
-                            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
-                        )}
+                {/* Рақами дуюм (агар набошад) */}
+                {(!profile?.secondary_phone || !profile?.secondary_phone_type) && (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        {t("qrSecondaryModal.label")}
+                      </Label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                        <Input
+                          name="secondary_phone"
+                          placeholder={t("qrSecondaryModal.placeholder")}
+                          className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                          required
+                          inputMode="numeric"
+                          onChange={(e) =>
+                            (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                          }
+                        />
+                      </div>
+                      <p className="text-[8px] font-bold text-zinc-400 px-1 leading-tight uppercase tracking-wider">
+                        {t("phoneSecondaryDescription") || "Дар ҳолати гум шудани телефони шумо, ёбанда ба ин рақам занг мезанад."}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        {t("qrSecondaryModal.ownerQuestion")}
+                      </Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["father", "mother", "brother", "sister", "spouse"].map((type) => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setSecondaryType(type)}
+                            className={cn(
+                              "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black uppercase text-[10px] tracking-wider",
+                              secondaryType === type
+                                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]"
+                                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
+                            )}
+                          >
+                            {t(`phoneSecondaryTypes.${type}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Қабули шартҳо (агар қабул нашуда бошад) */}
+                {profile?.accepted_terms !== true && (
+                  <div className="flex items-start space-x-3 pt-2 px-1">
+                    <Checkbox 
+                      id="terms-profile" 
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                      className="mt-1 border-2 border-zinc-200 dark:border-zinc-800 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 rounded-md transition-all duration-300"
+                    />
+                    <div className="grid gap-1.5 leading-none">
+                      <Label
+                        htmlFor="terms-profile"
+                        className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 leading-relaxed cursor-pointer select-none"
                       >
-                        {t(`phoneSecondaryTypes.${type}`)}
+                        {t('terms.checkbox')}
+                      </Label>
+                      <button 
+                        type="button"
+                        className="text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
+                        onClick={() => setShowTermsDetails(true)}
+                      >
+                        {t('terms.link')}
                       </button>
-                    ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </form>
           </div>
@@ -2455,12 +2555,12 @@ function ProfileContent() {
               type="submit"
               form="secondary-phone-form"
               className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
-              disabled={secondaryLoading || !secondaryType}
+              disabled={secondaryLoading || ( (!profile?.secondary_phone || !profile?.secondary_phone_type) && !secondaryType ) || (profile?.accepted_terms !== true && !acceptedTerms)}
             >
               {secondaryLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin mx-auto" />
               ) : (
-                t("qrSecondaryModal.saveBtn")
+                t("saveAndDownload") || "Захира ва боргирӣ"
               )}
             </Button>
             <Button
@@ -2471,6 +2571,28 @@ function ProfileContent() {
               {t("cancel")}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Terms Details Dialog */}
+      <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
+        <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+              {t('terms.link')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+              {t('terms.content')}
+            </p>
+          </div>
+          <Button 
+            onClick={() => setShowTermsDetails(false)}
+            className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
+          >
+            {t('ok')}
+          </Button>
         </DialogContent>
       </Dialog>
     </TooltipProvider>

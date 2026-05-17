@@ -6,7 +6,6 @@
 
 import { Header } from "@/components/header";
 import { MobileNavbar } from "@/components/mobile-navbar";
-import { MandatoryPhoneModal } from "@/components/mandatory-phone-modal";
 import { Suspense } from "react";
 
 export default function MainLayout({
@@ -18,9 +17,6 @@ export default function MainLayout({
     <div className="flex flex-col min-h-screen">
       {/* Ҳедери сайт (Шапка) - Persistent UI */}
       <Header />
-
-      {/* Модали ҳатмӣ барои гирифтани рақами телефони корбар */}
-      <MandatoryPhoneModal />
 
       {/* Ин ҷо мӯҳтавои асосии саҳифаҳо мебарояд (Main Content) */}
       <main className="flex-1 pt-12 sm:pt-16 pb-20 md:pb-0">

@@ -102,9 +102,10 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           viewIncremented.current = true;
           ItemService.incrementView(id).then(() => {
             sessionStorage.setItem(sessionKey, 'true');
-            queryClient.setQueryData(['items', 'detail', id], (old: any) => ({
-              ...old, views: (old?.views || 0) + 1
-            }));
+            queryClient.setQueryData(['items', 'detail', id], (old: any) => {
+              if (!old) return old; // Агар маълумот ҳануз дар кэш набошад, чизеро иваз намекунем
+              return { ...old, views: (old?.views || 0) + 1 };
+            });
           });
         }
       }
@@ -165,8 +166,19 @@ export default function ItemDetailsClient({ id }: { id: string }) {
   }, [isAutoPlaying, images.length]);
 
   const handleShare = () => {
+    const shareData = { 
+      title: item?.title, 
+      text: item?.description, 
+      url: window.location.href 
+    };
+
     if (navigator.share) {
-      navigator.share({ title: item?.title, text: item?.description, url: window.location.href }).catch(console.error);
+      navigator.share(shareData).catch(console.error);
+    } else if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
+      // Агар дар дохили React Native WebView бошад
+      (window as any).ReactNativeWebView.postMessage(
+        JSON.stringify({ type: "SHARE", payload: shareData })
+      );
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success(t('success'));
@@ -227,11 +239,13 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                 <Image 
                   key={index} 
                   src={img.image_url} 
-                  alt={item.title} 
+                  alt={item.title || "JUYO Item"} 
                   fill 
                   className={cn(
-                    "object-cover transition-all duration-500", 
-                    index === currentImageIndex ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full"
+                    "object-cover transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1)", 
+                    index === currentImageIndex 
+                      ? "opacity-100 translate-x-0 scale-100" 
+                      : "opacity-0 translate-x-8 scale-110"
                   )} 
                   priority={index === 0}
                 />
@@ -261,7 +275,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           </div>
 
           {/* Маълумоти эълон: Scrolls OVER image on mobile */}
-          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-[2.5rem] md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
+          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               {item.profiles ? (
                 <div className="flex items-center gap-3">

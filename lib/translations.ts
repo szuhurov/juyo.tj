@@ -264,6 +264,7 @@ export const translations: Record<string, any> = {
       sister: 'Хоҳар',
       spouse: 'Ҳамсар'
     },
+    phoneSecondaryDescription: 'Дар ҳолати гум шудани телефони шумо ё ҷавоб надоданатон, ёбанда ба ин рақам занг мезанад.',
     phoneSecondaryNote: '',
     phonePlaceholder: '992XXXXXXXXX',
     phoneSecondaryPlaceholder: 'Рақами наздикон',
@@ -407,13 +408,14 @@ export const translations: Record<string, any> = {
       mainGoalTitle: '🚀 Мақсади асосӣ',
       mainGoalDesc: 'Сохтани ҷомеаи дастгирикунанда, ки дар он ашёҳои гумшуда зудтар ба соҳибонашон баргарданд.',
     },
+    saveAndDownload: 'Захира ва боргирӣ',
     qrSecondaryModal: {
-      title: 'Рақами наздикон лозим аст',
-      desc: 'Дар ҳолати скан кардан, агар рақами телефони шумо кор накунад ё худи телефони шумо гум шуда бошад, ёбанда метавонад ба наздикони шумо занг занад.',
+      title: 'Танзимоти амният ва тамос',
+      desc: 'Барои боргирии QR-код, мо ба маълумоти тамосии шумо ва розигӣ ба шартҳои истифода ниёз дорем.',
       label: 'Рақами наздикон',
-      placeholder: '992XXXXXXXXX',
-      saveBtn: 'НАСБ',
-      ownerQuestion: 'Рақам ба кӣ тааллуқ дорад?',
+      placeholder: 'XXXXXXXXX',
+      saveBtn: 'ЗАХИРА ВА НАСБ',
+      ownerQuestion: 'Рақами наздикон ба кӣ тааллуқ дорад?',
     },
     safetyPostModal: {
       foundTitle: '🛡️ Амният ва санҷиш',
@@ -640,6 +642,7 @@ export const translations: Record<string, any> = {
       sister: 'Сестра',
       spouse: 'Супруг(а)'
     },
+    phoneSecondaryDescription: 'В случае потери вашего телефона или если вы не ответите, нашедший сможет позвонить по этому номеру.',
     phoneSecondaryNote: '',
     phonePlaceholder: '992XXXXXXXXX',
     phoneSecondaryPlaceholder: 'Номер родных',
@@ -888,13 +891,14 @@ export const translations: Record<string, any> = {
       mainGoalTitle: '🚀 Главная цель',
       mainGoalDesc: 'Создать сообщество взаимопомощи, где потерянные вещи возвращаются владельцам быстрее.',
     },
+    saveAndDownload: 'Сохранить и скачать',
     qrSecondaryModal: {
-      title: 'Нужен номер близких',
-      desc: 'В случае сканирования, если ваш номер телефона не работает или сам ваш телефон потерян, нашедший сможет позвонить вашим близким.',
+      title: 'Настройки безопасности и связи',
+      desc: 'Для скачивания QR-кода нам необходимы ваши контактные данные и согласие с условиями использования.',
       label: 'Номер близких',
-      placeholder: '992XXXXXXXXX',
-      saveBtn: 'СКАЧАТЬ',
-      ownerQuestion: 'Кому принадлежит номер?',
+      placeholder: 'XXXXXXXXX',
+      saveBtn: 'СОХРАНИТЬ И СКАЧАТЬ',
+      ownerQuestion: 'Кому принадлежит номер близких?',
     },
     safetyPostModal: {
       foundTitle: '🛡️ Безопасность и проверка',
@@ -1141,6 +1145,7 @@ export const translations: Record<string, any> = {
     continue: 'CONTINUE',
     publish: 'PUBLISH',
     update: 'UPDATE',
+    step: 'Step %{current} of %{total}',
     
     // Home
     seeAll: 'All',
@@ -1209,6 +1214,7 @@ export const translations: Record<string, any> = {
       sister: 'Sister',
       spouse: 'Spouse'
     },
+    phoneSecondaryDescription: 'In case your phone is lost or you don\'t answer, the finder will call this number.',
     phoneSecondaryNote: '',
     phonePlaceholder: '992XXXXXXXXX',
     phoneSecondaryPlaceholder: 'Family number',
@@ -1340,7 +1346,7 @@ export const translations: Record<string, any> = {
       qrItems: ['Keys', 'Wallet', 'Laptop', 'Bag', 'Pet'],
       qrHowTitle: 'How it works?',
       qrHowStep1: 'The user downloads the QR code and attaches it to things.',
-      qrHowStep2: 'The finder scans the code — the owner\'s page opens.',
+      qrHowStep2: 'Нашедший сканирует код — открывается страница владельца.',
       qrHowStep3: 'Contact information and your message (e.g., "Reward guaranteed") are displayed.',
       qrAdvantage: '✅ Advantage: One code for all items.',
       safetyBoxGoalTitle: '📦 Safety Box',
@@ -1348,13 +1354,14 @@ export const translations: Record<string, any> = {
       mainGoalTitle: '🚀 Main goal',
       mainGoalDesc: 'Create a supportive community where lost items return to their owners faster.',
     },
+    saveAndDownload: 'Save & Download',
     qrSecondaryModal: {
-      title: 'Relative number required',
-      desc: 'When scanned, if your phone number is unreachable or your phone itself is lost, the finder will be able to call your relatives.',
+      title: 'Security & Contact Setup',
+      desc: 'To download the QR code, we need your contact information and agreement to the terms of use.',
       label: 'Relative number',
-      placeholder: '992XXXXXXXXX',
-      saveBtn: 'DOWNLOAD',
-      ownerQuestion: 'Who does the number belong to?',
+      placeholder: 'XXXXXXXXX',
+      saveBtn: 'SAVE & DOWNLOAD',
+      ownerQuestion: 'Who does the relative number belong to?',
     },
     safetyPostModal: {
       foundTitle: '🛡️ Safety and Verification',
@@ -1414,3 +1421,4 @@ export const translations: Record<string, any> = {
     }
   }
 };
+

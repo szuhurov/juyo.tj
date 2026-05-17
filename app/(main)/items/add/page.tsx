@@ -381,23 +381,23 @@ function AddItemForm() {
         </CardContent>
 
         {/* Navigation Footer */}
-        <div className="p-6 sm:p-10 bg-white flex gap-4">
+        <div className="p-6 sm:p-10 bg-white flex gap-3 sm:gap-4 items-center">
           {step > 1 && (
             <Button 
               variant="outline" 
               size="lg" 
               onClick={prevStep}
-              className="rounded-2xl h-14 px-8 border-2 font-black uppercase tracking-widest text-[11px] hover:bg-zinc-50"
+              className="rounded-2xl h-14 px-4 sm:px-8 border-2 font-black uppercase tracking-widest text-[10px] sm:text-[11px] hover:bg-zinc-50 shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('back')}
+              <ArrowLeft className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('back')}</span>
             </Button>
           )}
           <Button 
             size="lg" 
             onClick={step === totalSteps ? handlePreSubmit : nextStep}
             className={cn(
-              "flex-1 rounded-2xl h-14 font-black uppercase tracking-[0.2em] text-[11px] shadow-xl active:scale-95 transition-all duration-700",
+              "flex-1 rounded-2xl h-14 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[10px] sm:text-[11px] shadow-xl active:scale-95 transition-all duration-700 overflow-hidden",
               step === totalSteps ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : "bg-zinc-900 hover:bg-zinc-800 shadow-zinc-900/20",
               step === 1 && type && "bg-emerald-500 animate-[pulse_3s_cubic-bezier(0.4,0,0.6,1)_infinite] shadow-emerald-500/40 -translate-y-6 ring-8 ring-emerald-500/10"
             )}

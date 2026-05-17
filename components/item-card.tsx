@@ -159,15 +159,16 @@ export function ItemCard({ item }: { item: Item }) {
     if (isActionLoading) return;
     
     const url = `${window.location.origin}/items/${item.id}`;
+    const shareData = {
+      title: item.title,
+      text: item.description,
+      url: url,
+    };
     
     if (navigator.share) {
       try {
         setIsActionLoading(true);
-        await navigator.share({
-          title: item.title,
-          text: item.description,
-          url: url,
-        });
+        await navigator.share(shareData);
       } catch (error: any) {
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
           console.error("Share error:", error);
@@ -177,6 +178,11 @@ export function ItemCard({ item }: { item: Item }) {
       } finally {
         setIsActionLoading(false);
       }
+    } else if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
+      // Агар дар дохили React Native WebView бошад
+      (window as any).ReactNativeWebView.postMessage(
+        JSON.stringify({ type: "SHARE", payload: shareData })
+      );
     } else {
       navigator.clipboard.writeText(url);
       toast.success(t('success'));
@@ -254,11 +260,11 @@ export function ItemCard({ item }: { item: Item }) {
         onPointerLeave={() => setIsHovered(false)}
       >
         <Card className={cn(
-          "overflow-hidden hover:shadow-md transition-shadow duration-300 group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
+          "overflow-hidden hover:shadow-md transition-all duration-200 group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
           item.moderation_status === 'rejected' && isOwner && "opacity-75 grayscale-[0.5]"
         )}>
           {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
-          <div className="relative aspect-square overflow-hidden rounded-xl">
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900">
             {/* Оптимизатсияи намоиши суратҳо: Танҳо сурати фаъол ва навбатиро нишон медиҳем */}
             {images.map((img, index) => {
               if (Math.abs(index - currentImageIndex) > 1 && !(currentImageIndex === images.length - 1 && index === 0)) {
@@ -272,17 +278,18 @@ export function ItemCard({ item }: { item: Item }) {
                   fill
                   sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                   className={cn(
-                    "object-cover group-hover:scale-105",
-                    index === currentImageIndex ? "opacity-100" : "opacity-0"
+                    "object-cover transition-all duration-1000 ease-in-out",
+                    "md:group-hover:scale-110", // Эффекти ховерро каме калонтар кардем
+                    index === currentImageIndex ? "opacity-100 scale-100" : "opacity-0 scale-105"
                   )}
                   priority={index === 0}
                 />
               );
             })}
 
-            {/* Overlay (Title, Description, Date) */}
+            {/* Overlay (Title, Description, Date) - Оптимизатсияи Blur барои мобил */}
             <div 
-              className="absolute inset-x-0 bottom-0 bg-black/40 backdrop-blur-md p-3 pt-14 flex flex-col gap-1 z-10"
+              className="absolute inset-x-0 bottom-0 bg-black/50 md:backdrop-blur-md p-3 pt-14 flex flex-col gap-1 z-10 pointer-events-none"
               style={{ 
                 maskImage: 'linear-gradient(to top, black 0%, black 60%, transparent 100%)',
                 WebkitMaskImage: 'linear-gradient(to top, black 0%, black 60%, transparent 100%)'

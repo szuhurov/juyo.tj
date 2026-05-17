@@ -42,8 +42,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
         url: `https://juyo.tj/items/${id}`,
         siteName: "JUYO.TJ",
-        images: [{ url: imageUrl, width: 800, height: 600 }],
-        type: "website",
+        images: [
+          {
+            url: imageUrl,
+            width: 1200, // Андозаи стандартӣ барои WhatsApp/Telegram
+            height: 630,
+            alt: title,
+          }
+        ],
+        type: "article", // Барои эълонҳо беҳтар аст
       },
       twitter: {
         card: "summary_large_image",

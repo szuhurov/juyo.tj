@@ -123,6 +123,7 @@ export default async function RootLayout({
   const savedLocale = cookieStore.get("juyo-locale")?.value || "tg";
   const locale = ["tg", "ru", "en"].includes(savedLocale) ? savedLocale : "tg";
   const clerkLocale = getClerkLocalization(locale);
+  const t = translations[locale];
 
   return (
     <ClerkProvider
@@ -135,18 +136,33 @@ export default async function RootLayout({
         className={`${inter.variable} h-full antialiased`}
         suppressHydrationWarning
       >
+        <head>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "JUYO",
+                "url": "https://juyo.tj",
+                "description": t.seoDesc,
+              }),
+            }}
+          />
+        </head>
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
           <QueryProvider>
             <LanguageProvider initialLocale={locale as any}>
-              {/* Нишондиҳандаи ҳолати шабака ва ҷузъҳои глобалии барнома */}
-              <NetworkStatus />
               {children}
+              {/* Network status moved below children for SEO purposes */}
+              <NetworkStatus />
               <Analytics />
               <SpeedInsights />
               <Toaster position="top-center" richColors />
             </LanguageProvider>
           </QueryProvider>
         </body>
+
       </html>
     </ClerkProvider>
   );

@@ -11,16 +11,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // 1. Роҳҳои статикии сайт
+  // 1. Роҳҳои статикии сайт (Танҳо саҳифаҳои умумӣ ва муҳим)
   const staticRoutes = [
     '',
-    '/profile',
-    '/scan',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date(),
     changeFrequency: 'daily' as const,
-    priority: route === '' ? 1 : 0.8,
+    priority: 1,
   }))
 
   // Агар калидҳо набошанд (масалан ҳангоми Build), танҳо роҳҳои статикиро бармегардонем
