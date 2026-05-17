@@ -384,7 +384,7 @@ function ProfileContent() {
       if (error) throw error;
 
       queryClient.invalidateQueries({
-        queryKey: ITEM_KEYS.safetyItems(userId || "", token),
+        queryKey: ITEM_KEYS.safetyItems(userId || ""),
       });
 
       toast.success(t("success"));
@@ -487,7 +487,7 @@ function ProfileContent() {
       if (error) throw error;
 
       queryClient.invalidateQueries({
-        queryKey: ITEM_KEYS.safetyItems(userId || "", token),
+        queryKey: ITEM_KEYS.safetyItems(userId || ""),
       });
 
       toast.success(t("success"));
@@ -540,10 +540,10 @@ function ProfileContent() {
           }
 
           queryClient.invalidateQueries({
-            queryKey: ITEM_KEYS.safetyItems(userId || "", token),
+            queryKey: ITEM_KEYS.safetyItems(userId || ""),
           });
           queryClient.invalidateQueries({
-            queryKey: ITEM_KEYS.userItems(userId || "", token),
+            queryKey: ITEM_KEYS.userItems(userId || ""),
           });
 
           toast.success(t("imageModeration.submitted"));
@@ -605,7 +605,7 @@ function ProfileContent() {
           if (error) throw error;
 
           queryClient.invalidateQueries({
-            queryKey: ITEM_KEYS.safetyItems(userId || "", token),
+            queryKey: ITEM_KEYS.safetyItems(userId || ""),
           });
 
           toast.success(t("success"));
