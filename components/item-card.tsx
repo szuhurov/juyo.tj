@@ -272,7 +272,7 @@ export function ItemCard({ item }: { item: Item }) {
                   fill
                   sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                   className={cn(
-                    "object-cover transition-opacity duration-500 ease-in-out group-hover:scale-105",
+                    "object-cover group-hover:scale-105",
                     index === currentImageIndex ? "opacity-100" : "opacity-0"
                   )}
                   priority={index === 0}

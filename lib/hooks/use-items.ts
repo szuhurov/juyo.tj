@@ -92,8 +92,8 @@ export function useUserItems(userId?: string, token?: string | null) {
       return ItemService.getItems({ user_id: userId }, supabaseClient);
     },
     enabled: !!userId,
-    staleTime: 0, // Ҳамеша маълумоти тоза лозим аст
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
+    refetchOnWindowFocus: false,
   });
 }
 

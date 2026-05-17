@@ -263,21 +263,31 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           {/* Маълумоти эълон: Scrolls OVER image on mobile */}
           <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-[2.5rem] md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
-                  {item.profiles?.avatar_url ? (<Image src={item.profiles.avatar_url} alt="User" width={48} height={48} className="object-cover" />) : (<User className="w-6 h-6 text-zinc-400" />)}
-                </div>
-                <div className="flex flex-col">
-                  <p className="font-black text-sm leading-tight uppercase">
-                    {item.profiles?.first_name || t('user')}
-                  </p>
-                  {item.profiles?.last_name && (
-                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
-                      {item.profiles.last_name}
+              {item.profiles ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
+                    {item.profiles?.avatar_url ? (<Image src={item.profiles.avatar_url} alt="User" width={48} height={48} className="object-cover" />) : (<User className="w-6 h-6 text-zinc-400" />)}
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-black text-sm leading-tight uppercase">
+                      {item.profiles?.first_name || t('user')}
                     </p>
-                  )}
+                    {item.profiles?.last_name && (
+                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
+                        {item.profiles.last_name}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-12 h-12 rounded-2xl" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black uppercase"><Eye className="w-4 h-4" /> {item.views || 0}</div>
             </div>
 
