@@ -229,8 +229,11 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                   src={img.image_url} 
                   alt={item.title} 
                   fill 
-                  className={cn("object-cover transition-all duration-500", index === currentImageIndex ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full")} 
-                  priority={index === 0} 
+                  className={cn(
+                    "object-cover transition-all duration-500", 
+                    index === currentImageIndex ? "opacity-100 translate-x-0" : "opacity-0 translate-x-full"
+                  )} 
+                  priority={index === 0}
                 />
               ))}
               

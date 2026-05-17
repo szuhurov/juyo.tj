@@ -245,19 +245,18 @@ export function ItemCard({ item }: { item: Item }) {
 
   return (
     <>
-      <div 
-        onClick={handleCardClick} 
-        className="h-full"
+      <Link 
+        href={`/items/${item.id}`}
+        className="h-full block"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         onPointerEnter={() => setIsHovered(true)}
         onPointerLeave={() => setIsHovered(false)}
       >
-        <Link href={`/items/${item.id}`}>
-          <Card className={cn(
-            "overflow-hidden hover:shadow-md transition-shadow duration-300 group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
-            item.moderation_status === 'rejected' && isOwner && "opacity-75 grayscale-[0.5]"
-          )}>
+        <Card className={cn(
+          "overflow-hidden hover:shadow-md transition-shadow duration-300 group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
+          item.moderation_status === 'rejected' && isOwner && "opacity-75 grayscale-[0.5]"
+        )}>
             {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
             <div className="relative aspect-square overflow-hidden rounded-xl">
               {/* Оптимизатсияи намоиши суратҳо: Танҳо сурати фаъол ва навбатиро нишон медиҳем */}
