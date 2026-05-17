@@ -167,13 +167,14 @@ function HomeContent() {
         </div>
       ) : displayedItems.length > 0 ? (
         <div 
-          className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 will-change-transform" 
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 will-change-transform transform-gpu" 
           style={{ contentVisibility: 'auto' } as any}
         >
-          {displayedItems.map((item: any) => (
+          {displayedItems.map((item) => (
             <ItemCard key={item.id} item={item} />
           ))}
         </div>
+
       ) : (
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
           <h3 className="text-xl font-black mb-2 uppercase tracking-tight">

@@ -278,28 +278,23 @@ export function ItemCard({ item }: { item: Item }) {
                   fill
                   sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                   className={cn(
-                    "object-cover transition-all duration-1000 ease-in-out",
-                    "md:group-hover:scale-110", // Эффекти ховерро каме калонтар кардем
-                    index === currentImageIndex ? "opacity-100 scale-100" : "opacity-0 scale-105"
+                    "object-cover transition-opacity duration-300 ease-in-out",
+                    index === currentImageIndex ? "opacity-100" : "opacity-0"
                   )}
                   priority={index === 0}
                 />
               );
             })}
 
-            {/* Overlay (Title, Description, Date) - Оптимизатсияи Blur барои мобил */}
+            {/* Overlay (Title, Description, Date) - Smooth transition without blur */}
             <div 
-              className="absolute inset-x-0 bottom-0 bg-black/50 md:backdrop-blur-md p-3 pt-14 flex flex-col gap-1 z-10 pointer-events-none"
-              style={{ 
-                maskImage: 'linear-gradient(to top, black 0%, black 60%, transparent 100%)',
-                WebkitMaskImage: 'linear-gradient(to top, black 0%, black 60%, transparent 100%)'
-              }}
+              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-12 flex flex-col gap-1 z-10 pointer-events-none"
             >
               <div className="flex justify-between items-start gap-2">
                 <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white drop-shadow-md">
                   {item.title}
                 </h3>
-                <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/40 px-1.5 py-0.5 rounded-md border border-white/10">
+                <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/50 px-2 py-1 rounded-md border border-white/10 shadow-sm">
                   <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   <span>{exactDate}</span>
                 </div>
@@ -337,10 +332,10 @@ export function ItemCard({ item }: { item: Item }) {
                 onClick={toggleSave}
                 disabled={isToggling}
                 className={cn(
-                  "p-1.5 sm:p-2 rounded-full backdrop-blur-md transition-all shadow-md border border-white/10",
+                  "p-1.5 sm:p-2 rounded-full transition-all shadow-md border border-white/10",
                   isSaved 
                     ? "bg-emerald-500 text-white" 
-                    : "bg-black/30 text-white hover:bg-black/50",
+                    : "bg-black/50 text-white hover:bg-black/70",
                   isOwner && "sm:hidden"
                 )}
               >
@@ -351,19 +346,19 @@ export function ItemCard({ item }: { item: Item }) {
                 <>
                   <button 
                     onClick={handleEdit}
-                    className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-blue-600 transition-all shadow-md border border-white/10"
+                    className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-blue-600 transition-all shadow-md border border-white/10"
                   >
                     <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                   <button 
                     onClick={handleArchiveClick}
-                    className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-amber-600 transition-all shadow-md border border-white/10"
+                    className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-amber-600 transition-all shadow-md border border-white/10"
                   >
                     <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                   <button 
                     onClick={handleDelete}
-                    className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-red-600 transition-all shadow-md border border-white/10"
+                    className="hidden sm:flex p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-red-600 transition-all shadow-md border border-white/10"
                   >
                     <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
@@ -372,7 +367,7 @@ export function ItemCard({ item }: { item: Item }) {
               
               <button 
                 onClick={handleShare}
-                className="p-1.5 sm:p-2 rounded-full bg-black/30 text-white backdrop-blur-md hover:bg-black/50 transition-all shadow-md border border-white/10"
+                className="p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-all shadow-md border border-white/10"
               >
                 <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
@@ -387,8 +382,8 @@ export function ItemCard({ item }: { item: Item }) {
             )}
 
             {isOwner && item.moderation_status === 'pending' && (
-              <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-30">
-                <div className="bg-white/90 dark:bg-zinc-900/90 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-pulse">
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-30">
+                <div className="bg-white/95 dark:bg-zinc-900/95 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-pulse">
                   <Clock className="w-8 h-8 text-amber-500" />
                   <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider">
                     {t('imageModeration.pending')}
@@ -398,7 +393,7 @@ export function ItemCard({ item }: { item: Item }) {
             )}
 
             {isOwner && item.moderation_status === 'rejected' && (
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-4 z-30">
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-30">
                 <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3">
                   <ShieldAlert className="w-8 h-8 text-red-600" />
                   <span className="text-[10px] font-black uppercase text-red-600 tracking-wider">
