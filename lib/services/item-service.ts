@@ -103,14 +103,18 @@ export const ItemService = {
 
     if (error) throw error;
     
-    // Гирифтани маълумоти соҳиби эълон аз View-и бехатар (бе рақами телефон)
-    const { data: profile } = await client
+    // Гирифтани маълумоти соҳиби эълон аз View-и бехатар
+    const { data: profile, error: profileError } = await client
       .from('public_profiles')
       .select('first_name, last_name, avatar_url')
       .eq('id', data.user_id)
       .single();
 
-    return { ...data, profiles: profile } as Item;
+    if (profileError) {
+      console.warn("Profile fetch error (public_profiles):", profileError.message);
+    }
+
+    return { ...data, profiles: profile || null } as Item;
   },
 
   /**

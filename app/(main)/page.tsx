@@ -156,7 +156,7 @@ function HomeContent() {
       {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо */}
       <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px]">
 
-        {isLoading ? (
+        {isLoading && items.length === 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="space-y-3">

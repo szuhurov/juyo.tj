@@ -59,20 +59,20 @@ export function ItemCard({ item }: { item: Item }) {
   // Состояние барои фаъол будани ротатсияи суратҳо (танҳо ҳангоми ховер)
   const [isHovered, setIsHovered] = useState(false);
 
-  // Эффект барои автоматикӣ иваз шудани суратҳо (танҳо ҳангоми ховер барои суръатбахшӣ)
+  // Эффект барои автоматикӣ иваз шудани суратҳо
   useEffect(() => {
     if (userId) {
       checkSavedStatus();
     }
 
-    if (images.length <= 1 || !isHovered) return;
+    if (images.length <= 1) return;
 
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 2500);
+    }, 5000); // 5 сония - мувофиқи хоҳиши корбар
 
     return () => clearInterval(interval);
-  }, [images.length, item.id, userId, isHovered]);
+  }, [images.length, item.id, userId]);
 
   // Функсия барои нишон додани модал агар эълон блок шуда бошад
   const handleCardClick = (e: React.MouseEvent) => {
