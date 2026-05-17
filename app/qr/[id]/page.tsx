@@ -25,8 +25,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   try {
-    // Гирифтани маълумоти соҳиби QR аз ҷадвали profiles
-    const { data: profile } = await ItemService.getItemDetails(id); // Шарҳ: Дар асл мо профилро мегирем
+    // Гирифтани маълумоти соҳиби QR
+    const item = await ItemService.getItemDetails(id);
+    const profile = item?.profiles;
     return {
       title: `${profile?.first_name} ${profile?.last_name} | JUYO.TJ`,
       description: "Профили ҷамъиятии корбар барои тамос",
