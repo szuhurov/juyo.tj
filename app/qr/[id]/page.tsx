@@ -1,125 +1,67 @@
 /**
- * Саҳифаи ҷамъиятии профил (QR Scan View)
+ * Саҳифаи ҷамъиятии профил (QR Scan View - Server Side)
  * 
- * Ин файл барои намоиши маълумоти ҷамъиятии корбар ҳангоми сканер кардани QR-код хизмат мекунад.
- * Он имкон медиҳад, ки шахси ашёро ёфта бо соҳиби он тамос гирад ва дигар эълонҳои ӯро бубинад.
+ * Ин саҳифа бо истифода аз Server Components сохта шудааст, то ки 
+ * маълумот лаҳзавӣ (бе лоудинги сиёҳ) нишон дода шавад.
  */
 
-"use client";
-
-import { useEffect, useState, use } from "react";
-import { Profile, ProfileService } from "@/lib/services/profile-service";
-import { Item, ItemService } from "@/lib/services/item-service";
-import { ItemCard } from "@/components/item-card";
-import { createClient } from "@supabase/supabase-js";
+import { ItemService } from "@/lib/services/item-service";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { use } from "react";
 import { useLanguage } from "@/lib/language-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Phone, ShieldCheck, User, PackageSearch, QrCode, Loader2, Languages, ArrowLeft } from "lucide-react";
+import { Phone, ShieldCheck, QrCode, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { cookies } from "next/headers";
+import { translations } from "@/lib/translations";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const publicSupabase = createClient(supabaseUrl, supabaseAnonKey);
+interface Props {
+  params: Promise<{ id: string }>;
+}
 
-export default function PublicQRPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const { t, locale, setLocale } = useLanguage();
-  const router = useRouter();
-  
-  const [profile, setProfile] = useState<any>(null);
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const { data: profileData, error: profileError } = await publicSupabase
-          .from('profiles')
-          .select('first_name, last_name, avatar_url, phone, secondary_phone, is_qr_active')
-          .eq('id', id)
-          .single();
-
-        if (profileError) throw profileError;
-        setProfile(profileData);
-
-        // Танҳо агар QR фаъол бошад, эълонҳоро бор мекунем
-        if (profileData && profileData.is_qr_active) {
-          const data = await ItemService.getItems({ user_id: id });
-          setItems(data);
-        }
-      } catch (err) {
-        console.error("Error loading public data:", err);
-      } finally {
-        setLoading(false);
-      }
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    // Гирифтани маълумоти соҳиби QR аз ҷадвали profiles
+    const { data: profile } = await ItemService.getItemDetails(id); // Шарҳ: Дар асл мо профилро мегирем
+    return {
+      title: `${profile?.first_name} ${profile?.last_name} | JUYO.TJ`,
+      description: "Профили ҷамъиятии корбар барои тамос",
     };
-    loadData();
-  }, [id]);
+  } catch (e) {
+    return { title: "JUYO.TJ" };
+  }
+}
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-zinc-900" />
-      </div>
-    );
+export default async function PublicQRPage({ params }: Props) {
+  const { id } = await params;
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("juyo-locale")?.value || "tg";
+  const t = (key: string) => translations[locale as any]?.[key] || key;
+
+  // Боргузории маълумот дар сервер (SSR)
+  const { data: profile, error } = await (await import("@/lib/supabase")).supabase
+    .from('profiles')
+    .select('first_name, last_name, avatar_url, phone, secondary_phone, is_qr_active')
+    .eq('id', id)
+    .single();
+
+  if (error || !profile) {
+    notFound();
   }
 
-  const LanguageSwitcher = () => (
-    <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center px-4 sm:px-8">
-      <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 shadow-xl border border-zinc-200 dark:border-zinc-800">
-        {[
-          { id: 'tg', label: 'Тоҷикӣ' },
-          { id: 'ru', label: 'Русский' },
-          { id: 'en', label: 'English' }
-        ].map((lang) => (
-          <button
-            key={lang.id}
-            onClick={() => setLocale(lang.id as any)}
-            className={cn(
-              "px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-wider transition-all duration-300",
-              locale === lang.id 
-                ? "bg-emerald-500 text-white shadow-lg scale-105" 
-                : "bg-transparent text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            )}
-          >
-            {lang.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  if (!profile) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4 text-center">
-        <LanguageSwitcher />
-        <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-3xl flex items-center justify-center mb-6">
-          <QrCode className="w-8 h-8 text-zinc-400" />
-        </div>
-        <h1 className="text-xl font-black uppercase tracking-tight mb-2">{t('noData')}</h1>
-        <Button asChild className="mt-8 rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-8" variant="outline">
-          <Link href="/">{t('home')}</Link>
-        </Button>
-      </div>
-    );
-  }
-
-  // АГАР QR ҒАЙРИФАЪОЛ БОШАД - ТАНҲО МАТНИ ОГОҲИНОМА
+  // Агар QR ҒАЙРИФАЪОЛ БОШАД
   if (!profile.is_qr_active) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-zinc-50 dark:bg-zinc-950">
-        <LanguageSwitcher />
-        <div className="max-w-md space-y-8 animate-in fade-in zoom-in duration-500">
-          <div className="space-y-4">
-            <h1 className="text-xl font-black uppercase tracking-[0.1em] text-zinc-900 dark:text-white leading-tight">
-              {t('qrProfileInactive').replace('%{name}', `${profile.first_name} ${profile.last_name}`)}
-            </h1>
-          </div>
-          <Button asChild className="mt-8 rounded-2xl font-black uppercase tracking-widest text-[10px] h-14 px-10 bg-zinc-900 text-white shadow-xl hover:bg-zinc-800 transition-all active:scale-95">
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-white dark:bg-zinc-950">
+        <div className="max-w-md space-y-8">
+          <h1 className="text-xl font-black uppercase tracking-[0.1em] text-zinc-900 dark:text-white leading-tight">
+            {t('qrProfileInactive').replace('%{name}', `${profile.first_name} ${profile.last_name}`)}
+          </h1>
+          <Button asChild className="rounded-2xl font-black uppercase tracking-widest text-[10px] h-14 px-10 bg-zinc-900 text-white shadow-xl hover:bg-zinc-800 transition-all active:scale-95">
             <Link href="/">{t('home')}</Link>
           </Button>
         </div>
@@ -127,25 +69,37 @@ export default function PublicQRPage({ params }: { params: Promise<{ id: string 
     );
   }
 
-  // АГАР QR ФАЪОЛ БОШАД - САҲИФАИ ПУРРА
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
-      <LanguageSwitcher />
+      {/* Шапкаи сабук */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-800 px-6 h-16 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
+          <span className="text-xl font-black tracking-tighter text-zinc-900 dark:text-white uppercase">JUYO</span>
+        </Link>
+        <div className="flex gap-2">
+          <Link href={`/?lang=tg`} className="text-[10px] font-bold text-zinc-500">TG</Link>
+          <Link href={`/?lang=ru`} className="text-[10px] font-bold text-zinc-500">RU</Link>
+        </div>
+      </div>
+
       <div className="bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 pt-32 pb-12">
         <div className="container mx-auto px-4 text-center">
           <div className="relative inline-block mb-6">
-            <Avatar className="w-32 h-32 border-4 border-white dark:border-zinc-800 shadow-2xl rounded-[2.5rem] overflow-hidden">
-              <AvatarImage src={profile.avatar_url} />
-              <AvatarFallback className="bg-zinc-900 text-white text-4xl font-black">
-                {profile.first_name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="w-32 h-32 border-4 border-white dark:border-zinc-800 shadow-2xl rounded-[2.5rem] overflow-hidden bg-zinc-100 relative">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-zinc-300">
+                  {profile.first_name?.charAt(0)}
+                </div>
+              )}
+            </div>
             <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-2 rounded-2xl shadow-lg border-4 border-white dark:border-zinc-900">
               <ShieldCheck className="w-5 h-5" />
             </div>
           </div>
 
-          <h1 className="text-3xl font-black uppercase tracking-tighter mb-2">
+          <h1 className="text-3xl font-black uppercase tracking-tighter mb-2 dark:text-white">
             {profile.first_name} {profile.last_name}
           </h1>
           

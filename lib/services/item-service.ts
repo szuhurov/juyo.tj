@@ -73,9 +73,15 @@ export const ItemService = {
       query = query.eq('type', type);
     }
 
-    // Ҷустуҷӯи матнӣ дар ном, тавсиф ва рақами телефон
+    // Ҷустуҷӯи босифат бо истифода аз Full Text Search
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,phone_number.ilike.%${search}%,reward.ilike.%${search}%`);
+      // Ифодаи ':*' дар охири калима имкон медиҳед, ки ҳатто 1-2 ҳарфи аввалро ёбем
+      // Мо фармони to_tsquery-ро мустақиман бо истифода аз 'simple' иҷро мекунем
+      const formattedSearch = search.trim().split(/\s+/).map(word => `${word}:*`).join(' & ');
+      
+      query = query.textSearch('search_vector', formattedSearch, { 
+        config: 'simple'
+      });
     }
 
     const { data, error } = await query;
@@ -97,10 +103,10 @@ export const ItemService = {
 
     if (error) throw error;
     
-    // Гирифтани маълумоти соҳиби эълон
+    // Гирифтани маълумоти соҳиби эълон аз View-и бехатар (бе рақами телефон)
     const { data: profile } = await client
-      .from('profiles')
-      .select('first_name, last_name, avatar_url, secondary_phone')
+      .from('public_profiles')
+      .select('first_name, last_name, avatar_url')
       .eq('id', data.user_id)
       .single();
 

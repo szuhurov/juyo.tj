@@ -24,16 +24,26 @@ function HomeContent() {
   
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     const handleUpdate = () => {
       queryClient.invalidateQueries({ queryKey: ['items'] });
     };
+    
+    // Логика барои хабардор шудан аз ҷустуҷӯ
+    const handleSearchActive = (e: any) => {
+      setIsTyping(e.detail);
+    };
+
     window.addEventListener('items-updated', handleUpdate);
     window.addEventListener('saved-items-updated', handleUpdate);
+    window.addEventListener('search-active', handleSearchActive);
+    
     return () => {
       window.removeEventListener('items-updated', handleUpdate);
       window.removeEventListener('saved-items-updated', handleUpdate);
+      window.removeEventListener('search-active', handleSearchActive);
     };
   }, [queryClient]);
 
@@ -45,8 +55,26 @@ function HomeContent() {
 
   const { data: items = [], isLoading, isFetching } = useItems(filters);
 
+  // Усули "Pro": Филтри лаҳзавӣ (Instant Hybrid Filtering)
+  const displayedItems = useMemo(() => {
+    if (!items.length) return [];
+    
+    return items.filter(item => {
+      const matchCategory = category === "All" || item.category === category;
+      const matchType = !itemType || item.type === itemType;
+      return matchCategory && matchType;
+    });
+  }, [items, category, itemType]);
+
   return (
     <div className="pb-18">
+      {/* Нишондиҳандаи боргузории лаҳзавӣ дар боло (Top Progress Bar) */}
+      {(isFetching || isTyping) && (
+        <div className="fixed top-0 left-0 right-0 z-[100] h-1 bg-emerald-500/10 overflow-hidden">
+          <div className="h-full bg-emerald-500 animate-[loading_1s_ease-in-out_infinite] w-full origin-left"></div>
+        </div>
+      )}
+
       {/* Қисмати Филтрҳо (Header/Filters) */}
       <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-100 dark:border-zinc-900">
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-1 pb-1.5 sm:py-0">
@@ -126,10 +154,7 @@ function HomeContent() {
       </div>
 
       {/* Мӯҳтавои асосӣ: Рӯйхати эълонҳо */}
-      <div className={cn(
-        "max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px] transition-opacity duration-300",
-        isFetching && !isLoading ? "opacity-60 grayscale-[0.2]" : "opacity-100"
-      )}>
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px]">
 
         {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
@@ -140,16 +165,23 @@ function HomeContent() {
             </div>
           ))}
         </div>
-      ) : items.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6" style={{ contentVisibility: 'auto' } as any}>
-          {items.map((item: any) => (
+      ) : displayedItems.length > 0 ? (
+        <div 
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6" 
+          style={{ contentVisibility: 'auto' } as any}
+        >
+          {displayedItems.map((item: any) => (
             <ItemCard key={item.id} item={item} />
           ))}
         </div>
       ) : (
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-          <h3 className="text-xl font-black mb-2 uppercase tracking-tight">{t('noItemsFound')}</h3>
-          <p className="text-zinc-500 text-sm">{t('noItemsSubtitle')}</p>
+          <h3 className="text-xl font-black mb-2 uppercase tracking-tight">
+            {(isFetching || isTyping) ? t('search') + '...' : t('noItemsFound')}
+          </h3>
+          <p className="text-zinc-500 text-sm">
+            {(isFetching || isTyping) ? t('pleaseWait') || 'Лутфан мунтазир шавед' : t('noItemsSubtitle')}
+          </p>
         </div>
       )}
     </div>
@@ -157,9 +189,25 @@ function HomeContent() {
   );
 }
 
+function HomeSkeleton() {
+  const { t } = useLanguage();
+  return (
+    <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="space-y-3">
+            <Skeleton className="aspect-square w-full rounded-xl" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-20 text-center"><Skeleton className="h-10 w-48 mx-auto" /></div>}>
+    <Suspense fallback={<HomeSkeleton />}>
       <HomeContent />
     </Suspense>
   );

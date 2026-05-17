@@ -59,10 +59,15 @@ export function MobileNavbar() {
         router.push("/sign-up");
       } else {
         const target = href === "/profile" ? "/profile?tab=posts" : href;
+        
+        // Гузариши лаҳзавӣ
         router.push(target);
-        // Бехатар гардонидани scrollTo
+        
+        // Дар замина (background) саҳифаро пешакӣ бор мекунем
+        router.prefetch(target);
+
         if (typeof window !== 'undefined') {
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          window.scrollTo({ top: 0, behavior: "instant" });
         }
       }
     } catch (err) {

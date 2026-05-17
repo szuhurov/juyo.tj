@@ -31,6 +31,12 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Намоиши бехатар (Public Profiles View)
+-- Ин маълумоти ҳассосро (phone) пинҳон мекунад
+CREATE OR REPLACE VIEW public.public_profiles AS
+SELECT id, first_name, last_name, avatar_url, created_at
+FROM public.profiles;
+
 -- 3. Таблица ITEMS
 CREATE TABLE IF NOT EXISTS public.items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,8 +53,18 @@ CREATE TABLE IF NOT EXISTS public.items (
     moderation_status moderation_status DEFAULT 'pending',
     moderation_result TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    -- Сутуни махсус барои ҷустуҷӯи тез (Full Text Search)
+    search_vector tsvector GENERATED ALWAYS AS (
+        setweight(to_tsvector('simple', coalesce(title, '')), 'A') ||
+        setweight(to_tsvector('simple', coalesce(description, '')), 'B') ||
+        setweight(to_tsvector('simple', coalesce(phone_number, '')), 'C') ||
+        setweight(to_tsvector('simple', coalesce(reward, '')), 'C')
+    ) STORED
 );
+
+-- Индекс барои ҷустуҷӯи Full Text
+CREATE INDEX IF NOT EXISTS idx_items_search_vector ON public.items USING GIN(search_vector);
 
 -- 4. Таблица ITEM_IMAGES
 CREATE TABLE IF NOT EXISTS public.item_images (

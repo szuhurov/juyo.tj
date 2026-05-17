@@ -15,12 +15,18 @@ ALTER TABLE public.safety_box ENABLE ROW LEVEL SECURITY;
 --------------------------------------------------------------------------------
 -- PROFILES POLICIES
 --------------------------------------------------------------------------------
-CREATE POLICY "Anyone can view profiles" 
-ON public.profiles FOR SELECT USING (true);
+-- Маҳкам кардани дастрасии умумӣ ба ҷадвали profiles
+-- Танҳо соҳиби профил метавонад маълумоти пурраашро (телефон ва ғ.) бинад
+CREATE POLICY "Users can view own profile" 
+ON public.profiles FOR SELECT 
+USING ( (NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '')) = id );
 
 CREATE POLICY "Users can manage own profile" 
 ON public.profiles FOR ALL 
 USING ( (NULLIF(current_setting('request.jwt.claims', true)::json->>'sub', '')) = id );
+
+-- Эзоҳ: Барои ном ва аватар VIEW-и public_profiles истифода мешавад, 
+-- ки ба он дастрасии умумӣ иҷозат дода мешавад.
 
 --------------------------------------------------------------------------------
 -- ITEMS POLICIES

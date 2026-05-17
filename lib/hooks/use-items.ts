@@ -3,7 +3,7 @@
  * Ин файл аз React Query барои гирифтани маълумот, кэш ва навсозии автоматии рӯйхати ашёҳо истифода мебарад.
  */
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query"; // Барои идоракунии кэш ва запросҳо
+import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query"; // Барои идоракунии кэш ва запросҳо
 import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
 
 // Калидҳо барои React Query, то ки кэш дуруст идора карда шавад
@@ -30,6 +30,8 @@ export function useItems(filters?: any) {
 
 // Хук барои гирифтани маълумоти муфассали як ашё
 export function useItemDetails(id: string, token?: string | null) {
+  const queryClient = useQueryClient();
+
   return useQuery({
     queryKey: ITEM_KEYS.detail(id, token),
     queryFn: async () => {
@@ -40,8 +42,37 @@ export function useItemDetails(id: string, token?: string | null) {
       }
       return ItemService.getItemDetails(id, supabaseClient);
     },
+    // Усули "Pro": Истифодаи маълумот аз ҳамаи кэшҳо (Home, Profile, Saved) барои боршавии лаҳзавӣ
+    initialData: () => {
+      // 1. Ҷустуҷӯ дар рӯйхатҳои умумӣ (Home)
+      const allLists = queryClient.getQueriesData<Item[]>({ queryKey: ITEM_KEYS.lists() });
+      for (const [_, list] of allLists) {
+        const item = list?.find((i) => i.id === id);
+        if (item) return item;
+      }
+
+      // 2. Ҷустуҷӯ дар эълонҳои худи корбар (My Posts)
+      const userItems = queryClient.getQueriesData<Item[]>({ queryKey: ["items", "user"] });
+      for (const [_, list] of userItems) {
+        const item = list?.find((i) => i.id === id);
+        if (item) return item;
+      }
+
+      // 3. Ҷустуҷӯ дар эълонҳои захирашуда (Saved)
+      const savedItems = queryClient.getQueriesData<Item[]>({ queryKey: ["items", "saved"] });
+      for (const [_, list] of savedItems) {
+        const item = list?.find((i) => i.id === id);
+        if (item) return item;
+      }
+
+      return undefined;
+    },
+    initialDataUpdatedAt: () => {
+      // Муайян кардани вақти охирини навсозии маълумот дар кэш
+      return queryClient.getQueryState(ITEM_KEYS.lists())?.dataUpdatedAt;
+    },
     enabled: !!id,
-    staleTime: 0,
+    staleTime: 1000 * 30, // 30 сония маълумоти кэшшуда "тоза" ҳисоб мешавад
   });
 }
 

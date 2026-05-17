@@ -16,10 +16,8 @@ export default function MainLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Ҳедери сайт (Шапка) */}
-      <Suspense fallback={<div className="h-16 border-b bg-white animate-pulse" />}>
-        <Header />
-      </Suspense>
+      {/* Ҳедери сайт (Шапка) - Persistent UI */}
+      <Header />
 
       {/* Модали ҳатмӣ барои гирифтани рақами телефони корбар */}
       <MandatoryPhoneModal />
@@ -29,17 +27,15 @@ export default function MainLayout({
         {children}
       </main>
 
-      {/* Поёни сайт (Footer) - Ҳамеша дар паси Navbar-и мобилӣ мемонад ё дар мобил пинҳон мешавад */}
+      {/* Поёни сайт (Footer) */}
       <footer className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12 mb-20 md:mb-0 hidden md:block">
         <div className="max-w-[1600px] mx-auto px-4 text-center text-zinc-500 text-sm">
           <p>© 2026 juyo - All rights reserved.</p>
         </div>
       </footer>
 
-      {/* Навбари мобилӣ (Bottom Navigation) */}
-      <Suspense fallback={<div className="fixed bottom-0 left-0 right-0 h-14 bg-white border-t md:hidden" />}>
-        <MobileNavbar />
-      </Suspense>
+      {/* Навбари мобилӣ (Bottom Navigation) - Persistent UI */}
+      <MobileNavbar />
     </div>
   );
 }

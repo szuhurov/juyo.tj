@@ -81,12 +81,16 @@ export function Header() {
   ];
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      const currentQ = searchParams.get('q') || "";
-      
-      // Пешгирии такрори беҳуда: агар ҷустуҷӯ тағйир наёфта бошад, ҳеҷ кор намекунем
-      if (searchValue === currentQ) return;
+    // Агар корбар чизе нанависад, ҳолати ҷустуҷӯро хомӯш мекунем
+    if (searchValue === (searchParams.get('q') || "")) {
+      window.dispatchEvent(new CustomEvent('search-active', { detail: false }));
+      return;
+    }
 
+    // Ҳамин ки корбар ба навиштан оғоз кард, хабар медиҳем, ки ҷустуҷӯ фаъол аст
+    window.dispatchEvent(new CustomEvent('search-active', { detail: true }));
+
+    const delayDebounceFn = setTimeout(() => {
       const params = new URLSearchParams(searchParams);
       if (searchValue) {
         params.set('q', searchValue);
@@ -94,10 +98,16 @@ export function Header() {
         params.delete('q');
       }
       
-      if (pathname === '/' || (searchValue && pathname === '/')) {
-        router.push(`/?${params.toString()}`);
+      const newUrl = `/?${params.toString()}`;
+      if (window.location.search !== `?${params.toString()}`) {
+        router.push(newUrl, { scroll: false });
       }
-    }, 200);
+      
+      // Пас аз иваз шудани URL, як лаҳза мунтазир мешавем, ки React Query оғоз шавад
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('search-active', { detail: false }));
+      }, 50);
+    }, 150); // 150ms - суръати "Ultra-Live"
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchValue, pathname, router, searchParams]);
