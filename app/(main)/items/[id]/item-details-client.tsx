@@ -51,9 +51,22 @@ export default function ItemDetailsClient({ id }: { id: string }) {
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
 
+  useEffect(() => {
+    if (isLoaded) {
+      getToken({ template: 'supabase' }).then(setToken);
+    }
+  }, [isLoaded, getToken]);
+
+  const { data: item, isLoading: loading } = useItemDetails(id, token);
+  const isOwner = userId === item?.user_id;
+
   // Логикаи Swipe барои мобил
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+
+  const images = item?.images && item.images.length > 0 
+    ? item.images 
+    : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.targetTouches[0].clientX;
@@ -81,15 +94,117 @@ export default function ItemDetailsClient({ id }: { id: string }) {
   };
 
   useEffect(() => {
-    if (isLoaded) {
-      getToken({ template: 'supabase' }).then(setToken);
+    if (isLoaded && item && !viewIncremented.current) {
+      const isActuallyOwner = userId === item.user_id;
+      if (!isActuallyOwner) {
+        const sessionKey = `viewed_${id}`;
+        if (!sessionStorage.getItem(sessionKey)) {
+          viewIncremented.current = true;
+          ItemService.incrementView(id).then(() => {
+            sessionStorage.setItem(sessionKey, 'true');
+            queryClient.setQueryData(['items', 'detail', id], (old: any) => ({
+              ...old, views: (old?.views || 0) + 1
+            }));
+          });
+        }
+      }
+      viewIncremented.current = true;
     }
-  }, [isLoaded, getToken]);
+  }, [id, userId, isLoaded, item, queryClient]);
 
-  const { data: item, isLoading: loading } = useItemDetails(id, token);
-  const isOwner = userId === item?.user_id;
+  useEffect(() => {
+    if (userId && id) {
+      checkInitialSavedState();
+    }
+  }, [id, userId]);
 
-  // ... (rest of effects)
+  useEffect(() => {
+    if (isLoaded && item && isOwner && item.moderation_status === 'rejected') {
+      setShowBlockedInfo(true);
+    }
+  }, [isLoaded, item, isOwner]);
+
+  const checkInitialSavedState = async () => {
+    try {
+      const token = await getToken({ template: 'supabase' });
+      if (!token) return;
+      const supabase = createClerkSupabaseClient(token);
+      const { data } = await supabase.from('saved_items').select('item_id').eq('user_id', userId).eq('item_id', id).maybeSingle();
+      setIsSaved(!!data);
+    } catch (e) {
+      setIsSaved(false);
+    }
+  };
+
+  const toggleSave = async () => {
+    if (!userId) {
+      toast.info(t('pleaseLogin'));
+      router.push("/sign-up");
+      return;
+    }
+    if (isToggling) return;
+    setIsToggling(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      const saved = await ItemService.toggleSaveItem(supabase, userId!, id);
+      setIsSaved(saved);
+      toast.success(saved ? t('addedToSaved') : t('removedFromSaved'));
+      queryClient.invalidateQueries({ queryKey: ['items', 'saved', userId] });
+    } catch (e) {
+      toast.error(t('error'));
+    } finally {
+      setIsToggling(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAutoPlaying || images.length <= 1) return;
+    const interval = setInterval(() => setCurrentImageIndex((p) => (p + 1) % images.length), 3000);
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, images.length]);
+
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ title: item?.title, text: item?.description, url: window.location.href }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success(t('success'));
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsActionLoading(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      await ItemService.deleteItem(supabase, id);
+      toast.success(t('success'));
+      router.push('/');
+    } catch (e) { toast.error(t('error')); } finally { setIsActionLoading(false); setShowDeleteConfirm(false); }
+  };
+
+  const handleArchive = async () => {
+    setIsActionLoading(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      await ItemService.archiveToSafetyBox(supabase, item!, userId!);
+      toast.success(t('moveToSafeSuccess'));
+      router.push('/profile?tab=safety');
+    } catch (e) { toast.error(t('error')); } finally { setIsActionLoading(false); setShowArchiveConfirm(false); }
+  };
+
+  const handleResolved = async () => {
+    setIsActionLoading(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      await ItemService.deleteItem(supabase, id);
+      toast.success(t('itemResolvedSuccess'));
+      router.push('/');
+    } catch (e) { toast.error(t('error')); } finally { setIsActionLoading(false); setShowResolvedConfirm(false); }
+  };
 
   if (loading && !item) return <div className="mx-auto max-w-6xl md:pt-8 px-4 py-4 md:px-4"><Skeleton className="w-full aspect-square rounded-[32px]" /></div>;
   if (!item) return <div className="container mx-auto px-4 py-20 text-center"><h1 className="text-2xl font-bold">{t('itemNotFound')}</h1></div>;
