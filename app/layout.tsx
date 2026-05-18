@@ -21,6 +21,7 @@ import { QueryProvider } from "@/components/query-provider"; // Барои ид�
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import { getClerkLocalization } from "@/lib/clerk-localization"; // Функсияи тарҷумаи Clerk
+import NextTopLoader from "nextjs-toploader"; // Барои нишон додани хати боргирӣ дар боло
 
 /**
  * Функсия барои тавлиди динамикии метамаълумот вобаста ба забони интихобшудаи корбар.
@@ -151,10 +152,20 @@ export default async function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
+          <NextTopLoader 
+            color="#22C55E"
+            initialPosition={0.05}
+            crawlSpeed={200}
+            height={3}
+            crawl={true}
+            showSpinner={false}
+            easing="ease"
+            speed={500}
+            shadow="0 0 10px #22C55E,0 0 5px #22C55E"
+          />
           <QueryProvider>
             <LanguageProvider initialLocale={locale as any}>
               {children}
-              {/* Network status moved below children for SEO purposes */}
               <NetworkStatus />
               <Analytics />
               <SpeedInsights />
@@ -162,7 +173,6 @@ export default async function RootLayout({
             </LanguageProvider>
           </QueryProvider>
         </body>
-
       </html>
     </ClerkProvider>
   );

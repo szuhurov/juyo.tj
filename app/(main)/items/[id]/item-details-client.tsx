@@ -60,38 +60,34 @@ export default function ItemDetailsClient({ id }: { id: string }) {
   const { data: item, isLoading: loading } = useItemDetails(id, token);
   const isOwner = userId === item?.user_id;
 
-  // Логикаи Swipe барои мобил
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isManualScroll = useRef(false);
 
   const images = item?.images && item.images.length > 0 
     ? item.images 
     : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
+  // Эффект барои автоматикӣ иваз шудани суратҳо
+  useEffect(() => {
+    if (!isAutoPlaying || images.length <= 1 || !scrollContainerRef.current) return;
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
+    const interval = setInterval(() => {
+      if (isManualScroll.current) return;
 
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
+      const nextIndex = (currentImageIndex + 1) % images.length;
+      const container = scrollContainerRef.current;
+      
+      if (container) {
+        const width = container.clientWidth;
+        container.scrollTo({
+          left: nextIndex * width,
+          behavior: 'smooth'
+        });
+      }
+    }, 4000); // Ҳар 4 сония иваз мешавад
 
-    if (isLeftSwipe) {
-      setCurrentImageIndex((p) => (p + 1) % images.length);
-    } else if (isRightSwipe) {
-      setCurrentImageIndex((p) => (p - 1 + images.length) % images.length);
-    }
-    
-    touchStartX.current = null;
-    touchEndX.current = null;
-    setIsAutoPlaying(false);
-  };
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, images.length, currentImageIndex]);
 
   useEffect(() => {
     if (isLoaded && item && !viewIncremented.current) {
@@ -103,7 +99,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           ItemService.incrementView(id).then(() => {
             sessionStorage.setItem(sessionKey, 'true');
             queryClient.setQueryData(['items', 'detail', id], (old: any) => {
-              if (!old) return old; // Агар маълумот ҳануз дар кэш набошад, чизеро иваз намекунем
+              if (!old) return old;
               return { ...old, views: (old?.views || 0) + 1 };
             });
           });
@@ -159,12 +155,6 @@ export default function ItemDetailsClient({ id }: { id: string }) {
     }
   };
 
-  useEffect(() => {
-    if (!isAutoPlaying || images.length <= 1) return;
-    const interval = setInterval(() => setCurrentImageIndex((p) => (p + 1) % images.length), 3000);
-    return () => clearInterval(interval);
-  }, [isAutoPlaying, images.length]);
-
   const handleShare = () => {
     const shareData = { 
       title: item?.title, 
@@ -175,7 +165,6 @@ export default function ItemDetailsClient({ id }: { id: string }) {
     if (navigator.share) {
       navigator.share(shareData).catch(console.error);
     } else if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
-      // Агар дар дохили React Native WebView бошад
       (window as any).ReactNativeWebView.postMessage(
         JSON.stringify({ type: "SHARE", payload: shareData })
       );
@@ -224,47 +213,45 @@ export default function ItemDetailsClient({ id }: { id: string }) {
   return (
     <TooltipProvider>
       <div className="mx-auto max-w-6xl md:pt-8 md:px-4">
-        {/* Layout Grid: Desktop use columns, Mobile use stacking with sticky effect */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12 items-start relative">
           
-          {/* Галереяи суратҳо: Sticky on Mobile and Desktop */}
           <div className="sticky top-0 md:top-24 z-0 w-full p-0 md:p-0 flex items-center justify-center">
-            <div 
-              className="relative aspect-square w-full max-w-[600px] overflow-hidden rounded-none md:rounded-[32px] border-b md:border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 group shadow-xl"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              {images.map((img, index) => (
-                <Image 
-                  key={index} 
-                  src={img.image_url} 
-                  alt={item.title || "JUYO Item"} 
-                  fill 
-                  className={cn(
-                    "object-cover transition-all duration-700 cubic-bezier(0.4, 0, 0.2, 1)", 
-                    index === currentImageIndex 
-                      ? "opacity-100 translate-x-0 scale-100" 
-                      : "opacity-0 translate-x-8 scale-110"
-                  )} 
-                  priority={index === 0}
-                />
-              ))}
+            <div className="relative aspect-square w-full max-w-[600px] overflow-hidden md:rounded-[32px] border-b md:border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-xl group">
               
-              {/* Нишондиҳандаи саҳифа (Dots) */}
+              <div 
+                ref={scrollContainerRef}
+                className="flex h-full w-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth"
+                onScroll={(e) => {
+                  const scrollLeft = (e.target as HTMLDivElement).scrollLeft;
+                  const width = (e.target as HTMLDivElement).clientWidth;
+                  const index = Math.round(scrollLeft / width);
+                  if (index !== currentImageIndex) {
+                    setCurrentImageIndex(index);
+                  }
+                }}
+                onTouchStart={() => {
+                  isManualScroll.current = true;
+                  setIsAutoPlaying(false);
+                }}
+              >
+                {images.map((img, index) => (
+                  <div key={index} className="h-full w-full shrink-0 snap-center relative">
+                    <Image src={img.image_url} alt={item.title || "JUYO Item"} fill className="object-cover" priority={index === 0} />
+                  </div>
+                ))}
+              </div>
+              
               {images.length > 1 && (
-                <div className="absolute bottom-10 md:bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20">
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
                   {images.map((_, i) => (
-                    <div key={i} className={cn("w-1.5 h-1.5 rounded-full transition-all", i === currentImageIndex ? "bg-white w-4" : "bg-white/40")} />
+                    <div key={i} className={cn("h-1.5 rounded-full transition-all duration-300 shadow-sm", i === currentImageIndex ? "bg-white w-4" : "bg-white/40 w-1.5")} />
                   ))}
                 </div>
               )}
 
-              {/* Restore Navigation Arrows */}
               {images.length > 1 && (
-                <div className="flex md:block">
-                  <button onClick={() => setCurrentImageIndex((p) => (p - 1 + images.length) % images.length)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center z-20 hover:bg-white transition-colors shadow-sm hidden md:flex"><ChevronLeft className="w-6 h-6" /></button>
-                  <button onClick={() => setCurrentImageIndex((p) => (p + 1) % images.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm border border-zinc-200 flex items-center justify-center z-20 hover:bg-white transition-colors shadow-sm hidden md:flex"><ChevronRight className="w-6 h-6" /></button>
+                <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full z-20 pointer-events-none">
+                  <p className="text-[10px] font-black text-white uppercase tracking-widest">{currentImageIndex + 1} / {images.length}</p>
                 </div>
               )}
 
@@ -274,7 +261,6 @@ export default function ItemDetailsClient({ id }: { id: string }) {
             </div>
           </div>
 
-          {/* Маълумоти эълон: Scrolls OVER image on mobile */}
           <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               {item.profiles ? (
@@ -283,14 +269,8 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                     {item.profiles?.avatar_url ? (<Image src={item.profiles.avatar_url} alt="User" width={48} height={48} className="object-cover" />) : (<User className="w-6 h-6 text-zinc-400" />)}
                   </div>
                   <div className="flex flex-col">
-                    <p className="font-black text-sm leading-tight uppercase">
-                      {item.profiles?.first_name || t('user')}
-                    </p>
-                    {item.profiles?.last_name && (
-                      <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
-                        {item.profiles.last_name}
-                      </p>
-                    )}
+                    <p className="font-black text-sm leading-tight uppercase">{item.profiles?.first_name || t('user')}</p>
+                    {item.profiles?.last_name && <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">{item.profiles.last_name}</p>}
                   </div>
                 </div>
               ) : (
@@ -319,7 +299,6 @@ export default function ItemDetailsClient({ id }: { id: string }) {
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">{item.description}</p>
             </div>
 
-            {/* Management Buttons for Owner - Compact for Mobile Row */}
             <div className="flex flex-row items-center gap-2.5 mb-10 overflow-x-auto no-scrollbar pb-1">
               {isLoaded && isOwner && (
                 <>
@@ -338,26 +317,18 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                   <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('resolved')}
                 </Button>
               ) : (
-                <>
-                  <Button size="lg" className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg" asChild><a href={`tel:${item.phone_number}`}><Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('call')}</a></Button>
-                </>
+                <Button size="lg" className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg" asChild><a href={`tel:${item.phone_number}`}><Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('call')}</a></Button>
               )}
             </div>
           </div>
         </div>
 
-        {/* Dialogs... */}
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
           <DialogContent className="rounded-3xl border-none shadow-2xl">
             <DialogHeader><DialogTitle className="text-red-600 font-black uppercase">{t('deleteConfirm')}</DialogTitle></DialogHeader>
             <DialogFooter className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={isActionLoading}>
-                {t('cancel')}
-              </Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={isActionLoading}>
-                {isActionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {t('delete')}
-              </Button>
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={isActionLoading}>{t('cancel')}</Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={isActionLoading}>{isActionLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{t('delete')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -365,13 +336,8 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           <DialogContent className="rounded-3xl border-none shadow-2xl">
             <DialogHeader><DialogTitle className="text-amber-600 font-black uppercase">{t('moveToSafe')}</DialogTitle></DialogHeader>
             <DialogFooter className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowArchiveConfirm(false)} disabled={isActionLoading}>
-                {t('cancel')}
-              </Button>
-              <Button className="bg-amber-600" onClick={handleArchive} disabled={isActionLoading}>
-                {isActionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {t('moveToSafe')}
-              </Button>
+              <Button variant="outline" onClick={() => setShowArchiveConfirm(false)} disabled={isActionLoading}>{t('cancel')}</Button>
+              <Button className="bg-amber-600" onClick={handleArchive} disabled={isActionLoading}>{isActionLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{t('moveToSafe')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -379,55 +345,26 @@ export default function ItemDetailsClient({ id }: { id: string }) {
           <DialogContent className="rounded-3xl border-none shadow-2xl">
             <DialogHeader><DialogTitle className="text-emerald-600 font-black uppercase">{t('resolved')}</DialogTitle></DialogHeader>
             <DialogFooter className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowResolvedConfirm(false)} disabled={isActionLoading}>
-                {t('cancel')}
-              </Button>
-              <Button className="bg-emerald-600" onClick={handleResolved} disabled={isActionLoading}>
-                {isActionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                {t('resolved')}
-              </Button>
+              <Button variant="outline" onClick={() => setShowResolvedConfirm(false)} disabled={isActionLoading}>{t('cancel')}</Button>
+              <Button className="bg-emerald-600" onClick={handleResolved} disabled={isActionLoading}>{isActionLoading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}{t('resolved')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Модал барои нишон додани сабаби блок шудани сурат ё матн */}
         <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
           <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
             <DialogHeader className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-red-50 dark:bg-red-900/20 text-red-600">
-                <ShieldAlert className="w-6 h-6" />
-              </div>
-              <DialogTitle className="text-2xl font-black uppercase tracking-tight text-red-600">
-                {item?.moderation_result?.startsWith('mod_offensive_text') ? t('textBlockedTitle') : t('imageBlockedTitle')}
-              </DialogTitle>
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-red-50 dark:bg-red-900/20 text-red-600"><ShieldAlert className="w-6 h-6" /></div>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tight text-red-600">{item?.moderation_result?.startsWith('mod_offensive_text') ? t('textBlockedTitle') : t('imageBlockedTitle')}</DialogTitle>
               <div className="text-zinc-500 font-bold text-sm leading-relaxed">
                 <p className="mb-4">{item?.moderation_result?.startsWith('mod_offensive_text') ? t('textBlockedDesc') : t('imageBlockedDesc')}</p>
-                
                 {item?.moderation_result && (
                   <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-black text-xs uppercase italic">
-                    {item.moderation_result.includes(':') ? (
-                      <p>
-                        {t(item.moderation_result.split(':')[0])}:{" "}
-                        <span className="text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded">
-                          {item.moderation_result.split(':')[1]}
-                        </span>
-                      </p>
-                    ) : (
-                      t(item.moderation_result)
-                    )}
+                    {item.moderation_result.includes(':') ? (<p>{t(item.moderation_result.split(':')[0])}: <span className="text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded">{item.moderation_result.split(':')[1]}</span></p>) : t(item.moderation_result)}
                   </div>
                 )}
               </div>
             </DialogHeader>
-            <DialogFooter className="pt-2">
-              <Button 
-                type="button" 
-                className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white"
-                onClick={() => setShowBlockedInfo(false)}
-              >
-                {t('ok')}
-              </Button>
-            </DialogFooter>
+            <DialogFooter className="pt-2"><Button type="button" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white" onClick={() => setShowBlockedInfo(false)}>{t('ok')}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

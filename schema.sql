@@ -102,6 +102,10 @@ CREATE TABLE IF NOT EXISTS public.safety_box (
 -- Индексы для скорости
 CREATE INDEX IF NOT EXISTS idx_items_user_id ON public.items(user_id);
 CREATE INDEX IF NOT EXISTS idx_items_status ON public.items(moderation_status);
+CREATE INDEX IF NOT EXISTS idx_items_category ON public.items(category);
+CREATE INDEX IF NOT EXISTS idx_items_type ON public.items(type);
+CREATE INDEX IF NOT EXISTS idx_items_is_resolved ON public.items(is_resolved);
+CREATE INDEX IF NOT EXISTS idx_items_created_at ON public.items(created_at DESC);
 
 -- RPC для просмотров
 CREATE OR REPLACE FUNCTION public.increment_item_views(item_id UUID)

@@ -41,19 +41,24 @@ export const CATEGORIES = [
 
 export const ItemService = {
   /**
-   * Гирифтани рӯйхати ашёҳо бо истифода аз филтрҳо.
+   * Гирифтани рӯйхати ашёҳо бо истифода аз филтрҳо ва пагинация.
    * Ин функсия имкон медиҳад, ки корбар аз рӯи категория, намуд (гумшуда/ёфтшуда)
    * ва матни ҷустуҷӯӣ эълонҳоро пайдо кунад.
    */
-  async getItems(filters: { search?: string; category?: string; type?: string | null; user_id?: string } = {}, supabaseClient?: any) {
-    const { search, category, type, user_id } = filters;
+  async getItems(filters: { search?: string; category?: string; type?: string | null; user_id?: string; page?: number; pageSize?: number } = {}, supabaseClient?: any) {
+    const { search, category, type, user_id, page = 0, pageSize = 20 } = filters;
     
     const client = supabaseClient || supabase;
     
     let query = client
       .from('items')
-      .select('*, images:item_images(image_url)')
+      .select('*, images:item_images(image_url)', { count: 'exact' })
       .order('created_at', { ascending: false });
+
+    // Пагинация (боркунии қисм-қисм)
+    const from = page * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
 
     // Агар ID-и корбар бошад, танҳо эълонҳои ҳамон корбарро нишон медиҳем (барои Профил)
     if (user_id) {

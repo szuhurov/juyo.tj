@@ -15,16 +15,40 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams } from "next/navigation"; 
 import { useItems } from "@/lib/hooks/use-items"; 
 import { useQueryClient } from "@tanstack/react-query"; 
+import { useInView } from "react-intersection-observer";
 
 function HomeContent() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q') || "";
   const queryClient = useQueryClient();
+  const { ref, inView } = useInView();
   
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+
+  const filters = useMemo(() => ({ 
+    category: category === "All" ? undefined : category,
+    type: itemType || undefined,
+    search: searchQuery
+  }), [category, itemType, searchQuery]);
+
+  const { 
+    data, 
+    isLoading, 
+    isFetching, 
+    fetchNextPage, 
+    hasNextPage, 
+    isFetchingNextPage 
+  } = useItems(filters);
+
+  // Боркунии саҳифаи навбатӣ ҳангоми расидан ба охири рӯйхат
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -47,24 +71,21 @@ function HomeContent() {
     };
   }, [queryClient]);
 
-  const filters = useMemo(() => ({ 
-    category: category === "All" ? undefined : category,
-    type: itemType || undefined,
-    search: searchQuery
-  }), [category, itemType, searchQuery]);
-
-  const { data: items = [], isLoading, isFetching } = useItems(filters);
+  // Ҷамъоварии ҳамаи ашёҳо аз ҳамаи саҳифаҳо
+  const allItems = useMemo(() => {
+    return data?.pages.flatMap(page => page) || [];
+  }, [data]);
 
   // Усули "Pro": Филтри лаҳзавӣ (Instant Hybrid Filtering)
   const displayedItems = useMemo(() => {
-    if (!items.length) return [];
+    if (!allItems.length) return [];
     
-    return items.filter(item => {
+    return allItems.filter(item => {
       const matchCategory = category === "All" || item.category === category;
       const matchType = !itemType || item.type === itemType;
       return matchCategory && matchType;
     });
-  }, [items, category, itemType]);
+  }, [allItems, category, itemType]);
 
   return (
     <div className="pb-18">
@@ -149,7 +170,7 @@ function HomeContent() {
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
       <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px] touch-pan-y">
 
-        {isLoading && items.length === 0 ? (
+        {isLoading && allItems.length === 0 && !searchQuery && category === "All" && itemType === null && !isTyping ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="space-y-3">
@@ -159,22 +180,43 @@ function HomeContent() {
           ))}
         </div>
       ) : displayedItems.length > 0 ? (
-        <div 
-          className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 will-change-transform transform-gpu" 
-          style={{ contentVisibility: 'auto' } as any}
-        >
-          {displayedItems.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
+        <>
+          <div 
+            className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 will-change-transform transform-gpu" 
+            style={{ contentVisibility: 'auto' } as any}
+          >
+            {displayedItems.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
 
+          {/* Элемент барои Infinite Scroll */}
+          <div ref={ref} className="h-10 mt-4 flex items-center justify-center">
+            {isFetchingNextPage && (
+              <div className="flex gap-1.5 items-center">
+                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s]"></span>
+                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
+                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-          <h3 className="text-xl font-black mb-2 uppercase tracking-tight">
-            {(isFetching || isTyping) ? t('search') + '...' : t('noItemsFound')}
+          <h3 className="text-xl font-black mb-2 uppercase tracking-tight flex items-center justify-center gap-1">
+            {(isLoading || isFetching || isTyping) ? (
+              <>
+                {t('search')}
+                <span className="flex gap-1 items-center ml-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s]"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
+                </span>
+              </>
+            ) : t('noItemsFound')}
           </h3>
           <p className="text-zinc-500 text-sm">
-            {(isFetching || isTyping) ? t('pleaseWait') || 'Лутфан мунтазир шавед' : t('noItemsSubtitle')}
+            {(isLoading || isFetching || isTyping) ? t('pleaseWait') : t('noItemsSubtitle')}
           </p>
         </div>
       )}

@@ -3,7 +3,7 @@
  * Ин файл аз React Query барои гирифтани маълумот, кэш ва навсозии автоматии рӯйхати ашёҳо истифода мебарад.
  */
 
-import { useQuery, keepPreviousData, useQueryClient } from "@tanstack/react-query"; // Барои идоракунии кэш ва запросҳо
+import { useQuery, keepPreviousData, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"; // Барои идоракунии кэш ва запросҳо
 import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
 
 // Калидҳо барои React Query, то ки кэш дуруст идора карда шавад
@@ -21,13 +21,20 @@ export const ITEM_KEYS = {
   safetyItems: (userId: string) => [...ITEM_KEYS.safety(), userId] as const,
 };
 
-// Хук барои гирифтани рӯйхати умумии ашёҳо бо филтрҳо
+// Хук барои гирифтани рӯйхати умумии ашёҳо бо филтрҳо ва Infinite Scroll
 export function useItems(filters?: any) {
-  return useQuery({
+  const pageSize = 20;
+
+  return useInfiniteQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
-    queryFn: () => ItemService.getItems(filters),
-    staleTime: 1000 * 60 * 5, // 5 дақиқа нигоҳ доштани маълумот дар кэш
-    placeholderData: keepPreviousData,
+    queryFn: ({ pageParam = 0 }) => 
+      ItemService.getItems({ ...filters, page: pageParam, pageSize }),
+    getNextPageParam: (lastPage, allPages) => {
+      // Агар саҳифаи охирин пур бошад, саҳифаи навбатиро иҷозат медиҳем
+      return lastPage.length === pageSize ? allPages.length : undefined;
+    },
+    initialPageParam: 0,
+    staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
   });
 }
 
@@ -47,24 +54,43 @@ export function useItemDetails(id: string, token?: string | null) {
     },
     // Усули "Pro": Истифодаи маълумот аз ҳамаи кэшҳо (Home, Profile, Saved) барои боршавии лаҳзавӣ
     placeholderData: () => {
+      // Функцияи ёрирасон барои ҷустуҷӯи ашё дар кэш
+      const findItem = (data: any) => {
+        if (!data) return undefined;
+        // Агар ин InfiniteQuery бошад (дорои 'pages')
+        if (data.pages && Array.isArray(data.pages)) {
+          for (const page of data.pages) {
+            if (Array.isArray(page)) {
+              const item = page.find((i: Item) => i.id === id);
+              if (item) return item;
+            }
+          }
+        }
+        // Агар ин Query-и муқаррарӣ бошад (массиви оддӣ)
+        if (Array.isArray(data)) {
+          return data.find((i: Item) => i.id === id);
+        }
+        return undefined;
+      };
+
       // 1. Ҷустуҷӯ дар рӯйхатҳои умумӣ (Home)
-      const allLists = queryClient.getQueriesData<Item[]>({ queryKey: ITEM_KEYS.lists() });
+      const allLists = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.lists() });
       for (const [_, list] of allLists) {
-        const item = list?.find((i) => i.id === id);
+        const item = findItem(list);
         if (item) return item;
       }
 
       // 2. Ҷустуҷӯ дар эълонҳои худи корбар (My Posts)
-      const userItems = queryClient.getQueriesData<Item[]>({ queryKey: ITEM_KEYS.user() });
+      const userItems = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.user() });
       for (const [_, list] of userItems) {
-        const item = list?.find((i) => i.id === id);
+        const item = findItem(list);
         if (item) return item;
       }
 
       // 3. Ҷустуҷӯ дар эълонҳои захирашуда (Saved)
-      const savedItems = queryClient.getQueriesData<Item[]>({ queryKey: ITEM_KEYS.saved() });
+      const savedItems = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.saved() });
       for (const [_, list] of savedItems) {
-        const item = list?.find((i) => i.id === id);
+        const item = findItem(list);
         if (item) return item;
       }
 
