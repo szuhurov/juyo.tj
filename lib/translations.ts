@@ -422,6 +422,11 @@ export const translations: Record<string, any> = {
       mainGoalDesc: 'Сохтани ҷомеаи дастгирикунанда, ки дар он ашёҳои гумшуда зудтар ба соҳибонашон баргарданд.',
     },
     saveAndDownload: 'Захира ва боргирӣ',
+    pwa: {
+      title: 'JUYO',
+      desc: 'Барои истифодаи осон',
+      install: 'СКАЧАТЬ'
+    },
     qrSecondaryModal: {
       title: 'Танзимоти амният ва тамос',
       desc: 'Барои боргирии QR-код, мо ба маълумоти тамосии шумо ва розигӣ ба шартҳои истифода ниёз дорем.',
@@ -920,6 +925,11 @@ export const translations: Record<string, any> = {
       mainGoalDesc: 'Создать сообщество взаимопомощи, где потерянные вещи возвращаются владельцам быстрее.',
     },
     saveAndDownload: 'Сохранить и скачать',
+    pwa: {
+      title: 'JUYO',
+      desc: 'Для удобного использования',
+      install: 'УСТАНОВИТЬ'
+    },
     qrSecondaryModal: {
       title: 'Настройки безопасности и связи',
       desc: 'Для скачивания QR-кода нам необходимы ваши контактные данные и согласие с условиями использования.',
@@ -1395,6 +1405,11 @@ export const translations: Record<string, any> = {
       mainGoalDesc: 'Create a supportive community where lost items return to their owners faster.',
     },
     saveAndDownload: 'Save & Download',
+    pwa: {
+      title: 'JUYO',
+      desc: 'For easy usage',
+      install: 'INSTALL'
+    },
     qrSecondaryModal: {
       title: 'Security & Contact Setup',
       desc: 'To download the QR code, we need your contact information and agreement to the terms of use.',

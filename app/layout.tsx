@@ -22,6 +22,7 @@ import { translations } from "@/lib/translations"; // Барои дастрас�
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import { getClerkLocalization } from "@/lib/clerk-localization"; // Функсияи тарҷумаи Clerk
 import NextTopLoader from "nextjs-toploader"; // Барои нишон додани хати боргирӣ дар боло
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt"; // Пешниҳоди насби барнома
 
 /**
  * Функсия барои тавлиди динамикии метамаълумот вобаста ба забони интихобшудаи корбар.
@@ -40,6 +41,7 @@ export async function generateMetadata() {
       template: "%s | juyo",
     },
     description: t.seoDesc,
+    manifest: "/manifest.json",
     keywords: [
       "juyo",
       "juyo.tj",
@@ -170,6 +172,7 @@ export default async function RootLayout({
               <Analytics />
               <SpeedInsights />
               <Toaster position="top-center" richColors />
+              <PWAInstallPrompt />
             </LanguageProvider>
           </QueryProvider>
         </body>
