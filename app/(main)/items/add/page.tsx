@@ -78,7 +78,7 @@ function AddItemForm() {
         const supabase = createClerkSupabaseClient(token);
         const profile = await ProfileService.getProfile(supabase, userId);
         if (profile?.phone) {
-          setFormData(prev => ({ ...prev, phone: profile.phone }));
+          setFormData(prev => ({ ...prev, phone: profile.phone as string }));
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
