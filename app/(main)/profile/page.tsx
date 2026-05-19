@@ -136,6 +136,9 @@ function ProfileContent() {
     qrColor: "#26ba90",
     bgColor: "#eefbf5",
     text: t("qrScanMe"),
+    dotsType: "extra-rounded" as any,
+    cornersSquareType: "dot" as any,
+    cornersDotType: "dot" as any,
   });
 
   // Гирифтани токени базаи додаҳо ва маълумоти профил дар як вақт барои кам кардани ре-рендерҳо
@@ -852,26 +855,39 @@ function ProfileContent() {
                         </span>
                         <button
                           onClick={async () => {
+                            if (!profile) return;
+                            const previousState = profile.is_qr_active;
+                            const newState = !previousState;
+                            
+                            // Optimistic update
+                            setProfile({ ...profile, is_qr_active: newState });
+                            
                             try {
                               const token = await getToken({
                                 template: "supabase",
                               });
                               const supabase = createClerkSupabaseClient(token!);
-                              const newState = !profile?.is_qr_active;
-                              const updated = await ProfileService.updateProfile(
+                              
+                              // Background update
+                              ProfileService.updateProfile(
                                 supabase,
                                 userId!,
-                                {
-                                  is_qr_active: newState,
-                                },
-                              );
-                              setProfile(updated);
-                              toast.success(
-                                newState
-                                  ? t("qrActivatedSuccess")
-                                  : t("qrDeactivatedSuccess"),
-                              );
+                                { is_qr_active: newState }
+                              ).then(updated => {
+                                setProfile(updated);
+                                toast.success(
+                                  newState
+                                    ? t("qrActivatedSuccess")
+                                    : t("qrDeactivatedSuccess"),
+                                );
+                              }).catch(err => {
+                                console.error(err);
+                                setProfile({ ...profile, is_qr_active: previousState });
+                                toast.error(t("error"));
+                              });
                             } catch (err) {
+                              console.error(err);
+                              setProfile({ ...profile, is_qr_active: previousState });
                               toast.error(t("error"));
                             }
                           }}
@@ -965,224 +981,246 @@ function ProfileContent() {
                           hasBorder: false,
                           pattern: "none",
                           text: qrSettings.text,
+                          dotsType: qrSettings.dotsType,
+                          cornersSquareType: qrSettings.cornersSquareType,
+                          cornersDotType: qrSettings.cornersDotType,
                         }}
                         className="qr-card-mobile-hide-text"
                         innerRef={qrRef}
                       />
                     </div>
                   </div>
+                  
+                  {/* Тугмаи Скачат барои мобил - дар зери QR */}
+                  <Button
+                    onClick={handleDownloadQR}
+                    disabled={isDownloading}
+                    variant="outline"
+                    size="sm"
+                    className="sm:hidden w-full h-11 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[10px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-md mt-4"
+                  >
+                    {isDownloading ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5" />
+                    )}
+                    {t("download")}
+                  </Button>
                 </div>
 
-                {/* Панели танзимоти ранг ва текст */}
-                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-4 sm:p-8 -mx-6 sm:mx-0 rounded-none sm:rounded-[2.5rem] border-y sm:border border-zinc-100 dark:border-zinc-800 shadow-sm flex flex-col justify-center relative">
-                  <div className="space-y-8">
-                    {/* Рангҳои QR */}
-                    <div className="space-y-4">
-                      {/* Install Button for Mobile - Hidden on Desktop */}
-                      <Button
-                        onClick={handleDownloadQR}
-                        disabled={isDownloading}
-                        variant="outline"
-                        size="sm"
-                        className="sm:hidden w-full h-10 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[10px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-md mb-2"
+                {/* Панели танзимоти QR - Full Width ва Compact */}
+                <div className="space-y-4 px-1">
+                  {/* Стил ва Шаклҳо */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        {t("qrDotsStyle") || "Нуқтаҳо"}
+                      </Label>
+                      <Select
+                        value={qrSettings.dotsType}
+                        onValueChange={(val) => setQrSettings({ ...qrSettings, dotsType: val as any })}
                       >
-                        {isDownloading ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Download className="w-3.5 h-3.5" />
-                        )}
-                        {t("download")}
-                      </Button>
+                        <SelectTrigger className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[10px] font-black uppercase">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="square">{t("qrDotSquare")}</SelectItem>
+                          <SelectItem value="dots">{t("qrDotDots")}</SelectItem>
+                          <SelectItem value="rounded">{t("qrDotRounded")}</SelectItem>
+                          <SelectItem value="extra-rounded">{t("qrDotExtraRounded")}</SelectItem>
+                          <SelectItem value="classy">{t("qrDotClassy")}</SelectItem>
+                          <SelectItem value="classy-rounded">{t("qrDotClassyRounded")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative">
-                        <div className="flex sm:contents gap-2">
-                          <div className="space-y-2 relative flex-1 sm:flex-none">
-                            <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
-                              {t("qrColorLabel")}
-                            </Label>
-                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800 color-trigger">
-                              <button
-                                className="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-100 dark:border-zinc-800 shrink-0 shadow-sm transition-transform active:scale-95"
-                                style={{ backgroundColor: qrSettings.qrColor }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActivePicker(activePicker === "qr" ? null : "qr");
-                                }}
-                              />
-                              <Input
-                                value={qrSettings.qrColor}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (val.startsWith("#") && val.length <= 7) {
-                                    setQrSettings({
-                                      ...qrSettings,
-                                      qrColor: val,
-                                    });
-                                  }
-                                }}
-                                className="h-8 border-none bg-transparent font-mono font-bold text-[10px] uppercase text-zinc-500 focus-visible:ring-0 p-0"
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        {t("qrCornersStyle") || "Кунҷҳо"}
+                      </Label>
+                      <Select
+                        value={qrSettings.cornersSquareType}
+                        onValueChange={(val) => {
+                          const cornerStyle = val as any;
+                          const dotStyle = cornerStyle === "square" ? "square" : "dot";
+                          setQrSettings({ 
+                            ...qrSettings, 
+                            cornersSquareType: cornerStyle,
+                            cornersDotType: dotStyle as any
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[10px] font-black uppercase">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="square">{t("qrCornerSquare")}</SelectItem>
+                          <SelectItem value="dot">{t("qrCornerDot")}</SelectItem>
+                          <SelectItem value="extra-rounded">{t("qrCornerRounded")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Рангҳо */}
+                  <div className="grid grid-cols-2 gap-3 relative">
+                    <div className="space-y-1.5 relative">
+                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        {t("qrColorLabel")}
+                      </Label>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePicker(activePicker === "qr" ? null : "qr");
+                        }}
+                        className="w-full h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1.5 flex items-center gap-3 transition-all active:scale-95 color-trigger border border-transparent"
+                      >
+                        <div 
+                          className="w-9 h-9 rounded-lg shadow-sm border border-black/5" 
+                          style={{ backgroundColor: qrSettings.qrColor }}
+                        />
+                        <span className="font-mono text-[10px] font-black uppercase text-zinc-500">
+                          {qrSettings.qrColor}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5 relative">
+                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        {t("qrBgLabel")}
+                      </Label>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePicker(activePicker === "bg" ? null : "bg");
+                        }}
+                        className="w-full h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1.5 flex items-center gap-3 transition-all active:scale-95 color-trigger border border-transparent"
+                      >
+                        <div 
+                          className="w-9 h-9 rounded-lg shadow-sm border border-black/5" 
+                          style={{ backgroundColor: qrSettings.bgColor }}
+                        />
+                        <span className="font-mono text-[10px] font-black uppercase text-zinc-500">
+                          {qrSettings.bgColor}
+                        </span>
+                      </button>
+                    </div>
+
+                    {(activePicker === "qr" || activePicker === "bg") && (
+                      <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 color-picker-container overflow-hidden">
+                        <div className="flex flex-row p-0 gap-0 justify-center items-stretch h-full">
+                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950">
+                            <div className="p-0 flex justify-center flex-1 items-center">
+                              <HexColorPicker
+                                color={qrSettings.qrColor}
+                                onChange={(color) =>
+                                  setQrSettings({
+                                    ...qrSettings,
+                                    qrColor: color,
+                                  })
+                                }
+                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
                               />
                             </div>
                           </div>
-
-                          <div className="space-y-2 relative flex-1 sm:flex-none">
-                            <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
-                              {t("qrBgLabel")}
-                            </Label>
-                            <div className="flex items-center gap-3 bg-white dark:bg-zinc-950 p-2 rounded-xl border border-zinc-100 dark:border-zinc-800 color-trigger">
-                              <button
-                                className="w-10 h-10 rounded-lg cursor-pointer border-2 border-zinc-100 dark:border-zinc-800 shrink-0 shadow-sm transition-transform active:scale-95"
-                                style={{ backgroundColor: qrSettings.bgColor }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActivePicker(activePicker === "bg" ? null : "bg");
-                                }}
-                              />
-                              <Input
-                                value={qrSettings.bgColor}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  if (val.startsWith("#") && val.length <= 7) {
-                                    setQrSettings({
-                                      ...qrSettings,
-                                      bgColor: val,
-                                    });
-                                  }
-                                }}
-                                className="h-8 border-none bg-transparent font-mono font-bold text-[10px] uppercase text-zinc-500 focus-visible:ring-0 p-0"
+                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 border-l border-zinc-100 dark:border-zinc-800">
+                            <div className="p-0 flex justify-center flex-1 items-center">
+                              <HexColorPicker
+                                color={qrSettings.bgColor}
+                                onChange={(color) =>
+                                  setQrSettings({
+                                    ...qrSettings,
+                                    bgColor: color,
+                                  })
+                                }
+                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
                               />
                             </div>
                           </div>
                         </div>
-
-                        {(activePicker === "qr" || activePicker === "bg") && (
-                          <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 color-picker-container overflow-hidden">
-                            <div className="flex flex-row p-0 gap-0 justify-center items-stretch h-full">
-                              <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950">
-                                <div className="p-0 flex justify-center flex-1 items-center">
-                                  <HexColorPicker
-                                    color={qrSettings.qrColor}
-                                    onChange={(color) =>
-                                      setQrSettings({
-                                        ...qrSettings,
-                                        qrColor: color,
-                                      })
-                                    }
-                                    className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
-                                  />
-                                </div>
-                              </div>
-                              <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 border-l border-zinc-100 dark:border-zinc-800">
-                                <div className="p-0 flex justify-center flex-1 items-center">
-                                  <HexColorPicker
-                                    color={qrSettings.bgColor}
-                                    onChange={(color) =>
-                                      setQrSettings({
-                                        ...qrSettings,
-                                        bgColor: color,
-                                      })
-                                    }
-                                    className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                            <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
-                              <Button
-                                className="w-full h-12 sm:h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
-                                onClick={() => setActivePicker(null)}
-                              >
-                                {t("save") || "Захира кардан"}
-                              </Button>
-                            </div>
-                          </div>
-                        )}
+                        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
+                          <Button
+                            className="w-full h-12 sm:h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
+                            onClick={() => {
+                              setActivePicker(null);
+                              handleDownloadQR();
+                            }}
+                          >
+                            {t("download")}
+                          </Button>
+                        </div>
                       </div>
-                    </div>
+                    )}
+                  </div>
 
-                    {/* Тексти зери QR-код */}
-                    <div className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                      <div className="space-y-2">
-                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
-                          {t("qrFooterText")}
-                        </Label>
-                        <Input
-                          value={qrSettings.text}
-                          onChange={(e) =>
-                            setQrSettings({
-                              ...qrSettings,
-                              text: e.target.value,
-                            })
-                          }
-                          className="h-12 rounded-xl bg-white dark:bg-zinc-950 font-bold text-sm"
-                          placeholder={t("qrInputPlaceholder")}
-                        />
-                      </div>
-                    </div>
+                  {/* Текст */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                      {t("qrFooterText")}
+                    </Label>
+                    <Input
+                      value={qrSettings.text}
+                      onChange={(e) =>
+                        setQrSettings({
+                          ...qrSettings,
+                          text: e.target.value,
+                        })
+                      }
+                      className="h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
+                      placeholder={t("qrInputPlaceholder")}
+                    />
+                  </div>
 
-                    {/* iOS Style Toggle - Shown here only on mobile */}
-                    <div className="sm:hidden pt-6 border-t border-zinc-200 dark:border-zinc-800 space-y-4">
-                      <div className="flex items-center justify-between bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm">
-                        <div className="flex flex-col gap-1">
+                  {/* Статус - Танҳо дар мобил */}
+                  <div className="pt-2 sm:hidden">
+                    <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+                          <ShieldCheck className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-white">
                             {t("qrStatus")}
                           </span>
-                          <span className="text-[8px] font-bold uppercase text-zinc-400 tracking-widest">
-                            {profile?.is_qr_active
-                              ? t("qrStatusActive")
-                              : t("qrStatusInactive")}
+                          <span className="text-[8px] font-bold uppercase text-emerald-600 tracking-widest">
+                            {profile?.is_qr_active ? t("qrStatusActive") : t("qrStatusInactive")}
                           </span>
                         </div>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const token = await getToken({
-                                template: "supabase",
-                              });
-                              const supabase = createClerkSupabaseClient(
-                                token!,
-                              );
-                              const newState = !profile?.is_qr_active;
-                              const updated =
-                                await ProfileService.updateProfile(
-                                  supabase,
-                                  userId!,
-                                  {
-                                    is_qr_active: newState,
-                                  },
-                                );
-                              setProfile(updated);
-                              toast.success(
-                                newState
-                                  ? t("qrActivatedSuccess")
-                                  : t("qrDeactivatedSuccess"),
-                              );
-                            } catch (err) {
-                              toast.error(t("error"));
-                            }
-                          }}
-                          className={cn(
-                            "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                            profile?.is_qr_active
-                              ? "bg-emerald-500"
-                              : "bg-zinc-300 dark:bg-zinc-700",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                              profile?.is_qr_active
-                                ? "translate-x-5"
-                                : "translate-x-0",
-                            )}
-                          />
-                        </button>
                       </div>
                       <button
-                        onClick={() => setShowSecurityInfo(true)}
-                        className="w-full text-center text-[10px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-4"
+                        onClick={async () => {
+                          if (!profile) return;
+                          const previousState = profile.is_qr_active;
+                          const newState = !previousState;
+                          
+                          // Optimistic update
+                          setProfile({ ...profile, is_qr_active: newState });
+                          
+                          try {
+                            const token = await getToken({ template: "supabase" });
+                            const supabase = createClerkSupabaseClient(token!);
+                            
+                            // Background update
+                            ProfileService.updateProfile(supabase, userId!, { is_qr_active: newState }).then(updated => {
+                              setProfile(updated);
+                              toast.success(newState ? t("qrActivatedSuccess") : t("qrDeactivatedSuccess"));
+                            }).catch(err => {
+                              console.error(err);
+                              setProfile({ ...profile, is_qr_active: previousState });
+                              toast.error(t("error"));
+                            });
+                          } catch (err) {
+                            console.error(err);
+                            setProfile({ ...profile, is_qr_active: previousState });
+                            toast.error(t("error"));
+                          }
+                        }}
+                        className={cn(
+                          "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                          profile?.is_qr_active ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                        )}
                       >
-                        {t("qrSecurityQuestion")}
+                        <span className={cn("pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out", profile?.is_qr_active ? "translate-x-5" : "translate-x-0")} />
                       </button>
                     </div>
                   </div>

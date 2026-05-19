@@ -45,6 +45,25 @@ export default function ScanPage() {
         JSON.stringify({ type: "OPEN_NATIVE_SCANNER" })
       );
     }
+
+    // Тафтиши статуси иҷозат (Permissions API)
+    if (navigator.permissions && (navigator.permissions as any).query) {
+      navigator.permissions.query({ name: 'camera' as any })
+        .then((status) => {
+          if (status.state === 'denied') {
+            setIsBlocked(true);
+          }
+          status.onchange = () => {
+            if (status.state === 'granted') {
+              startScanner(true);
+            } else if (status.state === 'denied') {
+              setIsBlocked(true);
+              setError("Браузер дастрасиро маҳкам кард. Лутфан аз танзимот иҷозат диҳед.");
+            }
+          };
+        })
+        .catch(console.error);
+    }
   }, []);
 
   const handleBack = () => {
@@ -83,6 +102,20 @@ export default function ScanPage() {
             await html5QrCodeRef.current.stop();
           }
         } catch (e) {}
+      }
+
+      // Фармоиши иҷозати камера пеш аз оғоз (Force permission prompt)
+      // Ин кафолат медиҳад, ки браузер равзанаи иҷозатро нишон медиҳад
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach(track => track.stop()); // Маҷрои санҷиширо мебандем
+      } catch (permErr: any) {
+        console.error("Permission request error:", permErr);
+        if (permErr.name === "NotAllowedError" || permErr.name === "PermissionDeniedError") {
+          setIsBlocked(true);
+          throw new Error("Браузер дастрасиро маҳкам кард. Лутфан аз танзимот иҷозат диҳед.");
+        }
+        throw permErr;
       }
 
       // 2. Пеш аз оғоз рӯйхати камераҳоро мепурсем
@@ -145,7 +178,7 @@ export default function ScanPage() {
       console.error("Scanner Error:", err);
       let msg = t('cameraError') || "Хатогии камера";
       
-      if (err.name === "NotAllowedError" || err.message?.includes("Permission denied")) {
+      if (err.name === "NotAllowedError" || err.message?.includes("Permission denied") || err.message?.includes("маҳкам кард")) {
         msg = "Браузер дастрасиро маҳкам кард. Лутфан аз танзимот иҷозат диҳед.";
         setIsBlocked(true);
       } else if (err.name === "NotFoundError") {
@@ -214,12 +247,17 @@ export default function ScanPage() {
             <>
               <div id="reader" className="w-full h-full"></div>
               
-              <div className="absolute inset-0 border-[40px] border-black/40 pointer-events-none"></div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] border-2 border-emerald-500/50 rounded-3xl pointer-events-none shadow-[0_0_0_1000px_rgba(0,0,0,0.5)]">
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-xl"></div>
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-500 rounded-tr-xl"></div>
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-500 rounded-bl-xl"></div>
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-500 rounded-br-xl"></div>
+              {/* Нишондиҳандаи сканкунӣ (Animated Scan Line) */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="w-full h-[2px] bg-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.5)] animate-[scan_3s_ease-in-out_infinite]" />
+              </div>
+
+              {/* Кунҷҳои сканнер (Scanner Corners) */}
+              <div className="absolute inset-4 pointer-events-none">
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-emerald-500 rounded-tl-xl opacity-60"></div>
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-emerald-500 rounded-tr-xl opacity-60"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-emerald-500 rounded-bl-xl opacity-60"></div>
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-emerald-500 rounded-br-xl opacity-60"></div>
               </div>
             </>
           )}
