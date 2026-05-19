@@ -4,8 +4,8 @@
   "description": "Платформа барои ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#10b981",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {

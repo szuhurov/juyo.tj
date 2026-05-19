@@ -423,7 +423,7 @@ export const translations: Record<string, any> = {
     },
     saveAndDownload: 'Захира ва боргирӣ',
     pwa: {
-      title: 'JUYO',
+      title: 'juyo',
       desc: 'Барои истифодаи осон',
       install: 'СКАЧАТЬ'
     },
@@ -926,7 +926,7 @@ export const translations: Record<string, any> = {
     },
     saveAndDownload: 'Сохранить и скачать',
     pwa: {
-      title: 'JUYO',
+      title: 'juyo',
       desc: 'Для удобного использования',
       install: 'УСТАНОВИТЬ'
     },
@@ -1406,7 +1406,7 @@ export const translations: Record<string, any> = {
     },
     saveAndDownload: 'Save & Download',
     pwa: {
-      title: 'JUYO',
+      title: 'juyo',
       desc: 'For easy usage',
       install: 'INSTALL'
     },

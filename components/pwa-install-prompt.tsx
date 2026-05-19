@@ -12,8 +12,14 @@ export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
+    // Тафтиши iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIOS(isIOSDevice);
+
     // Тафтиши ин ки оё барнома аллакай насб шудааст ё дар ҳолати standalone кор мекунад
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
       || (window.navigator as any).standalone 
@@ -45,6 +51,13 @@ export function PWAInstallPrompt() {
       }, 3000);
     };
 
+    // Барои iOS мо худамон пас аз 3 сония нишон медиҳем, чунки 'beforeinstallprompt' кор намекунад
+    if (isIOSDevice && !isStandalone) {
+      setTimeout(() => {
+        setIsVisible(true);
+      }, 3000);
+    }
+
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setIsVisible(false);
@@ -62,6 +75,16 @@ export function PWAInstallPrompt() {
   }, []);
 
   const handleInstallClick = async () => {
+    if (isIOS) {
+      // Барои iOS мо танҳо огоҳӣ медиҳем, ки чӣ тавр насб кунад
+      alert(
+        t('language') === 'tg' 
+          ? 'Барои насб: тугмаи "Поделиться" (Share)-ро пахш кунед ва "На экран «Домой»" (Add to Home Screen)-ро интихоб намоед.'
+          : 'To install: tap the "Share" button and select "Add to Home Screen".'
+      );
+      return;
+    }
+
     if (!deferredPrompt) return;
 
     // Нишон додани равзанаи насби браузер
@@ -87,12 +110,12 @@ export function PWAInstallPrompt() {
   return (
     <div className="fixed bottom-24 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
       <div className="bg-zinc-900 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 rounded-3xl p-4 flex items-center gap-4 backdrop-blur-xl">
-        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-lg border border-zinc-800 bg-white">
-          <Image src="/logo.png" alt="JUYO" width={48} height={48} className="w-full h-full object-cover" />
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-lg border border-zinc-800 bg-white relative">
+          <Image src="/logo.png" alt="juyo" width={48} height={48} className="w-full h-full object-cover" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className="text-white font-black uppercase text-[10px] tracking-widest mb-0.5">
+          <p className="text-white font-black text-[14px] tracking-tight mb-0.5 lowercase">
             {t('pwa.title')}
           </p>
           <p className="text-zinc-400 font-bold text-[10px] leading-tight line-clamp-1 uppercase">

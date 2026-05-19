@@ -42,6 +42,12 @@ export async function generateMetadata() {
     },
     description: t.seoDesc,
     manifest: "/manifest.json",
+    themeColor: "#ffffff",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "juyo",
+    },
     keywords: [
       "juyo",
       "juyo.tj",
