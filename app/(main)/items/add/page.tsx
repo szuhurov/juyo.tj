@@ -43,11 +43,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useQueryClient } from "@tanstack/react-query";
+import { ITEM_KEYS } from "@/lib/hooks/use-items";
 
 function AddItemForm() {
   const { t } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
+  const queryClient = useQueryClient();
   
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
@@ -188,6 +191,10 @@ function AddItemForm() {
       }
 
       toast.success(t('imageModeration.submitted'));
+      
+      // Ислоҳи муҳим: Аввал кэшро тоза мекунем, баъд ба саҳифаи профил мегузарем
+      await queryClient.invalidateQueries({ queryKey: ITEM_KEYS.user() });
+      
       window.dispatchEvent(new Event('items-updated'));
       router.push('/profile?tab=posts');
     } catch (error: any) {

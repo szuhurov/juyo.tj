@@ -106,17 +106,14 @@ export function useUserItems(userId?: string, token?: string | null) {
   return useQuery({
     queryKey: ITEM_KEYS.userItems(userId || ""),
     queryFn: async () => {
-      if (!userId) return [];
+      if (!userId || !token) return [];
       
-      let supabaseClient = null;
-      if (token) {
-        const { createClerkSupabaseClient } = await import("@/lib/supabase");
-        supabaseClient = createClerkSupabaseClient(token);
-      }
+      const { createClerkSupabaseClient } = await import("@/lib/supabase");
+      const supabaseClient = createClerkSupabaseClient(token);
       
       return ItemService.getItems({ user_id: userId }, supabaseClient);
     },
-    enabled: !!userId,
+    enabled: !!userId && !!token,
     staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
     refetchOnWindowFocus: false,
   });

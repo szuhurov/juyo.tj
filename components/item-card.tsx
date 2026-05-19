@@ -382,10 +382,20 @@ export function ItemCard({ item }: { item: Item }) {
             )}
 
             {isOwner && item.moderation_status === 'pending' && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center p-4 z-30">
-                <div className="bg-white/95 dark:bg-zinc-900/95 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-pulse">
-                  <Clock className="w-8 h-8 text-amber-500" />
-                  <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider">
+              <div 
+                className="absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-30 cursor-pointer backdrop-blur-[2px]"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  // Барои ҳолати дар интизорӣ, мо метавонем як хабар нишон диҳем
+                  toast.info(t('imageModeration.pending'));
+                }}
+              >
+                <div className="bg-white/95 dark:bg-zinc-900/95 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-in zoom-in duration-300">
+                  <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center animate-pulse">
+                    <Clock className="w-6 h-6 text-amber-500" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider block">
                     {t('imageModeration.pending')}
                   </span>
                 </div>
@@ -393,10 +403,19 @@ export function ItemCard({ item }: { item: Item }) {
             )}
 
             {isOwner && item.moderation_status === 'rejected' && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-30">
-                <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3">
-                  <ShieldAlert className="w-8 h-8 text-red-600" />
-                  <span className="text-[10px] font-black uppercase text-red-600 tracking-wider">
+              <div 
+                className="absolute inset-0 bg-black/70 flex items-center justify-center p-4 z-30 cursor-pointer backdrop-blur-[4px]"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowBlockedInfo(true);
+                }}
+              >
+                <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-in zoom-in duration-300 border border-red-500/20">
+                  <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+                    <ShieldAlert className="w-6 h-6 text-red-600" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-red-600 tracking-wider block">
                     {t('imageModeration.rejected')}
                   </span>
                 </div>
@@ -413,32 +432,28 @@ export function ItemCard({ item }: { item: Item }) {
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-red-50 dark:bg-red-900/20 text-red-600">
               <ShieldAlert className="w-6 h-6" />
             </div>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-red-600">{t('imageBlockedTitle')}</DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
-              {t('imageBlockedDesc')}
-              {item.moderation_result && (
-                <span className="mt-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-bold text-xs uppercase italic block">
-                  &quot;{t(item.moderation_result)}&quot;
-                </span>
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-red-600">
+              {item?.moderation_result?.startsWith('mod_offensive_text') ? t('textBlockedTitle') : t('imageBlockedTitle')}
+            </DialogTitle>
+            <div className="text-zinc-500 font-bold text-sm leading-relaxed">
+              <p className="mb-4">
+                {item?.moderation_result?.startsWith('mod_offensive_text') ? t('textBlockedDesc') : t('imageBlockedDesc')}
+              </p>
+              {item?.moderation_result && (
+                <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-black text-xs uppercase italic">
+                  {item.moderation_result.includes(':') ? (
+                    <p>{t(item.moderation_result.split(':')[0])}: <span className="text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded">{item.moderation_result.split(':')[1]}</span></p>
+                  ) : (
+                    t(item.moderation_result)
+                  )}
+                </div>
               )}
-            </DialogDescription>
+            </div>
           </DialogHeader>
-          <DialogFooter className="flex-row gap-3 pt-2">
+          <DialogFooter className="pt-2">
             <Button 
               type="button" 
-              variant="outline"
-              className="flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px] border-zinc-200"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowBlockedInfo(false);
-              }}
-            >
-              {t('cancel')}
-            </Button>
-            <Button 
-              type="button" 
-              className="flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-red-600 hover:bg-red-700 text-white"
+              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -446,7 +461,7 @@ export function ItemCard({ item }: { item: Item }) {
                 router.push(`/items/${item.id}`);
               }}
             >
-              {t('viewItem')}
+              {t('ok')}
             </Button>
           </DialogFooter>
         </DialogContent>

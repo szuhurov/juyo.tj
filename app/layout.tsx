@@ -23,6 +23,7 @@ import { cookies } from "next/headers"; // Барои кор бо кукиҳои
 import { getClerkLocalization } from "@/lib/clerk-localization"; // Функсияи тарҷумаи Clerk
 import NextTopLoader from "nextjs-toploader"; // Барои нишон додани хати боргирӣ дар боло
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"; // Пешниҳоди насби барнома
+import { SplashScreen } from "@/components/splash-screen"; // Экранӣ боргирии аввалия (Splash)
 
 /**
  * Функсия барои тавлиди динамикии метамаълумот вобаста ба забони интихобшудаи корбар.
@@ -160,6 +161,7 @@ export default async function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
+          <SplashScreen />
           {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
           <h1 className="sr-only">
             роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. 
