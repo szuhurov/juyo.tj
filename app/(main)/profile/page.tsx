@@ -836,7 +836,7 @@ function ProfileContent() {
 
       case "qr":
         return (
-          <div className="space-y-8 pb-20">
+          <div className="space-y-8 pb-32">
             {/* Сарлавҳаи таби QR-код */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">

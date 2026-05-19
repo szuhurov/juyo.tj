@@ -110,15 +110,17 @@ export function PWAInstallPrompt() {
   return (
     <div className="fixed bottom-24 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
       <div className="bg-zinc-900 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 rounded-3xl p-4 flex items-center gap-4 backdrop-blur-xl">
-        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-lg border border-zinc-800 bg-white relative">
-          <Image src="/logo.png" alt="juyo" width={48} height={48} className="w-full h-full object-cover" />
+        {/* Логотип бе хатҳои сафеди иловагӣ */}
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-lg border-none bg-white relative">
+          <Image src="/logo.png" alt="juyo" width={48} height={48} className="w-full h-full object-contain p-1" />
         </div>
         
         <div className="flex-1 min-w-0">
           <p className="text-white font-black text-[14px] tracking-tight mb-0.5 lowercase">
             {t('pwa.title')}
           </p>
-          <p className="text-zinc-400 font-bold text-[10px] leading-tight line-clamp-1 uppercase">
+          {/* Матни пурра барои тавсиф */}
+          <p className="text-zinc-400 font-bold text-[10px] leading-tight uppercase">
             {t('pwa.desc')}
           </p>
         </div>
@@ -127,7 +129,7 @@ export function PWAInstallPrompt() {
           <Button 
             size="sm"
             onClick={handleInstallClick}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[9px] tracking-widest px-4 h-10 rounded-xl active:scale-95 transition-all border-none"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[9px] tracking-widest px-4 h-10 rounded-xl active:scale-95 transition-all border-none animate-pulse-slow"
           >
             {t('pwa.install')}
           </Button>
@@ -139,6 +141,22 @@ export function PWAInstallPrompt() {
           </button>
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes pulse-slow {
+          0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+          }
+          50% {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.2);
+          }
+        }
+        .animate-pulse-slow {
+          animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
     </div>
   );
 }

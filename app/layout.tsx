@@ -152,7 +152,7 @@ export default async function RootLayout({
               __html: JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "WebSite",
-                "name": "JUYO",
+                "name": "juyo",
                 "url": "https://juyo.tj",
                 "description": t.seoDesc,
               }),
@@ -160,6 +160,14 @@ export default async function RootLayout({
           />
         </head>
         <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
+          {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
+          <h1 className="sr-only">
+            роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. 
+            Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд, 
+            метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд. 
+            Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад, 
+            то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.
+          </h1>
           <NextTopLoader 
             color="#22C55E"
             initialPosition={0.05}

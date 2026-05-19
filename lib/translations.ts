@@ -424,7 +424,7 @@ export const translations: Record<string, any> = {
     saveAndDownload: 'Захира ва боргирӣ',
     pwa: {
       title: 'juyo',
-      desc: 'Барои истифодаи осон',
+      desc: 'барои истифода',
       install: 'СКАЧАТЬ'
     },
     qrSecondaryModal: {
@@ -927,7 +927,7 @@ export const translations: Record<string, any> = {
     saveAndDownload: 'Сохранить и скачать',
     pwa: {
       title: 'juyo',
-      desc: 'Для удобного использования',
+      desc: 'для использования',
       install: 'УСТАНОВИТЬ'
     },
     qrSecondaryModal: {

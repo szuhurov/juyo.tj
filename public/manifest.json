@@ -1,6 +1,6 @@
 {
-  "name": "JUYO - Ашёҳои гумшуда",
-  "short_name": "JUYO",
+  "name": "juyo",
+  "short_name": "juyo",
   "description": "Платформа барои ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
   "start_url": "/",
   "display": "standalone",
