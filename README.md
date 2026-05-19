@@ -551,7 +551,9 @@ User Clicks на Item Card
 - **Supabase Docs:** https://supabase.com/docs
 - **Next.js Docs:** https://nextjs.org/docs
 - **React Query:** https://tanstack.com/query/latest
-- **Tailwind CSS:** https://tailwindcss.com/docs
+---
+
+<!-- Ин шарҳ барои санҷиши git push илова карда шудааст. -->
 
 ---
 
