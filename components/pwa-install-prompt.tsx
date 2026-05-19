@@ -108,19 +108,19 @@ export function PWAInstallPrompt() {
   if (isInstalled || !isVisible) return null;
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
-      <div className="bg-zinc-900 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 rounded-3xl p-4 flex items-center gap-4 backdrop-blur-xl">
+    <div className="fixed bottom-32 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
+      <div className="bg-white border border-zinc-200 shadow-2xl shadow-black/10 rounded-3xl p-4 flex items-center gap-4 backdrop-blur-xl">
         {/* Логотип бе хатҳои сафеди иловагӣ */}
-        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-lg border-none bg-white relative">
+        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-md border border-zinc-100 bg-white relative">
           <Image src="/logo.png" alt="juyo" width={48} height={48} className="w-full h-full object-contain p-1" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className="text-white font-black text-[14px] tracking-tight mb-0.5 lowercase">
+          <p className="text-zinc-900 font-black text-[14px] tracking-tight mb-0.5 lowercase">
             {t('pwa.title')}
           </p>
           {/* Матни пурра барои тавсиф */}
-          <p className="text-zinc-400 font-bold text-[10px] leading-tight uppercase">
+          <p className="text-zinc-500 font-bold text-[10px] leading-tight uppercase">
             {t('pwa.desc')}
           </p>
         </div>
@@ -135,7 +135,7 @@ export function PWAInstallPrompt() {
           </Button>
           <button 
             onClick={handleDismiss}
-            className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:text-white transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-zinc-900 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

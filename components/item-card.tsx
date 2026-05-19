@@ -45,7 +45,6 @@ export function ItemCard({ item }: { item: Item }) {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [showBlockedInfo, setShowBlockedInfo] = useState(false);
   
   // Санҷиши соҳиби эълон
   const isOwner = userId === item.user_id;
@@ -405,11 +404,6 @@ export function ItemCard({ item }: { item: Item }) {
             {isOwner && item.moderation_status === 'rejected' && (
               <div 
                 className="absolute inset-0 bg-black/70 flex items-center justify-center p-4 z-30 cursor-pointer backdrop-blur-[4px]"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowBlockedInfo(true);
-                }}
               >
                 <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-in zoom-in duration-300 border border-red-500/20">
                   <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
@@ -424,48 +418,6 @@ export function ItemCard({ item }: { item: Item }) {
           </div>
         </Card>
       </Link>
-
-      {/* Модал барои нишон додани сабаби блок шудани сурат */}
-      <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
-          <DialogHeader className="space-y-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-red-50 dark:bg-red-900/20 text-red-600">
-              <ShieldAlert className="w-6 h-6" />
-            </div>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-red-600">
-              {item?.moderation_result?.startsWith('mod_offensive_text') ? t('textBlockedTitle') : t('imageBlockedTitle')}
-            </DialogTitle>
-            <div className="text-zinc-500 font-bold text-sm leading-relaxed">
-              <p className="mb-4">
-                {item?.moderation_result?.startsWith('mod_offensive_text') ? t('textBlockedDesc') : t('imageBlockedDesc')}
-              </p>
-              {item?.moderation_result && (
-                <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-black text-xs uppercase italic">
-                  {item.moderation_result.includes(':') ? (
-                    <p>{t(item.moderation_result.split(':')[0])}: <span className="text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded">{item.moderation_result.split(':')[1]}</span></p>
-                  ) : (
-                    t(item.moderation_result)
-                  )}
-                </div>
-              )}
-            </div>
-          </DialogHeader>
-          <DialogFooter className="pt-2">
-            <Button 
-              type="button" 
-              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowBlockedInfo(false);
-                router.push(`/items/${item.id}`);
-              }}
-            >
-              {t('ok')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Модал барои тасдиқи нест кардан */}
       <Dialog open={showDeleteConfirm} onOpenChange={(open) => !isActionLoading && setShowDeleteConfirm(open)}>
