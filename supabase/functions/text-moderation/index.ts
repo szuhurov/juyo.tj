@@ -33,7 +33,7 @@ const TAJIK_BLACKLIST = [
   "бадбахт",
   "лаънат",
 
-  // Drugs & Medications (Tajik/Slang)
+  // Drugs & Medications (Extended Strict List)
   "nasha",
   "nasha-nasha",
   "taryok",
@@ -43,12 +43,34 @@ const TAJIK_BLACKLIST = [
   "paxan",
   "doru",
   "nashvador",
+  "kokain",
+  "met",
+  "kristall",
+  "khokai safed",
+  "khoka",
   "наша",
   "тарёк",
   "тарёқ",
   "героин",
   "банг",
-  "дору"
+  "дору",
+  "кокаин",
+  "мет",
+  "кристалл",
+  "хокаи сафед",
+  "хока",
+  "белый порошок",
+  "порошок",
+  "нарко",
+  "наркотик",
+  "трава",
+  "план",
+  "white powder",
+  "powder",
+  "drugs",
+  "cocaine",
+  "heroin",
+  "meth"
 ];
 
 // Функсия барои тоза кардани матн ва омодасозии он барои санҷиш

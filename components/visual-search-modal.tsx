@@ -1,195 +1,228 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useState, useRef, useEffect } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogDescription,
+  DialogPortal,
+  DialogOverlay
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, X, Search, Image as ImageIcon } from "lucide-react";
-import { ItemService, Item } from "@/lib/services/item-service";
+import { Camera, Upload, X, Search, Loader2, Sparkles, Scan, ShieldCheck, Zap } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
-import { ItemCard } from "./item-card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ItemService } from "@/lib/services/item-service";
 import { toast } from "sonner";
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface VisualSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onResults: (items: any[]) => void;
-  directFile: File | null;
+  directFile?: File | null;
 }
 
 export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: VisualSearchModalProps) {
   const { t } = useLanguage();
-  const [isSearching, setIsSearching] = useState(false);
-  const [results, setResults] = useState<Item[]>([]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Ҳамин ки directFile омад, ҷустуҷӯро оғоз мекунем
   useEffect(() => {
-    if (directFile) {
-      setSelectedFile(directFile);
-      const url = URL.createObjectURL(directFile);
-      setPreviewUrl(url);
+    if (directFile && isOpen) {
+      setSelectedImage(directFile);
+      setPreviewUrl(URL.createObjectURL(directFile));
       handleSearch(directFile);
     }
-  }, [directFile]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      // Тоза кардани маълумот ҳангоми пӯшидан
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-      setSelectedFile(null);
-      setResults([]);
-      setIsSearching(false);
-    }
-  }, [isOpen]);
+  }, [directFile, isOpen]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      setSelectedImage(file);
+      setPreviewUrl(URL.createObjectURL(file));
       handleSearch(file);
     }
   };
 
   const handleSearch = async (file: File) => {
     setIsSearching(true);
-    setResults([]);
+    setScanProgress(0);
+    const startTime = Date.now();
+    
+    // Аниматсияи прогресс
+    const interval = setInterval(() => {
+      setScanProgress(prev => (prev < 95 ? prev + Math.random() * 5 : prev));
+    }, 300);
+
     try {
-      const searchResults = await ItemService.visualSearch(file);
-      setResults(searchResults);
-      if (searchResults.length === 0) {
-        toast.info(t('noItemsFound'));
+      const results = await ItemService.visualSearch(file);
+      
+      // Боварӣ ҳосил мекунем, ки камаш 3 сония мегузарад
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(3000 - elapsedTime, 0);
+      
+      await new Promise(resolve => setTimeout(resolve, remainingTime));
+
+      setScanProgress(100);
+      
+      // Интизор мешавем, то корбар натиҷаи бомуваффақиятро бубинад
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      onResults(results);
+      onClose();
+      
+      if (results.length > 0) {
+        toast.success(t('visualSearchComplete') || "Ҷустуҷӯи визуалӣ ба анҷом расид");
       } else {
-        toast.success(t('visualSearchComplete'));
+        toast.info(t('noItemsFound'));
       }
-    } catch (error) {
-      console.error("Visual search error:", error);
-      toast.error(t('visualSearchError'));
+    } catch (error: any) {
+      console.error("Visual Search Error:", error);
+      toast.error(t('visualSearchError') || "Хатогӣ ҳангоми ҷустуҷӯи визуалӣ");
+      onClose();
     } finally {
+      clearInterval(interval);
       setIsSearching(false);
     }
   };
 
-  const handleResultClick = (item: Item) => {
-    onResults([item]);
-    onClose();
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !isSearching && onClose()}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden border-none shadow-2xl rounded-3xl">
-        <DialogHeader className="p-6 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-900 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <DialogTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                <Camera className="w-5 h-5 text-emerald-500" />
-                {t('visualSearchTitle')}
-              </DialogTitle>
-              <DialogDescription className="text-zinc-500 font-medium text-xs">
-                {t('visualSearchDesc')}
-              </DialogDescription>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={onClose}
-              disabled={isSearching}
-              className="rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
-        </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !isSearching && onClose()}>
+      <DialogPortal>
+        {/* Фони паси модал - муътадил ва шаффоф */}
+        <DialogOverlay className="bg-black/40 backdrop-blur-sm" />
+        <DialogPrimitive.Content 
+          className={cn(
+            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 duration-200 outline-none",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+            "border-none bg-transparent shadow-none p-0 overflow-visible"
+          )}
+        >
+          {/* Барои Accessibility (Radix UI) */}
+          <DialogHeader className="sr-only">
+            <DialogTitle>Visual Search AI Scanning</DialogTitle>
+            <DialogDescription>Scanning your image to find matches</DialogDescription>
+          </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col sm:flex-row bg-zinc-50/50 dark:bg-zinc-900/50">
-          {/* Қисми чап: Боргузорӣ ва Пешнамоиш */}
-          <div className="w-full sm:w-80 border-b sm:border-b-0 sm:border-r border-zinc-100 dark:border-zinc-800 p-6 flex flex-col gap-4 bg-white dark:bg-zinc-950 shrink-0">
-            {!previewUrl ? (
-              <label className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 cursor-pointer hover:border-emerald-500/50 hover:bg-emerald-50/10 transition-all group">
-                <input type="file" className="hidden" accept="image/*" onChange={handleFileSelect} />
-                <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <ImageIcon className="w-6 h-6 text-zinc-400 group-hover:text-emerald-500" />
-                </div>
-                <span className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100">{t('uploadPhoto')}</span>
-                <span className="text-[10px] text-zinc-500 mt-2 text-center">{t('maxImages')}</span>
-              </label>
-            ) : (
-              <div className="flex-1 flex flex-col gap-4">
-                <div className="relative aspect-square rounded-2xl overflow-hidden shadow-lg border border-zinc-100 dark:border-zinc-800">
-                  <Image src={previewUrl} alt="Preview" fill className="object-cover" />
-                  {isSearching && (
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center gap-3 text-white">
-                      <div className="relative">
-                        <Loader2 className="w-10 h-10 animate-spin text-emerald-400" />
-                        <Search className="w-4 h-4 absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2" />
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest animate-pulse">{t('analyzing')}</span>
-                    </div>
-                  )}
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setPreviewUrl(null);
-                    setSelectedFile(null);
-                    setResults([]);
-                  }}
-                  disabled={isSearching}
-                  className="w-full rounded-xl font-black uppercase tracking-widest text-[10px] h-10"
-                >
-                  {t('clearResults')}
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Қисми рост: Натиҷаҳо */}
-          <div className="flex-1 flex flex-col min-h-[300px]">
-            {isSearching ? (
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center gap-4">
-                <div className="w-16 h-16 rounded-3xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">{t('analyzing')}</h3>
-                  <p className="text-xs text-zinc-500 font-medium max-w-[240px]">{t('pleaseWait')}</p>
-                </div>
-              </div>
-            ) : results.length > 0 ? (
-              <ScrollArea className="flex-1 p-6">
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pb-6">
-                  {results.map((item) => (
-                    <div key={item.id} onClick={() => handleResultClick(item)} className="cursor-pointer">
-                      <ItemCard item={item} />
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center p-12 text-center gap-4 text-zinc-400">
-                <div className="w-16 h-16 rounded-3xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center mb-2">
-                  <Search className="w-8 h-8 opacity-20" />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-lg font-black uppercase tracking-tight">{t('noItemsFound')}</h3>
-                  <p className="text-xs font-medium max-w-[240px]">{t('noItemsSubtitle')}</p>
-                </div>
-              </div>
-            )}
+          <div className="relative group px-4 sm:px-0">
+            {/* Дурахши мулоим дар атрофи контейнер (Glassy Glow) */}
+            <div className="absolute -inset-0.5 bg-emerald-500/20 rounded-[32px] blur-sm opacity-50"></div>
             
-            {results.length > 0 && (
-              <div className="p-4 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest text-center shrink-0">
-                {results.length} {t('visualSearchResultsTitle')}
-              </div>
-            )}
+            <div className={cn(
+              "relative rounded-[30px] overflow-hidden border border-white/10 shadow-2xl transition-all duration-700",
+              (isSearching || scanProgress === 100) 
+                ? (scanProgress === 100 ? "bg-emerald-950/60 backdrop-blur-xl" : "bg-zinc-950/70 backdrop-blur-xl")
+                : "bg-zinc-950/90"
+            )}>
+              {(isSearching || scanProgress === 100) ? (
+                <div className="flex flex-col items-center">
+                  {/* Қисмати визуализатсияи AI */}
+                  <div className="relative w-full aspect-square overflow-hidden">
+                    {previewUrl && (
+                      <>
+                        {/* Blurred background for empty spaces */}
+                        <Image 
+                          src={previewUrl} 
+                          alt="" 
+                          fill 
+                          className="object-cover blur-3xl opacity-40 scale-110"
+                        />
+                        <Image 
+                          src={previewUrl} 
+                          alt="Analyzing" 
+                          fill 
+                          className={cn(
+                            "object-contain transition-opacity duration-700 relative z-10",
+                            scanProgress === 100 ? "opacity-40" : "opacity-60"
+                          )}
+                        />
+                      </>
+                    )}
+                    
+                    {/* Сканери лазерӣ */}
+                    {scanProgress < 100 && (
+                      <div className="absolute inset-0 z-10">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast"></div>
+                        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent h-1/2 animate-scan-overlay"></div>
+                      </div>
+                    )}
+
+                    {/* Нуқтаҳои AI (Neural Grid) */}
+                    <div 
+                      className={cn(
+                        "absolute inset-0 transition-opacity duration-700 animate-grid-scan",
+                        scanProgress === 100 ? "opacity-40" : "opacity-90"
+                      )}
+                      style={{
+                        backgroundImage: "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
+                        backgroundSize: "25px 25px"
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-20 flex items-center justify-center bg-zinc-950">
+                  <div className="w-12 h-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </DialogContent>
+        </DialogPrimitive.Content>
+
+        <style jsx global>{`
+          @keyframes scan-fast {
+            0% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+          }
+          @keyframes scan-overlay {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(200%); }
+          }
+          @keyframes gemini-gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .animate-scan-fast {
+            animation: scan-fast 1.5s linear infinite;
+          }
+          .animate-scan-overlay {
+            animation: scan-overlay 2.5s ease-in-out infinite;
+          }
+          .animate-gemini-gradient {
+            animation: gemini-gradient 3s ease infinite;
+          }
+          @keyframes pulse-data {
+            0%, 100% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+          }
+          @keyframes slow-pan {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 100% 100%; }
+          }
+          .animate-pulse-data {
+            animation: pulse-data 3s ease-in-out infinite;
+          }
+          .animate-slow-pan {
+            animation: slow-pan 60s linear infinite;
+          }
+          @keyframes grid-scan {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 25px 25px; }
+          }
+          .animate-grid-scan {
+            animation: grid-scan 1.5s linear infinite;
+          }
+        `}</style>
+      </DialogPortal>
     </Dialog>
   );
 }

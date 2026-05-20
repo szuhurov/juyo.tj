@@ -113,7 +113,16 @@ export const ItemService = {
     if (error) throw error;
     if (!data.results || data.results.length === 0) return [];
 
-    const itemIds = data.results.map((r: any) => r.id);
+    // Deduplicate results by ID, keeping the highest score
+    const uniqueResultsMap = new Map();
+    data.results.forEach((res: any) => {
+      if (!uniqueResultsMap.has(res.id) || res.score > uniqueResultsMap.get(res.id).score) {
+        uniqueResultsMap.set(res.id, res);
+      }
+    });
+
+    const dedupedResults = Array.from(uniqueResultsMap.values());
+    const itemIds = dedupedResults.map((r: any) => r.id);
 
     // Гирифтани маълумоти эълонҳо аз рӯи ID-ҳо
     const { data: items, error: itemsError } = await supabase
@@ -123,9 +132,8 @@ export const ItemService = {
 
     if (itemsError) throw itemsError;
 
-    // Тартиб додан мувофиқи тартиби ID-ҳое, ки Sightengine баргардонд (аз рӯи мувофиқат)
-    // Ва илова кардани similarity_score ба ҳар як ашё
-    return data.results
+    // Тартиб додан мувофиқи тартиби ID-ҳо ва илова кардани similarity_score
+    return dedupedResults
       .map((res: any) => {
         const item = items.find((i: any) => i.id === res.id);
         if (item) {
@@ -133,7 +141,8 @@ export const ItemService = {
         }
         return null;
       })
-      .filter(Boolean) as Item[];
+      .filter(Boolean)
+      .sort((a, b) => (b.similarity_score || 0) - (a.similarity_score || 0)) as Item[];
   },
 
   /**
