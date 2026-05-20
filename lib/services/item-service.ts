@@ -96,11 +96,15 @@ export const ItemService = {
   },
 
   /**
-   * Ҷустуҷӯи визуалӣ бо истифода аз акс.
+   * Ҷустуҷӯи визуалӣ бо истифода аз як ё якчанд акс.
    */
-  async visualSearch(imageFile: File) {
+  async visualSearch(imageFiles: File | File[]) {
     const formData = new FormData();
-    formData.append('image', imageFile);
+    const files = Array.isArray(imageFiles) ? imageFiles : [imageFiles];
+    
+    files.forEach(file => {
+      formData.append('image', file);
+    });
 
     const { data, error } = await supabase.functions.invoke('visual-search', {
       body: formData

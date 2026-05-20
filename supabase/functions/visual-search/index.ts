@@ -17,99 +17,137 @@ Deno.serve(async (req) => {
 
   try {
     const formData = await req.formData();
-    const image = formData.get('image') as File;
-    if (!image) throw new Error("No image provided");
+    const images = formData.getAll('image') as File[];
+    if (!images || images.length === 0) throw new Error("No images provided");
 
-    const arrayBuffer = await image.arrayBuffer();
-    const base64Image = btoa(Array.from(new Uint8Array(arrayBuffer)).map(b => String.fromCharCode(b)).join(''));
-
-    // 1. DEEP GOOGLE ANALYSIS
-    console.log("Starting Deep AI Analysis...");
-    const visionResponse = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          requests: [{
-            image: { content: base64Image },
-            features: [
-              { type: 'WEB_DETECTION', maxResults: 15 },
-              { type: 'LABEL_DETECTION', maxResults: 15 },
-              { type: 'LOGO_DETECTION', maxResults: 5 },
-              { type: 'OBJECT_LOCALIZATION', maxResults: 5 }
-            ]
-          }]
-        })
-      }
-    );
-    const visionData = await visionResponse.json();
-    const res = visionData.responses[0];
-    
-    const keywords = [
-      ...(res.logoAnnotations || []).map((l: any) => l.description),
-      ...(res.localizedObjectAnnotations || []).map((o: any) => o.name),
-      ...(res.webDetection?.webEntities || []).map((e: any) => e.description),
-      ...(res.labelAnnotations || []).map((l: any) => l.description)
-    ].filter(Boolean).map(k => k.trim().toLowerCase());
-
-    const uniqueKeywords = [...new Set(keywords)].filter(k => k.length >= 3);
-    console.log("AI Semantic Fingerprint:", uniqueKeywords.join(", "));
-
-    // 2. SIGHTENGINE VISUAL MATCH
-    console.log("Checking Visual Fingerprints...");
-    const seFormData = new FormData();
-    seFormData.append('api_user', SIGHTENGINE_API_USER!);
-    seFormData.append('api_secret', SIGHTENGINE_API_SECRET!);
-    seFormData.append('lists', SIGHTENGINE_LIST_ID!);
-    seFormData.append('media', image);
-
-    const seResponse = await fetch("https://api.sightengine.com/1.0/check.json", { method: 'POST', body: seFormData });
-    const seData = await seResponse.json();
-    const seMatches = (seData.similarity && seData.similarity[0]?.matches) || [];
-
-    // 3. SMART MERGE & DATABASE QUERY
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const resultsMap = new Map();
+    const allUniqueKeywords = new Set<string>();
 
-    // Иловаи натиҷаҳои Sightengine (Visual)
-    seMatches.filter((m: any) => m.score >= 0.1).forEach((m: any) => {
-      resultsMap.set(m.custom_id, { id: m.custom_id, score: m.score, source: 'visual' });
-    });
+    // Таҳлили ҳамаи аксҳои боршуда
+    for (const image of images) {
+      const arrayBuffer = await image.arrayBuffer();
+      const base64Image = btoa(Array.from(new Uint8Array(arrayBuffer)).map(b => String.fromCharCode(b)).join(''));
 
-    // Ҷустуҷӯи Семантикӣ дар База
+      // 1. DEEP GOOGLE ANALYSIS
+      console.log(`Starting Deep AI Analysis for image...`);
+      try {
+        const visionResponse = await fetch(
+          `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              requests: [{
+                image: { content: base64Image },
+                features: [
+                  { type: 'WEB_DETECTION', maxResults: 15 },
+                  { type: 'LABEL_DETECTION', maxResults: 15 },
+                  { type: 'LOGO_DETECTION', maxResults: 5 },
+                  { type: 'OBJECT_LOCALIZATION', maxResults: 5 }
+                ]
+              }]
+            })
+          }
+        );
+        const visionData = await visionResponse.json();
+        const res = visionData.responses[0];
+        
+        const keywords = [
+          ...(res.logoAnnotations || []).map((l: any) => l.description),
+          ...(res.localizedObjectAnnotations || []).map((o: any) => o.name),
+          ...(res.webDetection?.webEntities || []).map((e: any) => e.description),
+          ...(res.labelAnnotations || []).map((l: any) => l.description)
+        ].filter(Boolean).map(k => k.trim().toLowerCase());
+
+        keywords.forEach(k => {
+          if (k.length >= 3) allUniqueKeywords.add(k);
+        });
+      } catch (e) {
+        console.error("Google Vision Error:", e.message);
+      }
+
+      // 2. SIGHTENGINE VISUAL MATCH
+      console.log("Checking Visual Fingerprints...");
+      try {
+        const seFormData = new FormData();
+        seFormData.append('api_user', SIGHTENGINE_API_USER!);
+        seFormData.append('api_secret', SIGHTENGINE_API_SECRET!);
+        seFormData.append('lists', SIGHTENGINE_LIST_ID!);
+        seFormData.append('media', image);
+
+        const seResponse = await fetch("https://api.sightengine.com/1.0/check.json", { method: 'POST', body: seFormData });
+        const seData = await seResponse.json();
+        const seMatches = (seData.similarity && seData.similarity[0]?.matches) || [];
+
+        seMatches.forEach((m: any) => {
+          if (m.score >= 0.10) {
+            const existing = resultsMap.get(m.custom_id);
+            if (!existing || m.score > existing.score) {
+              resultsMap.set(m.custom_id, { id: m.custom_id, score: m.score, source: 'visual' });
+            }
+          }
+        });
+      } catch (e) {
+        console.error("Sightengine Error:", e.message);
+      }
+    }
+
+    const uniqueKeywords = Array.from(allUniqueKeywords);
+    console.log("Global AI Semantic Fingerprint:", uniqueKeywords.join(", "));
+
+    // 3. SMART MERGE & DATABASE QUERY
     if (uniqueKeywords.length > 0) {
-      const searchQuery = uniqueKeywords.slice(0, 8).join(' | ');
+      const searchQuery = uniqueKeywords.slice(0, 15).join(' | ');
+      
+      // Ҷустуҷӯи Семантикӣ дар База
+      // Мо инчунин ai_labels-ро мегирем барои муқоисаи дақиқтар
       const { data: dbItems } = await supabase
         .from('items')
-        .select('id, title, ai_labels')
+        .select('id, title, description, ai_labels')
         .eq('is_resolved', false)
         .eq('moderation_status', 'approved')
         .textSearch('search_vector', searchQuery, { config: 'simple' })
-        .limit(50);
+        .limit(100);
 
       if (dbItems) {
         dbItems.forEach(item => {
+          // Ҳисоб кардани хол (score) аз рӯи мувофиқати калимаҳо
+          const itemText = `${item.title} ${item.description} ${item.ai_labels || ''}`.toLowerCase();
+          let matchCount = 0;
+          uniqueKeywords.forEach(kw => {
+            if (itemText.includes(kw)) matchCount++;
+          });
+
+          const semanticScore = Math.min(0.9, (matchCount / Math.max(uniqueKeywords.length, 5)) * 0.8 + 0.2);
+
           const existing = resultsMap.get(item.id);
           if (existing) {
-            // Агар ҳарду ёфта бошанд - ин беҳтарин натиҷа аст (Boost Score)
-            existing.score = Math.min(0.99, existing.score + 0.4);
+            // Агар ҳам визуалӣ ва ҳам семантикӣ мувофиқ ояд - холро баланд мекунем (Boost)
+            // Аммо на ба таври якбора ба 99%, балки вобаста ба сифати мувофиқат
+            existing.score = Math.min(0.99, existing.score * 0.6 + semanticScore * 0.4 + 0.1);
             existing.source = 'top_match';
-          } else {
-            resultsMap.set(item.id, { id: item.id, score: 0.55, source: 'semantic' });
+          } else if (semanticScore > 0.3) {
+            // Агар танҳо семантикӣ бошад
+            resultsMap.set(item.id, { id: item.id, score: semanticScore, source: 'semantic' });
           }
         });
       }
     }
 
-    const finalResults = Array.from(resultsMap.values()).sort((a, b) => b.score - a.score);
-    console.log(`Delivering ${finalResults.length} high-quality matches.`);
+    // 4. Табдил ба массив ва Тартиб додани қатъӣ аз рӯи хол (Score)
+    const finalResults = Array.from(resultsMap.values())
+      .filter(r => r.score >= 0.25) // Танҳо натиҷаҳои боэътимодро мемонем
+      .sort((a, b) => b.score - a.score);
+
+    console.log(`Total results found: ${finalResults.length}`);
+    finalResults.slice(0, 5).forEach(r => console.log(`ID: ${r.id}, Score: ${r.score}`));
 
     return new Response(JSON.stringify({ results: finalResults }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
-    console.error("Super-Hybrid Error:", error.message);
+    console.error("Super-Hybrid Visual Search Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
   }
 });
