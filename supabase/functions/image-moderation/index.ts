@@ -2,6 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const SIGHTENGINE_API_USER = Deno.env.get('SIGHTENGINE_API_USER')
 const SIGHTENGINE_API_SECRET = Deno.env.get('SIGHTENGINE_API_SECRET')
+const SIGHTENGINE_LIST_ID = Deno.env.get('SIGHTENGINE_LIST_ID')
+const GOOGLE_VISION_API_KEY = Deno.env.get('GOOGLE_VISION_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -33,115 +35,91 @@ Deno.serve(async (req) => {
     let isSafe = true;
     let rejectionKey = null;
     let apiErrorOccurred = false;
+    let aiLabels: string[] = [];
 
-    for (const img of images) {
+    // 1. Силсилаи санҷишҳои Sightengine ва Google Vision
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
       try {
+        // --- SIGHTENGINE (Security) ---
         const models = "nudity-2.1,wad,gore,face-attributes,text-content,scam,tobacco"
-        const response = await fetch(
+        const seResponse = await fetch(
           `https://api.sightengine.com/1.0/check.json?url=${encodeURIComponent(img.image_url)}&models=${models}&api_user=${SIGHTENGINE_API_USER}&api_secret=${SIGHTENGINE_API_SECRET}`
         )
-        const data = await response.json()
+        const seData = await seResponse.json()
         
-        if (data.status !== 'success') {
-          throw new Error(data.error?.message || "API error")
+        if (seData.status === 'success') {
+          // Санҷиши амният (Nudity, WAD, Gore ва ғайра)
+          if (seData.nudity && (seData.nudity.sexual_activity >= 0.95 || seData.nudity.erotica >= 0.95)) { isSafe = false; rejectionKey = 'mod_nudity'; break; }
+          if (seData.wad && seData.wad.weapons >= 0.5) { isSafe = false; rejectionKey = 'mod_weapon'; break; }
+          if (seData.scam && seData.scam.prob > 0.5) { isSafe = false; rejectionKey = 'mod_scam'; break; }
+          if (seData.faces && seData.faces.some((f: any) => (f.x2-f.x1)*(f.y2-f.y1) > 0.06)) { isSafe = false; rejectionKey = 'mod_faces'; break; }
         }
 
-        // 1. Nudity & Sex Toys
-        const nudity = data.nudity;
-        if (nudity) {
-          const isExplicit = (nudity.sexual_activity >= 0.95 || nudity.sexual_display >= 0.95 || nudity.erotica >= 0.95);
-          const isSexToy = nudity.suggestive_classes?.sextoy >= 0.8;
-
-          if (isExplicit || isSexToy) {
-            isSafe = false;
-            rejectionKey = 'mod_nudity';
-            break;
-          }
-        } 
-        
-        // 2. WAD (Weapons, Alcohol, Drugs) & Tobacco
-        const wad = data.wad;
-        if (wad) {
-          if (wad.weapons >= 0.5) { isSafe = false; rejectionKey = 'mod_weapon'; break; }
-          if (wad.alcohol >= 0.01) { isSafe = false; rejectionKey = 'mod_alcohol'; break; }
-          if (wad.drugs >= 0.01) { isSafe = false; rejectionKey = 'mod_drugs'; break; }
-        }
-
-        if (data.tobacco && data.tobacco.prob >= 0.01) {
-          isSafe = false; rejectionKey = 'mod_tobacco'; break; 
-        }
-
-        // 3. Gore
-        if (data.gore && data.gore.prob >= 0.5) {
-          isSafe = false; rejectionKey = 'mod_gore'; break;
-        }
-
-        // 4. Faces (Allow small faces on documents/background, block only portraits/selfies)
-        if (data.faces && data.faces.length > 0) {
-          const hasLargeFace = data.faces.some((face: any) => {
-            // Ҳисоби ҳаҷми чеҳра нисбат ба сурат (normalized coordinates 0 to 1)
-            const faceArea = (face.x2 - face.x1) * (face.y2 - face.y1);
-            return faceArea > 0.06; // Агар чеҳра аз 6% зиёди суратро гирад, блок мекунем
-          });
-
-          if (hasLargeFace) {
-            isSafe = false; rejectionKey = 'mod_faces'; break;
-          }
-        }
-
-        // 5. Text (Phones/Emails)
-        const text = data.text;
-        if (text && (text.personal?.length > 0 || text.link?.length > 0)) {
-          const hasContact = text.personal.some((p: any) => p.type === 'phone' || p.type === 'email');
-          if (hasContact) {
-            isSafe = false; rejectionKey = 'mod_text'; break;
-          }
-        }
-
-        // 6. Scam
-        if (data.scam && data.scam.prob > 0.5) {
-          isSafe = false; rejectionKey = 'mod_scam'; break;
+        // --- GOOGLE VISION (Object Recognition - Танҳо барои сурати аввал) ---
+        if (i === 0 && GOOGLE_VISION_API_KEY && isSafe) {
+          console.log("Extracting AI labels via Google Vision...");
+          const visionResponse = await fetch(
+            `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_VISION_API_KEY}`,
+            {
+              method: 'POST',
+              body: JSON.stringify({
+                requests: [{
+                  image: { source: { imageUri: img.image_url } },
+                  features: [{ type: 'WEB_DETECTION', maxResults: 8 }, { type: 'LABEL_DETECTION', maxResults: 8 }]
+                }]
+              })
+            }
+          );
+          const visionData = await visionResponse.json();
+          const response = visionData.responses[0];
+          
+          const labels = [
+            ...(response.webDetection?.bestGuessLabels || []).map((l: any) => l.label),
+            ...(response.webDetection?.webEntities || []).map((e: any) => e.description),
+            ...(response.labelAnnotations || []).map((l: any) => l.description)
+          ].filter(Boolean);
+          
+          aiLabels = [...new Set(labels)].slice(0, 15);
+          console.log("AI Labels found:", aiLabels.join(", "));
         }
 
       } catch (e) {
-        console.error("Sightengine API Error:", e.message)
+        console.error("API Error:", e.message)
         apiErrorOccurred = true;
         break;
       }
     }
 
     if (apiErrorOccurred) {
-      await supabase.from('items').update({ 
-        moderation_status: 'pending',
-        moderation_result: 'mod_error_api'
-      }).eq('id', itemId)
+      await supabase.from('items').update({ moderation_status: 'pending', moderation_result: 'mod_error_api' }).eq('id', itemId)
       return new Response("API Error", { status: 200 })
     }
 
-const SIGHTENGINE_LIST_ID = Deno.env.get('SIGHTENGINE_LIST_ID')
-
-// ... (inside the handler)
-
     const finalStatus = isSafe ? 'approved' : 'rejected'
     
-    // Агар акс тасдиқ шуда бошад, онро ба рӯйхати (List) Sightengine илова мекунем
-    if (finalStatus === 'approved' && SIGHTENGINE_LIST_ID) {
-      try {
-        const firstImageUrl = images[0].image_url;
-        const indexResponse = await fetch("https://api.sightengine.com/1.0/check.json", {
-          method: 'POST',
-          body: new URLSearchParams({
-            'api_user': SIGHTENGINE_API_USER!,
-            'api_secret': SIGHTENGINE_API_SECRET!,
-            'url': firstImageUrl,
-            'add_to_list': SIGHTENGINE_LIST_ID,
-            'custom_id': itemId
-          })
-        });
-        const indexData = await indexResponse.json();
-        console.log("Sightengine List Add Status:", indexData.status);
-      } catch (e) {
-        console.error("Sightengine List Add Error:", e.message);
+    if (finalStatus === 'approved') {
+      // 2. Захираи AI Labels дар база
+      if (aiLabels.length > 0) {
+        await supabase.from('items').update({ ai_labels: aiLabels.join(', ') }).eq('id', itemId);
+      }
+
+      // 3. Илова ба Sightengine List (барои ҷустуҷӯи визуалӣ)
+      if (SIGHTENGINE_LIST_ID) {
+        for (const img of images) {
+          try {
+            await fetch("https://api.sightengine.com/1.0/check.json", {
+              method: 'POST',
+              body: new URLSearchParams({
+                'api_user': SIGHTENGINE_API_USER!,
+                'api_secret': SIGHTENGINE_API_SECRET!,
+                'url': img.image_url,
+                'add_to_list': SIGHTENGINE_LIST_ID,
+                'custom_id': itemId
+              })
+            });
+          } catch (e) { console.error("List Add Error:", e.message); }
+        }
       }
     }
 
@@ -153,12 +131,7 @@ const SIGHTENGINE_LIST_ID = Deno.env.get('SIGHTENGINE_LIST_ID')
     return new Response(JSON.stringify({ success: true, status: finalStatus }), { status: 200 })
 
   } catch (error: any) {
-    if (itemId) {
-      await supabase.from('items').update({ 
-        moderation_status: 'pending',
-        moderation_result: 'mod_error_system'
-      }).eq('id', itemId)
-    }
+    if (itemId) await supabase.from('items').update({ moderation_status: 'pending', moderation_result: 'mod_error_system' }).eq('id', itemId)
     return new Response(JSON.stringify({ error: error.message }), { status: 500 })
   }
 })
