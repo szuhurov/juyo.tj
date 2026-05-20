@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
     for (const img of images) {
       try {
-        const models = "nudity-2.1,wad,offensive,gore,face-attributes,text-content,scam,tobacco"
+        const models = "nudity-2.1,wad,gore,face-attributes,text-content,scam,tobacco"
         const response = await fetch(
           `https://api.sightengine.com/1.0/check.json?url=${encodeURIComponent(img.image_url)}&models=${models}&api_user=${SIGHTENGINE_API_USER}&api_secret=${SIGHTENGINE_API_SECRET}`
         )
@@ -71,10 +71,7 @@ Deno.serve(async (req) => {
           isSafe = false; rejectionKey = 'mod_tobacco'; break; 
         }
 
-        // 3. Offensive & Gore
-        if (data.offensive && data.offensive.prob >= 0.5) {
-          isSafe = false; rejectionKey = 'mod_offensive'; break;
-        }
+        // 3. Gore
         if (data.gore && data.gore.prob >= 0.5) {
           isSafe = false; rejectionKey = 'mod_gore'; break;
         }
@@ -121,7 +118,33 @@ Deno.serve(async (req) => {
       return new Response("API Error", { status: 200 })
     }
 
+const SIGHTENGINE_LIST_ID = Deno.env.get('SIGHTENGINE_LIST_ID')
+
+// ... (inside the handler)
+
     const finalStatus = isSafe ? 'approved' : 'rejected'
+    
+    // Агар акс тасдиқ шуда бошад, онро ба рӯйхати (List) Sightengine илова мекунем
+    if (finalStatus === 'approved' && SIGHTENGINE_LIST_ID) {
+      try {
+        const firstImageUrl = images[0].image_url;
+        const indexResponse = await fetch("https://api.sightengine.com/1.0/check.json", {
+          method: 'POST',
+          body: new URLSearchParams({
+            'api_user': SIGHTENGINE_API_USER!,
+            'api_secret': SIGHTENGINE_API_SECRET!,
+            'url': firstImageUrl,
+            'add_to_list': SIGHTENGINE_LIST_ID,
+            'custom_id': itemId
+          })
+        });
+        const indexData = await indexResponse.json();
+        console.log("Sightengine List Add Status:", indexData.status);
+      } catch (e) {
+        console.error("Sightengine List Add Error:", e.message);
+      }
+    }
+
     await supabase.from('items').update({ 
       moderation_status: finalStatus,
       moderation_result: rejectionKey 

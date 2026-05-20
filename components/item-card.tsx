@@ -13,7 +13,7 @@ import { Item } from "@/lib/services/item-service"; // Типи маълумот
 import { Badge } from "@/components/ui/badge"; // Компоненти нишон
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { Card, CardContent, CardFooter } from "@/components/ui/card"; // Компоненти корт
-import { MapPin, Calendar, Eye, Bookmark, Pencil, Archive, Trash2, Share2, Loader2, AlertTriangle, ShieldAlert, Clock, AlertCircle } from "lucide-react"; // Иконкаҳо
+import { MapPin, Calendar, Eye, Bookmark, Pencil, Archive, Trash2, Share2, Loader2, AlertTriangle, ShieldAlert, Clock, AlertCircle, Sparkles } from "lucide-react"; // Иконкаҳо
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 import { format } from "date-fns"; // Барои формат кардани вақт
 import { cn } from "@/lib/utils"; // Барои классҳои CSS
@@ -326,7 +326,12 @@ export function ItemCard({ item }: { item: Item }) {
             </div>
 
             {/* Тугмаҳои амалиёт (Actions) */}
-            <div className="absolute top-2 right-2 z-20 flex flex-col gap-1.5">
+            <div className="absolute top-2 right-2 z-20 flex flex-col gap-1.5 items-end">
+              {item.similarity_score !== undefined && (
+                <Badge className="bg-emerald-500 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 py-1 shadow-lg border-none whitespace-nowrap mb-1 animate-in fade-in slide-in-from-right-2 duration-500">
+                  {Math.round(item.similarity_score * 100)}% {t('matchForYourImage')}
+                </Badge>
+              )}
               <button 
                 onClick={toggleSave}
                 disabled={isToggling}

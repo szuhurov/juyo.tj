@@ -60,6 +60,16 @@ export function MobileNavbar() {
       } else {
         const target = href === "/profile" ? "/profile?tab=posts" : href;
         
+        // Агар ба саҳифаи асосӣ равем, эвенти 'go-home' мефиристем
+        if (href === "/") {
+          if (pathname === "/") {
+            // Агар аллакай дар саҳифаи асосӣ бошем, саҳифаро refresh мекунем
+            window.location.reload();
+            return;
+          }
+          window.dispatchEvent(new CustomEvent('go-home'));
+        }
+
         // Гузариши лаҳзавӣ
         router.push(target);
         

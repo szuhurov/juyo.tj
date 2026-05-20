@@ -25,6 +25,7 @@ import {
   LayoutGrid,
   Briefcase,
   Bookmark,
+  Camera,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { VisualSearchModal } from "./visual-search-modal";
 
 export function Header() {
   const pathname = usePathname();
@@ -61,12 +63,8 @@ export function Header() {
   
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || "");
   const [mounted, setMounted] = useState(false);
-
-  // Пешгирии Hydration Mismatch: Танҳо баъди mount шудани компонент дар браузер 
-  // мо иҷозат медиҳем, ки тарҷумаҳои ба locale вобаста рендер шаванд.
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
+  const [directFile, setDirectFile] = useState<File | null>(null);
 
   const languages = [
     { code: "tg", label: "Тоҷикӣ" },
@@ -79,6 +77,31 @@ export function Header() {
     { href: "/profile", value: "profile", label: t('profile'), icon: User },
     { href: "/profile?tab=qr", value: "qr", label: "QR-коди ман", icon: QrCode },
   ];
+
+  // Пешгирии Hydration Mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleCameraClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        setDirectFile(file);
+        setIsVisualSearchOpen(true);
+      }
+    };
+    input.click();
+  };
+
+  const handleVisualSearchResults = (items: any[]) => {
+    // Ирсоли натиҷаҳо ба саҳифаи асосӣ тавассути Custom Event
+    window.dispatchEvent(new CustomEvent('visual-search-results', { detail: items }));
+    setDirectFile(null);
+  };
 
   useEffect(() => {
     // Агар корбар чизе нанависад, ҳолати ҷустуҷӯро хомӯш мекунем
@@ -119,7 +142,18 @@ export function Header() {
           
           {/* Қисми чап: Логотип ва Паймоиш */}
           <div className="flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
-            <Link href="/" className="flex items-center space-x-2 shrink-0">
+            <Link 
+              href="/" 
+              className="flex items-center space-x-2 shrink-0"
+              onClick={(e) => {
+                if (pathname === "/") {
+                  e.preventDefault();
+                  window.location.reload();
+                } else {
+                  window.dispatchEvent(new CustomEvent('go-home'));
+                }
+              }}
+            >
               <span className="text-base sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100 uppercase">JUYO</span>
             </Link>
 
@@ -138,8 +172,17 @@ export function Header() {
                 }
 
                 // Функсия барои назорати дастӣ
-                const handleNavClick = () => {
+                const handleNavClick = (e: React.MouseEvent) => {
                   const isProtected = link.href.includes('/profile') || link.href.includes('/items/add');
+                  
+                  if (link.href === "/") {
+                    if (pathname === "/") {
+                      window.location.reload();
+                      return;
+                    }
+                    window.dispatchEvent(new CustomEvent('go-home'));
+                  }
+
                   if (isProtected && !userId) {
                     router.push("/sign-up");
                   } else {
@@ -172,18 +215,27 @@ export function Header() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             <Input
               placeholder={t('search')}
-              className="pl-8 h-8 rounded-xl sm:rounded-full bg-zinc-100/50 border border-zinc-200 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-[10px] w-full"
+              className="pl-8 pr-10 h-8 rounded-xl sm:rounded-full bg-zinc-100/50 border border-zinc-200 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-[10px] w-full"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
-            {searchValue && (
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+              {searchValue && (
+                <button 
+                  onClick={() => setSearchValue("")}
+                  className="p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
               <button 
-                onClick={() => setSearchValue("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                onClick={handleCameraClick}
+                className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                title={t('visualSearchTitle') || "Ҷустуҷӯ бо акс"}
               >
-                <X className="h-3 w-3" />
+                <Camera className="h-3.5 w-3.5" />
               </button>
-            )}
+            </div>
           </div>
 
           {/* Қисми рост: Интихоби забон ва аутентификатсия */}
@@ -377,6 +429,15 @@ export function Header() {
           </div>
         </div>
       </header>
+      <VisualSearchModal 
+        isOpen={isVisualSearchOpen} 
+        onClose={() => {
+          setIsVisualSearchOpen(false);
+          setDirectFile(null);
+        }} 
+        onResults={handleVisualSearchResults}
+        directFile={directFile}
+      />
     </TooltipProvider>
   );
 }

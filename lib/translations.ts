@@ -505,7 +505,16 @@ export const translations: Record<string, any> = {
         incorrectCode: 'Коди воридшуда нодуруст аст',
         tooManyRequests: 'Кӯшишҳои зиёд. Лутфан каме сабр кунед ва дубора санҷед.',
       }
-    }
+    },
+    visualSearchTitle: 'Ҷустуҷӯ бо акс',
+    visualSearchDesc: 'Акси ашёро бор кунед, то мо шабеҳи онро пайдо кунем.',
+    visualSearchComplete: 'Ҷустуҷӯи визуалӣ ба анҷом расид',
+    visualSearchError: 'Хатогӣ ҳангоми ҷустуҷӯи визуалӣ',
+    matchForYourImage: 'монанд ба акси шумо',
+    uploadPhoto: 'Бор кардани акс',
+    analyzing: 'Таҳлил...',
+    clearResults: 'Тоза кардани натиҷаҳо',
+    visualSearchResultsTitle: 'Натиҷаҳои ҷустуҷӯи визуалӣ',
   },
   ru: {
     settings: 'Настройки',
@@ -993,7 +1002,16 @@ export const translations: Record<string, any> = {
         wrongPassword: 'Неверный пароль',
         emailExists: 'Этот email уже зарегистрирован',
       }
-    }
+    },
+    visualSearchTitle: 'Поиск по фото',
+    visualSearchDesc: 'Загрузите фото предмета, чтобы мы нашли похожие.',
+    visualSearchComplete: 'Поиск по фото завершен',
+    visualSearchError: 'Ошибка при поиске по фото',
+    matchForYourImage: 'похоже на ваше фото',
+    uploadPhoto: 'Загрузить фото',
+    analyzing: 'Анализ...',
+    clearResults: 'Очистить результаты',
+    visualSearchResultsTitle: 'Результаты поиска по фото',
   },
   en: {
     settings: 'Settings',
@@ -1473,7 +1491,16 @@ export const translations: Record<string, any> = {
         wrongPassword: 'Incorrect password',
         emailExists: 'This email is already registered',
       }
-    }
+    },
+    visualSearchTitle: 'Visual Search',
+    visualSearchDesc: 'Upload a photo of an item to find similar ones.',
+    visualSearchComplete: 'Visual search complete',
+    visualSearchError: 'Error during visual search',
+    matchForYourImage: 'match for your image',
+    uploadPhoto: 'Upload Photo',
+    analyzing: 'Analyzing...',
+    clearResults: 'Clear results',
+    visualSearchResultsTitle: 'Visual Search Results',
   }
 };
 

@@ -16,6 +16,8 @@ import { useSearchParams } from "next/navigation";
 import { useItems } from "@/lib/hooks/use-items"; 
 import { useQueryClient } from "@tanstack/react-query"; 
 import { useInView } from "react-intersection-observer";
+import { Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function HomeContent() {
   const { t } = useLanguage();
@@ -27,6 +29,7 @@ function HomeContent() {
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [visualSearchResults, setVisualSearchResults] = useState<any[] | null>(null);
 
   const filters = useMemo(() => ({ 
     category: category === "All" ? undefined : category,
@@ -60,14 +63,33 @@ function HomeContent() {
       setIsTyping(e.detail);
     };
 
+    const handleVisualResults = (e: any) => {
+      setVisualSearchResults(e.detail);
+      // Вақте ҷустуҷӯи визуалӣ мешавад, филтрҳои дигарро тоза мекунем
+      setCategory("All");
+      setItemType(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const handleHomeClick = () => {
+      setVisualSearchResults(null);
+      setCategory("All");
+      setItemType(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     window.addEventListener('items-updated', handleUpdate);
     window.addEventListener('saved-items-updated', handleUpdate);
     window.addEventListener('search-active', handleSearchActive);
+    window.addEventListener('visual-search-results', handleVisualResults);
+    window.addEventListener('go-home', handleHomeClick);
     
     return () => {
       window.removeEventListener('items-updated', handleUpdate);
       window.removeEventListener('saved-items-updated', handleUpdate);
       window.removeEventListener('search-active', handleSearchActive);
+      window.removeEventListener('visual-search-results', handleVisualResults);
+      window.removeEventListener('go-home', handleHomeClick);
     };
   }, [queryClient]);
 
@@ -78,6 +100,7 @@ function HomeContent() {
 
   // Усули "Pro": Филтри лаҳзавӣ (Instant Hybrid Filtering)
   const displayedItems = useMemo(() => {
+    if (visualSearchResults) return visualSearchResults;
     if (!allItems.length) return [];
     
     return allItems.filter(item => {
@@ -85,7 +108,7 @@ function HomeContent() {
       const matchType = !itemType || item.type === itemType;
       return matchCategory && matchType;
     });
-  }, [allItems, category, itemType]);
+  }, [allItems, category, itemType, visualSearchResults]);
 
   return (
     <div className="pb-18">
@@ -94,75 +117,92 @@ function HomeContent() {
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-1 pb-1.5 sm:py-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-1 md:h-14">
             {/* Кнопкаҳои категорияҳо */}
-            <div className="flex items-center overflow-x-auto no-scrollbar -mx-1 px-1">
-              <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
-                <button
-                  onClick={() => setCategory("All")}
-                  className={cn(
-                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap",
-                    category === "All"
-                      ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  )}
+            <div className={cn(
+              "flex items-center overflow-x-auto no-scrollbar -mx-1 px-1",
+              visualSearchResults && "w-full justify-end"
+            )}>
+              {visualSearchResults ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setVisualSearchResults(null)}
+                  className="rounded-xl h-8 text-[10px] font-black uppercase tracking-widest border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400"
                 >
-                  {t('all')}
-                </button>
-                {CATEGORIES.map((cat) => (
+                  <X className="h-3.5 w-3.5 mr-2" />
+                  {t('clearResults')}
+                </Button>
+              ) : (
+                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                   <button
-                    key={cat.id}
-                    onClick={() => setCategory(cat.name)}
+                    onClick={() => setCategory("All")}
                     className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
-                      category === cat.name
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap",
+                      category === "All"
                         ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
                         : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                     )}
                   >
-                    <span className="text-xs">{cat.icon}</span>
-                    {t(`categories.${cat.id}`)}
+                    {t('all')}
                   </button>
-                ))}
-              </div>
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCategory(cat.name)}
+                      className={cn(
+                        "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+                        category === cat.name
+                          ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      )}
+                    >
+                      <span className="text-xs">{cat.icon}</span>
+                      {t(`categories.${cat.id}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Интихоби навъ: Гумшуда ё Ёфтшуда */}
-            <div className="flex items-center self-end md:self-auto mb-0.5 md:mb-0">
-              <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
-                <button
-                  onClick={() => setItemType(null)}
-                  className={cn(
-                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
-                    itemType === null
-                      ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                      : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-                  )}
-                >
-                  {t('all')}
-                </button>
-                <button
-                  onClick={() => setItemType('lost')}
-                  className={cn(
-                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
-                    itemType === 'lost'
-                      ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                      : "text-red-500 hover:text-red-600"
-                  )}
-                >
-                  {t('filterLost')}
-                </button>
-                <button
-                  onClick={() => setItemType('found')}
-                  className={cn(
-                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
-                    itemType === 'found'
-                      ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                      : "text-emerald-500 hover:text-emerald-600"
-                  )}
-                >
-                  {t('filterFound')}
-                </button>
+            {!visualSearchResults && (
+              <div className="flex items-center self-end md:self-auto mb-0.5 md:mb-0">
+                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+                  <button
+                    onClick={() => setItemType(null)}
+                    className={cn(
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
+                      itemType === null
+                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                    )}
+                  >
+                    {t('all')}
+                  </button>
+                  <button
+                    onClick={() => setItemType('lost')}
+                    className={cn(
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
+                      itemType === 'lost'
+                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                        : "text-red-500 hover:text-red-600"
+                    )}
+                  >
+                    {t('filterLost')}
+                  </button>
+                  <button
+                    onClick={() => setItemType('found')}
+                    className={cn(
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
+                      itemType === 'found'
+                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                        : "text-emerald-500 hover:text-emerald-600"
+                    )}
+                  >
+                    {t('filterFound')}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

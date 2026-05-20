@@ -108,36 +108,36 @@ export function PWAInstallPrompt() {
   if (isInstalled || !isVisible) return null;
 
   return (
-    <div className="fixed bottom-32 left-4 right-4 z-50 animate-in fade-in slide-in-from-bottom-8 duration-500">
-      <div className="bg-white border border-zinc-200 shadow-2xl shadow-black/10 rounded-3xl p-4 flex items-center gap-4 backdrop-blur-xl">
+    <div className="fixed bottom-32 left-4 right-4 md:bottom-24 md:right-8 md:left-auto md:w-[420px] z-50 animate-in fade-in slide-in-from-bottom-8 md:slide-in-from-right-8 duration-500">
+      <div className="bg-white/95 dark:bg-zinc-900/95 border border-zinc-200 dark:border-zinc-800 shadow-2xl shadow-black/10 rounded-3xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 backdrop-blur-xl">
         {/* Логотип бе хатҳои сафеди иловагӣ */}
-        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 shadow-md border border-zinc-100 bg-white relative">
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden shrink-0 shadow-md border border-zinc-100 dark:border-zinc-800 bg-white relative">
           <Image src="/logo.png" alt="juyo" width={48} height={48} className="w-full h-full object-contain p-1" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className="text-zinc-900 font-black text-[14px] tracking-tight mb-0.5 lowercase">
+          <p className="text-zinc-900 dark:text-zinc-100 font-black text-[13px] sm:text-[14px] tracking-tight mb-0.5 lowercase">
             {t('pwa.title')}
           </p>
           {/* Матни пурра барои тавсиф */}
-          <p className="text-zinc-500 font-bold text-[10px] leading-tight uppercase">
+          <p className="text-zinc-500 dark:text-zinc-400 font-bold text-[9px] sm:text-[10px] leading-tight uppercase">
             {t('pwa.desc')}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button 
             size="sm"
             onClick={handleInstallClick}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[9px] tracking-widest px-4 h-10 rounded-xl active:scale-95 transition-all border-none animate-pulse-slow"
+            className="bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 font-black uppercase text-[8px] sm:text-[9px] tracking-widest px-3 sm:px-4 h-8 sm:h-10 rounded-xl active:scale-95 transition-all border-none animate-pulse-slow"
           >
             {t('pwa.install')}
           </Button>
           <button 
             onClick={handleDismiss}
-            className="w-8 h-8 flex items-center justify-center text-zinc-400 hover:text-zinc-900 transition-colors"
+            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>

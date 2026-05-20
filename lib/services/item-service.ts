@@ -21,6 +21,7 @@ export interface Item {
   moderation_status?: 'pending' | 'approved' | 'rejected';
   moderation_result?: string;
   images?: { image_url: string }[];
+  similarity_score?: number;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -92,6 +93,43 @@ export const ItemService = {
     const { data, error } = await query;
     if (error) throw error;
     return data as Item[];
+  },
+
+  /**
+   * Ҷустуҷӯи визуалӣ бо истифода аз акс.
+   */
+  async visualSearch(imageFile: File) {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const { data, error } = await supabase.functions.invoke('visual-search', {
+      body: formData
+    });
+
+    if (error) throw error;
+    if (!data.results || data.results.length === 0) return [];
+
+    const itemIds = data.results.map((r: any) => r.id);
+
+    // Гирифтани маълумоти эълонҳо аз рӯи ID-ҳо
+    const { data: items, error: itemsError } = await supabase
+      .from('items')
+      .select('*, images:item_images(image_url)')
+      .in('id', itemIds);
+
+    if (itemsError) throw itemsError;
+
+    // Тартиб додан мувофиқи тартиби ID-ҳое, ки Sightengine баргардонд (аз рӯи мувофиқат)
+    // Ва илова кардани similarity_score ба ҳар як ашё
+    return data.results
+      .map((res: any) => {
+        const item = items.find((i: any) => i.id === res.id);
+        if (item) {
+          return { ...item, similarity_score: res.score };
+        }
+        return null;
+      })
+      .filter(Boolean) as Item[];
   },
 
   /**
