@@ -33,6 +33,8 @@ export function LanguageProvider({
     const saved = localStorage.getItem("juyo-locale") as Locale;
     if (saved && ["tg", "ru", "en"].includes(saved)) {
       setLocale(saved);
+      // Ҳамзамон дар Cookie сабт мекунем, то сервер ҳам хабардор шавад
+      document.cookie = `juyo-locale=${saved}; path=/; max-age=31536000; SameSite=Lax`;
     }
   }, []);
 

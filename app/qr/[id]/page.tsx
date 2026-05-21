@@ -20,27 +20,37 @@ import { translations } from "@/lib/translations";
 
 interface Props {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { id } = await params;
+  const { lang } = await searchParams;
+  
   try {
+    const cookieStore = await cookies();
+    const locale = lang || cookieStore.get("juyo-locale")?.value || "tg";
+    const t = (key: string) => translations[locale as any]?.[key] || key;
+
     // Гирифтани маълумоти соҳиби QR
     const item = await ItemService.getItemDetails(id);
     const profile = item?.profiles;
     return {
       title: `${profile?.first_name} ${profile?.last_name} | JUYO.TJ`,
-      description: "Профили ҷамъиятии корбар барои тамос",
+      description: t('foundUserItem').replace('%{name}', `${profile?.first_name} ${profile?.last_name}`),
     };
   } catch (e) {
     return { title: "JUYO.TJ" };
   }
 }
 
-export default async function PublicQRPage({ params }: Props) {
+export default async function PublicQRPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { lang } = await searchParams;
   const cookieStore = await cookies();
-  const locale = cookieStore.get("juyo-locale")?.value || "tg";
+  
+  // Афзалият: 1. Параметри URL (?lang=) 2. Cookie 3. Дефолт (tg)
+  const locale = lang || cookieStore.get("juyo-locale")?.value || "tg";
   const t = (key: string) => translations[locale as any]?.[key] || key;
 
   // Боргузории маълумот дар сервер (SSR)

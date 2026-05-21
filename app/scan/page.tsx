@@ -25,7 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ScanPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -162,10 +162,19 @@ export default function ScanPage() {
 
           html5QrCode.stop().then(() => {
             toast.success(t('qrDetected'));
+            
+            // Илова кардани забон ба URL барои гузариши дуруст
+            const targetPath = decodedText.includes('juyo.tj/qr/') 
+              ? decodedText.split('juyo.tj')[1] 
+              : `/qr/${decodedText}`;
+            
+            const separator = targetPath.includes('?') ? '&' : '?';
+            const finalUrl = `${targetPath}${separator}lang=${locale}`;
+
             if (decodedText.startsWith('http')) {
-              window.location.href = decodedText;
+              window.location.href = finalUrl;
             } else {
-              router.push(`/qr/${decodedText}`);
+              router.push(finalUrl);
             }
           }).catch(console.error);
         },
