@@ -311,8 +311,8 @@ export function ItemCard({ item }: { item: Item }) {
               </div>
             </div>
             
-            {/* Статус: Гумшуда ё Ёфтшуда */}
-            <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 h-6 flex items-center">
+            {/* Статус: Гумшуда ё Ёфтшуда ва Фоизи Мувофиқат */}
+            <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex flex-col gap-1.5 items-start">
               <Badge
                 className={cn(
                   "uppercase font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap",
@@ -323,15 +323,16 @@ export function ItemCard({ item }: { item: Item }) {
               >
                 {item.type === 'lost' ? t('lost') : t('found')}
               </Badge>
+
+              {item.similarity_score !== undefined && (
+                <Badge className="bg-emerald-600 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-500">
+                  {Math.round(item.similarity_score * 100)}% {t('matchForYourImage')}
+                </Badge>
+              )}
             </div>
 
             {/* Тугмаҳои амалиёт (Actions) */}
             <div className="absolute top-2 right-2 z-20 flex flex-col gap-1.5 items-end">
-              {item.similarity_score !== undefined && (
-                <Badge className="bg-emerald-500 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 py-1 shadow-lg border-none whitespace-nowrap mb-1 animate-in fade-in slide-in-from-right-2 duration-500">
-                  {Math.round(item.similarity_score * 100)}% {t('matchForYourImage')}
-                </Badge>
-              )}
               <button 
                 onClick={toggleSave}
                 disabled={isToggling}
