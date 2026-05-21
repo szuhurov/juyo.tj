@@ -258,7 +258,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                   <div key={index} className="h-full w-full shrink-0 snap-center relative">
                     <Image 
                       src={img.image_url} 
-                      alt={item.title || "JUYO Item"} 
+                      alt={item?.title || "JUYO Item"} 
                       fill 
                       className="object-cover" 
                       priority={index === 0}
