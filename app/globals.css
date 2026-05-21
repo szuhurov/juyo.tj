@@ -98,7 +98,7 @@
     -webkit-tap-highlight-color: transparent;
   }
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
     height: 100%;
     /* Фикс барои Desktop PWA: заминаи сиёҳ дар берун аз ҳудуди сайт */
@@ -130,5 +130,43 @@
 
 .animate-logo-pop {
   animation: logo-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.shimmer-bg {
+  position: relative;
+  overflow: hidden;
+  background: oklch(0.97 0 0);
+}
+
+.dark .shimmer-bg {
+  background: oklch(0.269 0 0);
+}
+
+.shimmer-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .shimmer-bg::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.02),
+    transparent
+  );
 }
 

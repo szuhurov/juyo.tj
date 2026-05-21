@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog"; // Тирезаҳои огоҳӣ
 
 // Пропҳои компонент
-export function ItemCard({ item }: { item: Item }) {
+export function ItemCard({ item, index = 0 }: { item: Item, index?: number }) {
   // Хукҳо ва лоигкаи асосӣ
   const { t } = useLanguage();
   const router = useRouter();
@@ -46,6 +46,9 @@ export function ItemCard({ item }: { item: Item }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   
+  // Состояние барои фаъол будани ротатсияи суратҳо
+  const [isHovered, setIsHovered] = useState(false);
+
   // Санҷиши соҳиби эълон
   const isOwner = userId === item.user_id;
   const exactDate = format(new Date(item.created_at), "dd.MM.yyyy");
@@ -55,23 +58,20 @@ export function ItemCard({ item }: { item: Item }) {
     ? item.images 
     : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
-  // Состояние барои фаъол будани ротатсияи суратҳо (танҳо ҳангоми ховер)
-  const [isHovered, setIsHovered] = useState(false);
-
-  // Эффект барои автоматикӣ иваз шудани суратҳо
+  // Эффект барои автоматикӣ иваз шудани суратҳо - Оптимизатсияшуда (танҳо ҳангоми ховер)
   useEffect(() => {
     if (userId) {
       checkSavedStatus();
     }
 
-    if (images.length <= 1) return;
+    if (images.length <= 1 || !isHovered) return;
 
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 5000); // 5 сония - мувофиқи хоҳиши корбар
+    }, 3000); // Тезонидани ротатсия ҳангоми ховер барои эффект
 
     return () => clearInterval(interval);
-  }, [images.length, item.id, userId]);
+  }, [images.length, item.id, userId, isHovered]);
 
   // Функсия барои нишон додани модал агар эълон блок шуда бошад
   const handleCardClick = (e: React.MouseEvent) => {
@@ -248,62 +248,84 @@ export function ItemCard({ item }: { item: Item }) {
     }
   };
 
+  // Функсия барои пеш-боркунии акси саҳифаи навбатӣ (Image Preloading)
+  const preloadNextImage = () => {
+    if (images[0]?.image_url) {
+      const img = new (window as any).Image();
+      img.src = images[0].image_url;
+    }
+  };
+
   return (
     <>
       <Link 
         href={`/items/${item.id}`}
+        prefetch={true}
         className="h-full block"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onPointerEnter={() => setIsHovered(true)}
-        onPointerLeave={() => setIsHovered(false)}
+        onMouseEnter={() => {
+          setIsHovered(true);
+          preloadNextImage();
+        }}
+        onMouseLeave={() => {
+          setIsHovered(false);
+          setCurrentImageIndex(0);
+        }}
+        onPointerEnter={() => {
+          setIsHovered(true);
+          preloadNextImage();
+        }}
+        onPointerLeave={() => {
+          setIsHovered(false);
+          setCurrentImageIndex(0);
+        }}
       >
         <Card className={cn(
-          "overflow-hidden hover:shadow-md transition-all duration-200 group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
+          "overflow-hidden group h-full rounded-xl border-zinc-200 dark:border-zinc-800",
           item.moderation_status === 'rejected' && isOwner && "opacity-75 grayscale-[0.5]"
         )}>
           {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
-          <div className="relative aspect-square overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900">
+          <div className="relative aspect-square overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 shimmer-bg">
             {/* Оптимизатсияи намоиши суратҳо: Танҳо сурати фаъол ва навбатиро нишон медиҳем */}
-            {images.map((img, index) => {
-              if (Math.abs(index - currentImageIndex) > 1 && !(currentImageIndex === images.length - 1 && index === 0)) {
+            {images.map((img, i) => {
+              if (Math.abs(i - currentImageIndex) > 1 && !(currentImageIndex === images.length - 1 && i === 0)) {
                 return null;
               }
               return (
                 <Image
-                  key={index}
+                  key={i}
                   src={img.image_url}
                   alt={item.title}
                   fill
                   sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                  quality={75}
                   className={cn(
-                    "object-cover transition-opacity duration-300 ease-in-out",
-                    index === currentImageIndex ? "opacity-100" : "opacity-0"
+                    "object-cover",
+                    i === currentImageIndex ? "opacity-100" : "opacity-0"
                   )}
-                  priority={index === 0}
+                  priority={index < 8 && i === 0} // Танҳо барои 8 корти аввал priority мемонем
                 />
               );
             })}
 
-            {/* Overlay (Title, Description, Date) - Smooth transition with increased height */}
+            {/* Overlay (Title, Description, Date) - Simplified for performance */}
             <div 
-              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent p-3 pt-20 flex flex-col gap-1 z-10 pointer-events-none"
+              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-3 pt-12 flex flex-col gap-1 z-10 pointer-events-none"
             >
               <div className="flex justify-between items-start gap-2">
-                <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white drop-shadow-md">
+                <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white">
                   {item.title}
                 </h3>
-                <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/50 px-2 py-1 rounded-md border border-white/10 shadow-sm">
+                <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/40 px-1.5 py-0.5 rounded border border-white/10">
                   <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   <span>{exactDate}</span>
                 </div>
               </div>
               <div className="flex justify-between items-center gap-2">
-                <p className="text-white text-[10px] sm:text-xs line-clamp-1 leading-tight font-medium flex-1 drop-shadow-sm opacity-90">
+                <p className="text-white/90 text-[10px] sm:text-xs line-clamp-1 leading-tight font-medium flex-1">
                   {item.description}
                 </p>
                 {item.views !== undefined && item.views > 0 && (
-                  <div className="flex items-center gap-1 text-white/80 text-[8px] sm:text-[10px] shrink-0 drop-shadow-sm">
+                  <div className="flex items-center gap-1 text-white/80 text-[8px] sm:text-[10px] shrink-0">
                     <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                     <span>{item.views}</span>
                   </div>
@@ -325,7 +347,7 @@ export function ItemCard({ item }: { item: Item }) {
               </Badge>
 
               {item.similarity_score !== undefined && (
-                <Badge className="bg-emerald-600 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-500">
+                <Badge className="bg-emerald-600 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
                   {Math.round(item.similarity_score * 100)}% {t('matchForYourImage')}
                 </Badge>
               )}

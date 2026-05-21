@@ -98,17 +98,15 @@ function HomeContent() {
     return data?.pages.flatMap(page => page) || [];
   }, [data]);
 
-  // Усули "Pro": Филтри лаҳзавӣ (Instant Hybrid Filtering)
+  // Тақсими ашёҳо ба "Ёфтшудаҳо" ва "Гумшудаҳо" барои мобил
+  const foundItems = useMemo(() => allItems.filter(i => i.type === 'found'), [allItems]);
+  const lostItems = useMemo(() => allItems.filter(i => i.type === 'lost'), [allItems]);
+
+  // Усули "Pro": Намоиши ашёҳо бидуни филтри зиёдатии фронтенд (чун backend аллакай филтр мекунад)
   const displayedItems = useMemo(() => {
     if (visualSearchResults) return visualSearchResults;
-    if (!allItems.length) return [];
-    
-    return allItems.filter(item => {
-      const matchCategory = category === "All" || item.category === category;
-      const matchType = !itemType || item.type === itemType;
-      return matchCategory && matchType;
-    });
-  }, [allItems, category, itemType, visualSearchResults]);
+    return allItems;
+  }, [allItems, visualSearchResults]);
 
   return (
     <div className="pb-18">
@@ -221,13 +219,40 @@ function HomeContent() {
         </div>
       ) : displayedItems.length > 0 ? (
         <>
-          <div 
-            className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 will-change-transform transform-gpu" 
-            style={{ contentVisibility: 'auto' } as any}
-          >
-            {displayedItems.map((item) => (
-              <ItemCard key={item.id} item={item} />
+          {/* Версияи Desktop: Стандарт 4 сутун */}
+          <div className="hidden md:grid md:grid-cols-4 gap-4 lg:gap-6">
+            {displayedItems.map((item, index) => (
+              <ItemCard key={item.id} item={item} index={index} />
             ))}
+          </div>
+
+          {/* Версияи Mobile: Ду сутуни махсус (Чап - Ёфтшуда, Рост - Гумшуда) */}
+          <div className="grid md:hidden grid-cols-2 gap-2">
+            {/* Сутуни 1: Ёфтшудаҳо (Found) */}
+            <div className="flex flex-col gap-2">
+              {foundItems.length > 0 ? (
+                foundItems.map((item, index) => (
+                  <ItemCard key={item.id} item={item} index={index} />
+                ))
+              ) : itemType !== 'lost' && (
+                <div className="h-20 flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
+                  <span className="text-[8px] font-black uppercase">{t('filterFound')}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Сутуни 2: Гумшудаҳо (Lost) */}
+            <div className="flex flex-col gap-2">
+              {lostItems.length > 0 ? (
+                lostItems.map((item, index) => (
+                  <ItemCard key={item.id} item={item} index={index} />
+                ))
+              ) : itemType !== 'found' && (
+                <div className="h-20 flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
+                  <span className="text-[8px] font-black uppercase">{t('filterLost')}</span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Элемент барои Infinite Scroll */}
@@ -243,7 +268,7 @@ function HomeContent() {
         </>
       ) : (
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-          <h3 className="text-xl font-black mb-2 uppercase tracking-tight flex items-center justify-center gap-1">
+          <h3 className="text-xl font-black uppercase tracking-tight flex items-center justify-center gap-1">
             {(isLoading || isFetching || isTyping) ? (
               <>
                 {t('search')}
@@ -255,9 +280,11 @@ function HomeContent() {
               </>
             ) : t('noItemsFound')}
           </h3>
-          <p className="text-zinc-500 text-sm">
-            {(isLoading || isFetching || isTyping) ? t('pleaseWait') : t('noItemsSubtitle')}
-          </p>
+          {!(isLoading || isFetching || isTyping) && (
+            <p className="text-zinc-500 text-sm mt-2">
+              {t('noItemsSubtitle')}
+            </p>
+          )}
         </div>
       )}
     </div>

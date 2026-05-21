@@ -936,7 +936,7 @@ export const translations: Record<string, any> = {
     saveAndDownload: 'Сохранить и скачать',
     pwa: {
       title: 'juyo',
-      desc: 'для использования',
+      desc: 'Для использования без браузера',
       install: 'УСТАНОВИТЬ'
     },
     qrSecondaryModal: {
@@ -1425,7 +1425,7 @@ export const translations: Record<string, any> = {
     saveAndDownload: 'Save & Download',
     pwa: {
       title: 'juyo',
-      desc: 'For easy usage',
+      desc: 'For use without browser',
       install: 'INSTALL'
     },
     qrSecondaryModal: {
@@ -1503,4 +1503,3 @@ export const translations: Record<string, any> = {
     visualSearchResultsTitle: 'Visual Search Results',
   }
 };
-

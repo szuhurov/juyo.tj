@@ -21,7 +21,6 @@ import { QueryProvider } from "@/components/query-provider"; // Барои ид�
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import { getClerkLocalization } from "@/lib/clerk-localization"; // Функсияи тарҷумаи Clerk
-import NextTopLoader from "nextjs-toploader"; // Барои нишон додани хати боргирӣ дар боло
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"; // Пешниҳоди насби барнома
 
 /**
@@ -168,17 +167,6 @@ export default async function RootLayout({
             Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад, 
             то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.
           </h1>
-          <NextTopLoader 
-            color="#22C55E"
-            initialPosition={0.05}
-            crawlSpeed={200}
-            height={3}
-            crawl={true}
-            showSpinner={false}
-            easing="ease"
-            speed={500}
-            shadow="0 0 10px #22C55E,0 0 5px #22C55E"
-          />
           <QueryProvider>
             <LanguageProvider initialLocale={locale as any}>
               {children}

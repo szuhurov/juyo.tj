@@ -63,9 +63,10 @@ export default function ItemDetailsClient({ id }: { id: string }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isManualScroll = useRef(false);
 
+  // Агар маълумот дар кэш бошад (аз саҳифаи асосӣ), онро фавран истифода мебарем
   const images = item?.images && item.images.length > 0 
     ? item.images 
-    : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
+    : item ? [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }] : [];
 
   // Эффект барои автоматикӣ иваз шудани суратҳо
   useEffect(() => {
@@ -207,8 +208,27 @@ export default function ItemDetailsClient({ id }: { id: string }) {
     } catch (e) { toast.error(t('error')); } finally { setIsActionLoading(false); setShowResolvedConfirm(false); }
   };
 
-  if (loading && !item) return <div className="mx-auto max-w-6xl md:pt-8 px-4 py-4 md:px-4"><Skeleton className="w-full aspect-square rounded-[32px]" /></div>;
-  if (!item) return <div className="container mx-auto px-4 py-20 text-center"><h1 className="text-2xl font-bold">{t('itemNotFound')}</h1></div>;
+  // Агар маълумот умуман набошад ва боргирӣ рафта истода бошад
+  if (loading && !item) {
+    return (
+      <div className="mx-auto max-w-6xl md:pt-8 px-4 py-4 md:px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
+          <Skeleton className="w-full aspect-square rounded-[32px]" />
+          <div className="space-y-6 pt-10 md:pt-0">
+            <Skeleton className="h-12 w-3/4" />
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-24 w-full" />
+            <div className="flex gap-4">
+              <Skeleton className="h-12 w-12 rounded-xl" />
+              <Skeleton className="h-12 w-12 rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!item && !loading) return <div className="container mx-auto px-4 py-20 text-center"><h1 className="text-2xl font-bold">{t('itemNotFound')}</h1></div>;
 
   return (
     <TooltipProvider>
@@ -216,7 +236,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12 items-start relative">
           
           <div className="sticky top-0 md:top-24 z-0 w-full p-0 md:p-0 flex items-center justify-center">
-            <div className="relative aspect-square w-full max-w-[600px] overflow-hidden md:rounded-[32px] border-b md:border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-xl group">
+            <div className="relative aspect-square w-full max-w-[600px] overflow-hidden md:rounded-[32px] border-b md:border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-xl group shimmer-bg">
               
               <div 
                 ref={scrollContainerRef}
@@ -236,7 +256,14 @@ export default function ItemDetailsClient({ id }: { id: string }) {
               >
                 {images.map((img, index) => (
                   <div key={index} className="h-full w-full shrink-0 snap-center relative">
-                    <Image src={img.image_url} alt={item.title || "JUYO Item"} fill className="object-cover" priority={index === 0} />
+                    <Image 
+                      src={img.image_url} 
+                      alt={item.title || "JUYO Item"} 
+                      fill 
+                      className="object-cover" 
+                      priority={index === 0}
+                      quality={90}
+                    />
                   </div>
                 ))}
               </div>
