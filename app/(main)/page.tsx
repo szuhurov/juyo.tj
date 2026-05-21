@@ -227,28 +227,28 @@ function HomeContent() {
           </div>
 
           {/* Версияи Mobile: Ду сутуни махсус (Чап - Ёфтшуда, Рост - Гумшуда) */}
-          <div className="grid md:hidden grid-cols-2 gap-1">
+          <div className="grid md:hidden grid-cols-2 gap-1 w-full">
             {/* Сутуни 1: Ёфтшудаҳо (Found) */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 w-full min-w-0">
               {foundItems.length > 0 ? (
                 foundItems.map((item, index) => (
                   <ItemCard key={item.id} item={item} index={index} />
                 ))
               ) : itemType !== 'lost' && (
-                <div className="h-20 flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
+                <div className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
                   <span className="text-[8px] font-black uppercase">{t('filterFound')}</span>
                 </div>
               )}
             </div>
 
             {/* Сутуни 2: Гумшудаҳо (Lost) */}
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1 w-full min-w-0">
               {lostItems.length > 0 ? (
                 lostItems.map((item, index) => (
                   <ItemCard key={item.id} item={item} index={index} />
                 ))
               ) : itemType !== 'found' && (
-                <div className="h-20 flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
+                <div className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
                   <span className="text-[8px] font-black uppercase">{t('filterLost')}</span>
                 </div>
               )}
