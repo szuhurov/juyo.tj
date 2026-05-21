@@ -58,20 +58,12 @@ export function ItemCard({ item, index = 0 }: { item: Item, index?: number }) {
     ? item.images 
     : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
-  // Эффект барои автоматикӣ иваз шудани суратҳо - Оптимизатсияшуда (танҳо ҳангоми ховер)
+  // Эффект барои санҷиши статуси захирашуда ва пеш-боркунӣ
   useEffect(() => {
     if (userId) {
       checkSavedStatus();
     }
-
-    if (images.length <= 1 || !isHovered) return;
-
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length);
-    }, 3000); // Тезонидани ротатсия ҳангоми ховер барои эффект
-
-    return () => clearInterval(interval);
-  }, [images.length, item.id, userId, isHovered]);
+  }, [item.id, userId]);
 
   // Функсия барои нишон додани модал агар эълон блок шуда бошад
   const handleCardClick = (e: React.MouseEvent) => {

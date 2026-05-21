@@ -227,9 +227,9 @@ function HomeContent() {
           </div>
 
           {/* Версияи Mobile: Ду сутуни махсус (Чап - Ёфтшуда, Рост - Гумшуда) */}
-          <div className="grid md:hidden grid-cols-2 gap-2">
+          <div className="grid md:hidden grid-cols-2 gap-1">
             {/* Сутуни 1: Ёфтшудаҳо (Found) */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               {foundItems.length > 0 ? (
                 foundItems.map((item, index) => (
                   <ItemCard key={item.id} item={item} index={index} />
@@ -242,7 +242,7 @@ function HomeContent() {
             </div>
 
             {/* Сутуни 2: Гумшудаҳо (Lost) */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1">
               {lostItems.length > 0 ? (
                 lostItems.map((item, index) => (
                   <ItemCard key={item.id} item={item} index={index} />

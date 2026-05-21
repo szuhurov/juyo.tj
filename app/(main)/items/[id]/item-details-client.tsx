@@ -282,15 +282,15 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                 </div>
               )}
 
-              <Badge className={cn("absolute top-4 left-4 uppercase font-black rounded-md px-3 py-1 shadow-md border-none z-10", item.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
-                {item.type === 'lost' ? t('lost') : t('found')}
+              <Badge className={cn("absolute top-4 left-4 uppercase font-black rounded-md px-3 py-1 shadow-md border-none z-10", item?.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
+                {item?.type === 'lost' ? t('lost') : t('found')}
               </Badge>
             </div>
           </div>
 
           <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
-              {item.profiles ? (
+              {item?.profiles ? (
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
                     {item.profiles?.avatar_url ? (<Image src={item.profiles.avatar_url} alt="User" width={48} height={48} className="object-cover" />) : (<User className="w-6 h-6 text-zinc-400" />)}
@@ -309,12 +309,12 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black uppercase"><Eye className="w-4 h-4" /> {item.views || 0}</div>
+              <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black uppercase"><Eye className="w-4 h-4" /> {item?.views || 0}</div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none mb-6">{item.title}</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none mb-6">{item?.title}</h1>
             
-            {item.type === 'lost' && item.reward && (
+            {item?.type === 'lost' && item.reward && (
               <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 rounded-2xl p-5 mb-8 shadow-sm">
                 <p className="text-amber-600 font-black text-[10px] uppercase mb-1">{t('reward_gives_viewer')}</p>
                 <p className="text-3xl font-black text-amber-900 dark:text-amber-100">{item.reward} TJS</p>
@@ -323,7 +323,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
 
             <div className="mb-8">
               <h3 className="font-black text-[10px] uppercase text-zinc-400 mb-4">{t('description')}</h3>
-              <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">{item.description}</p>
+              <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">{item?.description}</p>
             </div>
 
             <div className="flex flex-row items-center gap-2.5 mb-10 overflow-x-auto no-scrollbar pb-1">
@@ -344,7 +344,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
                   <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('resolved')}
                 </Button>
               ) : (
-                <Button size="lg" className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg" asChild><a href={`tel:${item.phone_number}`}><Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('call')}</a></Button>
+                <Button size="lg" className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg" asChild><a href={`tel:${item?.phone_number}`}><Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t('call')}</a></Button>
               )}
             </div>
           </div>
