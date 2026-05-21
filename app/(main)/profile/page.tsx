@@ -52,11 +52,13 @@ import {
   QrCode,
   Menu as MenuIcon,
   Download,
+  Share2,
   RefreshCw,
   Palette,
   Type,
   ChevronLeft,
   Search,
+  HelpCircle,
   } from "lucide-react";
  // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
@@ -119,6 +121,7 @@ function ProfileContent() {
   const [activePicker, setActivePicker] = useState<"qr" | "bg" | "all" | null>(
     null,
   );
+  const [showWhyQRModal, setShowWhyQRModal] = useState(false);
 
   // Стейтҳо барои нигоҳ доштани маълумоти профил ва нишон додани модалҳо
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -771,6 +774,30 @@ function ProfileContent() {
     }
   };
 
+  /**
+   * Функсияи паҳн кардани QR-код (Share)
+   */
+  const handleShareQR = () => {
+    const url = `${window.location.origin}/qr/${userId}`;
+    const shareData = {
+      title: "JUYO QR",
+      text: t("foundUserItem").replace("%{name}", user?.firstName || ""),
+      url: url,
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData).catch((error) => {
+        if (error.name !== 'AbortError') {
+          navigator.clipboard.writeText(url);
+          toast.success(t("success"));
+        }
+      });
+    } else {
+      navigator.clipboard.writeText(url);
+      toast.success(t("success"));
+    }
+  };
+
   if (!userLoaded) return null;
 
   // Нишон додани мӯҳтаво вобаста ба таби интихобшуда
@@ -838,7 +865,7 @@ function ProfileContent() {
         return (
           <div className="space-y-8 pb-32">
             {/* Сарлавҳаи таби QR-код */}
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
+            <div className="hidden sm:block sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <h3 className="text-lg font-black uppercase tracking-tight hidden sm:block">
                   {t("qrMyCode")}
@@ -968,9 +995,33 @@ function ProfileContent() {
             <div className="animate-in fade-in duration-500 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
-                <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-2 px-2 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  <div className="bg-transparent sm:bg-zinc-100 sm:dark:bg-zinc-900 rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-[0.95] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
+                <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                  
+                  {/* Тугмаҳои амалиёт - дар болои QR */}
+                  <div className="flex justify-between gap-1.5 mb-2 sm:mb-6 w-full">
+                    <Button
+                      onClick={() => setShowWhyQRModal(true)}
+                      className="flex-1 h-9 sm:h-10 rounded-lg bg-emerald-500 text-white border-none font-black uppercase text-[8px] sm:text-[9px] tracking-widest hover:bg-emerald-600 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
+                    >
+                      <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                      {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
+                    </Button>
+                    <Button
+                      onClick={handleDownloadQR}
+                      disabled={isDownloading}
+                      className="flex-1 h-9 sm:h-10 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[8px] sm:text-[9px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
+                    >
+                      {isDownloading ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      )}
+                      {t("download")}
+                    </Button>
+                  </div>
+
+                  <div className="relative group bg-transparent sm:bg-zinc-100 sm:dark:bg-zinc-900 rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
+                    <div className="scale-[0.9] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
                         settings={{
@@ -990,37 +1041,21 @@ function ProfileContent() {
                       />
                     </div>
                   </div>
-                  
-                  {/* Тугмаи Скачат барои мобил - дар зери QR */}
-                  <Button
-                    onClick={handleDownloadQR}
-                    disabled={isDownloading}
-                    variant="outline"
-                    size="sm"
-                    className="sm:hidden w-full h-11 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[10px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-md mt-4"
-                  >
-                    {isDownloading ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5" />
-                    )}
-                    {t("download")}
-                  </Button>
                 </div>
 
                 {/* Панели танзимоти QR - Full Width ва Compact */}
-                <div className="space-y-4 px-1">
+                <div className="space-y-3 px-1">
                   {/* Стил ва Шаклҳо */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
                         {t("qrDotsStyle") || "Нуқтаҳо"}
                       </Label>
                       <Select
                         value={qrSettings.dotsType}
                         onValueChange={(val) => setQrSettings({ ...qrSettings, dotsType: val as any })}
                       >
-                        <SelectTrigger className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[10px] font-black uppercase">
+                        <SelectTrigger className="h-9 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[9px] font-black uppercase px-3">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1034,8 +1069,8 @@ function ProfileContent() {
                       </Select>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                    <div className="space-y-1">
+                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
                         {t("qrCornersStyle") || "Кунҷҳо"}
                       </Label>
                       <Select
@@ -1050,7 +1085,7 @@ function ProfileContent() {
                           });
                         }}
                       >
-                        <SelectTrigger className="h-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[10px] font-black uppercase">
+                        <SelectTrigger className="h-9 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[9px] font-black uppercase px-3">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -1063,9 +1098,9 @@ function ProfileContent() {
                   </div>
 
                   {/* Рангҳо */}
-                  <div className="grid grid-cols-2 gap-3 relative">
-                    <div className="space-y-1.5 relative">
-                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                  <div className="grid grid-cols-2 gap-2 relative">
+                    <div className="space-y-1 relative">
+                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
                         {t("qrColorLabel")}
                       </Label>
                       <button
@@ -1073,20 +1108,20 @@ function ProfileContent() {
                           e.stopPropagation();
                           setActivePicker(activePicker === "qr" ? null : "qr");
                         }}
-                        className="w-full h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1.5 flex items-center gap-3 transition-all active:scale-95 color-trigger border border-transparent"
+                        className="w-full h-10 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1 flex items-center gap-2 transition-all active:scale-95 color-trigger border border-transparent px-2"
                       >
                         <div 
-                          className="w-9 h-9 rounded-lg shadow-sm border border-black/5" 
+                          className="w-6 h-6 rounded-lg shadow-sm border border-black/5" 
                           style={{ backgroundColor: qrSettings.qrColor }}
                         />
-                        <span className="font-mono text-[10px] font-black uppercase text-zinc-500">
+                        <span className="font-mono text-[9px] font-black uppercase text-zinc-500">
                           {qrSettings.qrColor}
                         </span>
                       </button>
                     </div>
 
-                    <div className="space-y-1.5 relative">
-                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                    <div className="space-y-1 relative">
+                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
                         {t("qrBgLabel")}
                       </Label>
                       <button
@@ -1094,13 +1129,13 @@ function ProfileContent() {
                           e.stopPropagation();
                           setActivePicker(activePicker === "bg" ? null : "bg");
                         }}
-                        className="w-full h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1.5 flex items-center gap-3 transition-all active:scale-95 color-trigger border border-transparent"
+                        className="w-full h-10 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1 flex items-center gap-2 transition-all active:scale-95 color-trigger border border-transparent px-2"
                       >
                         <div 
-                          className="w-9 h-9 rounded-lg shadow-sm border border-black/5" 
+                          className="w-6 h-6 rounded-lg shadow-sm border border-black/5" 
                           style={{ backgroundColor: qrSettings.bgColor }}
                         />
-                        <span className="font-mono text-[10px] font-black uppercase text-zinc-500">
+                        <span className="font-mono text-[9px] font-black uppercase text-zinc-500">
                           {qrSettings.bgColor}
                         </span>
                       </button>
@@ -1175,9 +1210,6 @@ function ProfileContent() {
                   <div className="pt-2 sm:hidden">
                     <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center">
-                          <ShieldCheck className="w-4 h-4" />
-                        </div>
                         <div className="flex flex-col">
                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-white">
                             {t("qrStatus")}
@@ -2631,6 +2663,82 @@ function ProfileContent() {
           >
             {t('ok')}
           </Button>
+        </DialogContent>
+      </Dialog>
+      {/* Why QR Modal */}
+      <Dialog open={showWhyQRModal} onOpenChange={setShowWhyQRModal}>
+        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+          <DialogHeader className="space-y-4 text-center">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <QrCode className="w-8 h-8 text-blue-500" />
+            </div>
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white leading-tight">
+              {t("qrWhyGuideTitle") || "Чӣ тавр QR-код ба шумо кӯмак мекунад?"}
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed space-y-4 text-left mt-4">
+                <p className="text-center mb-6">
+                  {t("qrWhyGuideDesc") || "Ин стикери махсусест, ки ашёҳои шуморо муҳофизат мекунад. Тарзи кораш хеле оддӣ аст:"}
+                </p>
+                
+                <div className="space-y-5 mt-4 bg-zinc-50 dark:bg-zinc-900/50 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800">
+                  {/* Step 1 */}
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
+                      <span className="font-black text-zinc-900 dark:text-white text-xs">1</span>
+                    </div>
+                    <div className="space-y-1 mt-1">
+                      <h5 className="font-black text-[11px] uppercase tracking-wider text-zinc-900 dark:text-white">
+                        {t("qrWhyStep1Title") || "Дизайн ва скачат кунед"}
+                      </h5>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                        {t("qrWhyStep1Desc") || "Аввал QR-кодро бо услуби худ дизайн кунед, сипас онро скачат карда, чоп кунед ва ба ашёҳоятон часпонед."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
+                      <span className="font-black text-zinc-900 dark:text-white text-xs">2</span>
+                    </div>
+                    <div className="space-y-1 mt-1">
+                      <h5 className="font-black text-[11px] uppercase tracking-wider text-zinc-900 dark:text-white">
+                        {t("qrWhyStep2Title") || "Ёбанда скан мекунад"}
+                      </h5>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                        {t("qrWhyStep2Desc") || "Ашё гум шавад, шахси ёфтагӣ танҳо камераи телефонашро ба QR-код наздик мекунад."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex gap-4">
+                    <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
+                      <span className="font-black text-zinc-900 dark:text-white text-xs">3</span>
+                    </div>
+                    <div className="space-y-1 mt-1">
+                      <h5 className="font-black text-[11px] uppercase tracking-wider text-zinc-900 dark:text-white">
+                        {t("qrWhyStep3Title") || "Алоқаи фаврӣ ва бехатар"}
+                      </h5>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                        {t("qrWhyStep3Desc") || "Саҳифаи шумо кушода мешавад ва ёбанда бевосита ба шумо занг мезанад. Рақамҳои эҳтиётӣ низ дастрас мешаванд."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-8 flex flex-col gap-2">
+            <Button 
+              onClick={() => setShowWhyQRModal(false)}
+              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 transition-all active:scale-95"
+            >
+              {t("ok") || "Фаҳмо"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </TooltipProvider>

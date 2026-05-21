@@ -10,6 +10,7 @@ import { cookies } from "next/headers";
 import ItemDetailsClient from "./item-details-client";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { notFound } from "next/navigation";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -93,6 +94,17 @@ function ItemDetailSkeleton() {
 
 export default async function ItemDetailsPage({ params }: Props) {
   const { id } = await params;
+  
+  // Санҷиши мавҷудияти эълон дар сервер
+  try {
+    const item = await ItemService.getItemDetails(id);
+    if (!item) {
+      notFound();
+    }
+  } catch (e) {
+    notFound();
+  }
+
   return (
     <Suspense fallback={<ItemDetailSkeleton />}>
       <ItemDetailsClient id={id} />

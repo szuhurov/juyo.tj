@@ -235,12 +235,12 @@ export default function ItemDetailsClient({ id }: { id: string }) {
       <div className="mx-auto max-w-6xl md:pt-8 md:px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12 items-start relative">
           
-          <div className="sticky top-0 md:top-24 z-0 w-full p-0 md:p-0 flex items-center justify-center">
-            <div className="relative aspect-square w-full max-w-[600px] overflow-hidden md:rounded-[32px] border-b md:border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-xl group shimmer-bg">
-              
+          <div className="md:sticky md:top-24 z-0 w-full p-0 md:p-0 flex items-center justify-center self-start">
+            <div className="relative aspect-square w-full max-w-[600px] overflow-hidden md:rounded-[32px] border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 shadow-xl group shimmer-bg">
+
               <div 
                 ref={scrollContainerRef}
-                className="flex h-full w-full overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth"
+                className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 onScroll={(e) => {
                   const scrollLeft = (e.target as HTMLDivElement).scrollLeft;
                   const width = (e.target as HTMLDivElement).clientWidth;
