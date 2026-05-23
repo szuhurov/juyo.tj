@@ -8,7 +8,10 @@
 -- DROP TABLE IF EXISTS public.profiles CASCADE;
 -- DROP TABLE IF EXISTS public.safety_box CASCADE;
 
--- 1. Создаем типы данных
+-- 1. Создаем расширения
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- 2. Создаем типы данных
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'item_type') THEN
@@ -71,8 +74,45 @@ CREATE TABLE IF NOT EXISTS public.item_images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     item_id UUID REFERENCES public.items(id) ON DELETE CASCADE,
     image_url TEXT NOT NULL,
+    embedding vector(1536), -- Барои OpenAI text-embedding-3-small ё CLIP
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Функция барои ҷустуҷӯи монандӣ (Vector Similarity Search)
+CREATE OR REPLACE FUNCTION match_item_images (
+  query_embedding vector(1536),
+  match_threshold float,
+  match_count int,
+  p_type text
+)
+RETURNS TABLE (
+  id UUID,
+  item_id UUID,
+  image_url TEXT,
+  similarity float,
+  title TEXT,
+  description TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    img.id,
+    img.item_id,
+    img.image_url,
+    1 - (img.embedding <=> query_embedding) AS similarity,
+    i.title,
+    i.description
+  FROM public.item_images img
+  JOIN public.items i ON img.item_id = i.id
+  WHERE i.type::text = p_type
+    AND i.is_resolved = false
+    AND 1 - (img.embedding <=> query_embedding) > match_threshold
+  ORDER BY img.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
 
 -- 5. Таблица SAVED_ITEMS
 CREATE TABLE IF NOT EXISTS public.saved_items (

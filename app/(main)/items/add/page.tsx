@@ -63,6 +63,9 @@ function AddItemForm() {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [showSafetyModal, setShowSafetyModal] = useState(false);
+  const [isAIChecking, setIsAIChecking] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<any>(null);
+  const [showAIResults, setShowAIResults] = useState(false);
 
   // Боргузории рақами телефон аз профил
   useEffect(() => {
@@ -100,6 +103,50 @@ function AddItemForm() {
     setPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Санҷиши AI (AI Brain Check)
+  const runAICheck = async () => {
+    if (images.length === 0) return;
+    
+    setIsAIChecking(true);
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      
+      const formDataAI = new FormData();
+      formDataAI.append('image', images[0]); // Аввалин суратро барои таҳлил мефиристем
+      formDataAI.append('type', formData.type || 'lost');
+
+      const { data, error } = await supabase.functions.invoke('ai-brain', {
+        body: formDataAI,
+      });
+
+      if (error) throw error;
+
+      setAiSuggestions(data);
+      
+      // Авто-пуркунии категория ва тавсиф агар холӣ бошад
+      if (data.analysis) {
+        setFormData(prev => ({
+          ...prev,
+          category: prev.category || data.analysis.category,
+          description: prev.description || data.analysis.description_tj
+        }));
+      }
+
+      if (data.similarItems && data.similarItems.length > 0) {
+        setShowAIResults(true);
+      } else {
+        setStep(4);
+      }
+    } catch (error: any) {
+      console.error("AI Check Error:", error);
+      // Агар AI хато диҳад, мо ба ҳар ҳол мегузорем, ки корбар идома диҳад
+      setStep(4);
+    } finally {
+      setIsAIChecking(false);
+    }
+  };
+
   // Санҷиши қадамҳо пеш аз гузаштан
   const nextStep = () => {
     if (step === 1) {
@@ -119,7 +166,7 @@ function AddItemForm() {
         toast.error(t('atLeastOneImage'));
         return;
       }
-      setStep(4);
+      runAICheck();
     }
   };
 
@@ -492,6 +539,80 @@ function AddItemForm() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* AI Brain Results Modal */}
+      <Dialog open={showAIResults} onOpenChange={setShowAIResults}>
+        <DialogContent className="sm:max-w-lg rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto text-2xl mb-2">🤖</div>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tight">
+                {aiSuggestions?.message || "Мо чизҳои монандро ёфтем!"}
+              </DialogTitle>
+              <DialogDescription className="text-zinc-500 font-bold">
+                Пеш аз он ки эълон гузоред, санҷед, ки оё ин ҳамон чизе нест, ки шумо меҷӯед?
+              </DialogDescription>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-none">
+              {aiSuggestions?.similarItems?.map((item: any) => (
+                <div 
+                  key={item.id} 
+                  className="flex items-center gap-4 p-4 rounded-3xl border-2 border-zinc-100 hover:border-emerald-500 cursor-pointer transition-all group bg-zinc-50/50"
+                  onClick={() => router.push(`/items/${item.id}`)}
+                >
+                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0">
+                    <Image 
+                      src={item.item_images?.[0]?.image_url || "/placeholder.png"} 
+                      alt={item.title} 
+                      fill 
+                      className="object-cover group-hover:scale-110 transition-transform" 
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-black uppercase text-sm truncate">{item.title}</h4>
+                    <p className="text-[10px] font-bold text-zinc-500 line-clamp-2 mt-1 leading-snug">
+                      {item.description}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-emerald-500">
+                    →
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowAIResults(false)}
+                className="h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-2"
+              >
+                Инҳо нестанд, идома додан
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Processing Overlay */}
+      {isAIChecking && (
+        <div className="fixed inset-0 bg-white/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center shadow-2xl shadow-emerald-500/40 animate-bounce">
+              <Loader2 className="w-10 h-10 text-white animate-spin" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs animate-pulse">
+              AI
+            </div>
+          </div>
+          <h3 className="mt-8 text-xl font-black uppercase tracking-widest text-zinc-900">
+            AI Brain Таҳлил мекунад...
+          </h3>
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+            Мо базаро барои ёфтани чизҳои монанд месанҷем
+          </p>
+        </div>
+      )}
     </div>
   );
 }
