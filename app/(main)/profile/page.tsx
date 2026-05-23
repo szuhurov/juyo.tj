@@ -808,7 +808,7 @@ function ProfileContent() {
         return (
           <div className="space-y-6">
             {/* Рӯйхати эълонҳои шахсӣ */}
-            <div className="animate-in fade-in duration-500">
+            <div className="animate-in fade-in duration-200">
               {postsLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 -mx-2 sm:mx-0">
                   {[...Array(3)].map((_, i) => (
@@ -837,7 +837,7 @@ function ProfileContent() {
         return (
           <div className="space-y-6">
             {/* Рӯйхати эълонҳои шахсӣ */}
-            <div className="animate-in fade-in duration-500">
+            <div className="animate-in fade-in duration-200">
               {postsLoading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6 -mx-2 sm:mx-0">
                   {[...Array(3)].map((_, i) => (
@@ -939,7 +939,7 @@ function ProfileContent() {
             </div>
 
             {/* Танзимоти намуди зоҳирии QR */}
-            <div className="animate-in fade-in duration-500 space-y-8">
+            <div className="animate-in fade-in duration-200 space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
                 <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
@@ -1230,7 +1230,7 @@ function ProfileContent() {
               </h3>
             </div>
 
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10 px-2">
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-200 space-y-10 px-2">
               {/* Mission */}
               <section className="space-y-6">
                 <div className="bg-zinc-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
@@ -1380,7 +1380,7 @@ function ProfileContent() {
               </h3>
             </div>
 
-            <div className="animate-in slide-in-from-right-4 duration-500 max-w-2xl px-2 space-y-12">
+            <div className="animate-in slide-in-from-right-4 duration-200 max-w-2xl px-2 space-y-12">
               {/* Бахши Аватар ва Ному насаб */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -1675,10 +1675,10 @@ function ProfileContent() {
             </div>
 
             {/* Идоракунии Қуттии бехатарӣ (Safety Box) */}
-            <div className="animate-in fade-in duration-500 max-w-4xl mx-auto px-2">
+            <div className="animate-in fade-in duration-200 max-w-4xl mx-auto px-2">
               {isAddingSafetyItem || editingSafetyItem ? (
                 /* Формаи илова кардан ё таҳрир кардани ашё */
-                <Card className="rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+                <Card className="rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
                   <CardHeader className="bg-zinc-50 dark:bg-zinc-900/50 p-6 border-b border-zinc-100 dark:border-zinc-800">
                     <CardTitle className="text-lg font-black uppercase tracking-wider flex items-center gap-3">
                       <Briefcase className="w-5 h-5 text-amber-500" />
@@ -1961,7 +1961,7 @@ function ProfileContent() {
                                 src={item.images[0]}
                                 alt={item.item_name}
                                 fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                className="object-cover transition-transform duration-200 group-hover:scale-105"
                               />
                             ) : (
                               <PackageSearch className="w-12 h-12 text-zinc-200" />
@@ -2458,7 +2458,7 @@ function ProfileContent() {
       >
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
           <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
-            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-500">
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-200">
               <ShieldCheck className="w-8 h-8 text-emerald-500" />
             </div>
 

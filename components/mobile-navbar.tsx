@@ -98,10 +98,20 @@ export function MobileNavbar() {
         {navItems.map((item) => {
           const currentPath = optimisticPath || pathname;
           let isActive = currentPath === item.href;
+
+          // Маддиқи махсус барои табҳо дар профил
           if (item.id === "qr") {
-            isActive = currentPath === "/profile" && searchParams.get("tab") === "qr";
+            if (optimisticPath) {
+              isActive = optimisticPath === "/profile?tab=qr";
+            } else {
+              isActive = pathname === "/profile" && searchParams.get("tab") === "qr";
+            }
           } else if (item.id === "profile") {
-            isActive = currentPath === "/profile" && (!searchParams.get("tab") || searchParams.get("tab") !== "qr");
+            if (optimisticPath) {
+              isActive = optimisticPath === "/profile";
+            } else {
+              isActive = pathname === "/profile" && (!searchParams.get("tab") || searchParams.get("tab") !== "qr");
+            }
           }
 
           if (item.isProfile) {
@@ -115,7 +125,7 @@ export function MobileNavbar() {
               >
                 <div
                   className={cn(
-                    "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300",
+                    "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-150",
                     isActive 
                       ? "bg-zinc-900 dark:bg-zinc-100 border-2 border-zinc-900 dark:border-white" 
                       : "border-2 border-transparent"
