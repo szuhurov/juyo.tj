@@ -134,31 +134,35 @@ export default async function RootLayout({
   const t = translations[locale];
 
   return (
-    <ClerkProvider
-      localization={clerkLocale}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
+    <html
+      lang={locale}
+      className={`${inter.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <html
-        lang={locale}
-        className={`${inter.variable} h-full antialiased`}
-        suppressHydrationWarning
-      >
-        <head>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "WebSite",
-                "name": "juyo",
-                "url": "https://juyo.tj",
-                "description": t.seoDesc,
-              }),
-            }}
-          />
-        </head>
-        <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "juyo",
+              "url": "https://juyo.tj",
+              "description": t.seoDesc,
+            }),
+          }}
+        />
+      </head>
+      <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
+        <style dangerouslySetInnerHTML={{ __html: `
+          * { -webkit-tap-highlight-color: transparent; }
+          .no-flicker { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+        ` }} />
+        <ClerkProvider
+          localization={clerkLocale}
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+        >
           {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
           <h1 className="sr-only">
             роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. 
@@ -177,8 +181,8 @@ export default async function RootLayout({
               <PWAInstallPrompt />
             </LanguageProvider>
           </QueryProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

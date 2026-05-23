@@ -122,6 +122,7 @@ function ProfileContent() {
     null,
   );
   const [showWhyQRModal, setShowWhyQRModal] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
 
   // Стейтҳо барои нигоҳ доштани маълумоти профил ва нишон додани модалҳо
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -866,129 +867,75 @@ function ProfileContent() {
           <div className="space-y-8 pb-32">
             {/* Сарлавҳаи таби QR-код */}
             <div className="hidden sm:block sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <h3 className="text-lg font-black uppercase tracking-tight hidden sm:block">
+              <div className="flex items-start gap-4">
+                <h3 className="text-lg font-black uppercase tracking-tight">
                   {t("qrMyCode")}
                 </h3>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full sm:w-auto">
-                  {/* iOS Style Toggle - Hidden on mobile header, shown in settings */}
-                  <div className="hidden sm:flex items-center gap-4">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                          {profile?.is_qr_active
-                            ? t("qrStatusActive")
-                            : t("qrStatusInactive")}
-                        </span>
-                        <button
-                          onClick={async () => {
-                            if (!profile) return;
-                            const previousState = profile.is_qr_active;
-                            const newState = !previousState;
-                            
-                            // Optimistic update
-                            setProfile({ ...profile, is_qr_active: newState });
-                            
-                            try {
-                              const token = await getToken({
-                                template: "supabase",
-                              });
-                              const supabase = createClerkSupabaseClient(token!);
-                              
-                              // Background update
-                              ProfileService.updateProfile(
-                                supabase,
-                                userId!,
-                                { is_qr_active: newState }
-                              ).then(updated => {
-                                setProfile(updated);
-                                toast.success(
-                                  newState
-                                    ? t("qrActivatedSuccess")
-                                    : t("qrDeactivatedSuccess"),
-                                );
-                              }).catch(err => {
-                                console.error(err);
-                                setProfile({ ...profile, is_qr_active: previousState });
-                                toast.error(t("error"));
-                              });
-                            } catch (err) {
-                              console.error(err);
-                              setProfile({ ...profile, is_qr_active: previousState });
-                              toast.error(t("error"));
-                            }
-                          }}
-                          className={cn(
-                            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                            profile?.is_qr_active
-                              ? "bg-emerald-500"
-                              : "bg-zinc-300 dark:bg-zinc-700",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                              profile?.is_qr_active
-                                ? "translate-x-5"
-                                : "translate-x-0",
-                            )}
-                          />
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => setShowSecurityInfo(true)}
-                        className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2"
-                      >
-                        {t("qrSecurityQuestion")}
-                      </button>
-                    </div>
-                    
-                    <Button
-                      onClick={handleDownloadQR}
-                      disabled={isDownloading}
-                      variant="outline"
-                      size="sm"
-                      className="h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[10px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-2 px-4 shadow-sm"
-                    >
-                      {isDownloading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <Download className="w-3.5 h-3.5" />
+                
+                <div className="flex flex-col items-end gap-1 mt-1">
+                  <button
+                    onClick={async () => {
+                      if (!profile) return;
+                      const previousState = profile.is_qr_active;
+                      const newState = !previousState;
+                      
+                      // Optimistic update
+                      setProfile({ ...profile, is_qr_active: newState });
+                      
+                      try {
+                        const token = await getToken({
+                          template: "supabase",
+                        });
+                        const supabase = createClerkSupabaseClient(token!);
+                        
+                        // Background update
+                        ProfileService.updateProfile(
+                          supabase,
+                          userId!,
+                          { is_qr_active: newState }
+                        ).then(updated => {
+                          setProfile(updated);
+                          toast.success(
+                            newState
+                              ? t("qrActivatedSuccess")
+                              : t("qrDeactivatedSuccess"),
+                          );
+                        }).catch(err => {
+                          console.error(err);
+                          setProfile({ ...profile, is_qr_active: previousState });
+                          toast.error(t("error"));
+                        });
+                      } catch (err) {
+                        console.error(err);
+                        setProfile({ ...profile, is_qr_active: previousState });
+                        toast.error(t("error"));
+                      }
+                    }}
+                    className={cn(
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                      profile?.is_qr_active
+                        ? "bg-emerald-500"
+                        : "bg-zinc-300 dark:bg-zinc-700",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                        profile?.is_qr_active
+                          ? "translate-x-4"
+                          : "translate-x-0",
                       )}
-                      {t("download")}
-                    </Button>
-                  </div>
+                    />
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowSecurityModal(true)}
+                    className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                  >
+                    {t("qrSecurityStatusWhy") || "Барои чӣ QR-код статус лозим?"}
+                  </button>
                 </div>
               </div>
-
-              {/* Security Info Modal */}
-              <Dialog
-                open={showSecurityInfo}
-                onOpenChange={setShowSecurityInfo}
-              >
-                <DialogContent className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-[2.5rem] p-8 border-none shadow-2xl overflow-hidden bg-white dark:bg-zinc-900 outline-none">
-                  <div className="absolute top-0 left-0 w-full h-1.5 bg-emerald-500" />
-                  <DialogHeader className="space-y-4 text-center">
-                    <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
-                      <ShieldCheck className="w-8 h-8 text-emerald-500" />
-                    </div>
-                    <DialogTitle className="text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
-                      {t("qrSecurityTitle")}
-                    </DialogTitle>
-                    <DialogDescription className="text-zinc-600 dark:text-zinc-400 font-bold text-base leading-relaxed">
-                      {t("qrSecurityLong")}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter className="mt-6 sm:justify-center">
-                    <Button
-                      onClick={() => setShowSecurityInfo(false)}
-                      className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"
-                    >
-                      {t("ok")}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             </div>
 
             {/* Танзимоти намуди зоҳирии QR */}
@@ -1044,21 +991,24 @@ function ProfileContent() {
                 </div>
 
                 {/* Панели танзимоти QR - Full Width ва Compact */}
-                <div className="space-y-3 px-1">
+                <div className="space-y-5 px-1 pb-10">
                   {/* Стил ва Шаклҳо */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
-                        {t("qrDotsStyle") || "Нуқтаҳо"}
-                      </Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <LayoutGrid className="w-3 h-3 text-zinc-400" />
+                        <Label className="text-[10px] font-bold text-zinc-500">
+                          {t("qrDotsStyle") || "Нуқтаҳо"}
+                        </Label>
+                      </div>
                       <Select
                         value={qrSettings.dotsType}
                         onValueChange={(val) => setQrSettings({ ...qrSettings, dotsType: val as any })}
                       >
-                        <SelectTrigger className="h-9 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[9px] font-black uppercase px-3">
+                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-[11px] font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
                           <SelectItem value="square">{t("qrDotSquare")}</SelectItem>
                           <SelectItem value="dots">{t("qrDotDots")}</SelectItem>
                           <SelectItem value="rounded">{t("qrDotRounded")}</SelectItem>
@@ -1069,10 +1019,13 @@ function ProfileContent() {
                       </Select>
                     </div>
 
-                    <div className="space-y-1">
-                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
-                        {t("qrCornersStyle") || "Кунҷҳо"}
-                      </Label>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <RefreshCw className="w-3 h-3 text-zinc-400" />
+                        <Label className="text-[10px] font-bold text-zinc-500">
+                          {t("qrCornersStyle") || "Кунҷҳо"}
+                        </Label>
+                      </div>
                       <Select
                         value={qrSettings.cornersSquareType}
                         onValueChange={(val) => {
@@ -1085,10 +1038,10 @@ function ProfileContent() {
                           });
                         }}
                       >
-                        <SelectTrigger className="h-9 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none text-[9px] font-black uppercase px-3">
+                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-[11px] font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
                           <SelectItem value="square">{t("qrCornerSquare")}</SelectItem>
                           <SelectItem value="dot">{t("qrCornerDot")}</SelectItem>
                           <SelectItem value="extra-rounded">{t("qrCornerRounded")}</SelectItem>
@@ -1098,30 +1051,33 @@ function ProfileContent() {
                   </div>
 
                   {/* Рангҳо */}
-                  <div className="grid grid-cols-2 gap-2 relative">
-                    <div className="space-y-1 relative">
-                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
-                        {t("qrColorLabel")}
-                      </Label>
+                  <div className="grid grid-cols-2 gap-3 relative">
+                    <div className="space-y-2 relative">
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <Palette className="w-3 h-3 text-zinc-400" />
+                        <Label className="text-[10px] font-bold text-zinc-500">
+                          {t("qrColorLabel")}
+                        </Label>
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setActivePicker(activePicker === "qr" ? null : "qr");
                         }}
-                        className="w-full h-10 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1 flex items-center gap-2 transition-all active:scale-95 color-trigger border border-transparent px-2"
+                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all active:scale-95 color-trigger px-2 shadow-sm hover:bg-zinc-50"
                       >
                         <div 
-                          className="w-6 h-6 rounded-lg shadow-sm border border-black/5" 
+                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5" 
                           style={{ backgroundColor: qrSettings.qrColor }}
                         />
-                        <span className="font-mono text-[9px] font-black uppercase text-zinc-500">
+                        <span className="font-mono text-[11px] font-bold text-zinc-500 uppercase">
                           {qrSettings.qrColor}
                         </span>
                       </button>
                     </div>
 
-                    <div className="space-y-1 relative">
-                      <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-[0.15em] ml-1 opacity-70">
+                    <div className="space-y-2 relative">
+                      <Label className="text-[10px] font-bold text-zinc-500 ml-1">
                         {t("qrBgLabel")}
                       </Label>
                       <button
@@ -1129,13 +1085,13 @@ function ProfileContent() {
                           e.stopPropagation();
                           setActivePicker(activePicker === "bg" ? null : "bg");
                         }}
-                        className="w-full h-10 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-1 flex items-center gap-2 transition-all active:scale-95 color-trigger border border-transparent px-2"
+                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all active:scale-95 color-trigger px-2 shadow-sm hover:bg-zinc-50"
                       >
                         <div 
-                          className="w-6 h-6 rounded-lg shadow-sm border border-black/5" 
+                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5" 
                           style={{ backgroundColor: qrSettings.bgColor }}
                         />
-                        <span className="font-mono text-[9px] font-black uppercase text-zinc-500">
+                        <span className="font-mono text-[11px] font-bold text-zinc-500 uppercase">
                           {qrSettings.bgColor}
                         </span>
                       </button>
@@ -1214,9 +1170,12 @@ function ProfileContent() {
                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-white">
                             {t("qrStatus")}
                           </span>
-                          <span className="text-[8px] font-bold uppercase text-emerald-600 tracking-widest">
-                            {profile?.is_qr_active ? t("qrStatusActive") : t("qrStatusInactive")}
-                          </span>
+                          <button
+                            onClick={() => setShowSecurityModal(true)}
+                            className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                          >
+                            {t("qrSecurityStatusWhy") || "Барои чӣ QR-код статус лозим?"}
+                          </button>
                         </div>
                       </div>
                       <button
@@ -2525,11 +2484,10 @@ function ProfileContent() {
                       {t("phoneLabel")}
                     </Label>
                     <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                       <Input
                         name="phone"
                         placeholder="XXXXXXXXX"
-                        className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                        className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
                         required
                         inputMode="numeric"
                         onChange={(e) =>
@@ -2548,11 +2506,10 @@ function ProfileContent() {
                         {t("qrSecondaryModal.label")}
                       </Label>
                       <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                         <Input
                           name="secondary_phone"
                           placeholder={t("qrSecondaryModal.placeholder")}
-                          className="h-12 pl-11 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                          className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
                           required
                           inputMode="numeric"
                           onChange={(e) =>
@@ -2646,7 +2603,7 @@ function ProfileContent() {
 
       {/* Terms Details Dialog */}
       <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
-        <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
+        <DialogContent className="w-[96%] sm:max-w-[400px] rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-white">
               {t('terms.link')}
@@ -2667,10 +2624,10 @@ function ProfileContent() {
       </Dialog>
       {/* Why QR Modal */}
       <Dialog open={showWhyQRModal} onOpenChange={setShowWhyQRModal}>
-        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <QrCode className="w-8 h-8 text-blue-500" />
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <QrCode className="w-8 h-8 text-emerald-500" />
             </div>
             <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white leading-tight">
               {t("qrWhyGuideTitle") || "Чӣ тавр QR-код ба шумо кӯмак мекунад?"}
@@ -2727,14 +2684,47 @@ function ProfileContent() {
                     </div>
                   </div>
                 </div>
-
               </div>
             </DialogDescription>
           </DialogHeader>
           <div className="mt-8 flex flex-col gap-2">
             <Button 
               onClick={() => setShowWhyQRModal(false)}
-              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+            >
+              {t("ok") || "Фаҳмо"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Security Mode Modal */}
+      <Dialog open={showSecurityModal} onOpenChange={setShowSecurityModal}>
+        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+          <DialogHeader className="space-y-4 text-center">
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <ShieldCheck className="w-8 h-8 text-emerald-500" />
+            </div>
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white leading-tight">
+              {t("qrSecurityTitle") || "Реҷаи амниятӣ"}
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed space-y-4 text-left mt-4">
+                <div className="bg-emerald-50 dark:bg-emerald-900/10 p-6 rounded-3xl border border-emerald-100/50 dark:border-emerald-900/20">
+                  <p className="text-[12px] text-emerald-700 dark:text-emerald-400 leading-relaxed font-medium">
+                    {t("qrSecurityLong")}
+                  </p>
+                </div>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 text-center px-2">
+                  {t("qrSecurityQuestionDescription") || "Ин тугма танҳо барои он лозим аст, ки маълумоти шуморо ҳангоми зарурат муҳофизат кунад."}
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-8">
+            <Button 
+              onClick={() => setShowSecurityModal(false)}
+              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
             >
               {t("ok") || "Фаҳмо"}
             </Button>

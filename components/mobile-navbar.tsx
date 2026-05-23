@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useUser, useAuth } from "@clerk/nextjs";
@@ -10,7 +11,13 @@ import { cn } from "@/lib/utils";
 
 export function MobileNavbar() {
   const pathname = usePathname();
+  const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
   const router = useRouter();
+
+  // Reset optimistic path when real pathname changes
+  useEffect(() => {
+    setOptimisticPath(null);
+  }, [pathname]);
   const { user } = useUser();
   const { userId } = useAuth();
   const { t } = useLanguage();
@@ -71,6 +78,7 @@ export function MobileNavbar() {
         }
 
         // Гузариши лаҳзавӣ
+        setOptimisticPath(href);
         router.push(target);
         
         // Дар замина (background) саҳифаро пешакӣ бор мекунем
@@ -91,13 +99,14 @@ export function MobileNavbar() {
     <nav className="fixed bottom-0 left-0 right-0 z-[5000] bg-white border-t border-zinc-100 dark:bg-zinc-950 dark:border-zinc-900 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pointer-events-auto">
       <div className="flex items-center justify-around h-14 px-2">
         {navItems.map((item) => {
-          let isActive = pathname === item.href;
+          const currentPath = optimisticPath || pathname;
+          let isActive = currentPath === item.href;
           if (item.id === "qr") {
             isActive =
-              pathname === "/profile" && searchParams.get("tab") === "qr";
+              currentPath === "/profile" && searchParams.get("tab") === "qr";
           } else if (item.id === "profile") {
             isActive =
-              pathname === "/profile" &&
+              currentPath === "/profile" &&
               (!searchParams.get("tab") || searchParams.get("tab") !== "qr");
           }
 
@@ -106,17 +115,16 @@ export function MobileNavbar() {
               <button
                 key={item.href}
                 onClick={(e) => handleNavClick(item.href, e)}
-                className={cn(
-                  "flex flex-col items-center justify-center min-w-[64px] h-full gap-1 transition-all",
-                  isActive ? "text-zinc-900 dark:text-white" : "text-zinc-400",
-                )}
+                onMouseEnter={() => handlePrefetch(item.href)}
+                onTouchStart={() => handlePrefetch(item.href)}
+                className="flex items-center justify-center min-w-[64px] h-full"
               >
                 <div
                   className={cn(
-                    "p-0.5 rounded-full border-2 transition-all",
-                    isActive
-                      ? "border-zinc-900 dark:border-white"
-                      : "border-transparent",
+                    "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300",
+                    isActive 
+                      ? "bg-zinc-900 dark:bg-zinc-100 border-2 border-zinc-900 dark:border-white" 
+                      : "border-2 border-transparent"
                   )}
                 >
                   <Avatar className="h-7 w-7">
@@ -136,14 +144,20 @@ export function MobileNavbar() {
             <button
               key={item.href}
               onClick={(e) => handleNavClick(item.href, e)}
-              className={cn(
-                "flex flex-col items-center justify-center min-w-[50px] h-full gap-1 transition-all active:scale-90",
-                isActive ? "text-zinc-900 dark:text-white" : "text-zinc-400",
-              )}
+              className="flex items-center justify-center min-w-[50px] h-full"
             >
-              <item.icon
-                className={cn("h-6 w-6", isActive && "stroke-[2.5px]")}
-              />
+              <div
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 rounded-full transition-all duration-300 active:scale-90",
+                  isActive 
+                    ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900" 
+                    : "text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900"
+                )}
+              >
+                <item.icon
+                  className={cn("h-6 w-6", isActive && "stroke-[2.5px]")}
+                />
+              </div>
             </button>
           );
         })}

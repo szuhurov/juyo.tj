@@ -18,13 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert, CheckCircle2 } from "lucide-react";
@@ -206,8 +199,8 @@ function AddItemForm() {
   };
 
   return (
-    <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-6 max-w-xl h-[calc(100vh-144px)] sm:h-auto flex flex-col">
-      <Card className="flex-1 rounded-none sm:rounded-[2.5rem] overflow-hidden border-none sm:border shadow-none sm:shadow-2xl flex flex-col bg-white">
+    <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-6 max-w-xl md:max-w-4xl h-[calc(100vh-144px)] sm:h-auto flex flex-col">
+      <Card className="flex-1 rounded-none sm:rounded-[3rem] overflow-hidden border-none sm:border shadow-none sm:shadow-2xl flex flex-col bg-white">
         {/* Step Indicator - Full Width Minimalist */}
         <div className="w-full flex h-1.5 gap-1 bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
           {Array.from({ length: totalSteps }).map((_, i) => (
@@ -221,27 +214,27 @@ function AddItemForm() {
           ))}
         </div>
 
-        <CardContent className="p-6 sm:p-10 flex-1 flex flex-col justify-center overflow-y-auto scrollbar-none">
+        <CardContent className="p-6 sm:p-8 md:px-16 md:py-6 flex-1 flex flex-col justify-center overflow-y-auto scrollbar-none">
           {/* Step 1: Type Selection */}
           {step === 1 && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="text-center space-y-2">
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-lg mx-auto w-full">
+              <div className="text-center space-y-1">
                 <h2 className="text-2xl font-black uppercase tracking-tight">{t('what_happened')}</h2>
               </div>
               <RadioGroup 
                 value={formData.type || ""}
                 onValueChange={(val) => setFormData(prev => ({ ...prev, type: val as 'lost' | 'found' }))}
-                className="grid grid-cols-1 gap-4"
+                className="grid grid-cols-1 gap-3"
               >
                 <div className="relative">
                   <Label
                     htmlFor="lost"
-                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-6 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
+                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-5 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
                   >
-                    <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🔍</div>
+                    <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🔍</div>
                     <div className="flex-1">
                       <span className="block font-black text-lg uppercase leading-none mb-1">{t('lost')}</span>
-                      <span className="text-zinc-500 text-xs font-bold">{t('lost_desc')}</span>
+                      <span className="text-zinc-500 text-[10px] font-bold">{t('lost_desc')}</span>
                     </div>
                     <RadioGroupItem 
                       value="lost" 
@@ -253,12 +246,12 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="found"
-                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-6 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
+                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-5 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
                   >
-                    <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">🎁</div>
+                    <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">🎁</div>
                     <div className="flex-1">
                       <span className="block font-black text-lg uppercase leading-none mb-1">{t('found')}</span>
-                      <span className="text-zinc-500 text-xs font-bold">{t('found_desc')}</span>
+                      <span className="text-zinc-500 text-[10px] font-bold">{t('found_desc')}</span>
                     </div>
                     <RadioGroupItem 
                       value="found" 
@@ -273,52 +266,71 @@ function AddItemForm() {
 
           {/* Step 2: Basic Info */}
           {step === 2 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
-              <div className="space-y-2 group">
-                <Input 
-                  id="title"
-                  name="title"
-                  placeholder={t('titleLabel')}
-                  className={cn(
-                    "rounded-xl h-14 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-base font-medium focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none transition-all placeholder:text-zinc-400/60",
-                    formData.title.trim().length > 0 && "border-emerald-500 ring-emerald-500/5"
-                  )}
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2 group">
-                <Select value={formData.category} onValueChange={(val) => setFormData(prev => ({ ...prev, category: val }))}>
-                  <SelectTrigger 
-                    id="category" 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 animate-in fade-in slide-in-from-right-4 duration-500 w-full items-start">
+              <div className="space-y-4">
+                <div className="space-y-1.5 group">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">
+                    {t('titleLabel')}
+                  </Label>
+                  <Input 
+                    id="title"
+                    name="title"
+                    placeholder={t('titleLabel')}
                     className={cn(
-                      "h-14 rounded-xl bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-base font-medium focus:border-emerald-500 focus:ring-emerald-500/10 shadow-none transition-all",
-                      formData.category && "border-emerald-500 ring-emerald-500/5"
+                      "rounded-xl h-12 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-sm font-medium focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none transition-all placeholder:text-zinc-400/60",
+                      formData.title.trim().length > 0 && "border-emerald-500 ring-emerald-500/5"
                     )}
-                  >
-                    <SelectValue placeholder={<span className="text-zinc-400/60">{t('categoryLabel')}</span>} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl border-zinc-200 dark:border-zinc-800 shadow-xl">
-                    {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.name} className="rounded-lg py-3 font-medium">
-                        <span className="mr-2">{cat.icon}</span> {t(`categories.${cat.id}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5 group">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">
+                    {t('description')}
+                  </Label>
+                  <Textarea 
+                    id="description"
+                    name="description"
+                    placeholder={t('description')}
+                    className={cn(
+                      "rounded-xl min-h-[140px] md:min-h-[180px] bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-sm font-medium focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none resize-none p-3 transition-all placeholder:text-zinc-400/60 scrollbar-none",
+                      formData.description.trim().length > 0 && "border-emerald-500 ring-emerald-500/5"
+                    )}
+                    value={formData.description}
+                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div className="space-y-2 group">
-                <Textarea 
-                  id="description"
-                  name="description"
-                  placeholder={t('description')}
-                  className={cn(
-                    "rounded-xl min-h-[160px] bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-base font-medium focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none resize-none p-4 transition-all placeholder:text-zinc-400/60",
-                    formData.description.trim().length > 0 && "border-emerald-500 ring-emerald-500/5"
-                  )}
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                />
+
+              <div className="space-y-4">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">
+                  {t('categoryLabel')}
+                </Label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-95 text-left group",
+                        formData.category === cat.name
+                          ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm"
+                          : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600 dark:bg-zinc-950 dark:border-zinc-800"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-lg flex items-center justify-center text-lg transition-transform group-hover:scale-110 shrink-0",
+                        formData.category === cat.name ? "bg-emerald-100" : "bg-zinc-50 dark:bg-zinc-900"
+                      )}>
+                        {cat.icon}
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-tight leading-tight">
+                        {t(`categories.${cat.id}`)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
