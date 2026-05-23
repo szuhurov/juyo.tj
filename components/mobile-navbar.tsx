@@ -18,10 +18,10 @@ export function MobileNavbar() {
   useEffect(() => {
     setOptimisticPath(null);
   }, [pathname]);
+
   const { user } = useUser();
   const { userId } = useAuth();
   const { t } = useLanguage();
-
   const searchParams = useSearchParams();
 
   const navItems = [
@@ -59,40 +59,37 @@ export function MobileNavbar() {
   const handleNavClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      const isProtected =
-        href.includes("/profile") || href.includes("/items/add");
+      const isProtected = href.includes("/profile") || href.includes("/items/add");
 
       if (isProtected && !userId) {
         router.push("/sign-up");
       } else {
         const target = href === "/profile" ? "/profile?tab=posts" : href;
         
-        // Агар ба саҳифаи асосӣ равем, эвенти 'go-home' мефиристем
         if (href === "/") {
           if (pathname === "/") {
-            // Агар аллакай дар саҳифаи асосӣ бошем, саҳифаро refresh мекунем
             window.location.reload();
             return;
           }
           window.dispatchEvent(new CustomEvent('go-home'));
         }
 
-        // Гузариши лаҳзавӣ
         setOptimisticPath(href);
         router.push(target);
         
-        // Дар замина (background) саҳифаро пешакӣ бор мекунем
-        router.prefetch(target);
-
         if (typeof window !== 'undefined') {
           window.scrollTo({ top: 0, behavior: "instant" });
         }
       }
     } catch (err) {
       console.error("Navigation error:", err);
-      // Fallback: Агар router кор накунад, истифодаи window.location
       window.location.href = href;
     }
+  };
+
+  const handlePrefetch = (href: string) => {
+    const target = href === "/profile" ? "/profile?tab=posts" : href;
+    router.prefetch(target);
   };
 
   return (
@@ -102,12 +99,9 @@ export function MobileNavbar() {
           const currentPath = optimisticPath || pathname;
           let isActive = currentPath === item.href;
           if (item.id === "qr") {
-            isActive =
-              currentPath === "/profile" && searchParams.get("tab") === "qr";
+            isActive = currentPath === "/profile" && searchParams.get("tab") === "qr";
           } else if (item.id === "profile") {
-            isActive =
-              currentPath === "/profile" &&
-              (!searchParams.get("tab") || searchParams.get("tab") !== "qr");
+            isActive = currentPath === "/profile" && (!searchParams.get("tab") || searchParams.get("tab") !== "qr");
           }
 
           if (item.isProfile) {
@@ -144,6 +138,8 @@ export function MobileNavbar() {
             <button
               key={item.href}
               onClick={(e) => handleNavClick(item.href, e)}
+              onMouseEnter={() => handlePrefetch(item.href)}
+              onTouchStart={() => handlePrefetch(item.href)}
               className="flex items-center justify-center min-w-[50px] h-full"
             >
               <div
