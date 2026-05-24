@@ -40,7 +40,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
 
 function AddItemForm() {
-  const { t, language } = useLanguage();
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -122,7 +122,7 @@ function AddItemForm() {
       formDataAI.append('type', formData.type || 'lost');
       formDataAI.append('title', formData.title);
       formDataAI.append('description', formData.description);
-      formDataAI.append('lang', language);
+      formDataAI.append('lang', locale);
       formDataAI.append('mode', 'moderation');
 
       const { data, error } = await supabase.functions.invoke('ai-brain', {
@@ -162,7 +162,7 @@ function AddItemForm() {
       formDataAI.append('type', formData.type || 'lost');
       formDataAI.append('title', formData.title);
       formDataAI.append('description', formData.description);
-      formDataAI.append('lang', language);
+      formDataAI.append('lang', locale);
       formDataAI.append('mode', 'similarity');
 
       const { data, error } = await supabase.functions.invoke('ai-brain', {
