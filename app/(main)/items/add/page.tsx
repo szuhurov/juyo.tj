@@ -47,7 +47,7 @@ function AddItemForm() {
   
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
-  const totalSteps = 6;
+  const totalSteps = 5;
   const [loading, setLoading] = useState(false);
   
   // Маълумоти эълон (Consolidated State for better stability)
@@ -87,6 +87,65 @@ function AddItemForm() {
     fetchProfile();
   }, [userId, getToken]);
 
+  // Санҷиши AI ва Авто-пуркунӣ (AI Brain Check & Auto-fill)
+  const runAIAnalysis = async (selectedImages: File[]) => {
+    if (selectedImages.length === 0) return;
+    
+    setStep(2); // Қадами 2: Таҳлили AI
+    setModerationStatus('checking');
+    setModerationError(null);
+    
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      
+      const formDataAI = new FormData();
+      selectedImages.forEach(img => {
+        formDataAI.append('image', img);
+      });
+      
+      // Барои аввалин бор мо танҳо суратро мефиристем, то AI худаш тавсиф кунад
+      formDataAI.append('lang', locale);
+      formDataAI.append('mode', 'full'); 
+
+      const { data, error } = await supabase.functions.invoke('ai-brain', {
+        body: formDataAI,
+      });
+
+      console.log("AI Analysis Response:", data);
+
+      if (error || (data && data.is_safe === false)) {
+        setModerationStatus('failed');
+        setModerationError(data?.reason || error?.message || t('error'));
+        return;
+      }
+
+      // Авто-пуркунии маълумот аз AI (Simplified Flat Mapping)
+      if (data) {
+        setFormData(prev => ({
+          ...prev,
+          title: data.title || prev.title,
+          category: data.category || prev.category,
+          description: data.description || prev.description
+        }));
+        console.log("Form data auto-filled from AI:", data);
+      }
+
+      setAiSuggestions(data);
+      setModerationStatus('passed');
+      
+      // Баъд аз 1.5 сония ба қадами тафсилот (Details) мегузарем
+      setTimeout(() => {
+        setStep(4);
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("AI Analysis Error:", error);
+      setModerationStatus('failed');
+      setModerationError(error.message);
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 5) {
@@ -94,139 +153,43 @@ function AddItemForm() {
       return;
     }
     
-    setImages(prev => [...prev, ...files]);
+    const newImages = [...images, ...files];
+    setImages(newImages);
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
-  };
 
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-    setPreviews(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // Санҷиши AI (AI Brain Check)
-  const runAICheck = async () => {
-    if (images.length === 0) return;
-    
-    setStep(5); // Қадами 5: Санҷиши амниятӣ
-    setModerationStatus('checking');
-    setModerationError(null);
-    setShowSearchChoice(false);
-    
-    try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-      
-      const formDataAI = new FormData();
-      formDataAI.append('image', images[0]);
-      formDataAI.append('type', formData.type || 'lost');
-      formDataAI.append('title', formData.title);
-      formDataAI.append('description', formData.description);
-      formDataAI.append('lang', locale);
-      formDataAI.append('mode', 'moderation');
-
-      const { data, error } = await supabase.functions.invoke('ai-brain', {
-        body: formDataAI,
-      });
-
-      if (error || (data && data.is_safe === false)) {
-        setModerationStatus('failed');
-        const errorMsg = data?.reason || error?.message || t('error');
-        setModerationError(errorMsg);
-        return;
-      }
-
-      setModerationStatus('passed');
-      
-      // Нишон додани интихоби ҷустуҷӯ баъд аз 1 сония
-      setTimeout(() => {
-        setShowSearchChoice(true);
-      }, 1000);
-
-    } catch (error: any) {
-      console.error("AI Check Error:", error);
-      setModerationStatus('failed');
-      setModerationError(error.message);
-    }
-  };
-
-  // Ҷустуҷӯи монандҳо (Similarity Search)
-  const runSimilaritySearch = async () => {
-    setModerationStatus('checking');
-    try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-      
-      const formDataAI = new FormData();
-      formDataAI.append('image', images[0]);
-      formDataAI.append('type', formData.type || 'lost');
-      formDataAI.append('title', formData.title);
-      formDataAI.append('description', formData.description);
-      formDataAI.append('lang', locale);
-      formDataAI.append('mode', 'similarity');
-
-      const { data, error } = await supabase.functions.invoke('ai-brain', {
-        body: formDataAI,
-      });
-
-      if (error) throw error;
-
-      setAiSuggestions(data);
-      
-      // Авто-пуркунии категория ва тавсиф агар холӣ бошад
-      if (data.analysis) {
-        setFormData(prev => ({
-          ...prev,
-          category: prev.category || data.analysis.category,
-          description: prev.description || data.analysis.description_tj
-        }));
-      }
-
-      setModerationStatus('passed');
-      setStep(6);
-    } catch (error: any) {
-      console.error("Similarity Search Error:", error);
-      toast.error(error.message || t('error'));
-      setModerationStatus('passed');
-      setShowSearchChoice(true);
+    // Баъд аз интихоби сурат ба интихоби намуд мегузарем
+    if (step === 1 && files.length > 0) {
+      setStep(3); // Қадами 3: Гумшуда ё Ёфтшуда?
     }
   };
 
   // Санҷиши қадамҳо пеш аз гузаштан
   const nextStep = () => {
-    if (step === 1) {
+    if (step === 3) {
       if (!formData.type) {
         toast.error(t('fillAllFields'));
         return;
       }
-      setStep(2);
-    } else if (step === 2) {
+      // Танҳо баъд аз интихоби намуд AI-ро сар мекунем
+      runAIAnalysis(images);
+    } else if (step === 4) {
       if (!formData.title.trim() || !formData.category || !formData.description.trim()) {
         toast.error(t('fillAllFields'));
         return;
       }
-      setStep(3);
-    } else if (step === 3) {
-      if (images.length === 0) {
-        toast.error(t('atLeastOneImage'));
-        return;
-      }
-      setStep(4);
-    } else if (step === 4) {
+      setStep(5);
+    } else if (step === 5) {
       if (!formData.phone.trim()) {
         toast.error(t('fillAllFields'));
         return;
       }
-      runAICheck();
-    } else if (step === 6) {
       setShowSafetyModal(true);
     }
   };
 
   const prevStep = () => {
-    if (step > 1 && step <= 4) setStep(step - 1);
-    else if (step === 5 || (step === 6 && showSearchChoice)) setStep(5);
-    else if (step === 6) setStep(4);
+    if (step > 1 && step !== 2) setStep(step === 3 ? 1 : step - 1);
   };
 
   const onFinalSubmit = async () => {
@@ -328,9 +291,90 @@ function AddItemForm() {
         </div>
 
         <CardContent className="p-6 sm:p-8 md:px-16 md:py-6 flex-1 flex flex-col justify-center overflow-y-auto scrollbar-none">
-          {/* Step 1: Type Selection */}
+          {/* Step 1: Photos First (Original Design Restored) */}
           {step === 1 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-lg mx-auto w-full">
+              <div className="text-center space-y-1 mb-4">
+                <h2 className="text-2xl font-black uppercase tracking-tight">{t('pickImage')}</h2>
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {previews.map((src, i) => (
+                  <div key={i} className="relative aspect-square rounded-[2rem] overflow-hidden group border-2 border-emerald-500/20 shadow-sm">
+                    <Image src={src} alt="Preview" fill className="object-cover" />
+                    <button type="button" onClick={() => removeImage(i)} className="absolute top-2.5 right-2.5 bg-white/90 text-red-500 p-2 rounded-2xl shadow-xl active:scale-90 transition-all">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {images.length < 5 && (
+                  <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group">
+                    <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
+                      <Plus className="w-7 h-7" />
+                    </div>
+                    <span className="mt-3 text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
+                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
+                  </label>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: AI Scanning & Auto-fill */}
+          {step === 2 && (
+            <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500 max-w-md mx-auto">
+              {moderationStatus === 'checking' && (
+                <>
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-zinc-900 flex items-center justify-center mx-auto shadow-2xl relative">
+                    <Loader2 className="w-10 h-10 text-white animate-spin" />
+                    <div className="absolute inset-0 border-4 border-emerald-500/20 border-t-emerald-500 rounded-[2.5rem] animate-spin" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.step5_title')}</h2>
+                    <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.step5_desc')}</p>
+                  </div>
+                  {/* Preview of images being scanned */}
+                  <div className="flex justify-center -space-x-4 mt-4">
+                    {previews.slice(0, 3).map((src, i) => (
+                      <div key={i} className="w-12 h-12 rounded-xl border-2 border-white shadow-lg overflow-hidden relative">
+                        <Image src={src} alt="Scanning" fill className="object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              {moderationStatus === 'passed' && (
+                <>
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center mx-auto shadow-2xl animate-bounce">
+                    <CheckCircle2 className="w-12 h-12 text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-emerald-600">{t('ai_steps.step5_passed')}</h2>
+                    <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.auto_filling')}</p>
+                  </div>
+                </>
+              )}
+              {moderationStatus === 'failed' && (
+                <>
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-red-100 flex items-center justify-center mx-auto shadow-lg">
+                    <ShieldAlert className="w-12 h-12 text-red-600" />
+                  </div>
+                  <div className="space-y-3">
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
+                    <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                      <p className="text-red-700 font-bold text-sm leading-relaxed">
+                        {moderationError || t('error')}
+                      </p>
+                    </div>
+                    <Button variant="outline" onClick={() => setStep(1)} className="rounded-xl font-bold uppercase text-[10px] tracking-widest mt-4">{t('ai_steps.step5_fix_btn')}</Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Type Selection */}
+          {step === 3 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-black uppercase tracking-tight">{t('what_happened')}</h2>
               </div>
@@ -369,15 +413,15 @@ function AddItemForm() {
             </div>
           )}
 
-          {/* Step 2: Details */}
-          {step === 2 && (
+          {/* Step 4: Details (Auto-filled) */}
+          {step === 4 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 animate-in fade-in slide-in-from-right-4 duration-500 w-full items-start">
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('titleLabel')}</Label>
                   <Input 
                     placeholder={t('titleLabel')}
-                    className="rounded-xl h-12 bg-white dark:bg-zinc-950 border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none"
+                    className="rounded-xl h-12 bg-white border-zinc-200 text-sm font-bold focus-visible:border-emerald-500 shadow-none ring-2 ring-emerald-500/10"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   />
@@ -386,7 +430,7 @@ function AddItemForm() {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('description')}</Label>
                   <Textarea 
                     placeholder={t('description')}
-                    className="rounded-xl min-h-[140px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none"
+                    className="rounded-xl min-h-[140px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none ring-2 ring-emerald-500/10"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   />
@@ -416,33 +460,8 @@ function AddItemForm() {
             </div>
           )}
 
-          {/* Step 3: Photos */}
-          {step === 3 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                {previews.map((src, i) => (
-                  <div key={i} className="relative aspect-square rounded-[2rem] overflow-hidden group border-2 border-emerald-500/20 shadow-sm">
-                    <Image src={src} alt="Preview" fill className="object-cover" />
-                    <button type="button" onClick={() => removeImage(i)} className="absolute top-2.5 right-2.5 bg-white/90 text-red-500 p-2 rounded-2xl shadow-xl active:scale-90 transition-all">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                {images.length < 5 && (
-                  <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group">
-                    <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
-                      <Plus className="w-7 h-7" />
-                    </div>
-                    <span className="mt-3 text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
-                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
-                  </label>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Contact */}
-          {step === 4 && (
+          {/* Step 5: Contact */}
+          {step === 5 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
               <div className="space-y-4">
                 <Input 
@@ -468,134 +487,25 @@ function AddItemForm() {
               </div>
             </div>
           )}
-
-          {/* Step 5: Security Scan (New) */}
-          {step === 5 && (
-            <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500 max-w-md mx-auto">
-              {moderationStatus === 'checking' && (
-                <>
-                  <div className="w-24 h-24 rounded-[2.5rem] bg-zinc-900 flex items-center justify-center mx-auto shadow-2xl relative">
-                    <Loader2 className="w-10 h-10 text-white animate-spin" />
-                    <div className="absolute inset-0 border-4 border-emerald-500/20 border-t-emerald-500 rounded-[2.5rem] animate-spin" />
-                  </div>
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.step5_title')}</h2>
-                    <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.step5_desc')}</p>
-                  </div>
-                </>
-              )}
-              {moderationStatus === 'passed' && (
-                <>
-                  {!showSearchChoice ? (
-                    <>
-                      <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center mx-auto shadow-2xl">
-                        <CheckCircle2 className="w-12 h-12 text-white" />
-                      </div>
-                      <div className="space-y-2">
-                        <h2 className="text-2xl font-black uppercase tracking-tight text-emerald-600">{t('ai_steps.step5_passed')}</h2>
-                        <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.step5_passed_desc')}</p>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                      <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-100 flex items-center justify-center mx-auto text-3xl">🔎</div>
-                      <div className="space-y-2">
-                        <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.ask_search_title')}</h2>
-                        <p className="text-zinc-500 font-bold text-sm leading-relaxed">{t('ai_steps.ask_search_desc')}</p>
-                      </div>
-                      <div className="flex flex-col gap-3 pt-4">
-                        <Button 
-                          onClick={runSimilaritySearch}
-                          className="h-14 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white font-black uppercase tracking-widest text-[10px] shadow-xl"
-                        >
-                          {t('ai_steps.btn_search_yes')}
-                        </Button>
-                        <Button 
-                          variant="ghost"
-                          onClick={() => setShowSafetyModal(true)}
-                          className="h-12 font-bold uppercase tracking-widest text-[10px] text-zinc-400"
-                        >
-                          {t('ai_steps.btn_search_no')}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-              {moderationStatus === 'failed' && (
-                <>
-                  <div className="w-24 h-24 rounded-[2.5rem] bg-red-100 flex items-center justify-center mx-auto shadow-lg">
-                    <ShieldAlert className="w-12 h-12 text-red-600" />
-                  </div>
-                  <div className="space-y-3">
-                    <h2 className="text-2xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
-                    <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
-                      <p className="text-red-700 font-bold text-sm leading-relaxed">
-                        {moderationError || t('error')}
-                      </p>
-                    </div>
-                    <Button variant="outline" onClick={() => setStep(4)} className="rounded-xl font-bold uppercase text-[10px] tracking-widest mt-4">{t('ai_steps.step5_fix_btn')}</Button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Step 6: Similarity Search (New) */}
-          {step === 6 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 w-full">
-              <div className="text-center space-y-2 mb-6">
-                <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.step6_title')}</h2>
-                <p className="text-zinc-500 font-bold text-sm">
-                  {aiSuggestions?.similarItems?.length > 0 ? t('ai_steps.step6_found_desc') : t('ai_steps.step6_not_found_desc')}
-                </p>
-              </div>
-              {aiSuggestions?.similarItems?.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2 scrollbar-none">
-                  {aiSuggestions.similarItems.map((item: any) => (
-                    <div key={item.id} className="flex items-center gap-4 p-4 rounded-3xl border-2 border-zinc-100 hover:border-emerald-500 cursor-pointer transition-all bg-zinc-50/30 group" onClick={() => router.push(`/items/${item.id}`)}>
-                      <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm">
-                        <Image src={item.item_images?.[0]?.image_url || "/placeholder.png"} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform" />
-                        <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg shadow-lg">{item.match_percentage}%</div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-black uppercase text-xs truncate mb-1">{item.title}</h4>
-                        <p className="text-[10px] font-bold text-zinc-400 line-clamp-2 leading-tight uppercase">{item.category}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {aiSuggestions?.similarItems?.length === 0 && (
-                <div className="py-12 text-center">
-                  <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-zinc-200">
-                    <Search className="w-8 h-8 text-zinc-300" />
-                  </div>
-                  <p className="text-zinc-400 font-bold text-xs uppercase tracking-widest">{t('ai_steps.step6_no_matches')}</p>
-                </div>
-              )}
-            </div>
-          )}
         </CardContent>
 
         {/* Navigation Footer */}
         <div className="p-6 sm:p-10 bg-white flex gap-3 sm:gap-4 items-center">
-          {step > 1 && step <= 4 && (
+          {step > 1 && step !== 2 && (
             <Button variant="outline" size="lg" onClick={prevStep} className="rounded-2xl h-14 px-4 sm:px-8 border-2 font-black uppercase tracking-widest text-[10px] hover:bg-zinc-50 shrink-0">
               <ArrowLeft className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('back')}</span>
             </Button>
           )}
-          {step <= 4 && (
-            <Button size="lg" onClick={nextStep} className={cn("flex-1 rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all duration-700 overflow-hidden", step === 4 ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : "bg-zinc-900 hover:bg-zinc-800 shadow-zinc-900/20", step === 1 && formData.type && "bg-emerald-500 -translate-y-2 ring-8 ring-emerald-500/10")}>
-              {step === 4 ? t('publishBtn') : t('next')}
+          {step >= 3 && step <= 4 && (
+            <Button size="lg" onClick={nextStep} className="flex-1 rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 shadow-xl active:scale-95 transition-all">
+              {t('next')}
             </Button>
           )}
-          {step === 6 && (
+          {step === 5 && (
             <div className="flex-1 flex gap-3">
-              <Button variant="outline" onClick={() => setStep(4)} className="flex-1 rounded-2xl h-14 border-2 font-black uppercase tracking-widest text-[10px]">{t('back')}</Button>
               <Button onClick={() => setShowSafetyModal(true)} disabled={loading} className="flex-1 rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-500/20">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('ai_steps.publish_now')}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('publishBtn')}
               </Button>
             </div>
           )}

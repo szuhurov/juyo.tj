@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const { id, title, description } = record;
     const textToCheck = `${title} ${description || ''}`;
 
-    // Санҷиши матн бо OpenAI GPT-4o Mini (хеле арзон ва ҳушманд)
+    // Санҷиши матн бо модели флагмании GPT-5.5
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -20,17 +20,13 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-5.5",
         messages: [
           {
             role: "system",
             content: "You are a content moderator for a Tajik 'Lost and Found' app. Check the text for profanity, hate speech, or illegal content in Tajik, Russian, or English. Return JSON: { 'is_safe': boolean, 'reason': string or null }"
-          },
-          { role: "user", content: textToCheck }
-        ],
-        response_format: { type: "json_object" }
-      }),
-    });
+            ... rest of context...
+
 
     const aiData = await aiResponse.json();
     const result = JSON.parse(aiData.choices[0].message.content);

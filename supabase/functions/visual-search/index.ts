@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     // 3. GLOBAL VECTOR SEARCH (SECURITY DEFINER bypasses RLS)
     const { data: similarItems, error: searchError } = await supabase.rpc('match_item_images', {
       query_embedding: embedding,
-      match_threshold: 0.25, // Strict threshold: Only return actual matches
+      match_threshold: 0.40, // Increased to 0.40 for strict, high-quality matches
       match_count: 20,
       p_type: 'all'
     });

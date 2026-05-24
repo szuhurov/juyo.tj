@@ -21,9 +21,12 @@ Deno.serve(async (req) => {
     let isSafe = true;
     let rejectionReason = null;
 
-    // 1. Агар акс бошад, онро бо OpenAI GPT-4o Mini тафтиш мекунем
+    // 1. Ҳамаи аксҳоро барои таҳлил омода мекунем
     if (images && images.length > 0) {
-      const imageUrl = images[0].image_url; // Таҳлили аввалин акс барои сарфа
+      const imageContent = images.map(img => ({
+        type: "image_url",
+        image_url: { url: img.image_url }
+      }));
 
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -32,17 +35,17 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-5.5",
           messages: [
             {
               role: "system",
-              content: "You are a professional content moderator for a 'Lost and Found' app in Tajikistan. Analyze the image and text for: nudity, violence, weapons, drugs, or illegal services. Also check if the content is relevant to 'lost and found' items. Return JSON: { 'is_safe': boolean, 'reason': string or null }"
+              content: "You are a professional content moderator for a 'Lost and Found' app in Tajikistan. Analyze ALL provided images and text for: nudity, violence, weapons, drugs, or illegal services. Also check if the content is relevant to 'lost and found' items. Return JSON: { 'is_safe': boolean, 'reason': string or null }"
             },
             {
               role: "user",
               content: [
                 { type: "text", text: `Title/Description: ${textToCheck}` },
-                { type: "image_url", image_url: { url: imageUrl } }
+                ...imageContent
               ]
             }
           ],
