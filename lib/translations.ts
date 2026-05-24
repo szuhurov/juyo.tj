@@ -151,7 +151,7 @@ export const translations: Record<string, any> = {
     qrSecurityStatusWhy: 'Барои чӣ QR-код статус лозим?',
     qrSecurityQuestionDescription: 'Ин тугма танҳо барои он лозим аст, ки маълумоти шуморо ҳангоми зарурат муҳофизат кунад.',
     qrWhyGuideTitle: 'Чӣ тавр QR-код ба шумо кӯмак мекунад?',
-    qrWhyGuideDesc: 'Ин стикери махсусест, ки ашёҳои шуморо муҳофизат мекунад. Тарзи кораш хеле оддӣ аст:',
+    qrWhyGuideDesc: 'Ин стикери махсусест, ки ашёҳои шуморо муҳофизат мекунад. Принцип кораш хеле оддӣ аст:',
     qrWhyStep1Title: 'Дизайн ва скачат кунед',
     qrWhyStep1Desc: 'Аввал QR-кодро бо услуби худ дизайн кунед, сипас онро скачат карда, чоп кунед ва ба ашёҳоятон часпонед.',
     qrWhyStep2Title: 'Ёбанда скан мекунад',
@@ -170,7 +170,7 @@ export const translations: Record<string, any> = {
     contactOwner: 'Тамос бо соҳиб',
     scanOwnerDesc: 'Ин шахс мехоҳад ашёҳои гумшудаашро пайдо кунад.',
     deletePostConfirm: 'Оё шумо мутмаин ҳастед, ки мехоҳед ин эълонро нест кунед?',
-    moveToSafe: 'Ба сандуқча',
+    moveToSafe: 'Ba сандуқча',
     moveToSafeDesc: 'Эълон аз лента бардошта мешавад ва ба сандуқчаи шахсии шумо илова мегардад.',
     resolvedConfirm: 'Оё шумо ашёро ёфтед ё ба соҳибаш баргардонидед? Эълон нест карда мешавад.',
     share: 'Паҳн кардан',
@@ -325,6 +325,35 @@ export const translations: Record<string, any> = {
     imageBlockedDesc: 'Ин сурат аз ҷониби системаи амниятӣ маҳкам карда шуд.',
     viewItem: 'ДИДАН ВА ТАҲРИР',
     
+    // AI Steps
+    ai_steps: {
+      step5_title: 'Қадами 5: Санҷиши Амниятӣ',
+      step5_desc: 'AI Brain мундариҷаи шуморо таҳлил мекунад...',
+      step5_passed: 'Санҷиш гузашт!',
+      step5_passed_desc: 'Маълумоти шумо бехатар аст. Ба қадами 6 мегузарем...',
+      step5_failed: 'Аз санҷиши амниятӣ нагузашт',
+      step5_fix_btn: 'Ислоҳ кардан',
+      step6_title: 'Қадами 6: Ҷустуҷӯи ашёҳои монанд',
+      step6_found_desc: 'Мо баъзе ашёҳои монандро пайдо кардем. Шояд соҳибаш аллакай эълон гузоштааст?',
+      step6_not_found_desc: 'Ягон ашёи монанд дар база ёфт нашуд. Шумо метавонед эълонро нашр кунед.',
+      step6_no_matches: 'Ашёи монанд ёфт нашуд',
+      step6_ready: 'Ҳама чиз омода аст',
+      publish_now: 'Нашр кардан',
+      ask_search_title: 'Ҷустуҷӯи ашёҳои монанд',
+      ask_search_desc: 'Оё мехоҳед, ки мо дар базаи маълумот ашёҳои монандро ҷӯем? Шояд касе аллакай эълон гузоштааст.',
+      btn_search_yes: 'Бале, кофтан',
+      btn_search_no: 'Не, гузаштан',
+    },
+    
+    // AI Moderation Codes
+    ai_mod_codes: {
+      unsafe_content: 'Ин акс аз ҷониби системаи амниятӣ рад карда шуд (Мундариҷаи ноҷо).',
+      irrelevant_content: 'Ин акс ё матн ба ашёи гумшуда алоқаманд нест.',
+      spam_content: 'Дар матни шумо реклама ё спам пайдо шуд.',
+      low_quality: 'Акс хеле хира аст. Лутфан акси равшантар гиред.',
+      human_face: 'Нашри суратҳои одамон (чеҳра) манъ аст.',
+    },
+
     // Moderation Reasons
     mod_nudity: 'Мундариҷаи эротикӣ ё бараҳнагӣ манъ аст.',
     mod_weapon: 'Намоиши силоҳ дар эълонҳо иҷозат дода намешавад.',
@@ -538,7 +567,7 @@ export const translations: Record<string, any> = {
     pushNotifications: 'Push-уведомления',
     manageAccount: 'Управление аккаунтом',
     privacySupport: 'Поддержка и конфиденциальность',
-    privacyPolicy: 'Политика конфиденциальности',
+    privacyPolicy: 'Потика конфиденциальности',
     helpCenter: 'Центр помощи',
     aboutApp: 'О приложении',
     aboutJuyoTitle: 'Что такое JUYO?',
@@ -842,10 +871,37 @@ export const translations: Record<string, any> = {
     
     imageBlockedTitle: 'Изображение заблокировано',
     imageBlockedDesc: 'Это изображение было заблокировано системой безопасности.',
-    textBlockedTitle: 'Текст заблокирован',
-    textBlockedDesc: 'В тексте объявления обнаружены ненормативные слова или оскорбления',
     viewItem: 'ПРОСМОТР И ПРАВКА',
     
+    // AI Steps
+    ai_steps: {
+      step5_title: 'Шаг 5: Проверка Безопасности',
+      step5_desc: 'AI Brain анализирует ваш контент...',
+      step5_passed: 'Проверка пройдена!',
+      step5_passed_desc: 'Ваши данные в безопасности. Переходим к шагу 6...',
+      step5_failed: 'Не прошло проверку безопасности',
+      step5_fix_btn: 'Исправить',
+      step6_title: 'Шаг 6: Поиск похожих вещей',
+      step6_found_desc: 'Мы нашли похожие вещи. Возможно, владелец уже разместил объявление?',
+      step6_not_found_desc: 'Похожих вещей не найдено. Вы можете опубликовать объявление.',
+      step6_no_matches: 'Похожих вещей не найдено',
+      step6_ready: 'Все готово',
+      publish_now: 'Опубликовать',
+      ask_search_title: 'Поиск похожих вещей',
+      ask_search_desc: 'Хотите, чтобы мы поискали похожие вещи в базе? Возможно, кто-то уже разместил объявление.',
+      btn_search_yes: 'Да, искать',
+      btn_search_no: 'Нет, пропустить',
+    },
+    
+    // AI Moderation Codes
+    ai_mod_codes: {
+      unsafe_content: 'Это изображение отклонено системой безопасности (Неприемлемый контент).',
+      irrelevant_content: 'Это изображение или текст не относятся к утерянным вещам.',
+      spam_content: 'В вашем тексте обнаружена реклама или спам.',
+      low_quality: 'Фото слишком размытое. Пожалуйста, сделайте более четкое фото.',
+      human_face: 'Публикация фотографий людей (лиц) запрещена.',
+    },
+
     // Moderation Reasons
     mod_nudity: 'Эротический контент или нагота запрещены.',
     mod_weapon: 'Демонстрация оружия в объявлениях не допускается.',
@@ -1349,6 +1405,35 @@ export const translations: Record<string, any> = {
     imageBlockedDesc: 'This image was blocked by the security system.',
     viewItem: 'VIEW & EDIT',
     
+    // AI Steps
+    ai_steps: {
+      step5_title: 'Step 5: Security Scan',
+      step5_desc: 'AI Brain is analyzing your content...',
+      step5_passed: 'Scan Passed!',
+      step5_passed_desc: 'Your content is safe. Moving to step 6...',
+      step5_failed: 'Did not pass security check',
+      step5_fix_btn: 'Fix content',
+      step6_title: 'Step 6: Similarity Search',
+      step6_found_desc: 'We found some similar items. Perhaps the owner has already posted?',
+      step6_not_found_desc: 'No similar items found in the database. You can publish now.',
+      step6_no_matches: 'No similar items found',
+      step6_ready: 'Everything is ready',
+      publish_now: 'Publish Now',
+      ask_search_title: 'Similarity Search',
+      ask_search_desc: 'Would you like us to look for similar items in our database? Someone might have already posted it.',
+      btn_search_yes: 'Yes, search',
+      btn_search_no: 'No, skip',
+    },
+    
+    // AI Moderation Codes
+    ai_mod_codes: {
+      unsafe_content: 'This image was rejected by the security system (Inappropriate content).',
+      irrelevant_content: 'This image or text is not related to lost and found items.',
+      spam_content: 'Advertising or spam was detected in your text.',
+      low_quality: 'The photo is too blurry. Please provide a clearer image.',
+      human_face: 'Posting photos of people (faces) is prohibited.',
+    },
+
     // Moderation Reasons
     mod_nudity: 'Erotic content or nudity is prohibited.',
     mod_weapon: 'Displaying weapons in ads is not allowed.',

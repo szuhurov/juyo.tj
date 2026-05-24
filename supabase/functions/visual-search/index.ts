@@ -1,15 +1,21 @@
-const SIGHTENGINE_API_USER = Deno.env.get('SIGHTENGINE_API_USER')
-const SIGHTENGINE_API_SECRET = Deno.env.get('SIGHTENGINE_API_SECRET')
-const SIGHTENGINE_LIST_ID = Deno.env.get('SIGHTENGINE_LIST_ID')
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+// MASTER FORENSIC PROMPT (Identical to AI-Brain for 100% Match)
+const MASTER_FORENSIC_PROMPT = `You are an elite forensic AI expert specialized in object identification. 
+Analyze the image with extreme precision to find unique identifiers.
+Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear).
+Return JSON: { 
+  'description_en': 'EXHAUSTIVE forensic technical string in English for 100% vector matching' 
+}`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -17,55 +23,76 @@ Deno.serve(async (req) => {
   try {
     const formData = await req.formData();
     const image = formData.get('image') as File;
+    
     if (!image) throw new Error("No image provided");
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    // 1. SIGHTENGINE VISUAL MATCH + PROPERTIES
-    const seFormData = new FormData();
-    seFormData.append('api_user', SIGHTENGINE_API_USER!);
-    seFormData.append('api_secret', SIGHTENGINE_API_SECRET!);
-    seFormData.append('lists', SIGHTENGINE_LIST_ID!);
-    seFormData.append('models', 'properties'); // Add properties to detect colors
-    seFormData.append('media', image);
+    // CONVERT IMAGE TO BASE64
+    const arrayBuffer = await image.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    let binary = "";
+    const len = uint8Array.byteLength;
+    for (let i = 0; i < len; i++) { binary += String.fromCharCode(uint8Array[i]); }
+    const base64Image = btoa(binary);
 
-    const seResponse = await fetch("https://api.sightengine.com/1.0/check.json", { method: 'POST', body: seFormData });
-    const seData = await seResponse.json();
-    
-    if (seData.status !== 'success') throw new Error("Sightengine API Error");
+    // 1. DETAILED FORENSIC ANALYSIS (GPT-5.5 - IDENTICAL PROMPT)
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-5.5",
+        reasoning_effort: "medium",
+        messages: [
+          { role: "system", content: MASTER_FORENSIC_PROMPT },
+          { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "high" } }] }
+        ],
+        response_format: { type: "json_object" }
+      }),
+    });
 
-    const seMatches = (seData.similarity && seData.similarity[0]?.matches) || [];
-    
-    // 2. FIND ITEM IDs FROM IMAGE IDs
-    const imageIds = seMatches.map((m: any) => m.custom_id);
-    if (imageIds.length === 0) return new Response(JSON.stringify({ results: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const aiData = await aiResponse.json();
+    const forensicResult = JSON.parse(aiData.choices[0].message.content);
 
-    const { data: imageRecords } = await supabase
-      .from('item_images')
-      .select('item_id, id')
-      .in('id', imageIds);
+    // 2. GENERATE EMBEDDING
+    const embRes = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "text-embedding-3-small",
+        input: forensicResult.description_en,
+      }),
+    });
 
-    // 3. MAP AND BOOST RESULTS
-    const finalResults = seMatches
-      .map((m: any) => {
-        const record = imageRecords?.find(r => r.id === m.custom_id);
-        if (record) {
-          // MAXIMUM SENSITIVITY: 
-          // We set the threshold to 0.00 to show EVERYTHING that the engine detects.
-          const boostedScore = Math.max(m.score, 0.00); 
-          
-          return { id: record.item_id, score: boostedScore, source: 'sightengine_max_sensitivity' };
-        }
-        return null;
-      })
-      .filter(Boolean);
+    const embData = await embRes.json();
+    const embedding = embData.data[0].embedding;
 
-    return new Response(JSON.stringify({ results: finalResults }), {
+    // 3. GLOBAL VECTOR SEARCH (SECURITY DEFINER bypasses RLS)
+    const { data: similarItems, error: searchError } = await supabase.rpc('match_item_images', {
+      query_embedding: embedding,
+      match_threshold: 0.25, // Strict threshold: Only return actual matches
+      match_count: 20,
+      p_type: 'all'
+    });
+
+    if (searchError) throw searchError;
+
+    const results = (similarItems || []).map((item: any) => ({
+      id: item.item_id,
+      score: Math.round(item.similarity * 100),
+      title: item.title,
+      image_url: item.image_url
+    }));
+
+    return new Response(JSON.stringify({ results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error: any) {
     console.error("Visual Search Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: error.message, results: [] }), { 
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
   }
 });

@@ -95,15 +95,9 @@ function ItemDetailSkeleton() {
 export default async function ItemDetailsPage({ params }: Props) {
   const { id } = await params;
   
-  // Санҷиши мавҷудияти эълон дар сервер
-  try {
-    const item = await ItemService.getItemDetails(id);
-    if (!item) {
-      notFound();
-    }
-  } catch (e) {
-    notFound();
-  }
+  // Мо санҷиши серверӣ ва notFound()-ро инҷо намемонем, 
+  // то ки Client Component имкони гирифтани эълонро бо токени корбар дошта бошад.
+  // Ин барои он лозим аст, ки соҳиби эълон тавонад эълони "Rejected"-и худро бинад.
 
   return (
     <Suspense fallback={<ItemDetailSkeleton />}>

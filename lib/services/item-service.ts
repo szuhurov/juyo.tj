@@ -96,15 +96,12 @@ export const ItemService = {
   },
 
   /**
-   * Ҷустуҷӯи визуалӣ бо истифода аз як ё якчанд акс.
+   * Ҷустуҷӯи визуалӣ бо истифода аз як акс (OpenAI Powered).
    */
-  async visualSearch(imageFiles: File | File[]) {
+  async visualSearch(imageFile: File) {
     const formData = new FormData();
-    const files = Array.isArray(imageFiles) ? imageFiles : [imageFiles];
-    
-    files.forEach(file => {
-      formData.append('image', file);
-    });
+    formData.append('image', imageFile);
+    formData.append('type', 'lost'); // Ба таври пешфарз
 
     const { data, error } = await supabase.functions.invoke('visual-search', {
       body: formData
@@ -113,36 +110,20 @@ export const ItemService = {
     if (error) throw error;
     if (!data.results || data.results.length === 0) return [];
 
-    // Deduplicate results by ID, keeping the highest score
-    const uniqueResultsMap = new Map();
-    data.results.forEach((res: any) => {
-      if (!uniqueResultsMap.has(res.id) || res.score > uniqueResultsMap.get(res.id).score) {
-        uniqueResultsMap.set(res.id, res);
-      }
-    });
-
-    const dedupedResults = Array.from(uniqueResultsMap.values());
-    const itemIds = dedupedResults.map((r: any) => r.id);
-
-    // Гирифтани маълумоти эълонҳо аз рӯи ID-ҳо
-    const { data: items, error: itemsError } = await supabase
-      .from('items')
-      .select('*, images:item_images(image_url)')
-      .in('id', itemIds);
-
-    if (itemsError) throw itemsError;
-
-    // Тартиб додан мувофиқи тартиби ID-ҳо ва илова кардани similarity_score
-    return dedupedResults
-      .map((res: any) => {
-        const item = items.find((i: any) => i.id === res.id);
-        if (item) {
-          return { ...item, similarity_score: res.score };
-        }
-        return null;
-      })
-      .filter(Boolean)
-      .sort((a, b) => (b.similarity_score || 0) - (a.similarity_score || 0)) as Item[];
+    // Харитасозии натиҷаҳо ба формати Item
+    return data.results.map((res: any) => ({
+      id: res.id,
+      user_id: '', 
+      title: res.title,
+      description: '', 
+      category: 'Other', 
+      type: 'lost', 
+      date: new Date().toISOString().split('T')[0], 
+      created_at: new Date().toISOString(), 
+      is_resolved: false,
+      similarity_score: res.score,
+      images: [{ image_url: res.image_url }]
+    })) as Item[];
   },
 
   /**

@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert, CheckCircle2, Search } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import {
@@ -40,14 +40,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
 
 function AddItemForm() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
   const queryClient = useQueryClient();
   
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 6;
   const [loading, setLoading] = useState(false);
   
   // Маълумоти эълон (Consolidated State for better stability)
@@ -63,9 +63,10 @@ function AddItemForm() {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [showSafetyModal, setShowSafetyModal] = useState(false);
-  const [isAIChecking, setIsAIChecking] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
-  const [showAIResults, setShowAIResults] = useState(false);
+  const [moderationStatus, setModerationStatus] = useState<'idle' | 'checking' | 'passed' | 'failed'>('idle');
+  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [showSearchChoice, setShowSearchChoice] = useState(false);
 
   // Боргузории рақами телефон аз профил
   useEffect(() => {
@@ -107,14 +108,62 @@ function AddItemForm() {
   const runAICheck = async () => {
     if (images.length === 0) return;
     
-    setIsAIChecking(true);
+    setStep(5); // Қадами 5: Санҷиши амниятӣ
+    setModerationStatus('checking');
+    setModerationError(null);
+    setShowSearchChoice(false);
+    
     try {
       const token = await getToken({ template: 'supabase' });
       const supabase = createClerkSupabaseClient(token!);
       
       const formDataAI = new FormData();
-      formDataAI.append('image', images[0]); // Аввалин суратро барои таҳлил мефиристем
+      formDataAI.append('image', images[0]);
       formDataAI.append('type', formData.type || 'lost');
+      formDataAI.append('title', formData.title);
+      formDataAI.append('description', formData.description);
+      formDataAI.append('lang', language);
+      formDataAI.append('mode', 'moderation');
+
+      const { data, error } = await supabase.functions.invoke('ai-brain', {
+        body: formDataAI,
+      });
+
+      if (error || (data && data.is_safe === false)) {
+        setModerationStatus('failed');
+        const errorMsg = data?.reason || error?.message || t('error');
+        setModerationError(errorMsg);
+        return;
+      }
+
+      setModerationStatus('passed');
+      
+      // Нишон додани интихоби ҷустуҷӯ баъд аз 1 сония
+      setTimeout(() => {
+        setShowSearchChoice(true);
+      }, 1000);
+
+    } catch (error: any) {
+      console.error("AI Check Error:", error);
+      setModerationStatus('failed');
+      setModerationError(error.message);
+    }
+  };
+
+  // Ҷустуҷӯи монандҳо (Similarity Search)
+  const runSimilaritySearch = async () => {
+    setModerationStatus('checking');
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+      
+      const formDataAI = new FormData();
+      formDataAI.append('image', images[0]);
+      formDataAI.append('type', formData.type || 'lost');
+      formDataAI.append('title', formData.title);
+      formDataAI.append('description', formData.description);
+      formDataAI.append('lang', language);
+      formDataAI.append('mode', 'similarity');
 
       const { data, error } = await supabase.functions.invoke('ai-brain', {
         body: formDataAI,
@@ -133,17 +182,13 @@ function AddItemForm() {
         }));
       }
 
-      if (data.similarItems && data.similarItems.length > 0) {
-        setShowAIResults(true);
-      } else {
-        setStep(4);
-      }
+      setModerationStatus('passed');
+      setStep(6);
     } catch (error: any) {
-      console.error("AI Check Error:", error);
-      // Агар AI хато диҳад, мо ба ҳар ҳол мегузорем, ки корбар идома диҳад
-      setStep(4);
-    } finally {
-      setIsAIChecking(false);
+      console.error("Similarity Search Error:", error);
+      toast.error(error.message || t('error'));
+      setModerationStatus('passed');
+      setShowSearchChoice(true);
     }
   };
 
@@ -166,24 +211,22 @@ function AddItemForm() {
         toast.error(t('atLeastOneImage'));
         return;
       }
+      setStep(4);
+    } else if (step === 4) {
+      if (!formData.phone.trim()) {
+        toast.error(t('fillAllFields'));
+        return;
+      }
       runAICheck();
+    } else if (step === 6) {
+      setShowSafetyModal(true);
     }
   };
 
   const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  const handlePreSubmit = () => {
-    if (!formData.phone.trim()) {
-      toast.error(t('fillAllFields'));
-      return;
-    }
-    if (formData.type === 'lost' && formData.reward && isNaN(Number(formData.reward))) {
-      toast.error(t('rewardOnlyNumbers'));
-      return;
-    }
-    setShowSafetyModal(true);
+    if (step > 1 && step <= 4) setStep(step - 1);
+    else if (step === 5 || (step === 6 && showSearchChoice)) setStep(5);
+    else if (step === 6) setStep(4);
   };
 
   const onFinalSubmit = async () => {
@@ -219,22 +262,45 @@ function AddItemForm() {
         reward: (formData.type === 'lost' && formData.reward) ? `${formData.reward}` : null,
         date: new Date().toISOString().split('T')[0],
         is_resolved: false,
-        moderation_status: 'pending'
+        moderation_status: 'approved',
+        moderation_result: aiSuggestions?.analysis?.description_tj || "Approved by AI Brain"
       };
 
       const { data: item, error: itemError } = await supabase.from('items').insert([itemData]).select().single();
       if (itemError) throw itemError;
 
       if (imageUrls.length > 0) {
-        const imageRecords = imageUrls.map(url => ({ item_id: item.id, image_url: url }));
-        await supabase.from('item_images').insert(imageRecords);
+        // Гирифтани Embedding (кобани ҳамаи ҷойҳои имконпазир)
+        let itemEmbedding = aiSuggestions?.embedding || aiSuggestions?.analysis?.embedding;
+        
+        console.log("AI Response Raw Data:", aiSuggestions);
+        console.log("Detected Embedding:", itemEmbedding ? "YES (Length: " + itemEmbedding.length + ")" : "NO (null)");
+
+        const imageRecords = imageUrls.map((url, index) => {
+          // Барои Supabase JS Client мо бояд массив фиристем [0.1, 0.2, ...]
+          // Танҳо ба сурати аввал Embedding-ро мечаспонем
+          const vectorData = (index === 0 && Array.isArray(itemEmbedding)) ? itemEmbedding : null;
+
+          return { 
+            item_id: item.id, 
+            image_url: url,
+            embedding: vectorData
+          };
+        });
+
+        console.log("Attempting to save image records with raw vector array...");
+        const { error: imagesError } = await supabase.from('item_images').insert(imageRecords);
+        
+        if (imagesError) {
+          console.error("CRITICAL DATABASE ERROR:", imagesError.message, imagesError.details);
+          toast.error("Database rejected AI Vector: " + imagesError.message);
+        } else {
+          console.log("SUCCESS: Embedding vector saved to Supabase!");
+        }
       }
 
       toast.success(t('imageModeration.submitted'));
-      
-      // Ислоҳи муҳим: Аввал кэшро тоза мекунем, баъд ба саҳифаи профил мегузарем
       await queryClient.invalidateQueries({ queryKey: ITEM_KEYS.user() });
-      
       window.dispatchEvent(new Event('items-updated'));
       router.push('/profile?tab=posts');
     } catch (error: any) {
@@ -248,7 +314,7 @@ function AddItemForm() {
   return (
     <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-6 max-w-xl md:max-w-4xl h-[calc(100vh-144px)] sm:h-auto flex flex-col">
       <Card className="flex-1 rounded-none sm:rounded-[3rem] overflow-hidden border-none sm:border shadow-none sm:shadow-2xl flex flex-col bg-white">
-        {/* Step Indicator - Full Width Minimalist */}
+        {/* Step Indicator */}
         <div className="w-full flex h-1.5 gap-1 bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div 
@@ -283,11 +349,7 @@ function AddItemForm() {
                       <span className="block font-black text-lg uppercase leading-none mb-1">{t('lost')}</span>
                       <span className="text-zinc-500 text-[10px] font-bold">{t('lost_desc')}</span>
                     </div>
-                    <RadioGroupItem 
-                      value="lost" 
-                      id="lost" 
-                      className="w-6 h-6 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors" 
-                    />
+                    <RadioGroupItem value="lost" id="lost" className="w-6 h-6 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors" />
                   </Label>
                 </div>
                 <div className="relative">
@@ -300,59 +362,38 @@ function AddItemForm() {
                       <span className="block font-black text-lg uppercase leading-none mb-1">{t('found')}</span>
                       <span className="text-zinc-500 text-[10px] font-bold">{t('found_desc')}</span>
                     </div>
-                    <RadioGroupItem 
-                      value="found" 
-                      id="found" 
-                      className="w-6 h-6 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors" 
-                    />
+                    <RadioGroupItem value="found" id="found" className="w-6 h-6 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors" />
                   </Label>
                 </div>
               </RadioGroup>
             </div>
           )}
 
-          {/* Step 2: Basic Info */}
+          {/* Step 2: Details */}
           {step === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 animate-in fade-in slide-in-from-right-4 duration-500 w-full items-start">
               <div className="space-y-4">
-                <div className="space-y-1.5 group">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">
-                    {t('titleLabel')}
-                  </Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('titleLabel')}</Label>
                   <Input 
-                    id="title"
-                    name="title"
                     placeholder={t('titleLabel')}
-                    className={cn(
-                      "rounded-xl h-12 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-sm font-medium focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none transition-all placeholder:text-zinc-400/60",
-                      formData.title.trim().length > 0 && "border-emerald-500 ring-emerald-500/5"
-                    )}
+                    className="rounded-xl h-12 bg-white dark:bg-zinc-950 border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   />
                 </div>
-                <div className="space-y-1.5 group">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">
-                    {t('description')}
-                  </Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('description')}</Label>
                   <Textarea 
-                    id="description"
-                    name="description"
                     placeholder={t('description')}
-                    className={cn(
-                      "rounded-xl min-h-[140px] md:min-h-[180px] bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-sm font-medium focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none resize-none p-3 transition-all placeholder:text-zinc-400/60 scrollbar-none",
-                      formData.description.trim().length > 0 && "border-emerald-500 ring-emerald-500/5"
-                    )}
+                    className="rounded-xl min-h-[140px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none"
                     value={formData.description}
                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   />
                 </div>
               </div>
-
               <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">
-                  {t('categoryLabel')}
-                </Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('categoryLabel')}</Label>
                 <div className="grid grid-cols-2 gap-2.5">
                   {CATEGORIES.map((cat) => (
                     <button
@@ -360,21 +401,14 @@ function AddItemForm() {
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-95 text-left group",
-                        formData.category === cat.name
-                          ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm"
-                          : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600 dark:bg-zinc-950 dark:border-zinc-800"
+                        "flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-95 text-left",
+                        formData.category === cat.name ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm" : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600"
                       )}
                     >
-                      <div className={cn(
-                        "w-8 h-8 rounded-lg flex items-center justify-center text-lg transition-transform group-hover:scale-110 shrink-0",
-                        formData.category === cat.name ? "bg-emerald-100" : "bg-zinc-50 dark:bg-zinc-900"
-                      )}>
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0", formData.category === cat.name ? "bg-emerald-100" : "bg-zinc-50")}>
                         {cat.icon}
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-tight leading-tight">
-                        {t(`categories.${cat.id}`)}
-                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-tight leading-tight">{t(`categories.${cat.id}`)}</span>
                     </button>
                   ))}
                 </div>
@@ -385,37 +419,18 @@ function AddItemForm() {
           {/* Step 3: Photos */}
           {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
-              <div className="space-y-1.5 text-center mb-4">
-                <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white leading-none">
-                  {t('addImages')}
-                </h2>
-                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                  {t('maxImages')}
-                </p>
-              </div>
-              
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 {previews.map((src, i) => (
                   <div key={i} className="relative aspect-square rounded-[2rem] overflow-hidden group border-2 border-emerald-500/20 shadow-sm">
                     <Image src={src} alt="Preview" fill className="object-cover" />
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors" />
-                    <button 
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute top-2.5 right-2.5 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md text-red-500 p-2 rounded-2xl shadow-xl active:scale-90 transition-all border border-red-500/10"
-                    >
+                    <button type="button" onClick={() => removeImage(i)} className="absolute top-2.5 right-2.5 bg-white/90 text-red-500 p-2 rounded-2xl shadow-xl active:scale-90 transition-all">
                       <X className="w-4 h-4" />
                     </button>
-                    <div className="absolute bottom-2.5 left-2.5">
-                      <div className="bg-emerald-500 text-white text-[8px] font-black uppercase px-2 py-1 rounded-lg tracking-widest shadow-lg shadow-emerald-500/20">
-                        {i + 1}
-                      </div>
-                    </div>
                   </div>
                 ))}
                 {images.length < 5 && (
-                  <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-[2rem] cursor-pointer hover:bg-emerald-50/30 dark:hover:bg-emerald-950/10 transition-all active:scale-95 group relative overflow-hidden">
-                    <div className="w-14 h-14 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
+                  <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group">
+                    <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
                       <Plus className="w-7 h-7" />
                     </div>
                     <span className="mt-3 text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
@@ -426,193 +441,184 @@ function AddItemForm() {
             </div>
           )}
 
-          {/* Step 4: Contact & Reward */}
+          {/* Step 4: Contact */}
           {step === 4 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
-              <div className="space-y-1.5 text-center mb-6">
-                <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white leading-none">
-                  {t('phoneRequiredTitle')}
-                </h2>
-              </div>
-
               <div className="space-y-4">
-                <div className="space-y-2 group">
-                  <div className="relative">
-                    <Input 
-                      id="phone"
-                      name="phone"
-                      placeholder={t('phoneLabel')}
-                      className={cn(
-                        "rounded-xl h-14 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-lg font-black px-5 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none transition-all placeholder:text-zinc-400/60 placeholder:font-medium placeholder:text-base",
-                        formData.phone.length > 0 && "border-emerald-500 ring-emerald-500/5 text-emerald-600"
-                      )}
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
-                      inputMode="numeric"
-                      maxLength={9}
-                    />
-                  </div>
-                </div>
-
+                <Input 
+                  placeholder={t('phoneLabel')}
+                  className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black px-5 focus-visible:border-emerald-500 transition-all"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
+                  inputMode="numeric"
+                  maxLength={9}
+                />
                 {formData.type === 'lost' && (
-                  <div className="space-y-2 group">
-                    <div className="relative">
-                      <span className={cn(
-                        "absolute right-5 top-1/2 -translate-y-1/2 font-black text-sm transition-colors",
-                        formData.reward.length > 0 ? "text-emerald-600" : "text-zinc-400"
-                      )}>
-                        TJS
-                      </span>
-                      <Input 
-                        id="reward"
-                        name="reward"
-                        placeholder={t('reward_gives_input')}
-                        className={cn(
-                          "rounded-xl h-14 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-lg font-black pr-14 pl-5 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/10 shadow-none transition-all placeholder:text-zinc-400/60 placeholder:font-medium placeholder:text-base",
-                          formData.reward.length > 0 && "border-emerald-500 ring-emerald-500/5 text-emerald-600"
-                        )}
-                        value={formData.reward}
-                        onChange={(e) => setFormData(prev => ({ ...prev, reward: e.target.value.replace(/[^0-9]/g, '') }))}
-                        inputMode="numeric"
-                      />
-                    </div>
+                  <div className="relative">
+                    <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-sm text-zinc-400">TJS</span>
+                    <Input 
+                      placeholder={t('reward_gives_input')}
+                      className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black pr-14 pl-5 focus-visible:border-emerald-500 transition-all"
+                      value={formData.reward}
+                      onChange={(e) => setFormData(prev => ({ ...prev, reward: e.target.value.replace(/[^0-9]/g, '') }))}
+                      inputMode="numeric"
+                    />
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Step 5: Security Scan (New) */}
+          {step === 5 && (
+            <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500 max-w-md mx-auto">
+              {moderationStatus === 'checking' && (
+                <>
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-zinc-900 flex items-center justify-center mx-auto shadow-2xl relative">
+                    <Loader2 className="w-10 h-10 text-white animate-spin" />
+                    <div className="absolute inset-0 border-4 border-emerald-500/20 border-t-emerald-500 rounded-[2.5rem] animate-spin" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.step5_title')}</h2>
+                    <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.step5_desc')}</p>
+                  </div>
+                </>
+              )}
+              {moderationStatus === 'passed' && (
+                <>
+                  {!showSearchChoice ? (
+                    <>
+                      <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center mx-auto shadow-2xl">
+                        <CheckCircle2 className="w-12 h-12 text-white" />
+                      </div>
+                      <div className="space-y-2">
+                        <h2 className="text-2xl font-black uppercase tracking-tight text-emerald-600">{t('ai_steps.step5_passed')}</h2>
+                        <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.step5_passed_desc')}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                      <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-100 flex items-center justify-center mx-auto text-3xl">🔎</div>
+                      <div className="space-y-2">
+                        <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.ask_search_title')}</h2>
+                        <p className="text-zinc-500 font-bold text-sm leading-relaxed">{t('ai_steps.ask_search_desc')}</p>
+                      </div>
+                      <div className="flex flex-col gap-3 pt-4">
+                        <Button 
+                          onClick={runSimilaritySearch}
+                          className="h-14 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-white font-black uppercase tracking-widest text-[10px] shadow-xl"
+                        >
+                          {t('ai_steps.btn_search_yes')}
+                        </Button>
+                        <Button 
+                          variant="ghost"
+                          onClick={() => setShowSafetyModal(true)}
+                          className="h-12 font-bold uppercase tracking-widest text-[10px] text-zinc-400"
+                        >
+                          {t('ai_steps.btn_search_no')}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {moderationStatus === 'failed' && (
+                <>
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-red-100 flex items-center justify-center mx-auto shadow-lg">
+                    <ShieldAlert className="w-12 h-12 text-red-600" />
+                  </div>
+                  <div className="space-y-3">
+                    <h2 className="text-2xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
+                    <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                      <p className="text-red-700 font-bold text-sm leading-relaxed">
+                        {moderationError || t('error')}
+                      </p>
+                    </div>
+                    <Button variant="outline" onClick={() => setStep(4)} className="rounded-xl font-bold uppercase text-[10px] tracking-widest mt-4">{t('ai_steps.step5_fix_btn')}</Button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Step 6: Similarity Search (New) */}
+          {step === 6 && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 w-full">
+              <div className="text-center space-y-2 mb-6">
+                <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.step6_title')}</h2>
+                <p className="text-zinc-500 font-bold text-sm">
+                  {aiSuggestions?.similarItems?.length > 0 ? t('ai_steps.step6_found_desc') : t('ai_steps.step6_not_found_desc')}
+                </p>
+              </div>
+              {aiSuggestions?.similarItems?.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto p-2 scrollbar-none">
+                  {aiSuggestions.similarItems.map((item: any) => (
+                    <div key={item.id} className="flex items-center gap-4 p-4 rounded-3xl border-2 border-zinc-100 hover:border-emerald-500 cursor-pointer transition-all bg-zinc-50/30 group" onClick={() => router.push(`/items/${item.id}`)}>
+                      <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-sm">
+                        <Image src={item.item_images?.[0]?.image_url || "/placeholder.png"} alt={item.title} fill className="object-cover group-hover:scale-110 transition-transform" />
+                        <div className="absolute top-1 right-1 bg-emerald-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg shadow-lg">{item.match_percentage}%</div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-black uppercase text-xs truncate mb-1">{item.title}</h4>
+                        <p className="text-[10px] font-bold text-zinc-400 line-clamp-2 leading-tight uppercase">{item.category}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {aiSuggestions?.similarItems?.length === 0 && (
+                <div className="py-12 text-center">
+                  <div className="w-20 h-20 bg-zinc-50 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-dashed border-zinc-200">
+                    <Search className="w-8 h-8 text-zinc-300" />
+                  </div>
+                  <p className="text-zinc-400 font-bold text-xs uppercase tracking-widest">{t('ai_steps.step6_no_matches')}</p>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
 
         {/* Navigation Footer */}
         <div className="p-6 sm:p-10 bg-white flex gap-3 sm:gap-4 items-center">
-          {step > 1 && (
-            <Button 
-              variant="outline" 
-              size="lg" 
-              onClick={prevStep}
-              className="rounded-2xl h-14 px-4 sm:px-8 border-2 font-black uppercase tracking-widest text-[10px] sm:text-[11px] hover:bg-zinc-50 shrink-0"
-            >
+          {step > 1 && step <= 4 && (
+            <Button variant="outline" size="lg" onClick={prevStep} className="rounded-2xl h-14 px-4 sm:px-8 border-2 font-black uppercase tracking-widest text-[10px] hover:bg-zinc-50 shrink-0">
               <ArrowLeft className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('back')}</span>
             </Button>
           )}
-          <Button 
-            size="lg" 
-            onClick={step === totalSteps ? handlePreSubmit : nextStep}
-            className={cn(
-              "flex-1 rounded-2xl h-14 font-black uppercase tracking-[0.1em] sm:tracking-[0.2em] text-[10px] sm:text-[11px] shadow-xl active:scale-95 transition-all duration-700 overflow-hidden",
-              step === totalSteps ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : "bg-zinc-900 hover:bg-zinc-800 shadow-zinc-900/20",
-              step === 1 && formData.type && "bg-emerald-500 animate-[pulse_3s_cubic-bezier(0.4,0,0.6,1)_infinite] shadow-emerald-500/40 -translate-y-6 ring-8 ring-emerald-500/10"
-            )}
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (step === totalSteps ? t('publishBtn') : t('next'))}
-          </Button>
+          {step <= 4 && (
+            <Button size="lg" onClick={nextStep} className={cn("flex-1 rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] shadow-xl active:scale-95 transition-all duration-700 overflow-hidden", step === 4 ? "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20" : "bg-zinc-900 hover:bg-zinc-800 shadow-zinc-900/20", step === 1 && formData.type && "bg-emerald-500 -translate-y-2 ring-8 ring-emerald-500/10")}>
+              {step === 4 ? t('publishBtn') : t('next')}
+            </Button>
+          )}
+          {step === 6 && (
+            <div className="flex-1 flex gap-3">
+              <Button variant="outline" onClick={() => setStep(4)} className="flex-1 rounded-2xl h-14 border-2 font-black uppercase tracking-widest text-[10px]">{t('back')}</Button>
+              <Button onClick={() => setShowSafetyModal(true)} disabled={loading} className="flex-1 rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-500/20">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('ai_steps.publish_now')}
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
 
-      {/* Safety Modal */}
+      {/* Safety Confirmation Modal */}
       <Dialog open={showSafetyModal} onOpenChange={setShowSafetyModal}>
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
           <div className="p-10 space-y-6 text-center">
-            <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-2 animate-in zoom-in duration-500 bg-red-50 dark:bg-red-900/20">
+            <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-2 bg-red-50 animate-in zoom-in duration-500">
               <ShieldAlert className="w-10 h-10 text-red-500" />
             </div>
-
             <div className="space-y-3">
-              <DialogTitle className="text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
-                {formData.type === 'found' ? t('safetyPostModal.foundTitle') : t('safetyPostModal.lostTitle')}
-              </DialogTitle>
-              <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
-                {formData.type === 'found' ? t('safetyPostModal.foundDesc') : t('safetyPostModal.lostDesc')}
-              </p>
+              <DialogTitle className="text-2xl font-black uppercase tracking-tight">{formData.type === 'found' ? t('safetyPostModal.foundTitle') : t('safetyPostModal.lostTitle')}</DialogTitle>
+              <p className="text-zinc-500 font-bold text-sm leading-relaxed">{formData.type === 'found' ? t('safetyPostModal.foundDesc') : t('safetyPostModal.lostDesc')}</p>
             </div>
           </div>
-
           <div className="px-10 pb-10">
-            <Button
-              onClick={onFinalSubmit}
-              className="w-full h-16 rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs text-white shadow-xl transition-all active:scale-95 border-none bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/10"
-            >
-              {t('safetyPostModal.confirmBtn')}
-            </Button>
+            <Button onClick={onFinalSubmit} className="w-full h-16 rounded-[1.5rem] font-black uppercase tracking-widest text-xs text-white bg-emerald-500 hover:bg-emerald-600 shadow-xl">{t('safetyPostModal.confirmBtn')}</Button>
           </div>
         </DialogContent>
       </Dialog>
-      {/* AI Brain Results Modal */}
-      <Dialog open={showAIResults} onOpenChange={setShowAIResults}>
-        <DialogContent className="sm:max-w-lg rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
-          <div className="p-8 space-y-6">
-            <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-100 flex items-center justify-center mx-auto text-2xl mb-2">🤖</div>
-              <DialogTitle className="text-2xl font-black uppercase tracking-tight">
-                {aiSuggestions?.message || "Мо чизҳои монандро ёфтем!"}
-              </DialogTitle>
-              <DialogDescription className="text-zinc-500 font-bold">
-                Пеш аз он ки эълон гузоред, санҷед, ки оё ин ҳамон чизе нест, ки шумо меҷӯед?
-              </DialogDescription>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-none">
-              {aiSuggestions?.similarItems?.map((item: any) => (
-                <div 
-                  key={item.id} 
-                  className="flex items-center gap-4 p-4 rounded-3xl border-2 border-zinc-100 hover:border-emerald-500 cursor-pointer transition-all group bg-zinc-50/50"
-                  onClick={() => router.push(`/items/${item.id}`)}
-                >
-                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0">
-                    <Image 
-                      src={item.item_images?.[0]?.image_url || "/placeholder.png"} 
-                      alt={item.title} 
-                      fill 
-                      className="object-cover group-hover:scale-110 transition-transform" 
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-black uppercase text-sm truncate">{item.title}</h4>
-                    <p className="text-[10px] font-bold text-zinc-500 line-clamp-2 mt-1 leading-snug">
-                      {item.description}
-                    </p>
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm text-emerald-500">
-                    →
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowAIResults(false)}
-                className="h-14 rounded-2xl font-black uppercase tracking-widest text-[10px] border-2"
-              >
-                Инҳо нестанд, идома додан
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* AI Processing Overlay */}
-      {isAIChecking && (
-        <div className="fixed inset-0 bg-white/80 backdrop-blur-md z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
-          <div className="relative">
-            <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center shadow-2xl shadow-emerald-500/40 animate-bounce">
-              <Loader2 className="w-10 h-10 text-white animate-spin" />
-            </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center text-white text-xs animate-pulse">
-              AI
-            </div>
-          </div>
-          <h3 className="mt-8 text-xl font-black uppercase tracking-widest text-zinc-900">
-            AI Brain Таҳлил мекунад...
-          </h3>
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-            Мо базаро барои ёфтани чизҳои монанд месанҷем
-          </p>
-        </div>
-      )}
     </div>
   );
 }
@@ -620,11 +626,7 @@ function AddItemForm() {
 export default function AddItemPage() {
   return (
     <TooltipProvider>
-      <Suspense fallback={
-        <div className="container mx-auto px-4 py-8 max-w-2xl flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-10 h-10 animate-spin text-zinc-900" />
-        </div>
-      }>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-10 h-10 animate-spin" /></div>}>
         <AddItemForm />
       </Suspense>
     </TooltipProvider>
