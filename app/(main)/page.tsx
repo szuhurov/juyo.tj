@@ -98,10 +98,6 @@ function HomeContent() {
     return data?.pages.flatMap(page => page) || [];
   }, [data]);
 
-  // Тақсими ашёҳо ба "Ёфтшудаҳо" ва "Гумшудаҳо" барои мобил
-  const foundItems = useMemo(() => allItems.filter(i => i.type === 'found'), [allItems]);
-  const lostItems = useMemo(() => allItems.filter(i => i.type === 'lost'), [allItems]);
-
   // Усули "Pro": Намоиши ашёҳо бидуни филтри зиёдатии фронтенд (чун backend аллакай филтр мекунад)
   const displayedItems = useMemo(() => {
     if (visualSearchResults) return visualSearchResults;
@@ -219,50 +215,11 @@ function HomeContent() {
         </div>
       ) : displayedItems.length > 0 ? (
         <>
-          {/* Версияи Desktop: Стандарт 4 сутун */}
-          <div className="hidden md:grid md:grid-cols-4 gap-2 sm:gap-3">
+          {/* Версияи Desktop ва Mobile: Рӯйхати умумӣ */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
             {displayedItems.map((item, index) => (
               <ItemCard key={item.id} item={item} index={index} />
             ))}
-          </div>
-
-          {/* Версияи Mobile: Ду сутуни махсус (Чап - Ёфтшуда, Рост - Гумшуда) */}
-          <div className="grid md:hidden grid-cols-2 gap-1 w-full">
-            {itemType ? (
-              /* Агар филтр фаъол бошад (Гумшуда ё Ёфтшуда), ҳамаро дар ду сутун нишон медиҳем */
-              displayedItems.map((item, index) => (
-                <ItemCard key={item.id} item={item} index={index} />
-              ))
-            ) : (
-              /* Агар филтр набошад, тақсим ба ду тараф: Ёфтшуда ва Гумшуда */
-              <>
-                {/* Сутуни 1: Ёфтшудаҳо (Found) */}
-                <div className="flex flex-col gap-1 w-full min-w-0">
-                  {foundItems.length > 0 ? (
-                    foundItems.map((item, index) => (
-                      <ItemCard key={item.id} item={item} index={index} />
-                    ))
-                  ) : (
-                    <div className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
-                      <span className="text-[8px] font-black uppercase">{t('filterFound')}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Сутуни 2: Гумшудаҳо (Lost) */}
-                <div className="flex flex-col gap-1 w-full min-w-0">
-                  {lostItems.length > 0 ? (
-                    lostItems.map((item, index) => (
-                      <ItemCard key={item.id} item={item} index={index} />
-                    ))
-                  ) : (
-                    <div className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-100 dark:border-zinc-900 rounded-xl opacity-40">
-                      <span className="text-[8px] font-black uppercase">{t('filterLost')}</span>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
           </div>
 
           {/* Элемент барои Infinite Scroll */}

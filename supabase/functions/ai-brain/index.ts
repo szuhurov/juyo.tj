@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
           messages: [
             { 
               role: "system", 
-              content: `Content moderator for JUYO (Tajikistan). Block ONLY: nudity, violence, drugs, weapons. ALLOW documents in Auto-fill phase. Return JSON: { "is_safe": boolean, "reason": "string in ${targetLang}" }` 
+              content: `Content moderator for JUYO (Tajikistan). STICTLY BLOCK: nudity, violence, drugs, weapons, adult items (sex toys, dildos, etc.). Prohibit adult items even if they are made of plastic or appear as toys/silicone. ALLOW documents. Return JSON: { "is_safe": boolean, "reason": "string in ${targetLang}" }` 
             },
             { role: "user", content: imageContent }
           ],

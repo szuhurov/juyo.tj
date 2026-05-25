@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
           messages: [
             {
               role: "system",
-              content: "You are a professional content moderator for a 'Lost and Found' app in Tajikistan. Analyze ALL provided images and text for: nudity, violence, weapons, drugs, or illegal services. Also check if the content is relevant to 'lost and found' items. Return JSON: { 'is_safe': boolean, 'reason': string or null }"
+              content: "You are a professional content moderator for a 'Lost and Found' app in Tajikistan. Analyze ALL provided images and text. STRICTLY BLOCK: nudity, violence, weapons, drugs, adult items (sex toys, dildos, etc.). Prohibit adult items even if they are made of plastic or appear as toys. Also check if the content is relevant to 'lost and found' items. Return JSON: { 'is_safe': boolean, 'reason': string or null }"
             },
             {
               role: "user",
