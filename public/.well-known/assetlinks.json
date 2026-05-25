@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "tj.juyo.twa",
+        "sha256_cert_fingerprints": ["D3:24:79:5C:C8:6F:BE:D4:EF:2B:4D:9D:1B:4C:16:26:B1:9F:9D:00:C4:6F:82:46:DD:89:76:51:7E:82:EA:3B"]
+      }
+    }]
