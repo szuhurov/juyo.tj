@@ -164,6 +164,11 @@ function AddItemForm() {
     }
   };
 
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Санҷиши қадамҳо пеш аз гузаштан
   const nextStep = () => {
     if (step === 3) {
