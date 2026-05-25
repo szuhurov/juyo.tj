@@ -309,6 +309,7 @@ export const translations: Record<string, any> = {
     dataLoadError: 'Маълумот бор нашуд.',
     imagePermissionError: 'Baрои илова кардани сурат иҷозат лозим аст.',
     maxImagesReached: 'Ҳадди аксар 5 сурат иҷозат дода мешавад.',
+    contactInfo: 'Маълумоти тамос',
     
     terms: {
       title: 'Тасдиқи шартҳо',
@@ -327,13 +328,13 @@ export const translations: Record<string, any> = {
     
     // AI Steps
     ai_steps: {
-      step5_title: 'Қадами 5: Санҷиши Амниятӣ',
+      step5_title: 'Санҷиши Амниятӣ',
       step5_desc: 'AI Brain мундариҷаи шуморо таҳлил мекунад...',
       step5_passed: 'Санҷиш гузашт!',
-      step5_passed_desc: 'Маълумоти шумо бехатар аст. Ба қадами 6 мегузарем...',
+      step5_passed_desc: 'Маълумоти шумо бехатар аст. Ба қадами 4 мегузарем...',
       step5_failed: 'Аз санҷиши амниятӣ нагузашт',
       step5_fix_btn: 'Ислоҳ кардан',
-      step6_title: 'Қадами 6: Ҷустуҷӯи ашёҳои монанд',
+      step6_title: 'Ҷустуҷӯи ашёҳои монанд',
       step6_found_desc: 'Мо баъзе ашёҳои монандро пайдо кардем. Шояд соҳибаш аллакай эълон гузоштааст?',
       step6_not_found_desc: 'Ягон ашёи монанд дар база ёфт нашуд. Шумо метавонед эълонро нашр кунед.',
       step6_no_matches: 'Ашёи монанд ёфт нашуд',
@@ -343,6 +344,13 @@ export const translations: Record<string, any> = {
       ask_search_desc: 'Оё мехоҳед, ки мо дар базаи маълумот ашёҳои монандро ҷӯем? Шояд касе аллакай эълон гузоштааст.',
       btn_search_yes: 'Бале, кофтан',
       btn_search_no: 'Не, гузаштан',
+      scanning_pixels: 'AI таҳлили пикселҳоро оғоз кард...',
+      detecting_features: 'Ҷустуҷӯи хусусиятҳои ашё...',
+      checking_safety: 'Санҷиши қоидаҳои амниятӣ...',
+      matching_categories: 'Муайян кардани категория...',
+      optimizing_description: 'Тайёр кардани тавсифи касбӣ...',
+      forensic_engine: 'Системаи AI Brain хусусиятҳои ашёро барои ҷустуҷӯи ҷаҳонӣ муайян мекунад...',
+      auto_filling: 'Пур кардани маълумот...',
     },
     
     // AI Moderation Codes
@@ -857,6 +865,7 @@ export const translations: Record<string, any> = {
     dataLoadError: 'Не удалось загрузить данные.',
     imagePermissionError: 'Требуется разрешение на добавление фото.',
     maxImagesReached: 'Максимум 5 изображений.',
+    contactInfo: 'Контактная информация',
 
     terms: {
       title: 'Подтверждение условий',
@@ -875,13 +884,13 @@ export const translations: Record<string, any> = {
     
     // AI Steps
     ai_steps: {
-      step5_title: 'Шаг 5: Проверка Безопасности',
+      step5_title: 'Проверка Безопасности',
       step5_desc: 'AI Brain анализирует ваш контент...',
       step5_passed: 'Проверка пройдена!',
-      step5_passed_desc: 'Ваши данные в безопасности. Переходим к шагу 6...',
+      step5_passed_desc: 'Ваши данные в безопасности. Переходим к шагу 4...',
       step5_failed: 'Не прошло проверку безопасности',
       step5_fix_btn: 'Исправить',
-      step6_title: 'Шаг 6: Поиск похожих вещей',
+      step6_title: 'Поиск похожих вещей',
       step6_found_desc: 'Мы нашли похожие вещи. Возможно, владелец уже разместил объявление?',
       step6_not_found_desc: 'Похожих вещей не найдено. Вы можете опубликовать объявление.',
       step6_no_matches: 'Похожих вещей не найдено',
@@ -891,6 +900,13 @@ export const translations: Record<string, any> = {
       ask_search_desc: 'Хотите, чтобы мы поискали похожие вещи в базе? Возможно, кто-то уже разместил объявление.',
       btn_search_yes: 'Да, искать',
       btn_search_no: 'Нет, пропустить',
+      scanning_pixels: 'AI начал анализ пикселей...',
+      detecting_features: 'Поиск характерных черт предмета...',
+      checking_safety: 'Проверка правил безопасности...',
+      matching_categories: 'Определение категории...',
+      optimizing_description: 'Подготовка профессионального описания...',
+      forensic_engine: 'Система AI Brain определяет характеристики для глобального поиска...',
+      auto_filling: 'Заполнение данных...',
     },
     
     // AI Moderation Codes
@@ -1389,6 +1405,7 @@ export const translations: Record<string, any> = {
     dataLoadError: 'Data failed to load.',
     imagePermissionError: 'Permission required to add photos.',
     maxImagesReached: 'Maximum 5 photos allowed.',
+    contactInfo: 'Contact Information',
     
     terms: {
       title: 'Terms Confirmation',
@@ -1407,13 +1424,13 @@ export const translations: Record<string, any> = {
     
     // AI Steps
     ai_steps: {
-      step5_title: 'Step 5: Security Scan',
+      step5_title: 'Security Scan',
       step5_desc: 'AI Brain is analyzing your content...',
       step5_passed: 'Scan Passed!',
-      step5_passed_desc: 'Your content is safe. Moving to step 6...',
+      step5_passed_desc: 'Your content is safe. Moving to step 4...',
       step5_failed: 'Did not pass security check',
       step5_fix_btn: 'Fix content',
-      step6_title: 'Step 6: Similarity Search',
+      step6_title: 'Similarity Search',
       step6_found_desc: 'We found some similar items. Perhaps the owner has already posted?',
       step6_not_found_desc: 'No similar items found in the database. You can publish now.',
       step6_no_matches: 'No similar items found',
@@ -1423,6 +1440,13 @@ export const translations: Record<string, any> = {
       ask_search_desc: 'Would you like us to look for similar items in our database? Someone might have already posted it.',
       btn_search_yes: 'Yes, search',
       btn_search_no: 'No, skip',
+      scanning_pixels: 'AI is analyzing pixels...',
+      detecting_features: 'Detecting object features...',
+      checking_safety: 'Checking safety rules...',
+      matching_categories: 'Matching categories...',
+      optimizing_description: 'Optimizing description...',
+      forensic_engine: 'Our AI Brain is identifying forensic features for global matching...',
+      auto_filling: 'Auto-filling details...',
     },
     
     // AI Moderation Codes

@@ -35,6 +35,33 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  --animate-scan: scan 2s ease-in-out infinite alternate;
+  --animate-scan-fast: scan-fast 1.5s linear infinite;
+  --animate-scan-overlay: scan-overlay 2.5s ease-in-out infinite;
+  --animate-grid-scan: grid-scan 1.5s linear infinite;
+
+  @keyframes scan {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100%); }
+  }
+
+  @keyframes scan-fast {
+    0% { top: 0; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  @keyframes scan-overlay {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(200%); }
+  }
+
+  @keyframes grid-scan {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 25px 25px; }
+  }
 }
 
 :root {

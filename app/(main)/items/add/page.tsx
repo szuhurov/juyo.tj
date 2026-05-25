@@ -67,6 +67,25 @@ function AddItemForm() {
   const [moderationStatus, setModerationStatus] = useState<'idle' | 'checking' | 'passed' | 'failed'>('idle');
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [showSearchChoice, setShowSearchChoice] = useState(false);
+  const [scanMessageIndex, setScanMessageIndex] = useState(0);
+
+  const scanMessages = [
+    t('ai_steps.scanning_pixels'),
+    t('ai_steps.detecting_features'),
+    t('ai_steps.checking_safety'),
+    t('ai_steps.matching_categories'),
+    t('ai_steps.optimizing_description')
+  ];
+
+  useEffect(() => {
+    let interval: any;
+    if (moderationStatus === 'checking') {
+      interval = setInterval(() => {
+        setScanMessageIndex((prev) => (prev + 1) % scanMessages.length);
+      }, 2500); // Slower rotation for readability
+    }
+    return () => clearInterval(interval);
+  }, [moderationStatus]);
 
   // Боргузории рақами телефон аз профил
   useEffect(() => {
@@ -91,7 +110,7 @@ function AddItemForm() {
   const runAIAnalysis = async (selectedImages: File[]) => {
     if (selectedImages.length === 0) return;
     
-    setStep(2); // Қадами 2: Таҳлили AI
+    setStep(3); // Қадами 3: Таҳлили AI
     setModerationStatus('checking');
     setModerationError(null);
     
@@ -106,6 +125,7 @@ function AddItemForm() {
       
       // Барои аввалин бор мо танҳо суратро мефиристем, то AI худаш тавсиф кунад
       formDataAI.append('lang', locale);
+      formDataAI.append('type', formData.type || 'lost');
       formDataAI.append('mode', 'full'); 
 
       const { data, error } = await supabase.functions.invoke('ai-brain', {
@@ -134,10 +154,8 @@ function AddItemForm() {
       setAiSuggestions(data);
       setModerationStatus('passed');
       
-      // Баъд аз 1.5 сония ба қадами тафсилот (Details) мегузарем
-      setTimeout(() => {
-        setStep(4);
-      }, 1500);
+      // Favran ba qadami details meguzarem (Immediate transition)
+      setStep(4);
 
     } catch (error: any) {
       console.error("AI Analysis Error:", error);
@@ -157,11 +175,6 @@ function AddItemForm() {
     setImages(newImages);
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
-
-    // Баъд аз интихоби сурат ба интихоби намуд мегузарем
-    if (step === 1 && files.length > 0) {
-      setStep(3); // Қадами 3: Гумшуда ё Ёфтшуда?
-    }
   };
 
   const removeImage = (index: number) => {
@@ -171,7 +184,13 @@ function AddItemForm() {
 
   // Санҷиши қадамҳо пеш аз гузаштан
   const nextStep = () => {
-    if (step === 3) {
+    if (step === 1) {
+      if (images.length === 0) {
+        toast.error(t('pickImage'));
+        return;
+      }
+      setStep(2); // Ба қадами интихоби намуд мегузарем
+    } else if (step === 2) {
       if (!formData.type) {
         toast.error(t('fillAllFields'));
         return;
@@ -183,7 +202,7 @@ function AddItemForm() {
         toast.error(t('fillAllFields'));
         return;
       }
-      setStep(5);
+      setStep(5); // Move to Step 5 (Phone & Reward)
     } else if (step === 5) {
       if (!formData.phone.trim()) {
         toast.error(t('fillAllFields'));
@@ -194,7 +213,14 @@ function AddItemForm() {
   };
 
   const prevStep = () => {
-    if (step > 1 && step !== 2) setStep(step === 3 ? 1 : step - 1);
+    if (step === 4) {
+      setStep(2); // Skip Step 3 (Scan) and go to Type Selection
+      setModerationStatus('idle');
+    } else if (step === 5) {
+      setStep(4);
+    } else if (step > 1 && step !== 3) {
+      setStep(step - 1);
+    }
   };
 
   const onFinalSubmit = async () => {
@@ -317,68 +343,15 @@ function AddItemForm() {
                       <Plus className="w-7 h-7" />
                     </div>
                     <span className="mt-3 text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
-                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
+                    <input type="file" className="hidden" accept="image/*" capture="environment" multiple onChange={handleImageChange} />
                   </label>
                 )}
               </div>
             </div>
           )}
 
-          {/* Step 2: AI Scanning & Auto-fill */}
+          {/* Step 2: Type Selection */}
           {step === 2 && (
-            <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500 max-w-md mx-auto">
-              {moderationStatus === 'checking' && (
-                <>
-                  <div className="w-24 h-24 rounded-[2.5rem] bg-zinc-900 flex items-center justify-center mx-auto shadow-2xl relative">
-                    <Loader2 className="w-10 h-10 text-white animate-spin" />
-                    <div className="absolute inset-0 border-4 border-emerald-500/20 border-t-emerald-500 rounded-[2.5rem] animate-spin" />
-                  </div>
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-black uppercase tracking-tight">{t('ai_steps.step5_title')}</h2>
-                    <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.step5_desc')}</p>
-                  </div>
-                  {/* Preview of images being scanned */}
-                  <div className="flex justify-center -space-x-4 mt-4">
-                    {previews.slice(0, 3).map((src, i) => (
-                      <div key={i} className="w-12 h-12 rounded-xl border-2 border-white shadow-lg overflow-hidden relative">
-                        <Image src={src} alt="Scanning" fill className="object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-              {moderationStatus === 'passed' && (
-                <>
-                  <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500 flex items-center justify-center mx-auto shadow-2xl animate-bounce">
-                    <CheckCircle2 className="w-12 h-12 text-white" />
-                  </div>
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-black uppercase tracking-tight text-emerald-600">{t('ai_steps.step5_passed')}</h2>
-                    <p className="text-zinc-500 font-bold text-sm">{t('ai_steps.auto_filling')}</p>
-                  </div>
-                </>
-              )}
-              {moderationStatus === 'failed' && (
-                <>
-                  <div className="w-24 h-24 rounded-[2.5rem] bg-red-100 flex items-center justify-center mx-auto shadow-lg">
-                    <ShieldAlert className="w-12 h-12 text-red-600" />
-                  </div>
-                  <div className="space-y-3">
-                    <h2 className="text-2xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
-                    <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
-                      <p className="text-red-700 font-bold text-sm leading-relaxed">
-                        {moderationError || t('error')}
-                      </p>
-                    </div>
-                    <Button variant="outline" onClick={() => setStep(1)} className="rounded-xl font-bold uppercase text-[10px] tracking-widest mt-4">{t('ai_steps.step5_fix_btn')}</Button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Type Selection */}
-          {step === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-black uppercase tracking-tight">{t('what_happened')}</h2>
@@ -418,6 +391,93 @@ function AddItemForm() {
             </div>
           )}
 
+          {/* Step 3: AI Scanning & Auto-fill (Inline Visual Search Style) */}
+          {step === 3 && (
+            <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500 max-w-md mx-auto w-full py-4">
+              {moderationStatus === 'checking' && (
+                <div className="flex flex-col items-center gap-8 w-full">
+                  <div className="relative group w-64 h-64 sm:w-72 sm:h-72">
+                    {/* Soft Glow */}
+                    <div className="absolute -inset-1 bg-emerald-500/20 rounded-[2.2rem] blur-md opacity-50"></div>
+                    
+                    {/* Image Container - Visual Search Style inside white theme */}
+                    <div className="relative h-full w-full rounded-[2rem] overflow-hidden border border-zinc-200 shadow-xl bg-zinc-900 transition-all duration-700">
+                      <div className="flex flex-col items-center h-full w-full">
+                        <div className="relative w-full h-full overflow-hidden">
+                          {previews[0] && (
+                            <>
+                              <Image 
+                                src={previews[0]} 
+                                alt="" 
+                                fill 
+                                className="object-cover blur-3xl opacity-40 scale-110"
+                              />
+                              <Image 
+                                src={previews[0]} 
+                                alt="Analyzing" 
+                                fill 
+                                className="object-contain opacity-60 transition-opacity duration-700 relative z-10"
+                              />
+                            </>
+                          )}
+                          
+                          {/* Laser Scanner */}
+                          <div className="absolute inset-0 z-20 pointer-events-none">
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.8)] animate-scan-fast" />
+                            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent h-1/2 animate-scan-overlay" />
+                          </div>
+
+                          {/* Neural Grid Overlay */}
+                          <div 
+                            className="absolute inset-0 opacity-90 animate-grid-scan z-5"
+                            style={{
+                              backgroundImage: "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
+                              backgroundSize: "25px 25px"
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status Text - Emerald text on white background */}
+                  <div className="h-10 w-full flex items-center justify-center mt-2">
+                    <p 
+                      className="text-emerald-500 font-bold text-xs sm:text-sm uppercase tracking-[0.3em] text-center animate-in slide-in-from-bottom-2 duration-700" 
+                      key={scanMessageIndex}
+                    >
+                      {scanMessages[scanMessageIndex]}
+                    </p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Failed State UI (White Theme) */}
+              {moderationStatus === 'failed' && (
+                <div className="space-y-6 text-center max-w-md mx-auto p-6 bg-red-50 rounded-[2.5rem] border border-red-100 shadow-sm">
+                  <div className="w-20 h-20 rounded-[2rem] bg-white flex items-center justify-center mx-auto shadow-sm">
+                    <ShieldAlert className="w-10 h-10 text-red-500" />
+                  </div>
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
+                    <div className="bg-white p-4 rounded-2xl border border-red-100">
+                      <p className="text-red-700 font-bold text-sm leading-relaxed">
+                        {moderationError || t('error')}
+                      </p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setStep(1)} 
+                      className="rounded-xl font-bold uppercase text-[10px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100"
+                    >
+                      {t('ai_steps.step5_fix_btn')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Step 4: Details (Auto-filled) */}
           {step === 4 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 animate-in fade-in slide-in-from-right-4 duration-500 w-full items-start">
@@ -441,52 +501,63 @@ function AddItemForm() {
                   />
                 </div>
               </div>
-              <div className="space-y-4">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('categoryLabel')}</Label>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-95 text-left",
-                        formData.category === cat.name ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm" : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600"
-                      )}
-                    >
-                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0", formData.category === cat.name ? "bg-emerald-100" : "bg-zinc-50")}>
-                        {cat.icon}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-tight leading-tight">{t(`categories.${cat.id}`)}</span>
-                    </button>
-                  ))}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('categoryLabel')}</Label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {CATEGORIES.map((cat) => (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, category: cat.name }))}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-95 text-left",
+                          formData.category === cat.name ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm" : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600"
+                        )}
+                      >
+                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0", formData.category === cat.name ? "bg-emerald-100" : "bg-zinc-50")}>
+                          {cat.icon}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-tight leading-tight">{t(`categories.${cat.id}`)}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Step 5: Contact */}
+          {/* Step 5: Contact & Reward */}
           {step === 5 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
+              <div className="text-center space-y-1 mb-4">
+                <h2 className="text-2xl font-black uppercase tracking-tight">{t('contactInfo') || 'Contact Information'}</h2>
+              </div>
               <div className="space-y-4">
-                <Input 
-                  placeholder={t('phoneLabel')}
-                  className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black px-5 focus-visible:border-emerald-500 transition-all"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
-                  inputMode="numeric"
-                  maxLength={9}
-                />
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('phoneLabel')}</Label>
+                  <Input 
+                    placeholder={t('phoneLabel')}
+                    className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black px-5 focus-visible:border-emerald-500 transition-all"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.replace(/[^0-9]/g, '') }))}
+                    inputMode="numeric"
+                    maxLength={9}
+                  />
+                </div>
                 {formData.type === 'lost' && (
-                  <div className="relative">
-                    <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-sm text-zinc-400">TJS</span>
-                    <Input 
-                      placeholder={t('reward_gives_input')}
-                      className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black pr-14 pl-5 focus-visible:border-emerald-500 transition-all"
-                      value={formData.reward}
-                      onChange={(e) => setFormData(prev => ({ ...prev, reward: e.target.value.replace(/[^0-9]/g, '') }))}
-                      inputMode="numeric"
-                    />
+                  <div className="space-y-1.5">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-400 ml-1">{t('reward_gives_input')}</Label>
+                    <div className="relative">
+                      <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-sm text-zinc-400">TJS</span>
+                      <Input 
+                        placeholder={t('reward_gives_input')}
+                        className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black pr-14 pl-5 focus-visible:border-emerald-500 transition-all"
+                        value={formData.reward}
+                        onChange={(e) => setFormData(prev => ({ ...prev, reward: e.target.value.replace(/[^0-9]/g, '') }))}
+                        inputMode="numeric"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -496,23 +567,21 @@ function AddItemForm() {
 
         {/* Navigation Footer */}
         <div className="p-6 sm:p-10 bg-white flex gap-3 sm:gap-4 items-center">
-          {step > 1 && step !== 2 && (
+          {step > 1 && step !== 3 && (
             <Button variant="outline" size="lg" onClick={prevStep} className="rounded-2xl h-14 px-4 sm:px-8 border-2 font-black uppercase tracking-widest text-[10px] hover:bg-zinc-50 shrink-0">
               <ArrowLeft className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('back')}</span>
             </Button>
           )}
-          {step >= 3 && step <= 4 && (
+          {((step === 1 || step === 2 || step === 4)) && (
             <Button size="lg" onClick={nextStep} className="flex-1 rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 shadow-xl active:scale-95 transition-all">
               {t('next')}
             </Button>
           )}
           {step === 5 && (
-            <div className="flex-1 flex gap-3">
-              <Button onClick={() => setShowSafetyModal(true)} disabled={loading} className="flex-1 rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-500/20">
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('publishBtn')}
-              </Button>
-            </div>
+            <Button onClick={() => setShowSafetyModal(true)} disabled={loading} className="flex-1 rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-500/20">
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('publishBtn')}
+            </Button>
           )}
         </div>
       </Card>
@@ -534,6 +603,32 @@ function AddItemForm() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <style jsx global>{`
+        @keyframes scan-fast {
+          0% { top: 0; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        @keyframes scan-overlay {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(200%); }
+        }
+        @keyframes grid-scan {
+          0% { background-position: 0% 0%; }
+          100% { background-position: 25px 25px; }
+        }
+        .animate-scan-fast {
+          animation: scan-fast 1.5s linear infinite !important;
+        }
+        .animate-scan-overlay {
+          animation: scan-overlay 2.5s ease-in-out infinite !important;
+        }
+        .animate-grid-scan {
+          animation: grid-scan 1.5s linear infinite !important;
+        }
+      `}</style>
     </div>
   );
 }
