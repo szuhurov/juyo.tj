@@ -259,7 +259,7 @@ export const getClerkLocalization = (locale: string) => {
         resendButton: t.resendCode,
       },
       password: {
-        ...enUS.signUp?.password,
+        ...(enUS.signUp as any)?.password,
         title: t.signUpPasswordLabel,
         subtitle: t.passwordHint,
         placeholder: t.signUpPasswordPlaceholder,
