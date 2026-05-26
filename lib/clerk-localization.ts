@@ -93,12 +93,16 @@ export const getClerkLocalization = (locale: string) => {
       brandedText: t.securedBy,
       lastAuthenticationStrategy: t.lastUsed,
       
+      form_password_pwned: t.passwordPwned,
+
       formFieldError__notMatchingPasswords: t.passwordMismatch,
       
       unstable__errors: {
         ...ruRU.unstable__errors,
         password_too_short: t.errors.passwordTooShort,
         password_pwned: t.passwordPwned,
+        form_password_pwned__sign_up: t.passwordPwned,
+        form_password_pwned__sign_in: t.passwordPwned,
         form_identifier_not_found: t.errors.userNotFound,
         form_password_incorrect: t.errors.wrongPassword,
         form_identifier_exists: t.errors.emailExists,
@@ -207,8 +211,9 @@ export const getClerkLocalization = (locale: string) => {
         ...enUS.unstable__errors,
         password_too_short: t.errors.passwordTooShort,
         password_pwned: t.passwordPwned,
-        form_identifier_not_found: t.errors.userNotFound,
-        form_password_incorrect: t.errors.wrongPassword,
+        form_password_pwned__sign_up: t.passwordPwned,
+        form_password_pwned__sign_in: t.passwordPwned,
+        form_identifier_not_found: t.errors.userNotFound,        form_password_incorrect: t.errors.wrongPassword,
         form_identifier_exists: t.errors.emailExists,
         form_code_incorrect: t.errors.incorrectCode,
         rate_limit_exceeded: t.errors.tooManyRequests,
@@ -230,7 +235,9 @@ export const getClerkLocalization = (locale: string) => {
   const t = translations[locale]?.clerk || translations['tg'].clerk;
 
   return {
+    ...enUS,
     signUp: {
+      ...enUS.signUp,
       start: {
         title: t.signUpTitle,
         subtitle: t.signUpSubtitle,
@@ -238,6 +245,7 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.actionLinkSignIn,
       },
       emailCode: {
+        ...enUS.signUp?.emailCode,
         title: t.verifyEmailTitle,
         subtitle: t.verifyEmailSubtitle,
         actionText: t.resendCode,
@@ -245,11 +253,13 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.useAnotherMethod,
       },
       phoneCode: {
+        ...enUS.signUp?.phoneCode,
         title: t.verifyPhoneTitle,
         subtitle: t.verifyPhoneSubtitle,
         resendButton: t.resendCode,
       },
       password: {
+        ...enUS.signUp?.password,
         title: t.signUpPasswordLabel,
         subtitle: t.passwordHint,
         placeholder: t.signUpPasswordPlaceholder,
@@ -262,6 +272,7 @@ export const getClerkLocalization = (locale: string) => {
       }
     },
     signIn: {
+      ...enUS.signIn,
       start: {
         title: t.signInTitle,
         subtitle: t.signInSubtitle,
@@ -269,6 +280,7 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.actionLinkSignUp,
       },
       password: {
+        ...enUS.signIn?.password,
         title: t.signInPasswordLabel,
         subtitle: t.signInPasswordSubtitle,
         placeholder: t.signInPasswordPlaceholder,
@@ -278,6 +290,7 @@ export const getClerkLocalization = (locale: string) => {
         signUpLink: t.actionLinkSignUp,
       },
       alternativeMethods: {
+        ...enUS.signIn?.alternativeMethods,
         title: t.alternativeMethodsTitle,
         subtitle: t.alternativeMethodsSubtitle,
         blockButton: t.useAnotherMethod,
@@ -288,6 +301,7 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.alternativeMethodsGetHelpLink,
       },
       emailCode: {
+        ...enUS.signIn?.emailCode,
         title: t.verifyEmailTitle,
         subtitle: t.verifyEmailSubtitle,
         actionText: t.resendCode,
@@ -295,11 +309,13 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.useAnotherMethod,
       },
       phoneCode: {
+        ...enUS.signIn?.phoneCode,
         title: t.verifyPhoneTitle,
         subtitle: t.verifyPhoneSubtitle,
         resendButton: t.resendCode,
       },
       forgotPassword: {
+        ...enUS.signIn?.forgotPassword,
         title: t.forgotPasswordLabel || 'Рамзро фаромӯш кардед?',
         subtitle: 'барои барқарор кардани рамзи шумо',
         formTitle: 'Коди барқарори рамз',
@@ -308,16 +324,19 @@ export const getClerkLocalization = (locale: string) => {
         subtitle_phone: 'Аввал кодеро, ки ба телефони шумо фиристода шуд, ворид кунед',
       },
       forgotPasswordAlternativeMethods: {
+        ...enUS.signIn?.forgotPasswordAlternativeMethods,
         title: t.forgotPasswordLabel || 'Рамзро фаромӯш кардед?',
         label__alternativeMethods: 'Ё, бо усули дигар ворид шавед',
         blockButton__resetPassword: 'Барқарор кардани рамз',
       },
       resetPassword: {
+        ...enUS.signIn?.resetPassword,
         title: t.resetPasswordTitle,
         formButtonPrimary: t.resetPasswordButton,
       }
     },
     reverification: {
+      ...enUS.reverification,
       emailCode: {
         title: t.verifyEmailTitle,
         subtitle: t.verifyEmailSubtitle,
@@ -357,6 +376,8 @@ export const getClerkLocalization = (locale: string) => {
     formFieldSuccessText__password: t.passwordSuccess,
     formFieldAction__forgotPassword: t.forgotPasswordLabel,
 
+    form_password_pwned: t.passwordPwned,
+
     formFieldError__notMatchingPasswords: t.passwordMismatch,
 
     footerActionLink__useAnotherMethod: t.useAnotherMethod,
@@ -367,18 +388,24 @@ export const getClerkLocalization = (locale: string) => {
     lastAuthenticationStrategy: t.lastUsed,
 
     unstable__errors: {
+      ...enUS.unstable__errors,
       password_too_short: t.errors.passwordTooShort,
       password_pwned: t.passwordPwned,
+      form_password_pwned: t.passwordPwned,
+      form_password_pwned__sign_up: t.passwordPwned,
+      form_password_pwned__sign_in: t.passwordPwned,
       form_identifier_not_found: t.errors.userNotFound,
       form_password_incorrect: t.errors.wrongPassword,
       form_identifier_exists: t.errors.emailExists,
       form_code_incorrect: t.errors.incorrectCode,
       rate_limit_exceeded: t.errors.tooManyRequests,
       passwordComplexity: {
+        ...enUS.unstable__errors?.passwordComplexity,
         minimumLength: t.passwordRequirementMinCharacters,
         sentencePrefix: t.passwordRequirementPrefix,
       },
       zxcvbn: {
+        ...enUS.unstable__errors?.zxcvbn,
         goodPassword: t.passwordRequirementsMet,
         excellentPassword: t.passwordExcellent,
       },
