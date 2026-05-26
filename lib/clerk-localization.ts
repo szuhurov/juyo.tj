@@ -95,19 +95,8 @@ export const getClerkLocalization = (locale: string) => {
       
       formFieldError__notMatchingPasswords: t.passwordMismatch,
       
-      passwordComplexity: {
-        ...ruRU.passwordComplexity,
-        minimumLength: t.passwordRequirementMinCharacters,
-        sentencePrefix: t.passwordRequirementPrefix,
-      },
-
-      zxcvbn: {
-        ...ruRU.zxcvbn,
-        goodPassword: t.passwordRequirementsMet,
-        excellentPassword: t.passwordExcellent,
-      },
-
       unstable__errors: {
+        ...ruRU.unstable__errors,
         password_too_short: t.errors.passwordTooShort,
         password_pwned: t.passwordPwned,
         form_identifier_not_found: t.errors.userNotFound,
@@ -115,6 +104,16 @@ export const getClerkLocalization = (locale: string) => {
         form_identifier_exists: t.errors.emailExists,
         form_code_incorrect: t.errors.incorrectCode,
         rate_limit_exceeded: t.errors.tooManyRequests,
+        passwordComplexity: {
+          ...ruRU.unstable__errors?.passwordComplexity,
+          minimumLength: t.passwordRequirementMinCharacters,
+          sentencePrefix: t.passwordRequirementPrefix,
+        },
+        zxcvbn: {
+          ...ruRU.unstable__errors?.zxcvbn,
+          goodPassword: t.passwordRequirementsMet,
+          excellentPassword: t.passwordExcellent,
+        },
       },
     };
   }
@@ -204,17 +203,8 @@ export const getClerkLocalization = (locale: string) => {
 
       formFieldError__notMatchingPasswords: t.passwordMismatch,
 
-      passwordComplexity: {
-        minimumLength: t.passwordRequirementMinCharacters,
-        sentencePrefix: t.passwordRequirementPrefix,
-      },
-
-      zxcvbn: {
-        goodPassword: t.passwordRequirementsMet,
-        excellentPassword: t.passwordExcellent,
-      },
-
       unstable__errors: {
+        ...enUS.unstable__errors,
         password_too_short: t.errors.passwordTooShort,
         password_pwned: t.passwordPwned,
         form_identifier_not_found: t.errors.userNotFound,
@@ -222,6 +212,16 @@ export const getClerkLocalization = (locale: string) => {
         form_identifier_exists: t.errors.emailExists,
         form_code_incorrect: t.errors.incorrectCode,
         rate_limit_exceeded: t.errors.tooManyRequests,
+        passwordComplexity: {
+          ...enUS.unstable__errors?.passwordComplexity,
+          minimumLength: t.passwordRequirementMinCharacters,
+          sentencePrefix: t.passwordRequirementPrefix,
+        },
+        zxcvbn: {
+          ...enUS.unstable__errors?.zxcvbn,
+          goodPassword: t.passwordRequirementsMet,
+          excellentPassword: t.passwordExcellent,
+        },
       },
     };
   }
@@ -374,16 +374,14 @@ export const getClerkLocalization = (locale: string) => {
       form_identifier_exists: t.errors.emailExists,
       form_code_incorrect: t.errors.incorrectCode,
       rate_limit_exceeded: t.errors.tooManyRequests,
+      passwordComplexity: {
+        minimumLength: t.passwordRequirementMinCharacters,
+        sentencePrefix: t.passwordRequirementPrefix,
+      },
+      zxcvbn: {
+        goodPassword: t.passwordRequirementsMet,
+        excellentPassword: t.passwordExcellent,
+      },
     },
-    
-    passwordComplexity: {
-      minimumLength: t.passwordRequirementMinCharacters,
-      sentencePrefix: t.passwordRequirementPrefix,
-    },
-
-    zxcvbn: {
-      goodPassword: t.passwordRequirementsMet,
-      excellentPassword: t.passwordExcellent,
-    }
   };
 };
