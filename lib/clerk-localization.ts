@@ -59,14 +59,14 @@ export const getClerkLocalization = (locale: string) => {
           subtitle: t.verifyEmailSubtitle,
           actionLink: t.useAnotherMethod,
         },
-        phoneCode: {
-          ...ruRU.signUp?.phoneCode,
+        phone_code: {
+          ...ruRU.signUp?.phone_code,
           title: t.verifyPhoneTitle,
           subtitle: t.verifyPhoneSubtitle,
         }
       },
-      verification: {
-        ...ruRU.verification,
+      reverification: {
+        ...ruRU.reverification,
         email_code: {
           title: t.verifyEmailTitle,
           subtitle: t.verifyEmailSubtitle,
@@ -173,14 +173,14 @@ export const getClerkLocalization = (locale: string) => {
           subtitle: t.verifyEmailSubtitle,
           actionLink: t.useAnotherMethod,
         },
-        phoneCode: {
-          ...enUS.signUp?.phoneCode,
+        phone_code: {
+          ...enUS.signUp?.phone_code,
           title: t.verifyPhoneTitle,
           subtitle: t.verifyPhoneSubtitle,
         }
       },
-      verification: {
-        ...enUS.verification,
+      reverification: {
+        ...enUS.reverification,
         email_code: {
           title: t.verifyEmailTitle,
           subtitle: t.verifyEmailSubtitle,
@@ -244,7 +244,7 @@ export const getClerkLocalization = (locale: string) => {
         resendButton: t.resendCode,
         actionLink: t.useAnotherMethod,
       },
-      phoneCode: {
+      phone_code: {
         title: t.verifyPhoneTitle,
         subtitle: t.verifyPhoneSubtitle,
         resendButton: t.resendCode,
@@ -294,7 +294,7 @@ export const getClerkLocalization = (locale: string) => {
         resendButton: t.resendCode,
         actionLink: t.useAnotherMethod,
       },
-      phoneCode: {
+      phone_code: {
         title: t.verifyPhoneTitle,
         subtitle: t.verifyPhoneSubtitle,
         resendButton: t.resendCode,
@@ -317,7 +317,7 @@ export const getClerkLocalization = (locale: string) => {
         formButtonPrimary: t.resetPasswordButton,
       }
     },
-    verification: {
+    reverification: {
       email_code: {
         title: t.verifyEmailTitle,
         subtitle: t.verifyEmailSubtitle,
