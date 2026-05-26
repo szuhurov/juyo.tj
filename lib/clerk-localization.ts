@@ -95,8 +95,8 @@ export const getClerkLocalization = (locale: string) => {
       
       formFieldError__notMatchingPasswords: t.passwordMismatch,
       
-      membershipRequirement: {
-        ...ruRU.membershipRequirement,
+      passwordComplexity: {
+        ...ruRU.passwordComplexity,
         minimumLength: t.passwordRequirementMinCharacters,
         sentencePrefix: t.passwordRequirementPrefix,
       },
@@ -204,7 +204,7 @@ export const getClerkLocalization = (locale: string) => {
 
       formFieldError__notMatchingPasswords: t.passwordMismatch,
 
-      membershipRequirement: {
+      passwordComplexity: {
         minimumLength: t.passwordRequirementMinCharacters,
         sentencePrefix: t.passwordRequirementPrefix,
       },
@@ -376,7 +376,7 @@ export const getClerkLocalization = (locale: string) => {
       rate_limit_exceeded: t.errors.tooManyRequests,
     },
     
-    membershipRequirement: {
+    passwordComplexity: {
       minimumLength: t.passwordRequirementMinCharacters,
       sentencePrefix: t.passwordRequirementPrefix,
     },
