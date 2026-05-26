@@ -59,20 +59,20 @@ export const getClerkLocalization = (locale: string) => {
           subtitle: t.verifyEmailSubtitle,
           actionLink: t.useAnotherMethod,
         },
-        phone_code: {
-          ...ruRU.signUp?.phone_code,
+        phoneCode: {
+          ...ruRU.signUp?.phoneCode,
           title: t.verifyPhoneTitle,
           subtitle: t.verifyPhoneSubtitle,
         }
       },
       reverification: {
         ...ruRU.reverification,
-        email_code: {
+        emailCode: {
           title: t.verifyEmailTitle,
           subtitle: t.verifyEmailSubtitle,
           actionLink: t.useAnotherMethod,
         },
-        phone_code: {
+        phoneCode: {
           title: t.verifyPhoneTitle,
           subtitle: t.verifyPhoneSubtitle,
         }
@@ -173,20 +173,20 @@ export const getClerkLocalization = (locale: string) => {
           subtitle: t.verifyEmailSubtitle,
           actionLink: t.useAnotherMethod,
         },
-        phone_code: {
-          ...enUS.signUp?.phone_code,
+        phoneCode: {
+          ...enUS.signUp?.phoneCode,
           title: t.verifyPhoneTitle,
           subtitle: t.verifyPhoneSubtitle,
         }
       },
       reverification: {
         ...enUS.reverification,
-        email_code: {
+        emailCode: {
           title: t.verifyEmailTitle,
           subtitle: t.verifyEmailSubtitle,
           actionLink: t.useAnotherMethod,
         },
-        phone_code: {
+        phoneCode: {
           title: t.verifyPhoneTitle,
           subtitle: t.verifyPhoneSubtitle,
         }
@@ -244,7 +244,7 @@ export const getClerkLocalization = (locale: string) => {
         resendButton: t.resendCode,
         actionLink: t.useAnotherMethod,
       },
-      phone_code: {
+      phoneCode: {
         title: t.verifyPhoneTitle,
         subtitle: t.verifyPhoneSubtitle,
         resendButton: t.resendCode,
@@ -294,7 +294,7 @@ export const getClerkLocalization = (locale: string) => {
         resendButton: t.resendCode,
         actionLink: t.useAnotherMethod,
       },
-      phone_code: {
+      phoneCode: {
         title: t.verifyPhoneTitle,
         subtitle: t.verifyPhoneSubtitle,
         resendButton: t.resendCode,
@@ -318,12 +318,12 @@ export const getClerkLocalization = (locale: string) => {
       }
     },
     reverification: {
-      email_code: {
+      emailCode: {
         title: t.verifyEmailTitle,
         subtitle: t.verifyEmailSubtitle,
         actionLink: t.useAnotherMethod,
       },
-      phone_code: {
+      phoneCode: {
         title: t.verifyPhoneTitle,
         subtitle: t.verifyPhoneSubtitle,
         resendButton: t.resendCode,
