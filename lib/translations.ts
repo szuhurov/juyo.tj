@@ -562,6 +562,8 @@ export const translations: Record<string, any> = {
       signOutOfOtherSessionsLabel: 'Хуруҷ аз ҳамаи дастгоҳҳои дигар',
       verifyEmailTitle: 'Санҷиши почта',
       verifyEmailSubtitle: 'Коди санҷиширо, ки ба почтаи шумо фиристода шуд, ворид кунед',
+      verifyPhoneTitle: 'Санҷиши телефон',
+      verifyPhoneSubtitle: 'Коди санҷиширо, ки ба рақами шумо фиристода шуд, ворид кунед',
       resendCode: 'Кодро нагирифтед? Дубора фиристодан',
       errors: {
         passwordTooShort: 'Рамзи шумо бояд на кам аз 8 аломат бошад',
@@ -1134,8 +1136,10 @@ export const translations: Record<string, any> = {
       newPasswordLabel: 'Новый пароль',
       confirmPasswordLabel: 'Подтвердите пароль',
       signOutOfOtherSessionsLabel: 'Выйти из всех остальных устройств',
-      verifyEmailTitle: 'Проверка почты',
+      verifyEmailTitle: 'Подтверждение почты',
       verifyEmailSubtitle: 'Введите код подтверждения, отправленный на вашу почту',
+      verifyPhoneTitle: 'Проверка телефона',
+      verifyPhoneSubtitle: 'Введите код подтверждения, отправленный на ваш номер',
       resendCode: 'Не получили код? Отправить еще раз',
       errors: {
         passwordTooShort: 'Пароль должен быть не менее 8 символов',
@@ -1695,6 +1699,8 @@ export const translations: Record<string, any> = {
       dividerText: 'or',
       verifyEmailTitle: 'Verify Email',
       verifyEmailSubtitle: 'Enter the verification code sent to your email',
+      verifyPhoneTitle: 'Verify Phone',
+      verifyPhoneSubtitle: 'Enter the verification code sent to your phone number',
       resendCode: "Didn't get the code? Resend",
       errors: {
         passwordTooShort: 'Password must be at least 8 characters long',

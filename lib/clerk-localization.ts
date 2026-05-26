@@ -36,7 +36,9 @@ export const getClerkLocalization = (locale: string) => {
         },
         phoneCode: {
           ...ruRU.signIn?.phoneCode,
-          actionLink: t.useAnotherMethod,
+          title: t.verifyPhoneTitle,
+          subtitle: t.verifyPhoneSubtitle,
+          resendButton: t.resendCode,
         },
         forgotPasswordAlternativeMethods: {
           ...ruRU.signIn?.forgotPasswordAlternativeMethods,
@@ -59,7 +61,8 @@ export const getClerkLocalization = (locale: string) => {
         },
         phoneCode: {
           ...ruRU.signUp?.phoneCode,
-          actionLink: t.useAnotherMethod,
+          title: t.verifyPhoneTitle,
+          subtitle: t.verifyPhoneSubtitle,
         }
       },
       verification: {
@@ -70,7 +73,8 @@ export const getClerkLocalization = (locale: string) => {
           actionLink: t.useAnotherMethod,
         },
         phone_code: {
-          actionLink: t.useAnotherMethod,
+          title: t.verifyPhoneTitle,
+          subtitle: t.verifyPhoneSubtitle,
         }
       },
       userButton: {
@@ -146,7 +150,9 @@ export const getClerkLocalization = (locale: string) => {
         },
         phoneCode: {
           ...enUS.signIn?.phoneCode,
-          actionLink: t.useAnotherMethod,
+          title: t.verifyPhoneTitle,
+          subtitle: t.verifyPhoneSubtitle,
+          resendButton: t.resendCode,
         },
         forgotPasswordAlternativeMethods: {
           ...enUS.signIn?.forgotPasswordAlternativeMethods,
@@ -169,7 +175,8 @@ export const getClerkLocalization = (locale: string) => {
         },
         phoneCode: {
           ...enUS.signUp?.phoneCode,
-          actionLink: t.useAnotherMethod,
+          title: t.verifyPhoneTitle,
+          subtitle: t.verifyPhoneSubtitle,
         }
       },
       verification: {
@@ -180,7 +187,8 @@ export const getClerkLocalization = (locale: string) => {
           actionLink: t.useAnotherMethod,
         },
         phone_code: {
-          actionLink: t.useAnotherMethod,
+          title: t.verifyPhoneTitle,
+          subtitle: t.verifyPhoneSubtitle,
         }
       },
       formFieldAction__forgotPassword: t.forgotPasswordLabel,
@@ -237,7 +245,9 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.useAnotherMethod,
       },
       phoneCode: {
-        actionLink: t.useAnotherMethod,
+        title: t.verifyPhoneTitle,
+        subtitle: t.verifyPhoneSubtitle,
+        resendButton: t.resendCode,
       },
       password: {
         title: t.signUpPasswordLabel,
@@ -285,7 +295,9 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.useAnotherMethod,
       },
       phoneCode: {
-        actionLink: t.useAnotherMethod,
+        title: t.verifyPhoneTitle,
+        subtitle: t.verifyPhoneSubtitle,
+        resendButton: t.resendCode,
       },
       forgotPassword: {
         title: t.forgotPasswordLabel || 'Рамзро фаромӯш кардед?',
@@ -312,7 +324,9 @@ export const getClerkLocalization = (locale: string) => {
         actionLink: t.useAnotherMethod,
       },
       phone_code: {
-        actionLink: t.useAnotherMethod,
+        title: t.verifyPhoneTitle,
+        subtitle: t.verifyPhoneSubtitle,
+        resendButton: t.resendCode,
       }
     },
     socialButtonsBlockButton: t.socialButton,
