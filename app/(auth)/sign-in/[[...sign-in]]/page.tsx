@@ -10,7 +10,6 @@ import { useLanguage } from "@/lib/language-context"; // Барои иваз к�
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getClerkLocalization } from "@/lib/clerk-localization";
 
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
@@ -28,7 +27,7 @@ export default function Page() {
     <div className="min-h-screen flex flex-col items-center bg-zinc-50 dark:bg-zinc-950 p-4 pt-6 sm:pt-12">
       
       {/* Сарлавҳаи боло: Тугмаи Ба қафо ва Ивази забон */}
-      <div className="w-full max-w-[400px] relative flex items-center justify-center mb-10 sm:mb-14">
+      <div className="w-full max-w-[480px] relative flex items-center justify-center mb-10 sm:mb-14">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -46,7 +45,6 @@ export default function Page() {
               size="sm"
               onClick={() => {
                 setLocale(lang.code as any);
-                router.refresh();
               }}
               className={`font-bold rounded-lg px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
                 locale === lang.code
@@ -61,11 +59,17 @@ export default function Page() {
       </div>
 
       {/* Виҷети тайёри Clerk барои логин */}
-      <div className="w-full max-w-[400px] flex justify-center -mt-4 sm:-mt-6">
+      <div className="w-full max-w-[480px] flex justify-center -mt-4 sm:-mt-6">
         <SignIn
+          key={locale}
+          path="/sign-in"
+          routing="path"
           signUpUrl="/sign-up"
           appearance={{
-            // Танзимоти намуди зоҳирӣ агар лозим бошад
+            elements: {
+              card: "w-full shadow-none border-none bg-transparent",
+              rootBox: "w-full",
+            }
           }}
         />
       </div>

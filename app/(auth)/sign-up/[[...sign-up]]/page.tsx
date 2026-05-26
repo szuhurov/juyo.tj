@@ -9,7 +9,6 @@ import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getClerkLocalization } from "@/lib/clerk-localization";
 
 export default function Page() {
   const { t, locale, setLocale } = useLanguage();
@@ -25,7 +24,7 @@ export default function Page() {
   return (
     <div className="min-h-screen flex flex-col items-center bg-white dark:bg-zinc-950 p-4 pt-6 sm:pt-12 relative">
       {/* Сарлавҳаи боло: Тугмаи Ба қафо ва Ивази забон */}
-      <div className="w-full max-w-[420px] relative flex items-center justify-center mb-8 sm:mb-12">
+      <div className="w-full max-w-[480px] relative flex items-center justify-center mb-8 sm:mb-12">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -43,7 +42,6 @@ export default function Page() {
               size="sm"
               onClick={() => {
                 setLocale(lang.code as any);
-                router.refresh();
               }}
               className={`font-bold rounded-lg px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
                 locale === lang.code
@@ -57,13 +55,19 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="w-full max-w-[420px] -mt-4 sm:-mt-6">
+      <div className="w-full max-w-[480px] -mt-4 sm:-mt-6">
         <div className="animate-in fade-in zoom-in-95 duration-700 flex flex-col items-center">
           <div className="w-full flex justify-center">
             <SignUp
+              key={locale}
+              path="/sign-up"
+              routing="path"
               signInUrl="/sign-in"
               appearance={{
-                // Танзимоти намуди зоҳирӣ агар лозим бошад
+                elements: {
+                  card: "w-full shadow-none border-none bg-transparent",
+                  rootBox: "w-full",
+                }
               }}
             />
           </div>

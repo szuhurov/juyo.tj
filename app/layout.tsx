@@ -5,23 +5,22 @@
 import type { Metadata, Viewport } from "next"; // Барои танзими маълумоти SEO ва экран
 import { Inter } from "next/font/google"; // Барои истифодаи шрифти Inter
 import "./globals.css"; // Пайваст кардани услубҳои асосии CSS
-import { ClerkProvider } from "@clerk/nextjs"; // Барои кор бо системаи аутентификатсия
 import { LanguageProvider } from "@/lib/language-context"; // Барои идоракунии забони тамоми сайт
 import { Toaster } from "@/components/ui/sonner"; // Барои нишон додани огоҳиномаҳо дар экран
 import { NetworkStatus } from "@/components/network-status"; // Барои санҷиши пайвастшавӣ ба интернет
 import { Analytics } from "@vercel/analytics/react"; // Барои ҷамъоварии омори истифодабарандагон
 import { SpeedInsights } from "@vercel/speed-insights/next"; // Барои назорати суръати кори сайт
+import { ClerkLocalizationProvider } from "@/components/clerk-localization-provider";
+import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
+import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
+import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt"; // Пешниҳоди насби барнома
 
 // Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣ
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
   variable: "--font-inter",
 });
-import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
-import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
-import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
-import { getClerkLocalization } from "@/lib/clerk-localization"; // Функсияи тарҷумаи Clerk
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt"; // Пешниҳоди насби барнома
 
 /**
  * Функсия барои тавлиди динамикии метамаълумот вобаста ба забони интихобшудаи корбар.
@@ -130,7 +129,6 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const savedLocale = cookieStore.get("juyo-locale")?.value || "tg";
   const locale = ["tg", "ru", "en"].includes(savedLocale) ? savedLocale : "tg";
-  const clerkLocale = getClerkLocalization(locale);
   const t = translations[locale];
 
   return (
@@ -158,30 +156,26 @@ export default async function RootLayout({
           * { -webkit-tap-highlight-color: transparent; }
           .no-flicker { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
         ` }} />
-        <ClerkProvider
-          localization={clerkLocale}
-          signInUrl="/sign-in"
-          signUpUrl="/sign-up"
-        >
-          {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
-          <h1 className="sr-only">
-            роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. 
-            Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд, 
-            метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд. 
-            Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад, 
-            то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.
-          </h1>
-          <QueryProvider>
-            <LanguageProvider initialLocale={locale as any}>
+        <LanguageProvider initialLocale={locale as any}>
+          <ClerkLocalizationProvider>
+            {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
+            <h1 className="sr-only">
+              роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. 
+              Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд, 
+              метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд. 
+              Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад, 
+              то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.
+            </h1>
+            <QueryProvider>
               {children}
               <NetworkStatus />
               <Analytics />
               <SpeedInsights />
               <Toaster position="top-center" richColors />
               <PWAInstallPrompt />
-            </LanguageProvider>
-          </QueryProvider>
-        </ClerkProvider>
+            </QueryProvider>
+          </ClerkLocalizationProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

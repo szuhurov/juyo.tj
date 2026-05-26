@@ -15,8 +15,103 @@ export const getClerkLocalization = (locale: string) => {
         password: {
           ...ruRU.signIn?.password,
           subtitle: t.signInPasswordSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        alternativeMethods: {
+          ...ruRU.signIn?.alternativeMethods,
+          title: t.alternativeMethodsTitle,
+          subtitle: t.alternativeMethodsSubtitle,
+          blockButton: t.useAnotherMethod,
+          blockButton__emailCode: t.alternativeMethodsEmailCodeButton,
+          blockButton__emailLink: t.alternativeMethodsEmailLinkButton,
+          blockButton__smsCode: t.alternativeMethodsSmsCodeButton,
+          actionText: t.alternativeMethodsGetHelpTitle,
+          actionLink: t.alternativeMethodsGetHelpLink,
+        },
+        emailCode: {
+          ...ruRU.signIn?.emailCode,
+          title: t.verifyEmailTitle,
+          subtitle: t.verifyEmailSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        phoneCode: {
+          ...ruRU.signIn?.phoneCode,
+          actionLink: t.useAnotherMethod,
+        },
+        forgotPasswordAlternativeMethods: {
+          ...ruRU.signIn?.forgotPasswordAlternativeMethods,
+          label__alternativeMethods: 'Или, войдите другим способом',
+          title: t.forgotPasswordLabel,
+        },
+        resetPassword: {
+          ...ruRU.signIn?.resetPassword,
+          title: t.resetPasswordTitle,
+          formButtonPrimary: t.resetPasswordButton,
+        },
+      },
+      signUp: {
+        ...ruRU.signUp,
+        emailCode: {
+          ...ruRU.signUp?.emailCode,
+          title: t.verifyEmailTitle,
+          subtitle: t.verifyEmailSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        phoneCode: {
+          ...ruRU.signUp?.phoneCode,
+          actionLink: t.useAnotherMethod,
         }
-      }
+      },
+      verification: {
+        ...ruRU.verification,
+        email_code: {
+          title: t.verifyEmailTitle,
+          subtitle: t.verifyEmailSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        phone_code: {
+          actionLink: t.useAnotherMethod,
+        }
+      },
+      userButton: {
+        ...ruRU.userButton,
+        action__signOut: translations['ru'].signOut,
+        action__manageAccount: translations['ru'].manageAccount,
+      },
+      formFieldAction__forgotPassword: t.forgotPasswordLabel,
+      formFieldLabel__newPassword: t.newPasswordLabel,
+      formFieldLabel__confirmPassword: t.confirmPasswordLabel,
+      formFieldLabel__signOutOfOtherSessions: t.signOutOfOtherSessionsLabel,
+      footerActionLink__useAnotherMethod: t.useAnotherMethod,
+      backButton: t.alternativeMethodsBack,
+      footerActionLink: t.alternativeMethodsGetHelpLink,
+      footerActionText: t.alternativeMethodsGetHelpTitle,
+      brandedText: t.securedBy,
+      lastAuthenticationStrategy: t.lastUsed,
+      
+      formFieldError__notMatchingPasswords: t.passwordMismatch,
+      
+      membershipRequirement: {
+        ...ruRU.membershipRequirement,
+        minimumLength: t.passwordRequirementMinCharacters,
+        sentencePrefix: t.passwordRequirementPrefix,
+      },
+
+      zxcvbn: {
+        ...ruRU.zxcvbn,
+        goodPassword: t.passwordRequirementsMet,
+        excellentPassword: t.passwordExcellent,
+      },
+
+      unstable__errors: {
+        password_too_short: t.errors.passwordTooShort,
+        password_pwned: t.passwordPwned,
+        form_identifier_not_found: t.errors.userNotFound,
+        form_password_incorrect: t.errors.wrongPassword,
+        form_identifier_exists: t.errors.emailExists,
+        form_code_incorrect: t.errors.incorrectCode,
+        rate_limit_exceeded: t.errors.tooManyRequests,
+      },
     };
   }
   
@@ -30,8 +125,96 @@ export const getClerkLocalization = (locale: string) => {
         password: {
           ...enUS.signIn?.password,
           subtitle: t.signInPasswordSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        alternativeMethods: {
+          ...enUS.signIn?.alternativeMethods,
+          title: t.alternativeMethodsTitle,
+          subtitle: t.alternativeMethodsSubtitle,
+          blockButton: t.useAnotherMethod,
+          blockButton__emailCode: t.alternativeMethodsEmailCodeButton,
+          blockButton__emailLink: t.alternativeMethodsEmailLinkButton,
+          blockButton__smsCode: t.alternativeMethodsSmsCodeButton,
+          actionText: t.alternativeMethodsGetHelpTitle,
+          actionLink: t.alternativeMethodsGetHelpLink,
+        },
+        emailCode: {
+          ...enUS.signIn?.emailCode,
+          title: t.verifyEmailTitle,
+          subtitle: t.verifyEmailSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        phoneCode: {
+          ...enUS.signIn?.phoneCode,
+          actionLink: t.useAnotherMethod,
+        },
+        forgotPasswordAlternativeMethods: {
+          ...enUS.signIn?.forgotPasswordAlternativeMethods,
+          label__alternativeMethods: t.alternativeMethodsTitle,
+          title: t.forgotPasswordLabel,
+        },
+        resetPassword: {
+          ...enUS.signIn?.resetPassword,
+          title: t.resetPasswordTitle,
+          formButtonPrimary: t.resetPasswordButton,
+        },
+      },
+      signUp: {
+        ...enUS.signUp,
+        emailCode: {
+          ...enUS.signUp?.emailCode,
+          title: t.verifyEmailTitle,
+          subtitle: t.verifyEmailSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        phoneCode: {
+          ...enUS.signUp?.phoneCode,
+          actionLink: t.useAnotherMethod,
         }
-      }
+      },
+      verification: {
+        ...enUS.verification,
+        email_code: {
+          title: t.verifyEmailTitle,
+          subtitle: t.verifyEmailSubtitle,
+          actionLink: t.useAnotherMethod,
+        },
+        phone_code: {
+          actionLink: t.useAnotherMethod,
+        }
+      },
+      formFieldAction__forgotPassword: t.forgotPasswordLabel,
+      formFieldLabel__newPassword: t.newPasswordLabel,
+      formFieldLabel__confirmPassword: t.confirmPasswordLabel,
+      formFieldLabel__signOutOfOtherSessions: t.signOutOfOtherSessionsLabel,
+      footerActionLink__useAnotherMethod: t.useAnotherMethod,
+      backButton: t.alternativeMethodsBack,
+      footerActionLink: t.alternativeMethodsGetHelpLink,
+      footerActionText: t.alternativeMethodsGetHelpTitle,
+      brandedText: t.securedBy,
+      lastAuthenticationStrategy: t.lastUsed,
+
+      formFieldError__notMatchingPasswords: t.passwordMismatch,
+
+      membershipRequirement: {
+        minimumLength: t.passwordRequirementMinCharacters,
+        sentencePrefix: t.passwordRequirementPrefix,
+      },
+
+      zxcvbn: {
+        goodPassword: t.passwordRequirementsMet,
+        excellentPassword: t.passwordExcellent,
+      },
+
+      unstable__errors: {
+        password_too_short: t.errors.passwordTooShort,
+        password_pwned: t.passwordPwned,
+        form_identifier_not_found: t.errors.userNotFound,
+        form_password_incorrect: t.errors.wrongPassword,
+        form_identifier_exists: t.errors.emailExists,
+        form_code_incorrect: t.errors.incorrectCode,
+        rate_limit_exceeded: t.errors.tooManyRequests,
+      },
     };
   }
 
@@ -51,6 +234,10 @@ export const getClerkLocalization = (locale: string) => {
         subtitle: t.verifyEmailSubtitle,
         actionText: t.resendCode,
         resendButton: t.resendCode,
+        actionLink: t.useAnotherMethod,
+      },
+      phoneCode: {
+        actionLink: t.useAnotherMethod,
       },
       password: {
         title: t.signUpPasswordLabel,
@@ -80,25 +267,52 @@ export const getClerkLocalization = (locale: string) => {
         actionText: 'Аввал сабти ном кунед',
         signUpLink: t.actionLinkSignUp,
       },
+      alternativeMethods: {
+        title: t.alternativeMethodsTitle,
+        subtitle: t.alternativeMethodsSubtitle,
+        blockButton: t.useAnotherMethod,
+        blockButton__emailCode: t.alternativeMethodsEmailCodeButton,
+        blockButton__emailLink: t.alternativeMethodsEmailLinkButton,
+        blockButton__smsCode: t.alternativeMethodsSmsCodeButton,
+        actionText: t.alternativeMethodsGetHelpTitle,
+        actionLink: t.alternativeMethodsGetHelpLink,
+      },
       emailCode: {
         title: t.verifyEmailTitle,
         subtitle: t.verifyEmailSubtitle,
         actionText: t.resendCode,
         resendButton: t.resendCode,
+        actionLink: t.useAnotherMethod,
+      },
+      phoneCode: {
+        actionLink: t.useAnotherMethod,
+      },
+      forgotPassword: {
+        title: t.forgotPasswordLabel || 'Рамзро фаромӯш кардед?',
+        subtitle: 'барои барқарор кардани рамзи шумо',
+        formTitle: 'Коди барқарори рамз',
+        resendButton: 'Кодро нагирифтед? Дубора фиристодан',
+        subtitle_email: 'Аввал кодеро,ки ба почтаи электронии шумо фиристода шуд, ворид кунед',
+        subtitle_phone: 'Аввал кодеро, ки ба телефони шумо фиристода шуд, ворид кунед',
+      },
+      forgotPasswordAlternativeMethods: {
+        title: t.forgotPasswordLabel || 'Рамзро фаромӯш кардед?',
+        label__alternativeMethods: 'Ё, бо усули дигар ворид шавед',
+        blockButton__resetPassword: 'Барқарор кардани рамз',
+      },
+      resetPassword: {
+        title: t.resetPasswordTitle,
+        formButtonPrimary: t.resetPasswordButton,
       }
     },
-    forgotPassword: {
-      start: {
-        title: t.forgotPass?.emailTitle || 'Барқарори рамз',
-        subtitle: t.forgotPass?.emailSub || 'Почтаи электронии худро ворид кунед ва мо ба шумо дастурҳоро мефиристем.',
-        actionText: t.alreadyHaveAccount || 'Аллакай ҳисоб доред?',
-        actionLink: t.actionLinkSignIn || 'Ворид шавед',
+    verification: {
+      email_code: {
+        title: t.verifyEmailTitle,
+        subtitle: t.verifyEmailSubtitle,
+        actionLink: t.useAnotherMethod,
       },
-      email_address: {
-        title: t.forgotPass?.emailTitle || 'Барқарори рамз',
-        subtitle: t.forgotPass?.emailSub || 'Почтаи электронии худро ворид кунед ва мо ба шумо дастурҳоро мефиристем.',
-        actionText: t.alreadyHaveAccount || 'Аллакай ҳисоб доред?',
-        actionLink: t.actionLinkSignIn || 'Ворид шавед',
+      phone_code: {
+        actionLink: t.useAnotherMethod,
       }
     },
     socialButtonsBlockButton: t.socialButton,
@@ -108,6 +322,9 @@ export const getClerkLocalization = (locale: string) => {
     formFieldLabel__password: t.signInPasswordLabel,
     formFieldLabel__firstName: t.firstNameLabel,
     formFieldLabel__lastName: t.lastNameLabel,
+    formFieldLabel__newPassword: t.newPasswordLabel,
+    formFieldLabel__confirmPassword: t.confirmPasswordLabel,
+    formFieldLabel__signOutOfOtherSessions: t.signOutOfOtherSessionsLabel,
     // Ҳам 'Placeholder' ва ҳам 'InputPlaceholder'-ро илова мекунем барои боварӣ
     formFieldPlaceholder__emailAddress: t.emailLabel,
     formFieldPlaceholder__firstName: t.firstNameLabel,
@@ -117,8 +334,23 @@ export const getClerkLocalization = (locale: string) => {
     formFieldInputPlaceholder__firstName: t.firstNameLabel,
     formFieldInputPlaceholder__lastName: t.lastNameLabel,
     formFieldInputPlaceholder__password: t.signInPasswordPlaceholder,
+    // Махсус барои Sign Up, агар Clerk инҳоро истифода барад
+    formFieldLabel__createPassword: t.signUpPasswordLabel,
+    formFieldInputPlaceholder__createPassword: t.signUpPasswordPlaceholder,
+    formFieldPlaceholder__signUpPassword: t.signUpPasswordPlaceholder,
+    formFieldInputPlaceholder__signUpPassword: t.signUpPasswordPlaceholder,
     formFieldHintText__password: t.passwordHint,
     formFieldSuccessText__password: t.passwordSuccess,
+    formFieldAction__forgotPassword: t.forgotPasswordLabel,
+
+    formFieldError__notMatchingPasswords: t.passwordMismatch,
+
+    footerActionLink__useAnotherMethod: t.useAnotherMethod,
+    backButton: t.alternativeMethodsBack,
+    footerActionLink: t.alternativeMethodsGetHelpLink,
+    footerActionText: t.alternativeMethodsGetHelpTitle,
+    brandedText: t.securedBy,
+    lastAuthenticationStrategy: t.lastUsed,
 
     unstable__errors: {
       password_too_short: t.errors.passwordTooShort,
@@ -128,6 +360,16 @@ export const getClerkLocalization = (locale: string) => {
       form_identifier_exists: t.errors.emailExists,
       form_code_incorrect: t.errors.incorrectCode,
       rate_limit_exceeded: t.errors.tooManyRequests,
+    },
+    
+    membershipRequirement: {
+      minimumLength: t.passwordRequirementMinCharacters,
+      sentencePrefix: t.passwordRequirementPrefix,
+    },
+
+    zxcvbn: {
+      goodPassword: t.passwordRequirementsMet,
+      excellentPassword: t.passwordExcellent,
     }
   };
 };
