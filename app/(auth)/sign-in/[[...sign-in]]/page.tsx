@@ -61,10 +61,10 @@ export default function Page() {
       {/* Виҷети тайёри Clerk барои логин */}
       <div className="w-full max-w-[480px] flex justify-center -mt-4 sm:-mt-6">
         <SignIn
-          key={locale}
           path="/sign-in"
           routing="path"
           signUpUrl="/sign-up"
+          afterSignInUrl="/"
           appearance={{
             elements: {
               card: "w-full shadow-none border-none bg-transparent",

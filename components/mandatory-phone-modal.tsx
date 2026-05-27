@@ -45,29 +45,20 @@ export function MandatoryPhoneModal() {
         // Маҷбур мекунем, ки маълумоти охиринро аз сервер гирад (бе кэш)
         const { data, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select('phone, accepted_terms, accepted_at, terms_version')
           .eq('id', userId)
           .maybeSingle();
 
-        if (error) {
-          console.error("Supabase error details:", error);
-          return;
-        }
+        if (error) return;
 
         // Агар профил нест (data === null) ё маълумоти ҳатмӣ намерасад, модалро нишон медиҳем
         const isMissingData = 
           !data ||
           !data.phone || 
           data.phone.trim() === "" ||
-          data.accepted_terms !== true || 
-          !data.accepted_at || 
-          !data.terms_version;
+          data.accepted_terms !== true;
 
-        if (isMissingData) {
-          setShowModal(true);
-        } else {
-          setShowModal(false);
-        }
+        setShowModal(isMissingData);
       } catch (err) {
         console.error("Error checking profile status:", err);
       }

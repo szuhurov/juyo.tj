@@ -56,13 +56,13 @@ export default function Page() {
       </div>
 
       <div className="w-full max-w-[480px] -mt-4 sm:-mt-6">
-        <div className="animate-in fade-in zoom-in-95 duration-700 flex flex-col items-center">
+        <div className="animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center">
           <div className="w-full flex justify-center">
             <SignUp
-              key={locale}
               path="/sign-up"
               routing="path"
               signInUrl="/sign-in"
+              afterSignUpUrl="/"
               appearance={{
                 elements: {
                   card: "w-full shadow-none border-none bg-transparent",
