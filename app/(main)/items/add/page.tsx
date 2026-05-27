@@ -343,7 +343,7 @@ function AddItemForm() {
                       <Plus className="w-7 h-7" />
                     </div>
                     <span className="mt-3 text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
-                    <input type="file" className="hidden" accept="image/*" capture="environment" multiple onChange={handleImageChange} />
+                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
                   </label>
                 )}
               </div>
