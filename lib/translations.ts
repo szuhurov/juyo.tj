@@ -310,6 +310,9 @@ export const translations: Record<string, any> = {
     imagePermissionError: 'Baрои илова кардани сурат иҷозат лозим аст.',
     maxImagesReached: 'Ҳадди аксар 5 сурат иҷозат дода мешавад.',
     contactInfo: 'Маълумоти тамос',
+    camera: 'Камера',
+    gallery: 'Галерея',
+    choose_photo_method: 'Усули иловакуниро интихоб кунед',
     
     terms: {
       title: 'Тасдиқи шартҳо',
@@ -344,15 +347,20 @@ export const translations: Record<string, any> = {
       ask_search_desc: 'Оё мехоҳед, ки мо дар базаи маълумот ашёҳои монандро ҷӯем? Шояд касе аллакай эълон гузоштааст.',
       btn_search_yes: 'Бале, кофтан',
       btn_search_no: 'Не, гузаштан',
-      scanning_pixels: 'AI таҳлили пикселҳоро оғоз кард...',
+      scanning_pixels: 'Таҳлили пикселҳо оғоз шуд...',
       detecting_features: 'Ҷустуҷӯи хусусиятҳои ашё...',
       checking_safety: 'Санҷиши қоидаҳои амниятӣ...',
       matching_categories: 'Муайян кардани категория...',
       optimizing_description: 'Тайёр кардани тавсифи касбӣ...',
-      forensic_engine: 'Системаи AI Brain хусусиятҳои ашёро барои ҷустуҷӯи ҷаҳонӣ муайян мекунад...',
+      forensic_engine: 'Муайян кардани хусусиятҳои ашё барои ҷустуҷӯ...',
       auto_filling: 'Пур кардани маълумот...',
-    },
-    
+      brain_started: 'Барнома ба кор оғоз кард...',
+      please_wait: 'Лутфан мунтазир шавед',
+      do_not_exit: 'Аз барнома набароед',
+      wait_desc: 'Ин раванд метавонад чанд сонияро гирад, лутфан сабр кунед.',
+      seconds_left: '%{count}с / 60с',
+      slow_internet: 'Ин раванд аз маъмулӣ зиёдтар вақт гирифта истодааст, шояд суръати интернет паст бошад.',
+      },    
     // AI Moderation Codes
     ai_mod_codes: {
       unsafe_content: 'Ин акс аз ҷониби системаи амниятӣ рад карда шуд (Мундариҷаи ноҷо).',
@@ -887,9 +895,11 @@ export const translations: Record<string, any> = {
     imagePermissionError: 'Требуется разрешение на добавление фото.',
     maxImagesReached: 'Максимум 5 изображений.',
     contactInfo: 'Контактная информация',
+    camera: 'Камера',
+    gallery: 'Галерея',
+    choose_photo_method: 'Выберите способ добавления',
 
-    terms: {
-      title: 'Подтверждение условий',
+    terms: {      title: 'Подтверждение условий',
       description: 'Чтобы продолжить использование приложения, вы должны согласиться с нашими условиями и правилами.',
       checkbox: 'Я согласен на обработку моих персональных данных и подтверждаю, что мне исполнилось 18 лет или больше',
       button: 'ПРОДОЛЖИТЬ',
@@ -928,6 +938,8 @@ export const translations: Record<string, any> = {
       optimizing_description: 'Подготовка профессионального описания...',
       forensic_engine: 'Система AI Brain определяет характеристики для глобального поиска...',
       auto_filling: 'Заполнение данных...',
+      wait_desc: 'Этот процесс может занять несколько секунд, пожалуйста, подождите.',
+      seconds_left: '%{count}с / 60с',
     },
     
     // AI Moderation Codes

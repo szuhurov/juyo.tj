@@ -73,25 +73,59 @@ function AddItemForm() {
   const [moderationStatus, setModerationStatus] = useState<'idle' | 'checking' | 'passed' | 'failed'>('idle');
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [showSearchChoice, setShowSearchChoice] = useState(false);
-  const [scanMessageIndex, setScanMessageIndex] = useState(0);
-
-  const scanMessages = [
-    t('ai_steps.scanning_pixels'),
-    t('ai_steps.detecting_features'),
-    t('ai_steps.checking_safety'),
-    t('ai_steps.matching_categories'),
-    t('ai_steps.optimizing_description')
-  ];
+  const [scanMessage, setScanMessage] = useState("");
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
     let interval: any;
+    let timer: any;
+    let cycle: any;
+
     if (moderationStatus === 'checking') {
+      const technicalSteps = [
+        t('ai_steps.scanning_pixels'),
+        t('ai_steps.detecting_features'),
+        t('ai_steps.checking_safety'),
+        t('ai_steps.matching_categories'),
+        t('ai_steps.optimizing_description'),
+        t('ai_steps.forensic_engine')
+      ];
+
+      // Initial message
+      setScanMessage(t('ai_steps.brain_started'));
+      
+      let stepCount = 0;
       interval = setInterval(() => {
-        setScanMessageIndex((prev) => (prev + 1) % scanMessages.length);
-      }, 2500); // Slower rotation for readability
+        stepCount++;
+        
+        // Cycle: Technical Step -> technical Step -> Please Wait -> technical Step -> technical Step -> Do Not Exit
+        if (stepCount % 6 === 3) {
+          setScanMessage(t('ai_steps.please_wait'));
+        } else if (stepCount % 6 === 0) {
+          setScanMessage(t('ai_steps.do_not_exit'));
+        } else {
+          // Select technical step, excluding the "brain_started" message
+          const techIndex = (Math.floor(stepCount / 2)) % technicalSteps.length;
+          setScanMessage(technicalSteps[techIndex]);
+        }
+      }, 3000);
+
+      timer = setInterval(() => {
+        setElapsedSeconds(prev => Math.min(prev + 1, 120));
+      }, 1000);
+
+    } else {
+      setElapsedSeconds(0);
+      setActiveImageIndex(0);
+      setScanMessage("");
     }
-    return () => clearInterval(interval);
-  }, [moderationStatus]);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timer) clearInterval(timer);
+    };
+  }, [moderationStatus, previews.length, t]);
 
   // Боргузории рақами телефон аз профил
   useEffect(() => {
@@ -125,7 +159,13 @@ function AddItemForm() {
       const supabase = createClerkSupabaseClient(token!);
       
       const formDataAI = new FormData();
-      selectedImages.forEach(img => {
+      
+      // Compress images before sending to AI to prevent timeouts and OOM
+      const compressedImages = await Promise.all(
+        selectedImages.map(img => compressImage(img, 1024, 0.7))
+      );
+
+      compressedImages.forEach(img => {
         formDataAI.append('image', img);
       });
       
@@ -181,11 +221,23 @@ function AddItemForm() {
     setImages(newImages);
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
+    
+    // Reset AI state when images change
+    setModerationStatus('idle');
+    setAiSuggestions(null);
   };
 
   const removeImage = (index: number) => {
     setImages(prev => prev.filter((_, i) => i !== index));
-    setPreviews(prev => prev.filter((_, i) => i !== index));
+    setPreviews(prev => {
+      // Cleanup URL to prevent memory leaks
+      URL.revokeObjectURL(prev[index]);
+      return prev.filter((_, i) => i !== index);
+    });
+    
+    // Reset AI state when images are removed
+    setModerationStatus('idle');
+    setAiSuggestions(null);
   };
 
   // Санҷиши қадамҳо пеш аз гузаштан
@@ -226,6 +278,8 @@ function AddItemForm() {
       setStep(4);
     } else if (step > 1 && step !== 3) {
       setStep(step - 1);
+      // Reset moderation if going back to edit photos or type
+      setModerationStatus('idle');
     }
   };
 
@@ -312,10 +366,10 @@ function AddItemForm() {
   };
 
   return (
-    <div className="container mx-auto px-0 sm:px-4 py-0 sm:py-6 max-w-xl md:max-w-4xl h-[calc(100vh-144px)] sm:h-auto flex flex-col">
-      <Card className="flex-1 rounded-none sm:rounded-[3rem] overflow-hidden border-none sm:border shadow-none sm:shadow-2xl flex flex-col bg-white">
+    <div className="container mx-auto px-0 sm:px-0 py-0 sm:py-0 max-w-none h-[calc(100vh-144px)] sm:h-[calc(100vh-64px)] flex flex-col">
+      <Card className="flex-1 rounded-none overflow-hidden border-none shadow-none flex flex-col bg-white">
         {/* Step Indicator */}
-        <div className="w-full flex h-1.5 gap-1 bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
+        <div className="w-full flex h-1.5 gap-1 bg-zinc-50 dark:bg-zinc-900 overflow-hidden shrink-0">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div 
               key={i} 
@@ -327,33 +381,41 @@ function AddItemForm() {
           ))}
         </div>
 
-        <CardContent className="p-6 sm:p-8 md:px-16 md:py-6 flex-1 flex flex-col justify-center overflow-y-auto scrollbar-none">
-          {/* Step 1: Photos First (Original Design Restored) */}
+        <CardContent className="p-2 sm:p-4 md:p-6 lg:p-8 flex-1 flex flex-col justify-start pt-10 sm:pt-6 overflow-y-auto scrollbar-none">
+          {/* Step 1: Photos First (Refined) */}
           {step === 1 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-lg mx-auto w-full">
-              <div className="text-center space-y-1 mb-4">
-                <h2 className="text-2xl font-black uppercase tracking-tight">{t('pickImage')}</h2>
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full pt-4">
+              <div className="text-center space-y-1 mb-8">
+                <h2 className="text-2xl font-black uppercase tracking-tight text-zinc-800">{t('pickImage')}</h2>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                {previews.map((src, i) => (
-                  <div key={i} className="relative aspect-square rounded-[2rem] overflow-hidden group border-2 border-emerald-500/20 shadow-sm">
-                    <Image src={src} alt="Preview" fill className="object-cover" />
-                    <button type="button" onClick={() => removeImage(i)} className="absolute top-2.5 right-2.5 bg-white/90 text-red-500 p-2 rounded-2xl shadow-xl active:scale-90 transition-all">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+              <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 sm:gap-3">
                 {images.length < 5 && (
                   <div 
                     onClick={() => setShowPhotoChoice(true)}
-                    className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group"
+                    className="aspect-square flex flex-col items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group order-first shadow-sm"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
-                      <Plus className="w-7 h-7" />
+                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
+                      <Plus className="w-5 h-5" />
                     </div>
-                    <span className="mt-3 text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
+                    <span className="mt-2.5 text-[8px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
                   </div>
                 )}
+                {previews.map((src, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl overflow-hidden group border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shadow-sm">
+                    <Image src={src} alt="Preview" fill className="object-cover" />
+                    
+                    <button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage(i);
+                      }} 
+                      className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 text-red-500 p-1.5 rounded-lg shadow-lg active:scale-90 transition-all z-20"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
               </div>
 
               {/* Hidden Inputs */}
@@ -374,43 +436,39 @@ function AddItemForm() {
                 onChange={handleImageChange} 
               />
 
-              {/* Photo Choice Modal */}
               <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
-                <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-6 border-none shadow-2xl">
-                  <DialogHeader className="mb-4">
-                    <DialogTitle className="text-xl font-black uppercase tracking-tight text-center">
-                      {t('pickImage')}
+                <DialogContent className="max-w-[320px] rounded-[1.5rem] p-5 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
+                  <DialogHeader className="mb-2">
+                    <DialogTitle className="text-lg font-black uppercase tracking-tight text-center text-emerald-600">
+                      {t('choose_photo_method')}
                     </DialogTitle>
-                    <DialogDescription className="text-center font-bold text-zinc-500">
-                      {t('choose_photo_method') || 'Choose how you want to add photos'}
-                    </DialogDescription>
                   </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
-                      className="flex flex-col gap-3 h-32 rounded-[2rem] border-2 border-zinc-100 hover:border-emerald-500 hover:bg-emerald-50/30 group transition-all"
+                      className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-blue-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                       onClick={() => {
                         setShowPhotoChoice(false);
                         cameraInputRef.current?.click();
                       }}
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-50 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                        <Camera className="w-6 h-6" />
+                      <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all shadow-sm">
+                        <Camera className="w-5 h-5" />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest">{t('camera') || 'Camera'}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-blue-700">{t('camera')}</span>
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex flex-col gap-3 h-32 rounded-[2rem] border-2 border-zinc-100 hover:border-emerald-500 hover:bg-emerald-50/30 group transition-all"
+                      className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-orange-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                       onClick={() => {
                         setShowPhotoChoice(false);
                         galleryInputRef.current?.click();
                       }}
                     >
-                      <div className="w-12 h-12 rounded-2xl bg-zinc-50 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                        <ImageIcon className="w-6 h-6" />
+                      <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all shadow-sm">
+                        <ImageIcon className="w-5 h-5" />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest">{t('gallery') || 'Gallery'}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-orange-700">{t('gallery')}</span>
                     </Button>
                   </div>
                 </DialogContent>
@@ -461,61 +519,73 @@ function AddItemForm() {
 
           {/* Step 3: AI Scanning & Auto-fill (Inline Visual Search Style) */}
           {step === 3 && (
-            <div className="space-y-8 text-center animate-in fade-in zoom-in duration-500 max-w-md mx-auto w-full py-4">
+            <div className="space-y-6 text-center animate-in fade-in zoom-in duration-500 max-w-5xl mx-auto w-full py-2 flex-1 flex flex-col justify-start pt-4 sm:pt-6">
               {moderationStatus === 'checking' && (
-                <div className="flex flex-col items-center gap-8 w-full">
-                  <div className="relative group w-64 h-64 sm:w-72 sm:h-72">
+                <div className="flex flex-col items-center gap-4 w-full">
+                  <div className="relative group w-full aspect-square max-w-[85vw] sm:max-w-[40vh] lg:max-w-[30vh]">
                     {/* Soft Glow */}
-                    <div className="absolute -inset-1 bg-emerald-500/20 rounded-[2.2rem] blur-md opacity-50"></div>
+                    <div className="absolute -inset-4 bg-emerald-500/10 rounded-[3rem] blur-2xl opacity-50 animate-pulse"></div>
                     
-                    {/* Image Container - Visual Search Style inside white theme */}
-                    <div className="relative h-full w-full rounded-[2rem] overflow-hidden border border-zinc-200 shadow-xl bg-zinc-900 transition-all duration-700">
+                    {/* Image Container - Exact Visual Search Style */}
+                    <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
                       <div className="flex flex-col items-center h-full w-full">
                         <div className="relative w-full h-full overflow-hidden">
-                          {previews[0] && (
+                          {previews[activeImageIndex] && (
                             <>
+                              {/* Blurred background for empty spaces */}
                               <Image 
-                                src={previews[0]} 
+                                src={previews[activeImageIndex]} 
                                 alt="" 
                                 fill 
                                 className="object-cover blur-3xl opacity-40 scale-110"
                               />
                               <Image 
-                                src={previews[0]} 
+                                src={previews[activeImageIndex]} 
                                 alt="Analyzing" 
                                 fill 
-                                className="object-contain opacity-60 transition-opacity duration-700 relative z-10"
+                                className="object-contain opacity-60 transition-all duration-1000 relative z-10"
+                                key={activeImageIndex}
                               />
                             </>
                           )}
                           
-                          {/* Laser Scanner */}
+                          {/* Laser Scanner - Exact match to modal */}
                           <div className="absolute inset-0 z-20 pointer-events-none">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.8)] animate-scan-fast" />
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast" />
                             <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent h-1/2 animate-scan-overlay" />
                           </div>
 
-                          {/* Neural Grid Overlay */}
+                          {/* Neural Grid Overlay - Exact match to modal */}
                           <div 
-                            className="absolute inset-0 opacity-90 animate-grid-scan z-5"
+                            className="absolute inset-0 opacity-90 animate-grid-scan z-10 pointer-events-none"
                             style={{
                               backgroundImage: "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
                               backgroundSize: "25px 25px"
                             }}
                           />
+
+                          {/* Timer & Counter Overlay */}
+                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
+                              {t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Status Text - Emerald text on white background */}
-                  <div className="h-10 w-full flex items-center justify-center mt-2">
-                    <p 
-                      className="text-emerald-500 font-bold text-xs sm:text-sm uppercase tracking-[0.3em] text-center animate-in slide-in-from-bottom-2 duration-700" 
-                      key={scanMessageIndex}
-                    >
-                      {scanMessages[scanMessageIndex]}
-                    </p>
+                  {/* Status Text & Info */}
+                  <div className="space-y-4 w-full px-6">
+                    <div className="h-6 flex items-center justify-center">
+                      <p 
+                        className="text-emerald-600 font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] text-center animate-in slide-in-from-bottom-2 duration-700" 
+                        key={scanMessage}
+                      >
+                        {scanMessage}
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -634,23 +704,25 @@ function AddItemForm() {
         </CardContent>
 
         {/* Navigation Footer */}
-        <div className="p-6 sm:p-10 bg-white flex gap-3 sm:gap-4 items-center">
-          {step > 1 && step !== 3 && (
-            <Button variant="outline" size="lg" onClick={prevStep} className="rounded-2xl h-14 px-4 sm:px-8 border-2 font-black uppercase tracking-widest text-[10px] hover:bg-zinc-50 shrink-0">
-              <ArrowLeft className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">{t('back')}</span>
-            </Button>
-          )}
-          {((step === 1 || step === 2 || step === 4)) && (
-            <Button size="lg" onClick={nextStep} className="flex-1 rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 shadow-xl active:scale-95 transition-all">
-              {t('next')}
-            </Button>
-          )}
-          {step === 5 && (
-            <Button onClick={() => setShowSafetyModal(true)} disabled={loading} className="flex-1 rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-500/20">
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('publishBtn')}
-            </Button>
-          )}
+        <div className="p-4 sm:p-10 bg-white shrink-0 border-t border-zinc-50">
+          <div className="flex gap-3 sm:gap-4 items-center max-w-6xl mx-auto w-full">
+            {step > 1 && step !== 3 && (
+              <Button variant="outline" size="lg" onClick={prevStep} className="flex-1 rounded-2xl h-14 border-2 font-black uppercase tracking-widest text-[10px] hover:bg-zinc-50 transition-all active:scale-95">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {t('back')}
+              </Button>
+            )}
+            {((step === 1 || step === 2 || step === 4)) && (
+              <Button size="lg" onClick={nextStep} className="flex-[1.5] rounded-2xl h-14 font-black uppercase tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 shadow-xl active:scale-95 transition-all">
+                {t('next')}
+              </Button>
+            )}
+            {step === 5 && (
+              <Button onClick={() => setShowSafetyModal(true)} disabled={loading} className="flex-[1.5] rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black uppercase tracking-widest text-[10px] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all">
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('publishBtn')}
+              </Button>
+            )}
+          </div>
         </div>
       </Card>
 

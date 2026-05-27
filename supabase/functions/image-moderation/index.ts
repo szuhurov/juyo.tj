@@ -12,7 +12,10 @@ Deno.serve(async (req) => {
     const { record } = payload 
     const itemId = record.id
 
-    if (record.moderation_status !== 'pending') return new Response("OK", { status: 200 })
+    // Skip if already moderated (e.g. by AI Brain in the UI)
+    if (record.moderation_status !== 'pending') {
+      return new Response("Already moderated, skipping", { status: 200 });
+    }
 
     // Гирифтани аксҳо барои таҳлил
     const { data: images } = await supabase.from('item_images').select('image_url').eq('item_id', itemId)
@@ -35,11 +38,24 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-5.5",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
-              content: "You are a professional content moderator for a 'Lost and Found' app in Tajikistan. Analyze ALL provided images and text. STRICTLY BLOCK: nudity, violence, weapons, drugs, adult items (sex toys, dildos, etc.). Prohibit adult items even if they are made of plastic or appear as toys. Also check if the content is relevant to 'lost and found' items. Return JSON: { 'is_safe': boolean, 'reason': string or null }"
+              content: `You are a common-sense content moderator for JUYO.tj (Lost & Found app). 
+STRICT RULES:
+1. ALLOWED (is_safe: true):
+   - ANIMALS: Pets (dogs, cats, etc.) are 100% ALLOWED.
+   - ELECTRONICS: Phones, laptops, items in hands are 100% ALLOWED.
+   - DOCUMENTS: Passports/IDs are 100% ALLOWED even with faces.
+   - GENERAL: Keys, bags, clothes, etc.
+2. PROHIBITED (is_safe: false):
+   - 18+ Content (Nudity/Sexual).
+   - Violence (Blood/Gore/Corpses).
+   - Weapons (Guns/Knives).
+   - Drugs.
+   - Solo portraits/selfies with no object.
+Return JSON ONLY: { "is_safe": boolean, "reason": "Short reason in Tajik or null" }`
             },
             {
               role: "user",
@@ -54,6 +70,7 @@ Deno.serve(async (req) => {
       });
 
       const aiData = await aiResponse.json();
+      if (aiData.error) throw new Error(aiData.error.message);
       const result = JSON.parse(aiData.choices[0].message.content);
       
       isSafe = result.is_safe;
@@ -67,7 +84,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-5.5",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
@@ -80,6 +97,7 @@ Deno.serve(async (req) => {
       });
 
       const aiData = await aiResponse.json();
+      if (aiData.error) throw new Error(aiData.error.message);
       const result = JSON.parse(aiData.choices[0].message.content);
       isSafe = result.is_safe;
       rejectionReason = result.reason;

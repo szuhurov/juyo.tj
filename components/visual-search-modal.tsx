@@ -29,8 +29,21 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [scanProgress, setScanProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let timer: any;
+    if (isSearching) {
+      timer = setInterval(() => {
+        setElapsedSeconds(prev => Math.min(prev + 1, 60));
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => clearInterval(timer);
+  }, [isSearching]);
 
   // Ҳамин ки directFile омад, ҷустуҷӯро оғоз мекунем
   useEffect(() => {
@@ -164,6 +177,16 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
                         backgroundSize: "25px 25px"
                       }}
                     ></div>
+
+                    {/* Timer & Counter Overlay */}
+                    {scanProgress < 100 && (
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
+                          {t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (

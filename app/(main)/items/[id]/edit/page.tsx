@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select"; // Барои рӯйхати интихобшаванда
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Компоненти корт
 import { toast } from "sonner"; // Барои нишон додани хабарҳо
-import { Loader2, Plus, X, Upload } from "lucide-react"; // Иконкаҳо
+import { Loader2, Plus, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react"; // Иконкаҳо
 import Image from "next/image"; // Барои суратҳо
 import Link from "next/link"; // Барои гузаштан ба саҳифаҳо
 import { compressImage } from "@/lib/image-utils";
@@ -41,7 +41,7 @@ import {
 export default function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
   // ID-и эълонро аз URL мегирем
   const { id } = use(params);
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
   
@@ -55,6 +55,57 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   const [category, setCategory] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<{url: string, isExisting: boolean}[]>([]);
+
+  // Стейтҳои модерация (AI Moderation States)
+  const [moderationStatus, setModerationStatus] = useState<'idle' | 'checking' | 'passed' | 'failed'>('idle');
+  const [moderationError, setModerationError] = useState<string | null>(null);
+  const [scanMessage, setScanMessage] = useState("");
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    let interval: any;
+    let timer: any;
+
+    if (moderationStatus === 'checking') {
+      const technicalSteps = [
+        t('ai_steps.scanning_pixels'),
+        t('ai_steps.detecting_features'),
+        t('ai_steps.checking_safety'),
+        t('ai_steps.matching_categories'),
+        t('ai_steps.optimizing_description'),
+        t('ai_steps.forensic_engine')
+      ];
+
+      setScanMessage(t('ai_steps.brain_started'));
+      
+      let stepCount = 0;
+      interval = setInterval(() => {
+        stepCount++;
+        if (stepCount % 6 === 3) {
+          setScanMessage(t('ai_steps.please_wait'));
+        } else if (stepCount % 6 === 0) {
+          setScanMessage(t('ai_steps.do_not_exit'));
+        } else {
+          const techIndex = (Math.floor(stepCount / 2)) % technicalSteps.length;
+          setScanMessage(technicalSteps[techIndex]);
+        }
+      }, 3000);
+
+      timer = setInterval(() => {
+        setElapsedSeconds(prev => Math.min(prev + 1, 120));
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+      setActiveImageIndex(0);
+      setScanMessage("");
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+      if (timer) clearInterval(timer);
+    };
+  }, [moderationStatus, previews.length, t]);
 
   // Вақте ки саҳифа кушода мешавад, маълумоти эълонро аз база мехонем
   useEffect(() => {
@@ -128,6 +179,50 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
   };
 
   /**
+   * Функсия барои модерацияи AI (Танҳо барои аксҳои нав)
+   */
+  const runAIModeration = async (newFiles: File[], currentTitle: string, currentDesc: string) => {
+    setModerationStatus('checking');
+    setModerationError(null);
+
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+
+      const formDataAI = new FormData();
+      
+      // Мо танҳо файлҳои навро барои тафтиш мефиристем
+      newFiles.forEach(file => {
+        formDataAI.append('image', file);
+      });
+
+      formDataAI.append('lang', locale);
+      formDataAI.append('type', type);
+      formDataAI.append('title', currentTitle);
+      formDataAI.append('description', currentDesc);
+      formDataAI.append('mode', 'moderation_only');
+
+      const { data, error } = await supabase.functions.invoke('ai-brain', {
+        body: formDataAI,
+      });
+
+      if (error || (data && data.is_safe === false)) {
+        setModerationStatus('failed');
+        setModerationError(data?.reason || error?.message || t('error'));
+        return false;
+      }
+
+      setModerationStatus('passed');
+      return true;
+    } catch (error: any) {
+      console.error("AI Moderation Error:", error);
+      setModerationStatus('failed');
+      setModerationError(error.message);
+      return false;
+    }
+  };
+
+  /**
    * Функсияи асосӣ барои сабт кардани тағйирот (Update)
    */
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -160,22 +255,31 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       
       let supabase = createClerkSupabaseClient(token);
 
+      const existingUrls = item.images?.map(img => img.image_url) || [];
+      const hasNewImages = images.length > 0;
+      const imagesChanged = hasNewImages || previews.length !== existingUrls.length ||
+                            previews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
+
+      // МОДЕРАТСИЯИ МАҶБУРӢ БАРОИ АКСҲОИ НАВ
+      if (hasNewImages) {
+        const isSafe = await runAIModeration(images, title, description);
+        if (!isSafe) {
+          setSaving(false);
+          return;
+        }
+      }
+
       // 1. Боргузории суратҳои нав ба Облако (Storage)
       const finalImageUrls: string[] = [];
       const newFiles = images;
       let newFileIdx = 0;
-      let hasNewImages = false;
 
       for (const preview of previews) {
         if (preview.isExisting) {
           finalImageUrls.push(preview.url);
         } else {
-          hasNewImages = true;
           const file = newFiles[newFileIdx++];
-          
-          // Фишурдани сурат пеш аз боргузорӣ
           const compressedFile = await compressImage(file);
-          
           const ext = compressedFile.name.split('.').pop();
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
           
@@ -194,11 +298,6 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       if (!token) throw new Error("Authentication token expired or missing");
       supabase = createClerkSupabaseClient(token);
 
-      const existingUrls = item.images?.map(img => img.image_url) || [];
-      const imagesChanged = hasNewImages || 
-                            finalImageUrls.length !== existingUrls.length ||
-                            finalImageUrls.some((url, i) => url !== existingUrls[i]);
-
       // 2. Нав кардани маълумоти эълон дар база (Update query)
       const updateData: any = {
         title,
@@ -206,13 +305,9 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         category,
         type,
         phone_number: phone,
-        reward: reward ? `${reward}` : null
+        reward: reward ? `${reward}` : null,
+        moderation_status: 'approved' // Чун AI аллакай тафтиш кард
       };
-
-      // Агар суратҳо иваз шуда бошанд, боз ба модерация мефиристем
-      if (imagesChanged) {
-        updateData.moderation_status = 'pending';
-      }
 
       const { error: updateError } = await supabase
         .from('items')
@@ -251,16 +346,14 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
         await supabase.from('item_images').insert(imageRecords);
       }
 
-      if (imagesChanged) {
-        toast.success(t('imageModeration.submitted'));
-      } else {
-        toast.success(t('updateSuccess'));
-      }
-      
-      window.location.href = `/items/${id}`;
+      toast.success(t('updateSuccess'));
+      router.push(`/items/${id}`);
+      router.refresh();
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || t('error'));
+      // Агар хатогии техникӣ шавад, ба ҳолати аслӣ бармегардем
+      setModerationStatus('idle');
     } finally {
       setSaving(false);
     }
@@ -270,6 +363,68 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
     return (
       <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
+      </div>
+    );
+  }
+
+  // Агар дар ҳолати скан кардан бошад, интерфейси Step 3-ро нишон медиҳем
+  if (moderationStatus !== 'idle') {
+    return (
+      <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-start pt-10 sm:pt-16 px-4">
+        <div className="w-full max-w-lg space-y-6 text-center">
+          {moderationStatus === 'checking' && (
+            <div className="space-y-6">
+              <div className="relative group w-full aspect-square max-w-[220px] sm:max-w-[280px] lg:max-w-[220px] mx-auto">
+                <div className="absolute -inset-4 bg-emerald-500/10 rounded-[3rem] blur-2xl opacity-50 animate-pulse"></div>
+                <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border border-zinc-100 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
+                  <div className="relative h-full w-full">
+                    {previews[activeImageIndex] && (
+                      <>
+                        <Image src={previews[activeImageIndex].url} alt="" fill className="object-cover blur-3xl opacity-40 scale-110" />
+                        <Image src={previews[activeImageIndex].url} alt="Analyzing" fill className="object-contain opacity-60 transition-all duration-1000 relative z-10" key={activeImageIndex} />
+                      </>
+                    )}
+                    <div className="absolute inset-0 z-20 pointer-events-none">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast" />
+                    </div>
+                    <div className="absolute inset-0 opacity-90 animate-grid-scan z-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)", backgroundSize: "25px 25px" }} />
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{elapsedSeconds}с / 60с</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="h-6 flex items-center justify-center">
+                <p className="text-emerald-600 font-black text-xs uppercase tracking-[0.2em] animate-in slide-in-from-bottom-2 duration-700" key={scanMessage}>{scanMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {moderationStatus === 'failed' && (
+            <div className="space-y-6 animate-in fade-in zoom-in duration-500">
+              <div className="w-20 h-20 rounded-[2rem] bg-red-50 flex items-center justify-center mx-auto shadow-sm">
+                <ShieldAlert className="w-10 h-10 text-red-500" />
+              </div>
+              <div className="space-y-3">
+                <h2 className="text-xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
+                <div className="bg-red-50/50 p-6 rounded-2xl border border-red-100">
+                  <p className="text-red-700 font-bold text-sm leading-relaxed">{moderationError || t('error')}</p>
+                </div>
+                <Button variant="outline" onClick={() => setModerationStatus('idle')} className="rounded-xl font-bold uppercase text-[10px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100 h-12 px-8">
+                  <ArrowLeft className="w-4 h-4 mr-2" /> {t('ai_steps.step5_fix_btn')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <style jsx global>{`
+          @keyframes scan-fast { 0% { top: 0; } 100% { top: 100%; } }
+          @keyframes grid-scan { 0% { background-position: 0% 0%; } 100% { background-position: 25px 25px; } }
+          .animate-scan-fast { animation: scan-fast 1.5s linear infinite !important; }
+          .animate-grid-scan { animation: grid-scan 1.5s linear infinite !important; }
+        `}</style>
       </div>
     );
   }
@@ -395,9 +550,9 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
                       <button 
                         type="button"
                         onClick={() => removeImage(i)}
-                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 text-red-500 p-1.5 rounded-lg shadow-lg active:scale-90 transition-all z-20 border border-zinc-100 dark:border-zinc-800"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}

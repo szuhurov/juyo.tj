@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts"
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
@@ -14,7 +15,7 @@ const MASTER_FORENSIC_PROMPT = `You are an elite forensic AI expert specialized 
 Analyze the image with extreme precision to find unique identifiers.
 Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear).
 Return JSON: { 
-  'description_en': 'EXHAUSTIVE forensic technical string in English for 100% vector matching' 
+  "description_en": "EXHAUSTIVE forensic technical string in English for 100% vector matching" 
 }`;
 
 Deno.serve(async (req) => {
@@ -28,30 +29,31 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    // CONVERT IMAGE TO BASE64
+    // CONVERT IMAGE TO BASE64 - OPTIMIZED
     const arrayBuffer = await image.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    let binary = "";
-    const len = uint8Array.byteLength;
-    for (let i = 0; i < len; i++) { binary += String.fromCharCode(uint8Array[i]); }
-    const base64Image = btoa(binary);
+    const base64Image = encodeBase64(arrayBuffer);
 
-    // 1. DETAILED FORENSIC ANALYSIS (GPT-5.5 - IDENTICAL PROMPT)
+    // 1. DETAILED FORENSIC ANALYSIS (GPT-4O-MINI)
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-5.5",
-        reasoning_effort: "medium",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: MASTER_FORENSIC_PROMPT },
-          { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "high" } }] }
+          { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "low" } }] }
         ],
         response_format: { type: "json_object" }
       }),
     });
 
     const aiData = await aiResponse.json();
+    
+    if (aiData.error) {
+      console.error("OpenAI API Error:", aiData.error);
+      throw new Error(aiData.error.message || "OpenAI API Error");
+    }
+
     const forensicResult = JSON.parse(aiData.choices[0].message.content);
 
     // 2. GENERATE EMBEDDING
@@ -65,6 +67,12 @@ Deno.serve(async (req) => {
     });
 
     const embData = await embRes.json();
+    
+    if (embData.error) {
+      console.error("Embedding Error:", embData.error);
+      throw new Error(embData.error.message || "Embedding Error");
+    }
+
     const embedding = embData.data[0].embedding;
 
     // 3. GLOBAL VECTOR SEARCH (SECURITY DEFINER bypasses RLS)
