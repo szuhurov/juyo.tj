@@ -20,9 +20,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert, CheckCircle2, Search } from "lucide-react";
+import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert, CheckCircle2, Search, Camera, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { useRef } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -45,6 +46,10 @@ function AddItemForm() {
   const { userId, getToken } = useAuth();
   const queryClient = useQueryClient();
   
+  // Refs for inputs
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
   const totalSteps = 5;
@@ -63,6 +68,7 @@ function AddItemForm() {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [showSafetyModal, setShowSafetyModal] = useState(false);
+  const [showPhotoChoice, setShowPhotoChoice] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
   const [moderationStatus, setModerationStatus] = useState<'idle' | 'checking' | 'passed' | 'failed'>('idle');
   const [moderationError, setModerationError] = useState<string | null>(null);
@@ -338,15 +344,77 @@ function AddItemForm() {
                   </div>
                 ))}
                 {images.length < 5 && (
-                  <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group">
+                  <div 
+                    onClick={() => setShowPhotoChoice(true)}
+                    className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 rounded-[2rem] cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group"
+                  >
                     <div className="w-14 h-14 rounded-2xl bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
                       <Plus className="w-7 h-7" />
                     </div>
                     <span className="mt-3 text-[9px] font-black uppercase tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">{t('pickImage')}</span>
-                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
-                  </label>
+                  </div>
                 )}
               </div>
+
+              {/* Hidden Inputs */}
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/*" 
+                capture="environment" 
+                ref={cameraInputRef}
+                onChange={handleImageChange} 
+              />
+              <input 
+                type="file" 
+                className="hidden" 
+                accept="image/*" 
+                multiple 
+                ref={galleryInputRef}
+                onChange={handleImageChange} 
+              />
+
+              {/* Photo Choice Modal */}
+              <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
+                <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] p-6 border-none shadow-2xl">
+                  <DialogHeader className="mb-4">
+                    <DialogTitle className="text-xl font-black uppercase tracking-tight text-center">
+                      {t('pickImage')}
+                    </DialogTitle>
+                    <DialogDescription className="text-center font-bold text-zinc-500">
+                      {t('choose_photo_method') || 'Choose how you want to add photos'}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button
+                      variant="outline"
+                      className="flex flex-col gap-3 h-32 rounded-[2rem] border-2 border-zinc-100 hover:border-emerald-500 hover:bg-emerald-50/30 group transition-all"
+                      onClick={() => {
+                        setShowPhotoChoice(false);
+                        cameraInputRef.current?.click();
+                      }}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-50 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <Camera className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest">{t('camera') || 'Camera'}</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex flex-col gap-3 h-32 rounded-[2rem] border-2 border-zinc-100 hover:border-emerald-500 hover:bg-emerald-50/30 group transition-all"
+                      onClick={() => {
+                        setShowPhotoChoice(false);
+                        galleryInputRef.current?.click();
+                      }}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-50 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <ImageIcon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest">{t('gallery') || 'Gallery'}</span>
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 

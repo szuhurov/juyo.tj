@@ -16,7 +16,7 @@ Analyze ALL images together as one set.
 CONTEXT: User reports this as {{TYPE}}.
 
 CRITICAL TASKS:
-1. MODERATION: Check for nudity, violence, drugs, weapons, or adult items. If unsafe, set is_safe=false and provide a brief reason. If safe, is_safe=true. (Documents are safe).
+1. MODERATION: Check for nudity, violence, drugs, weapons, or adult items. If unsafe, set is_safe=false and provide a DETAILED EXPLANATION in {{LANG}} why it was rejected so the user understands what to change. If safe, is_safe=true. (Documents are safe).
 2. EXTRACTION: Find any FULL NAMES on documents (Passports, IDs).
 3. DESCRIPTION: Combine details from all images into a cohesive description from the {{PERSPECTIVE}} perspective. Mask sensitive IDs/Serials with XXXX. Keep names visible. Use 2 bullet points and 2 emojis. STRICTLY NO MARKDOWN (no **, #, _).
 4. TITLE: 2-4 word plain text title in {{LANG}}. Include extracted name if it's a document. NO MARKDOWN.
