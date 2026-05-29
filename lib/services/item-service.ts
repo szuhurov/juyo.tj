@@ -115,7 +115,7 @@ export const ItemService = {
       id: res.id,
       user_id: '', 
       title: res.title,
-      description: '', 
+      description: res.description || '', 
       category: 'Other', 
       type: 'lost', 
       date: new Date().toISOString().split('T')[0], 
@@ -235,6 +235,20 @@ export const ItemService = {
   },
 
   /**
+   * Гирифтани маълумоти муфассали як ашё аз "Сандуқчаи бехатарӣ".
+   */
+  async getSafetyItemDetails(id: string, supabaseClient: any) {
+    const { data, error } = await supabaseClient
+      .from('safety_box')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
    * Нест кардани эълон ва аксҳои он аз база ва аз Storage.
    */
   async deleteItem(supabaseClient: any, id: string) {
@@ -293,6 +307,8 @@ export const ItemService = {
       images: item.images?.map(img => img.image_url) || [],
       views: item.views || 0,
       date: item.date,
+      text_moderated: true,
+      images_moderated: true,
       created_at: item.created_at
     }]);
 
@@ -306,7 +322,7 @@ export const ItemService = {
   /**
    * Нашри эълон аз "Сандуқчаи бехатарӣ" ба лентаи умумӣ.
    */
-  async publishFromSafetyBox(supabaseClient: any, safetyItem: any, userId: string) {
+  async publishFromSafetyBox(supabaseClient: any, safetyItem: any, userId: string, status: 'pending' | 'approved' = 'pending') {
     // 1. Сохтани эълони нав дар ҷадвали 'items'
     const { data: item, error: itemError } = await supabaseClient
       .from('items')
@@ -322,7 +338,7 @@ export const ItemService = {
         is_resolved: false,
         views: 0,
         created_at: new Date().toISOString(),
-        moderation_status: 'pending'
+        moderation_status: status
       }])
       .select()
       .single();

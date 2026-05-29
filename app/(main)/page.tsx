@@ -202,66 +202,65 @@ function HomeContent() {
       </div>
 
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
-      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px] touch-pan-y">
-
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[86px] md:pt-[65px] touch-pan-y">
         {isLoading && allItems.length === 0 && !searchQuery && category === "All" && itemType === null && !isTyping ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="aspect-square w-full rounded-xl" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-          ))}
-        </div>
-      ) : displayedItems.length > 0 ? (
-        <>
-          {/* Версияи Desktop ва Mobile: Рӯйхати умумӣ */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
-            {displayedItems.map((item, index) => (
-              <ItemCard key={item.id} item={item} index={index} />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="aspect-square w-full rounded-xl" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
             ))}
           </div>
+        ) : displayedItems.length > 0 ? (
+          <>
+            {/* Версияи Desktop ва Mobile: Рӯйхати умумӣ */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
+              {displayedItems.map((item, index) => (
+                <ItemCard key={item.id} item={item} index={index} />
+              ))}
+            </div>
 
-          {/* Элемент барои Infinite Scroll */}
-          <div ref={ref} className="h-10 mt-4 flex items-center justify-center">
-            {isFetchingNextPage && (
-              <div className="flex gap-1.5 items-center">
-                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s]"></span>
-                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
-                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
-              </div>
+            {/* Элемент барои Infinite Scroll */}
+            <div ref={ref} className="h-10 mt-4 flex items-center justify-center">
+              {isFetchingNextPage && (
+                <div className="flex gap-1.5 items-center">
+                  <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s]"></span>
+                  <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
+                  <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+            <h3 className="text-xl font-black uppercase tracking-tight flex items-center justify-center gap-1">
+              {(isLoading || isFetching || isTyping) ? (
+                <>
+                  {t('search')}
+                  <span className="flex gap-1 items-center ml-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s]"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
+                  </span>
+                </>
+              ) : t('noItemsFound')}
+            </h3>
+            {!(isLoading || isFetching || isTyping) && (
+              <p className="text-zinc-500 text-sm mt-2">
+                {t('noItemsSubtitle')}
+              </p>
             )}
           </div>
-        </>
-      ) : (
-        <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-          <h3 className="text-xl font-black uppercase tracking-tight flex items-center justify-center gap-1">
-            {(isLoading || isFetching || isTyping) ? (
-              <>
-                {t('search')}
-                <span className="flex gap-1 items-center ml-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s]"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
-                </span>
-              </>
-            ) : t('noItemsFound')}
-          </h3>
-          {!(isLoading || isFetching || isTyping) && (
-            <p className="text-zinc-500 text-sm mt-2">
-              {t('noItemsSubtitle')}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
     </div>
   );
 }
 
 function HomeSkeleton() {
   return (
-    <div className="max-w-[1600px] mx-auto px-2 sm:px-4 pt-[86px] md:pt-[65px]">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[86px] md:pt-[65px]">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {[...Array(8)].map((_, i) => (
           <div key={i} className="space-y-3">

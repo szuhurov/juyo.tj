@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const arrayBuffer = await image.arrayBuffer();
     const base64Image = encodeBase64(arrayBuffer);
 
-    // 1. DETAILED FORENSIC ANALYSIS (GPT-4O-MINI)
+    // 1. DETAILED FORENSIC ANALYSIS (GPT-4o-Mini - Ultra Fast)
     const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
     // 3. GLOBAL VECTOR SEARCH (SECURITY DEFINER bypasses RLS)
     const { data: similarItems, error: searchError } = await supabase.rpc('match_item_images', {
       query_embedding: embedding,
-      match_threshold: 0.40, // Increased to 0.40 for strict, high-quality matches
+      match_threshold: 0.50, // Increased to 0.50 for stricter, higher-quality matches
       match_count: 20,
       p_type: 'all'
     });
@@ -87,8 +87,9 @@ Deno.serve(async (req) => {
 
     const results = (similarItems || []).map((item: any) => ({
       id: item.item_id,
-      score: Math.round(item.similarity * 100),
+      score: item.similarity,
       title: item.title,
+      description: item.description,
       image_url: item.image_url
     }));
 

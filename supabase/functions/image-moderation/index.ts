@@ -26,11 +26,6 @@ Deno.serve(async (req) => {
 
     // 1. Ҳамаи аксҳоро барои таҳлил омода мекунем
     if (images && images.length > 0) {
-      const imageContent = images.map(img => ({
-        type: "image_url",
-        image_url: { url: img.image_url }
-      }));
-
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -38,7 +33,8 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-5.5",
+          reasoning_effort: "medium",
           messages: [
             {
               role: "system",
@@ -61,7 +57,10 @@ Return JSON ONLY: { "is_safe": boolean, "reason": "Short reason in Tajik or null
               role: "user",
               content: [
                 { type: "text", text: `Title/Description: ${textToCheck}` },
-                ...imageContent
+                ...images.map(img => ({
+                  type: "image_url",
+                  image_url: { url: img.image_url, detail: "auto" }
+                }))
               ]
             }
           ],
@@ -84,7 +83,8 @@ Return JSON ONLY: { "is_safe": boolean, "reason": "Short reason in Tajik or null
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-5.5",
+          reasoning_effort: "low",
           messages: [
             {
               role: "system",

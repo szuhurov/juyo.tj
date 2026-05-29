@@ -158,3 +158,18 @@ export function useSafetyItems(userId?: string, token?: string | null) {
     refetchOnWindowFocus: true,
   });
 }
+
+// Хук барои гирифтани маълумоти муфассали як ашё аз Safety Box
+export function useSafetyItemDetails(id: string, token?: string | null) {
+  return useQuery({
+    queryKey: ITEM_KEYS.detail(id), // Мо калиди detail-ро истифода мебарем барои кэш
+    queryFn: async () => {
+      if (!token) return null;
+      const { createClerkSupabaseClient } = await import("@/lib/supabase");
+      const supabaseClient = createClerkSupabaseClient(token);
+      return ItemService.getSafetyItemDetails(id, supabaseClient);
+    },
+    enabled: !!id && !!token,
+    staleTime: 1000 * 60,
+  });
+}

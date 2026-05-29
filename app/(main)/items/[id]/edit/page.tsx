@@ -213,9 +213,48 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       }
 
       setModerationStatus('passed');
+      setScanMessage(t('ai_steps.images_passed') || "Аксҳо қабул шуданд!");
+      await new Promise(resolve => setTimeout(resolve, 1500));
       return true;
     } catch (error: any) {
       console.error("AI Moderation Error:", error);
+      setModerationStatus('failed');
+      setModerationError(error.message);
+      return false;
+    }
+  };
+
+  /**
+   * Функсия барои модерацияи матн (Танҳо барои матни ивазшуда)
+   */
+  const runTextModeration = async (title: string, description: string) => {
+    setModerationStatus('checking');
+    setModerationError(null);
+    setScanMessage(t('ai_steps.checking_custom_text') || "AI матни нави шуморо месанҷад...");
+
+    try {
+      const token = await getToken({ template: 'supabase' });
+      const supabase = createClerkSupabaseClient(token!);
+
+      const { data, error } = await supabase.functions.invoke('text-moderation', {
+        body: { 
+          record: { title, description, moderation_status: 'pending' },
+          lang: locale
+        },
+      });
+
+      if (error || (data && data.is_safe === false)) {
+        setModerationStatus('failed');
+        setModerationError(data?.reason || error?.message || t('error'));
+        return false;
+      }
+
+      setModerationStatus('passed');
+      setScanMessage(t('ai_steps.text_passed') || "Матн қабул шуд!");
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      return true;
+    } catch (error: any) {
+      console.error("Text Moderation Error:", error);
       setModerationStatus('failed');
       setModerationError(error.message);
       return false;
@@ -248,6 +287,9 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       return;
     }
 
+    const hasNewImages = images.length > 0;
+    const textChanged = title !== item.title || description !== item.description;
+
     setSaving(true);
     try {
       let token = await getToken({ template: 'supabase' });
@@ -255,19 +297,28 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       
       let supabase = createClerkSupabaseClient(token);
 
-      const existingUrls = item.images?.map(img => img.image_url) || [];
-      const hasNewImages = images.length > 0;
-      const imagesChanged = hasNewImages || previews.length !== existingUrls.length ||
-                            previews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
-
-      // МОДЕРАТСИЯИ МАҶБУРӢ БАРОИ АКСҲОИ НАВ
+      // МОДЕРАТСИЯИ МАҶБУРӢ
       if (hasNewImages) {
+        // Агар акси нав бошад, AI Brain ҳардуро месанҷад (акс + матн)
         const isSafe = await runAIModeration(images, title, description);
         if (!isSafe) {
           setSaving(false);
           return;
         }
+      } else if (textChanged) {
+        // Агар танҳо матн иваз шуда бошад
+        const isSafe = await runTextModeration(title, description);
+        if (!isSafe) {
+          setSaving(false);
+          return;
+        }
       }
+
+      setSaving(true); // Re-confirm saving state after moderation
+      
+      const existingUrls = item.images?.map(img => img.image_url) || [];
+      const imagesChanged = hasNewImages || previews.length !== existingUrls.length ||
+                            previews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
 
       // 1. Боргузории суратҳои нав ба Облако (Storage)
       const finalImageUrls: string[] = [];
@@ -339,11 +390,19 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
 
         await supabase.from('item_images').delete().eq('item_id', id);
         
-        const imageRecords = finalImageUrls.map(url => ({
-          item_id: id,
-          image_url: url
-        }));
-        await supabase.from('item_images').insert(imageRecords);
+        const { error: imagesError } = await supabase.from('item_images').insert(imageRecords);
+        if (imagesError) console.error("DATABASE ERROR (item_images):", imagesError.message);
+      }
+
+      // 4. ТАҶДИДИ ВЕКТОРИ ҶУСТУҶӮ (Vector/Embedding Update)
+      // Агар матн ё аксҳо иваз шуда бошанд, мо бояд эмбеддингро аз нав созем
+      if (textChanged || imagesChanged) {
+        supabase.functions.invoke('generate-embedding', {
+          body: { 
+              item_id: id, 
+              text: `${title} ${description}` 
+          }
+        }).catch(err => console.error("Background embedding failed (Edit):", err));
       }
 
       toast.success(t('updateSuccess'));

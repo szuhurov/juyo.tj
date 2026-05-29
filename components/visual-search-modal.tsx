@@ -76,16 +76,11 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
     try {
       const results = await ItemService.visualSearch(file);
       
-      // Боварӣ ҳосил мекунем, ки камаш 3 сония мегузарад
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = Math.max(3000 - elapsedTime, 0);
-      
-      await new Promise(resolve => setTimeout(resolve, remainingTime));
-
+      // Натиҷаро фавран нишон медиҳем (бе таъхири сунъӣ)
       setScanProgress(100);
       
-      // Интизор мешавем, то корбар натиҷаи бомуваффақиятро бубинад
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Интизории кӯтоҳ танҳо барои анҷоми аниматсия
+      await new Promise(resolve => setTimeout(resolve, 400));
       
       onResults(results);
       onClose();

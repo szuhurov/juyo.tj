@@ -135,6 +135,8 @@ CREATE TABLE IF NOT EXISTS public.safety_box (
     images TEXT[], 
     views INTEGER DEFAULT 0,
     date DATE,
+    text_moderated BOOLEAN DEFAULT FALSE,
+    images_moderated BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

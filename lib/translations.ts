@@ -360,6 +360,9 @@ export const translations: Record<string, any> = {
       wait_desc: 'Ин раванд метавонад чанд сонияро гирад, лутфан сабр кунед.',
       seconds_left: '%{count}с / 60с',
       slow_internet: 'Ин раванд аз маъмулӣ зиёдтар вақт гирифта истодааст, шояд суръати интернет паст бошад.',
+      checking_custom_text: 'AI матни нави шуморо месанҷад...',
+      text_passed: 'Матн қабул шуд!',
+      text_moderation_failed: 'Матни шумо аз санҷиш нагузашт.',
       },    
     // AI Moderation Codes
     ai_mod_codes: {
@@ -937,9 +940,15 @@ export const translations: Record<string, any> = {
       matching_categories: 'Определение категории...',
       optimizing_description: 'Подготовка профессионального описания...',
       forensic_engine: 'Система AI Brain определяет характеристики для глобального поиска...',
-      auto_filling: 'Заполнение данных...',
+      brain_started: 'Программа запущена...',
+      please_wait: 'Пожалуйста, подождите',
+      do_not_exit: 'Не выходите из приложения',
       wait_desc: 'Этот процесс может занять несколько секунд, пожалуйста, подождите.',
       seconds_left: '%{count}с / 60с',
+      slow_internet: 'Этот процесс занимает больше времени, чем обычно, возможно, скорость интернета низкая.',
+      checking_custom_text: 'AI проверяет ваш новый текст...',
+      text_passed: 'Текст принят!',
+      text_moderation_failed: 'Ваш текст не прошел проверку.',
     },
     
     // AI Moderation Codes

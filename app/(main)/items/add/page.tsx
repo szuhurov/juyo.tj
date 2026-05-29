@@ -287,6 +287,50 @@ function AddItemForm() {
     if (!userId) return;
     
     setShowSafetyModal(false);
+    
+    // 1. САНҶИШИ ТАҒЙИРОТИ МАТН
+    const isTitleChanged = formData.title !== aiSuggestions?.title;
+    const isDescChanged = formData.description !== aiSuggestions?.description;
+
+    if (isTitleChanged || isDescChanged) {
+      setStep(3); // Баргаштан ба "Сканер"
+      setModerationStatus('checking');
+      setScanMessage(t('ai_steps.checking_custom_text') || "AI матни нави шуморо месанҷад...");
+      
+      try {
+        const token = await getToken({ template: 'supabase' });
+        const supabase = createClerkSupabaseClient(token!);
+        
+        // Танҳо матнро барои модератсия мефиристем
+        const { data: textData, error: textError } = await supabase.functions.invoke('text-moderation', {
+          body: { 
+            record: { 
+              title: formData.title, 
+              description: formData.description,
+              moderation_status: 'pending' 
+            },
+            lang: locale // Интиқоли забони ҷорӣ
+          },
+        });
+
+        if (textError || (textData && textData.is_safe === false)) {
+          setModerationStatus('failed');
+          setModerationError(textData?.reason || t('ai_steps.text_moderation_failed') || "Матни шумо ба қоидаҳо мувофиқат намекунад.");
+          return;
+        }
+
+        // Агар матн тоза бошад, 1.5 сония аниматсияи муваффақият нишон медиҳем
+        setModerationStatus('passed');
+        setScanMessage(t('ai_steps.text_passed') || "Матн қабул шуд!");
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      } catch (err: any) {
+        setModerationStatus('failed');
+        setModerationError(err.message);
+        return;
+      }
+    }
+
+    // 2. НАШРИ АСЛИИ ЭЪЛОН (АГАР САНҶИШ ГУЗАШТ)
     setLoading(true);
     
     try {
@@ -324,32 +368,25 @@ function AddItemForm() {
       if (itemError) throw itemError;
 
       if (imageUrls.length > 0) {
-        // Гирифтани Embedding (кобани ҳамаи ҷойҳои имконпазир)
-        let itemEmbedding = aiSuggestions?.embedding || aiSuggestions?.analysis?.embedding;
-        
-        console.log("AI Response Raw Data:", aiSuggestions);
-        console.log("Detected Embedding:", itemEmbedding ? "YES (Length: " + itemEmbedding.length + ")" : "NO (null)");
-
-        const imageRecords = imageUrls.map((url, index) => {
-          // Барои Supabase JS Client мо бояд массив фиристем [0.1, 0.2, ...]
-          // Танҳо ба сурати аввал Embedding-ро мечаспонем
-          const vectorData = (index === 0 && Array.isArray(itemEmbedding)) ? itemEmbedding : null;
-
+        const imageRecords = imageUrls.map((url) => {
           return { 
             item_id: item.id, 
             image_url: url,
-            embedding: vectorData
+            embedding: null 
           };
         });
 
-        console.log("Attempting to save image records with raw vector array...");
         const { error: imagesError } = await supabase.from('item_images').insert(imageRecords);
         
         if (imagesError) {
-          console.error("CRITICAL DATABASE ERROR:", imagesError.message, imagesError.details);
-          toast.error("Database rejected AI Vector: " + imagesError.message);
+          console.error("DATABASE ERROR:", imagesError.message);
         } else {
-          console.log("SUCCESS: Embedding vector saved to Supabase!");
+          supabase.functions.invoke('generate-embedding', {
+            body: { 
+                item_id: item.id, 
+                text: `${itemData.title} ${itemData.description}` 
+            }
+          }).catch(err => console.error("Background embedding failed:", err));
         }
       }
 
@@ -605,7 +642,12 @@ function AddItemForm() {
                     </div>
                     <Button 
                       variant="outline" 
-                      onClick={() => setStep(1)} 
+                      onClick={() => {
+                        // Агар aiSuggestions мавҷуд бошад, пас хатогӣ дар матн аст (ба қадами 4)
+                        // Агар не, пас хатогӣ дар сурат аст (ба қадами 1)
+                        setStep(aiSuggestions ? 4 : 1);
+                        setModerationStatus('idle');
+                      }} 
                       className="rounded-xl font-bold uppercase text-[10px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100"
                     >
                       {t('ai_steps.step5_fix_btn')}
