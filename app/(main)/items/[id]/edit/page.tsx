@@ -1,10 +1,7 @@
 /**
- * Ин саҳифа барои таҳрир кардани эълон ҳаст (Edit Page).
- * Агар корбар дар эълонаш хато карда бошад ё суратҳои нав илова кардан хоҳад,
- * вай метавонад аз ин ҷо ҳама чизро нав кунад.
- */
-
-"use client";
+ // Ин саҳифа барои таҳрир кардани эълон ҳаст (Edit Page).
+ // Оптимизатсияшуда барои суръат ва сифати AI.
+ "use client";
 
 import { useEffect, useState, use } from "react"; // Барои кор бо стейт ва эффектҳо
 import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
@@ -390,6 +387,11 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
 
         await supabase.from('item_images').delete().eq('item_id', id);
         
+        const imageRecords = finalImageUrls.map(url => ({
+          item_id: id,
+          image_url: url
+        }));
+
         const { error: imagesError } = await supabase.from('item_images').insert(imageRecords);
         if (imagesError) console.error("DATABASE ERROR (item_images):", imagesError.message);
       }
