@@ -1,12 +1,16 @@
 {
+  "id": "/",
   "name": "juyo",
   "short_name": "juyo",
   "description": "Платформа барои ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
-  "orientation": "portrait",
+  "theme_color": "#09090b",
+  "orientation": "portrait-primary",
+  "lang": "tg",
+  "categories": ["utilities", "social", "lifestyle"],
   "icons": [
     {
       "src": "/logo.png",
@@ -24,7 +28,21 @@
       "src": "/apple-touch-icon.png",
       "sizes": "180x180",
       "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ]
 }

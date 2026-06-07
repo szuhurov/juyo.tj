@@ -40,7 +40,10 @@ export async function generateMetadata() {
     },
     description: t.seoDesc,
     manifest: "/manifest.json",
-    themeColor: "#ffffff",
+    themeColor: [
+      { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+      { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    ],
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
@@ -61,7 +64,11 @@ export async function generateMetadata() {
       "find lost items",
       "Dushanbe",
     ],
-    authors: [{ name: "JUYO Team" }],
+    applicationName: "juyo",
+    authors: [{ name: "juyo team" }],
+    verification: {
+      google: "OlHxk_CFMu0ekUQbcbj9aaTRk4bn_kCIoR_7PCNO8L4",
+    },
     metadataBase: new URL("https://juyo.tj"),
     alternates: {
       canonical: "/",
@@ -80,7 +87,7 @@ export async function generateMetadata() {
             ? "en_US"
             : "tg_TJ",
       url: "https://juyo.tj",
-      siteName: "JUYO",
+      siteName: "juyo",
       title: t.seoTitle,
       description: t.seoDesc,
       images: [
@@ -143,10 +150,41 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "WebSite",
-              "name": "juyo",
-              "url": "https://juyo.tj",
-              "description": t.seoDesc,
+              "@graph": [
+                {
+                  "@type": "WebSite",
+                  "@id": "https://juyo.tj/#website",
+                  "name": "juyo",
+                  "alternateName": "juyo.tj",
+                  "url": "https://juyo.tj",
+                  "description": t.seoDesc,
+                  "inLanguage": ["tg", "ru", "en"],
+                  "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": {
+                      "@type": "EntryPoint",
+                      "urlTemplate": "https://juyo.tj/?q={search_term_string}",
+                    },
+                    "query-input": "required name=search_term_string",
+                  },
+                },
+                {
+                  "@type": "Organization",
+                  "@id": "https://juyo.tj/#organization",
+                  "name": "juyo",
+                  "url": "https://juyo.tj",
+                  "logo": {
+                    "@type": "ImageObject",
+                    "url": "https://juyo.tj/logo.png",
+                    "width": 512,
+                    "height": 512,
+                  },
+                  "areaServed": {
+                    "@type": "Country",
+                    "name": "Tajikistan",
+                  },
+                },
+              ],
             }),
           }}
         />

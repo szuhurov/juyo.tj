@@ -6,18 +6,19 @@
 
 "use client";
 
-import { useState, Suspense, useEffect, useMemo } from "react"; 
-import { ItemService, CATEGORIES } from "@/lib/services/item-service"; 
-import { ItemCard } from "@/components/item-card"; 
-import { useLanguage } from "@/lib/language-context"; 
-import { cn } from "@/lib/utils"; 
-import { Skeleton } from "@/components/ui/skeleton"; 
-import { useSearchParams } from "next/navigation"; 
-import { useItems } from "@/lib/hooks/use-items"; 
-import { useQueryClient } from "@tanstack/react-query"; 
+import { useState, Suspense, useEffect, useMemo } from "react";
+import { ItemService, CATEGORIES } from "@/lib/services/item-service";
+import { ItemCard } from "@/components/item-card";
+import { useLanguage } from "@/lib/language-context";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSearchParams } from "next/navigation";
+import { useItems, useSavedItems } from "@/lib/hooks/use-items";
+import { useQueryClient } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@clerk/nextjs";
 
 function HomeContent() {
   const { t } = useLanguage();
@@ -25,11 +26,25 @@ function HomeContent() {
   const searchQuery = searchParams.get('q') || "";
   const queryClient = useQueryClient();
   const { ref, inView } = useInView();
-  
+  const { userId, getToken } = useAuth();
+
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [visualSearchResults, setVisualSearchResults] = useState<any[] | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!userId) { setToken(null); return; }
+    getToken({ template: 'supabase' }).then(t => setToken(t));
+  }, [userId, getToken]);
+
+  // Як query барои ҳамаи saved IDs — бе N+1
+  const { data: savedItemsList = [] } = useSavedItems(userId ?? undefined, token);
+  const savedItemIds = useMemo(
+    () => new Set(savedItemsList.map((i: any) => i.id as string)),
+    [savedItemsList]
+  );
 
   const filters = useMemo(() => ({ 
     category: category === "All" ? undefined : category,
@@ -217,7 +232,7 @@ function HomeContent() {
             {/* Версияи Desktop ва Mobile: Рӯйхати умумӣ */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
               {displayedItems.map((item, index) => (
-                <ItemCard key={item.id} item={item} index={index} />
+                <ItemCard key={item.id} item={item} index={index} savedItemIds={savedItemIds} />
               ))}
             </div>
 

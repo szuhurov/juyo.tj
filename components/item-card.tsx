@@ -32,20 +32,21 @@ import {
 } from "@/components/ui/dialog"; // Тирезаҳои огоҳӣ
 
 // Пропҳои компонент
-export function ItemCard({ item, index = 0 }: { item: Item, index?: number }) {
+export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?: number, savedItemIds?: Set<string> }) {
   // Хукҳо ва лоигкаи асосӣ
   const { t } = useLanguage();
   const router = useRouter();
   const { getToken, userId } = useAuth();
-  
+
   // Состояниеҳо (States) барои идоракунии UI
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isSaved, setIsSaved] = useState(false);
+  // isSaved аз prop savedItemIds ҳисоб мешавад — бе query ба DB
+  const [isSaved, setIsSaved] = useState(() => savedItemIds?.has(item.id) ?? false);
   const [isToggling, setIsToggling] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  
+
   // Состояние барои фаъол будани ротатсияи суратҳо
   const [isHovered, setIsHovered] = useState(false);
 
@@ -53,55 +54,17 @@ export function ItemCard({ item, index = 0 }: { item: Item, index?: number }) {
   const isOwner = userId === item.user_id;
   const exactDate = format(new Date(item.created_at), "dd.MM.yyyy");
 
-  // Агар сурат набошад, плейсхолдер мемонем
-  const images = item.images && item.images.length > 0 
-    ? item.images 
-    : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
-
-  // Эффект барои санҷиши статуси захирашуда ва пеш-боркунӣ
+  // Синхронизатсияи isSaved ҳангоми иваз шудани savedItemIds аз берун
   useEffect(() => {
-    if (userId) {
-      checkSavedStatus();
+    if (savedItemIds) {
+      setIsSaved(savedItemIds.has(item.id));
     }
-  }, [item.id, userId]);
+  }, [savedItemIds, item.id]);
 
-  // Функсия барои нишон додани модал агар эълон блок шуда бошад
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Акнун мо танҳо иҷозат медиҳем, ки истифодабаранда ба саҳифа гузарад
-    // Модал дар саҳифаи тафсилот (ItemDetailsClient) нишон дода мешавад
-  };
-
-  // Санҷиши ин ки эълон дар рӯйхати "маъқулдоштаҳо" ҳаст ё не (База)
-  const checkSavedStatus = async () => {
-    if (!userId || !item?.id) return;
-    
-    try {
-      const token = await getToken({ template: 'supabase' });
-      if (!token) return;
-      
-      const supabase = createClerkSupabaseClient(token);
-      const { data, error } = await supabase
-        .from('saved_items')
-        .select('item_id')
-        .eq('user_id', userId)
-        .eq('item_id', item.id)
-        .maybeSingle();
-      
-      if (error) {
-        // Агар хатогии Supabase бошад, танҳо дар ҳолати лозим лог мекунем
-        if (error.code !== 'PGRST116') { // maybeSingle empty result is fine
-          console.warn("Supabase check error:", error.message);
-        }
-        setIsSaved(false);
-        return;
-      }
-      
-      setIsSaved(!!data);
-    } catch (e: any) {
-      // Хомӯш кардани хатогиҳои ночиз дар консол
-      setIsSaved(false);
-    }
-  };
+  // Агар сурат набошад, плейсхолдер мемонем
+  const images = item.images && item.images.length > 0
+    ? item.images
+    : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
 
   // Логикаи сав/ансав (save/unsave)
   const toggleSave = async (e: React.MouseEvent) => {
@@ -346,13 +309,15 @@ export function ItemCard({ item, index = 0 }: { item: Item, index?: number }) {
 
           {/* Тугмаҳои амалиёт (Actions) */}
           <div className="absolute top-2 right-2 z-20 flex flex-col gap-1.5 items-end">
-            <button 
+            <button
               onClick={toggleSave}
               disabled={isToggling}
+              aria-label={isSaved ? t('removedFromSaved') : t('addedToSaved')}
+              aria-pressed={isSaved}
               className={cn(
                 "p-1.5 sm:p-2 rounded-full transition-all shadow-md border border-white/10",
-                isSaved 
-                  ? "bg-emerald-500 text-white" 
+                isSaved
+                  ? "bg-emerald-500 text-white"
                   : "bg-black/50 text-white hover:bg-black/70",
                 isOwner && "sm:hidden"
               )}

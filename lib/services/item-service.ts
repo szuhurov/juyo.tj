@@ -61,12 +61,12 @@ export const ItemService = {
     const to = from + pageSize - 1;
     query = query.range(from, to);
 
-    // Агар ID-и корбар бошад, танҳо эълонҳои ҳамон корбарро нишон медиҳем (барои Профил)
     if (user_id) {
       query = query.eq('user_id', user_id);
     } else {
-      // Барои лентаи умумӣ: танҳо эълонҳои тасдиқшуда ва ҳалнашударо нишон медиҳем
-      query = query.or('is_resolved.eq.false,is_resolved.is.null').or('moderation_status.eq.approved,moderation_status.is.null');
+      query = query
+        .eq('moderation_status', 'approved')
+        .or('is_resolved.eq.false,is_resolved.is.null');
     }
 
     // Филтр аз рӯи категория
@@ -131,27 +131,25 @@ export const ItemService = {
    */
   async getItemDetails(id: string, supabaseClient?: any) {
     const client = supabaseClient || supabase;
-    
-    const { data, error } = await client
+
+    // Query 1: item + images (FK-и мустақим мавҷуд аст, эмбед кор мекунад)
+    const { data: item, error } = await client
       .from('items')
       .select('*, images:item_images(image_url)')
       .eq('id', id)
       .single();
 
     if (error) throw error;
-    
-    // Гирифтани маълумоти соҳиби эълон аз View-и бехатар
-    const { data: profile, error: profileError } = await client
+    if (!item) return null;
+
+    // Query 2: profile аз VIEW ба таври алоҳида (барои пешгирии мушкили FK дар VIEW)
+    const { data: profile } = await client
       .from('public_profiles')
       .select('first_name, last_name, avatar_url')
-      .eq('id', data.user_id)
-      .single();
+      .eq('id', item.user_id)
+      .maybeSingle();
 
-    if (profileError) {
-      console.warn("Profile fetch error (public_profiles):", profileError.message);
-    }
-
-    return { ...data, profiles: profile || null } as Item;
+    return { ...item, profiles: profile ?? null } as Item;
   },
 
   /**

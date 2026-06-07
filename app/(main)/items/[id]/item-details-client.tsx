@@ -32,13 +32,14 @@ import {
 import { useItemDetails } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 
-export default function ItemDetailsClient({ id }: { id: string }) {
+export default function ItemDetailsClient({ id, initialItem }: { id: string; initialItem?: Item | null }) {
   const { t } = useLanguage();
   const router = useRouter();
   const { getToken, userId, isLoaded } = useAuth();
   const queryClient = useQueryClient();
   
-  const [token, setToken] = useState<string | null>(null);
+  // undefined = Clerk ҳанӯз auth-ро санҷидааст, null = вуруд накарда, string = вуруд кардааст
+  const [token, setToken] = useState<string | null | undefined>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
@@ -57,7 +58,7 @@ export default function ItemDetailsClient({ id }: { id: string }) {
     }
   }, [isLoaded, getToken]);
 
-  const { data: item, isLoading: loading } = useItemDetails(id, token);
+  const { data: item, isLoading: loading } = useItemDetails(id, token, initialItem);
   const isOwner = userId === item?.user_id;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -208,27 +209,29 @@ export default function ItemDetailsClient({ id }: { id: string }) {
     } catch (e) { toast.error(t('error')); } finally { setIsActionLoading(false); setShowResolvedConfirm(false); }
   };
 
-  // Агар маълумот умуман набошад ва боргирӣ рафта истода бошад
-  if (loading && !item) {
-    return (
-      <div className="mx-auto max-w-6xl md:pt-8 px-4 py-4 md:px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
-          <Skeleton className="w-full aspect-square rounded-[32px]" />
-          <div className="space-y-6 pt-10 md:pt-0">
-            <Skeleton className="h-12 w-3/4" />
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-24 w-full" />
-            <div className="flex gap-4">
-              <Skeleton className="h-12 w-12 rounded-xl" />
-              <Skeleton className="h-12 w-12 rounded-xl" />
+  if (!item) {
+    // Skeleton нишон медиҳем агар: auth ҳанӯз муайян нашудааст ё query кор мекунад
+    if (token === undefined || loading) {
+      return (
+        <div className="mx-auto max-w-6xl md:pt-8 px-4 py-4 md:px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
+            <Skeleton className="w-full aspect-square rounded-[32px]" />
+            <div className="space-y-6 pt-10 md:pt-0">
+              <Skeleton className="h-12 w-3/4" />
+              <Skeleton className="h-6 w-1/2" />
+              <Skeleton className="h-24 w-full" />
+              <div className="flex gap-4">
+                <Skeleton className="h-12 w-12 rounded-xl" />
+                <Skeleton className="h-12 w-12 rounded-xl" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
+    }
+    // Танҳо пас аз тайёр шудани auth ва анҷоми query "ёфт нашуд" нишон медиҳем
+    return <div className="container mx-auto px-4 py-20 text-center"><h1 className="text-2xl font-bold">{t('itemNotFound')}</h1></div>;
   }
-
-  if (!item && !loading) return <div className="container mx-auto px-4 py-20 text-center"><h1 className="text-2xl font-bold">{t('itemNotFound')}</h1></div>;
 
   return (
     <TooltipProvider>

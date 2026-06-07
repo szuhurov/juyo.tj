@@ -75,13 +75,29 @@ Deno.serve(async (req) => {
 
     const embedding = embData.data[0].embedding;
 
-    // 3. GLOBAL VECTOR SEARCH (SECURITY DEFINER bypasses RLS)
-    const { data: similarItems, error: searchError } = await supabase.rpc('match_item_images', {
-      query_embedding: embedding,
-      match_threshold: 0.50, // Increased to 0.50 for stricter, higher-quality matches
-      match_count: 20,
-      p_type: 'all'
-    });
+    // 3. GLOBAL VECTOR SEARCH — search across both lost and found items
+    // p_type must match the ENUM values in schema: 'lost' | 'found'
+    // We run two searches and merge results for global coverage
+    const [lostResults, foundResults] = await Promise.all([
+      supabase.rpc('match_item_images', {
+        query_embedding: embedding,
+        match_threshold: 0.50,
+        match_count: 10,
+        p_type: 'lost',
+      }),
+      supabase.rpc('match_item_images', {
+        query_embedding: embedding,
+        match_threshold: 0.50,
+        match_count: 10,
+        p_type: 'found',
+      }),
+    ]);
+
+    const searchError = lostResults.error || foundResults.error;
+    const similarItems = [
+      ...(lostResults.data || []),
+      ...(foundResults.data || []),
+    ].sort((a: any, b: any) => b.similarity - a.similarity).slice(0, 20);
 
     if (searchError) throw searchError;
 

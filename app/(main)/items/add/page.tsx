@@ -78,54 +78,45 @@ function AddItemForm() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
-    let interval: any;
-    let timer: any;
-    let cycle: any;
-
-    if (moderationStatus === 'checking') {
-      const technicalSteps = [
-        t('ai_steps.scanning_pixels'),
-        t('ai_steps.detecting_features'),
-        t('ai_steps.checking_safety'),
-        t('ai_steps.matching_categories'),
-        t('ai_steps.optimizing_description'),
-        t('ai_steps.forensic_engine')
-      ];
-
-      // Initial message
-      setScanMessage(t('ai_steps.brain_started'));
-      
-      let stepCount = 0;
-      interval = setInterval(() => {
-        stepCount++;
-        
-        // Cycle: Technical Step -> technical Step -> Please Wait -> technical Step -> technical Step -> Do Not Exit
-        if (stepCount % 6 === 3) {
-          setScanMessage(t('ai_steps.please_wait'));
-        } else if (stepCount % 6 === 0) {
-          setScanMessage(t('ai_steps.do_not_exit'));
-        } else {
-          // Select technical step, excluding the "brain_started" message
-          const techIndex = (Math.floor(stepCount / 2)) % technicalSteps.length;
-          setScanMessage(technicalSteps[techIndex]);
-        }
-      }, 3000);
-
-      timer = setInterval(() => {
-        setElapsedSeconds(prev => Math.min(prev + 1, 120));
-      }, 1000);
-
-    } else {
+    if (moderationStatus !== 'checking') {
       setElapsedSeconds(0);
       setActiveImageIndex(0);
       setScanMessage("");
+      return;
     }
-    
+
+    const technicalSteps = [
+      t('ai_steps.scanning_pixels'),
+      t('ai_steps.detecting_features'),
+      t('ai_steps.checking_safety'),
+      t('ai_steps.matching_categories'),
+      t('ai_steps.optimizing_description'),
+      t('ai_steps.forensic_engine'),
+    ];
+
+    setScanMessage(t('ai_steps.brain_started'));
+    let stepCount = 0;
+
+    const interval = setInterval(() => {
+      stepCount++;
+      if (stepCount % 6 === 3) {
+        setScanMessage(t('ai_steps.please_wait'));
+      } else if (stepCount % 6 === 0) {
+        setScanMessage(t('ai_steps.do_not_exit'));
+      } else {
+        setScanMessage(technicalSteps[Math.floor(stepCount / 2) % technicalSteps.length]);
+      }
+    }, 3000);
+
+    const timer = setInterval(() => {
+      setElapsedSeconds(prev => Math.min(prev + 1, 120));
+    }, 1000);
+
     return () => {
-      if (interval) clearInterval(interval);
-      if (timer) clearInterval(timer);
+      clearInterval(interval);
+      clearInterval(timer);
     };
-  }, [moderationStatus, previews.length, t]);
+  }, [moderationStatus, t]);
 
   // Боргузории рақами телефон аз профил
   useEffect(() => {

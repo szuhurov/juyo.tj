@@ -4,7 +4,15 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
   const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
   
   try {
@@ -111,10 +119,16 @@ Return JSON ONLY: { "is_safe": boolean, "reason": "Short reason in Tajik or null
       updated_at: new Date().toISOString() 
     }).eq('id', itemId)
 
-    return new Response(JSON.stringify({ success: true, status: finalStatus }), { status: 200 })
+    return new Response(JSON.stringify({ success: true, status: finalStatus }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
 
   } catch (error: any) {
     console.error("OpenAI Moderation Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

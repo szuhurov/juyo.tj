@@ -21,25 +21,28 @@ export const ITEM_KEYS = {
   safetyItems: (userId: string) => [...ITEM_KEYS.safety(), userId] as const,
 };
 
-// Хук барои гирифтани рӯйхати умумии ашёҳо бо филтрҳо ва Infinite Scroll
-export function useItems(filters?: any) {
-  const pageSize = 20;
+const PAGE_SIZE = 20;
+const MAX_PAGES = 10; // Ҳадди аксари саҳифаҳо дар хотира (200 ашё)
 
+export function useItems(filters?: any) {
   return useInfiniteQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
-    queryFn: ({ pageParam = 0 }) => 
-      ItemService.getItems({ ...filters, page: pageParam, pageSize }),
+    queryFn: ({ pageParam = 0 }) =>
+      ItemService.getItems({ ...filters, page: pageParam, pageSize: PAGE_SIZE }),
     getNextPageParam: (lastPage, allPages) => {
-      // Агар саҳифаи охирин пур бошад, саҳифаи навбатиро иҷозат медиҳем
-      return lastPage.length === pageSize ? allPages.length : undefined;
+      if (allPages.length >= MAX_PAGES) return undefined;
+      return lastPage.length === PAGE_SIZE ? allPages.length : undefined;
     },
     initialPageParam: 0,
-    staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
+    staleTime: 1000 * 60 * 5,
+    maxPages: MAX_PAGES,
   });
 }
 
 // Хук барои гирифтани маълумоти муфассали як ашё
-export function useItemDetails(id: string, token?: string | null) {
+// token: undefined = auth ҳанӯз муайян нашудааст, null = вуруд накарда, string = вуруд кардааст
+// initialData: маълумоти server-side (барои SSR/SEO — Google фавран мебинад)
+export function useItemDetails(id: string, token: string | null | undefined, initialData?: Item | null) {
   const queryClient = useQueryClient();
 
   return useQuery({
@@ -52,12 +55,13 @@ export function useItemDetails(id: string, token?: string | null) {
       }
       return ItemService.getItemDetails(id, supabaseClient);
     },
-    // Усули "Pro": Истифодаи маълумот аз ҳамаи кэшҳо (Home, Profile, Saved) барои боршавии лаҳзавӣ
-    placeholderData: () => {
-      // Функцияи ёрирасон барои ҷустуҷӯи ашё дар кэш
+    // Маълумоти server-side фавран нишон дода мешавад (SSR → Google мебинад)
+    initialData: initialData ?? undefined,
+    initialDataUpdatedAt: initialData ? 0 : undefined, // 0 = stale, refetch мешавад
+    // Истифодаи маълумоти кэш (Home, Profile, Saved) барои намоиши лаҳзавӣ то query тайёр шавад
+    placeholderData: initialData ? undefined : () => {
       const findItem = (data: any) => {
         if (!data) return undefined;
-        // Агар ин InfiniteQuery бошад (дорои 'pages')
         if (data.pages && Array.isArray(data.pages)) {
           for (const page of data.pages) {
             if (Array.isArray(page)) {
@@ -66,28 +70,24 @@ export function useItemDetails(id: string, token?: string | null) {
             }
           }
         }
-        // Агар ин Query-и муқаррарӣ бошад (массиви оддӣ)
         if (Array.isArray(data)) {
           return data.find((i: Item) => i.id === id);
         }
         return undefined;
       };
 
-      // 1. Ҷустуҷӯ дар рӯйхатҳои умумӣ (Home)
       const allLists = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.lists() });
       for (const [_, list] of allLists) {
         const item = findItem(list);
         if (item) return item;
       }
 
-      // 2. Ҷустуҷӯ дар эълонҳои худи корбар (My Posts)
       const userItems = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.user() });
       for (const [_, list] of userItems) {
         const item = findItem(list);
         if (item) return item;
       }
 
-      // 3. Ҷустуҷӯ дар эълонҳои захирашуда (Saved)
       const savedItems = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.saved() });
       for (const [_, list] of savedItems) {
         const item = findItem(list);
@@ -96,8 +96,10 @@ export function useItemDetails(id: string, token?: string | null) {
 
       return undefined;
     },
-    enabled: !!id,
-    staleTime: 1000 * 30, // 30 сония маълумоти кэшшуда "тоза" ҳисоб мешавад
+    // Фақат пас аз муайян шудани ҳолати auth query иҷро мешавад.
+    // Агар зудтар иҷро шавад, anon client эълонҳои pending/rejected-ро дида наметавонад.
+    enabled: !!id && token !== undefined,
+    staleTime: 1000 * 30,
   });
 }
 
@@ -134,12 +136,8 @@ export function useSavedItems(userId?: string, token?: string | null) {
   });
 }
 
-/**
- * Хук барои санҷидани он ки оё ашё захира шудааст.
- * Ин хук аз кэши useSavedItems истифода мебарад ва дархости зиёдатӣ намекунад.
- */
-export function useIsItemSaved(itemId: string, userId?: string) {
-  const { data: savedItems = [] } = useSavedItems(userId);
+export function useIsItemSaved(itemId: string, userId?: string, token?: string | null) {
+  const { data: savedItems = [] } = useSavedItems(userId, token);
   return savedItems.some((item: any) => item.id === itemId);
 }
 

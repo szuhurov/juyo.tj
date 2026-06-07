@@ -57,11 +57,9 @@ CREATE TABLE IF NOT EXISTS public.items (
     moderation_result TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    -- Сутуни махсус барои ҷустуҷӯи тез (Full Text Search)
     search_vector tsvector GENERATED ALWAYS AS (
         setweight(to_tsvector('simple', coalesce(title, '')), 'A') ||
         setweight(to_tsvector('simple', coalesce(description, '')), 'B') ||
-        setweight(to_tsvector('simple', coalesce(phone_number, '')), 'C') ||
         setweight(to_tsvector('simple', coalesce(reward, '')), 'C')
     ) STORED
 );
@@ -83,7 +81,7 @@ CREATE OR REPLACE FUNCTION match_item_images (
   query_embedding vector(1536),
   match_threshold float,
   match_count int,
-  p_type text
+  p_type text  -- 'lost', 'found', or 'all' (matches both)
 )
 RETURNS TABLE (
   id UUID,
@@ -106,8 +104,10 @@ BEGIN
     i.description
   FROM public.item_images img
   JOIN public.items i ON img.item_id = i.id
-  WHERE i.type::text = p_type
+  WHERE (p_type = 'all' OR i.type::text = p_type)
+    AND i.moderation_status = 'approved'
     AND i.is_resolved = false
+    AND img.embedding IS NOT NULL
     AND 1 - (img.embedding <=> query_embedding) > match_threshold
   ORDER BY img.embedding <=> query_embedding
   LIMIT match_count;
@@ -129,10 +129,10 @@ CREATE TABLE IF NOT EXISTS public.safety_box (
     item_name TEXT NOT NULL,
     description TEXT,
     category TEXT,
-    type TEXT,
+    type item_type NOT NULL DEFAULT 'lost',
     reward TEXT,
     phone_number TEXT,
-    images TEXT[], 
+    images TEXT[],
     views INTEGER DEFAULT 0,
     date DATE,
     text_moderated BOOLEAN DEFAULT FALSE,
@@ -148,6 +148,31 @@ CREATE INDEX IF NOT EXISTS idx_items_category ON public.items(category);
 CREATE INDEX IF NOT EXISTS idx_items_type ON public.items(type);
 CREATE INDEX IF NOT EXISTS idx_items_is_resolved ON public.items(is_resolved);
 CREATE INDEX IF NOT EXISTS idx_items_created_at ON public.items(created_at DESC);
+-- Compound index for the public feed query (moderation + resolved filter)
+CREATE INDEX IF NOT EXISTS idx_items_feed ON public.items(moderation_status, is_resolved, created_at DESC);
+-- Compound index for user item lookups
+CREATE INDEX IF NOT EXISTS idx_items_user_created ON public.items(user_id, created_at DESC);
+
+-- Trigger to auto-update updated_at on items
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE TRIGGER trg_items_updated_at
+BEFORE UPDATE ON public.items
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE OR REPLACE TRIGGER trg_safety_box_updated_at
+BEFORE UPDATE ON public.safety_box
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+CREATE OR REPLACE TRIGGER trg_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- RPC для просмотров
 CREATE OR REPLACE FUNCTION public.increment_item_views(item_id UUID)

@@ -47,13 +47,9 @@ export const ProfileService = {
         .select()
         .single();
 
-      if (error) {
-        console.error("Supabase Profile Update Error:", error);
-        throw error;
-      }
+      if (error) throw error;
       return data;
     } catch (err) {
-      console.error("Caught Profile Update Error:", err);
       throw err;
     }
   },

@@ -19,7 +19,6 @@ Deno.serve(async (req) => {
       throw new Error("Missing item_id or text");
     }
 
-    console.log(`Generating embedding for item ${item_id}...`);
 
     // 1. Generate Embedding from OpenAI
     const embRes = await fetch("https://api.openai.com/v1/embeddings", {
@@ -63,7 +62,6 @@ Deno.serve(async (req) => {
 
     if (updateError) throw updateError;
 
-    console.log(`Successfully updated embedding for item ${item_id}`);
 
     return new Response(JSON.stringify({ success: true }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

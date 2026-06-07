@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title,
         description,
         url: `https://juyo.tj/items/${id}`,
-        siteName: "JUYO.TJ",
+        siteName: "juyo",
         images: [
           {
             url: imageUrl,
@@ -94,14 +94,43 @@ function ItemDetailSkeleton() {
 
 export default async function ItemDetailsPage({ params }: Props) {
   const { id } = await params;
-  
-  // Мо санҷиши серверӣ ва notFound()-ро инҷо намемонем, 
-  // то ки Client Component имкони гирифтани эълонро бо токени корбар дошта бошад.
-  // Ин барои он лозим аст, ки соҳиби эълон тавонад эълони "Rejected"-и худро бинад.
+
+  // Server-side fetch: anon client (танҳо approved item-ҳоро мебинад)
+  // Ин барои Google crawler аст — мӯҳтавои саҳифа дар HTML аввалия мавҷуд аст
+  let initialItem = null;
+  let jsonLd: object | null = null;
+  try {
+    initialItem = await ItemService.getItemDetails(id);
+    if (initialItem) {
+      const cookieStore = await cookies();
+      const locale = cookieStore.get("juyo-locale")?.value || "tg";
+      const t = (translations as any)[locale] || translations.tg;
+      jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": `${initialItem.type === 'lost' ? t.lost : t.found}: ${initialItem.title}`,
+        "description": initialItem.description?.substring(0, 200),
+        "url": `https://juyo.tj/items/${id}`,
+        "datePublished": initialItem.created_at,
+        "image": initialItem.images?.[0]?.image_url || "https://juyo.tj/logo.png",
+        "isPartOf": { "@id": "https://juyo.tj/#website" },
+      };
+    }
+  } catch {
+    // Structured data ихтиёрӣ аст — хатогӣ рендерро манъ намекунад
+  }
 
   return (
-    <Suspense fallback={<ItemDetailSkeleton />}>
-      <ItemDetailsClient id={id} />
-    </Suspense>
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
+      <Suspense fallback={<ItemDetailSkeleton />}>
+        <ItemDetailsClient id={id} initialItem={initialItem} />
+      </Suspense>
+    </>
   );
 }

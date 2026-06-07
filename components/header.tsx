@@ -75,7 +75,7 @@ export function Header() {
   const navLinks = [
     { href: "/", value: "home", label: t('home'), icon: Home },
     { href: "/profile", value: "profile", label: t('profile'), icon: User },
-    { href: "/profile?tab=qr", value: "qr", label: "QR-коди ман", icon: QrCode },
+    { href: "/profile?tab=qr", value: "qr", label: t('qrMyCode'), icon: QrCode },
   ];
 
   // Пешгирии Hydration Mismatch

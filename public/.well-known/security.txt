@@ -1,0 +1,5 @@
+Contact: mailto:security@juyo.tj
+Expires: 2027-01-01T00:00:00.000Z
+Preferred-Languages: tg, ru, en
+Canonical: https://juyo.tj/.well-known/security.txt
+Policy: https://juyo.tj/privacy
