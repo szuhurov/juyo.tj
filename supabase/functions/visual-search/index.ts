@@ -81,14 +81,14 @@ Deno.serve(async (req) => {
     const [lostResults, foundResults] = await Promise.all([
       supabase.rpc('match_item_images', {
         query_embedding: embedding,
-        match_threshold: 0.50,
-        match_count: 10,
+        match_threshold: 0.35,
+        match_count: 15,
         p_type: 'lost',
       }),
       supabase.rpc('match_item_images', {
         query_embedding: embedding,
-        match_threshold: 0.50,
-        match_count: 10,
+        match_threshold: 0.35,
+        match_count: 15,
         p_type: 'found',
       }),
     ]);

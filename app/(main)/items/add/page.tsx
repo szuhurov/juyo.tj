@@ -372,10 +372,13 @@ function AddItemForm() {
         if (imagesError) {
           console.error("DATABASE ERROR:", imagesError.message);
         } else {
+          // Барои visual search мувофиқати беҳтар: forensic тавсиф embed мешавад
+          // (AI forensic description ва visual search ҳарду бо забони англисӣ кор мекунанд)
+          const embeddingText = aiSuggestions?.forensic || `${itemData.title} ${itemData.description}`;
           supabase.functions.invoke('generate-embedding', {
-            body: { 
-                item_id: item.id, 
-                text: `${itemData.title} ${itemData.description}` 
+            body: {
+                item_id: item.id,
+                text: embeddingText
             }
           }).catch(err => console.error("Background embedding failed:", err));
         }

@@ -79,15 +79,10 @@ export const ItemService = {
       query = query.eq('type', type);
     }
 
-    // Ҷустуҷӯи босифат бо истифода аз Full Text Search
+    // Ҷустуҷӯ дар title ва description бо ilike
     if (search) {
-      // Ифодаи ':*' дар охири калима имкон медиҳед, ки ҳатто 1-2 ҳарфи аввалро ёбем
-      // Мо фармони to_tsquery-ро мустақиман бо истифода аз 'simple' иҷро мекунем
-      const formattedSearch = search.trim().split(/\s+/).map(word => `${word}:*`).join(' & ');
-      
-      query = query.textSearch('search_vector', formattedSearch, { 
-        config: 'simple'
-      });
+      const s = search.trim();
+      query = query.or(`title.ilike.%${s}%,description.ilike.%${s}%`);
     }
 
     const { data, error } = await query;

@@ -399,15 +399,15 @@ export default function EditItemPage({ params }: { params: Promise<{ id: string 
       }
 
       // 4. ТАҶДИДИ ВЕКТОРИ ҶУСТУҶӮ (Vector/Embedding Update)
-      // Агар матн ё аксҳо иваз шуда бошанд, мо бояд эмбеддингро аз нав созем
-      if (textChanged || imagesChanged) {
-        supabase.functions.invoke('generate-embedding', {
-          body: { 
-              item_id: id, 
-              text: `${title} ${description}` 
-          }
-        }).catch(err => console.error("Background embedding failed (Edit):", err));
-      }
+      // Ҳамеша embedding-ро аз нав месозем, то visual search кор кунад
+      // image_url истифода мешавад барои forensic description (мувофиқтар бо visual search)
+      const firstImageUrl = finalImageUrls[0];
+      supabase.functions.invoke('generate-embedding', {
+        body: {
+          item_id: id,
+          ...(firstImageUrl ? { image_url: firstImageUrl } : { text: `${title} ${description}` })
+        }
+      }).catch(err => console.error("Background embedding failed (Edit):", err));
 
       toast.success(t('updateSuccess'));
       router.push(`/items/${id}`);
