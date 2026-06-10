@@ -252,8 +252,8 @@ export default function ScanPage() {
   return (
     <div className="fixed inset-0 bg-black text-white overflow-hidden">
 
-      {/* Камера — fullscreen */}
-      {!isNativeWebView && !error && (
+      {/* Камера — fullscreen, ҳамеша дар DOM */}
+      {!isNativeWebView && (
         <div id="reader" className="absolute inset-0 w-full h-full" />
       )}
 
