@@ -89,7 +89,10 @@ export function MobileNavbar() {
     }
   };
 
+  const prefetchedSet = new Set<string>();
   const handlePrefetch = (href: string) => {
+    if (prefetchedSet.has(href)) return;
+    prefetchedSet.add(href);
     const target = href === "/profile" ? "/profile?tab=posts" : href;
     router.prefetch(target);
   };

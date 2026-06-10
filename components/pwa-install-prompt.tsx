@@ -45,17 +45,15 @@ export function PWAInstallPrompt() {
       e.preventDefault();
       // Захира кардани ҳодиса барои истифодаи баъдӣ
       setDeferredPrompt(e);
-      // Нишон додани баннери мо пас аз чанд сония
       setTimeout(() => {
         setIsVisible(true);
-      }, 3000);
+      }, 10000);
     };
 
-    // Барои iOS мо худамон пас аз 3 сония нишон медиҳем, чунки 'beforeinstallprompt' кор намекунад
     if (isIOSDevice && !isStandalone) {
       setTimeout(() => {
         setIsVisible(true);
-      }, 3000);
+      }, 10000);
     }
 
     const handleAppInstalled = () => {

@@ -4,13 +4,9 @@
  */
 export async function compressImage(
   file: File,
-  maxWidth: number = 1200,
-  quality: number = 0.8
+  maxWidth: number = 1000,
+  quality: number = 0.75
 ): Promise<File> {
-  // Агар ҳаҷми файл аз 200KB хурд бошад, онро фишурда намекунем
-  if (file.size < 200 * 1024) {
-    return file;
-  }
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

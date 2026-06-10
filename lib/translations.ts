@@ -483,7 +483,7 @@ export const translations: Record<string, any> = {
     pwa: {
       title: '',
       desc: 'барои истифода',
-      install: 'БОРГИРӢ'
+      install: 'СКАЧАТ'
     },
     qrSecondaryModal: {
       title: 'Танзимоти амният ва тамос',

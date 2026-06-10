@@ -318,9 +318,9 @@ export default function ItemDetailsClient({ id, initialItem }: { id: string; ini
             <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none mb-6">{item?.title}</h1>
             
             {item?.type === 'lost' && item.reward && (
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 rounded-2xl p-5 mb-8 shadow-sm">
-                <p className="text-amber-600 font-black text-[10px] uppercase mb-1">{t('reward_gives_viewer')}</p>
-                <p className="text-3xl font-black text-amber-900 dark:text-amber-100">{item.reward} TJS</p>
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 rounded-2xl p-5 mb-8 shadow-sm">
+                <p className="text-emerald-600 font-black text-[10px] uppercase mb-1">{t('reward_gives_viewer')}</p>
+                <p className="text-3xl font-black text-emerald-900 dark:text-emerald-100">{item.reward} TJS</p>
               </div>
             )}
 

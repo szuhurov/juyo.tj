@@ -2,7 +2,7 @@
  * Тарҳбандии асосии барнома (Root Layout), ки сохтори умумии HTML-ро муайян мекунад.
  * Дар ин ҷо таъминкунандагони (providers) глобалӣ ва метамаълумоти SEO танзим карда мешаванд.
  */
-import type { Metadata, Viewport } from "next"; // Барои танзими маълумоти SEO ва экран
+import type { Viewport } from "next"; // Барои танзими маълумоти SEO ва экран
 import { Inter } from "next/font/google"; // Барои истифодаи шрифти Inter
 import "./globals.css"; // Пайваст кардани услубҳои асосии CSS
 import { LanguageProvider } from "@/lib/language-context"; // Барои идоракунии забони тамоми сайт
@@ -15,6 +15,7 @@ import { QueryProvider } from "@/components/query-provider"; // Барои ид�
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt"; // Пешниҳоди насби барнома
+import { SplashScreen } from "@/components/splash-screen"; // Сплейш-скрини PWA
 
 // Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣ
 const inter = Inter({
@@ -191,10 +192,6 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
-        <style dangerouslySetInnerHTML={{ __html: `
-          * { -webkit-tap-highlight-color: transparent; }
-          .no-flicker { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
-        ` }} />
         <LanguageProvider initialLocale={locale as any}>
           <ClerkLocalizationProvider>
             {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
@@ -212,6 +209,7 @@ export default async function RootLayout({
               <SpeedInsights />
               <Toaster position="top-center" richColors />
               <PWAInstallPrompt />
+              <SplashScreen />
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>

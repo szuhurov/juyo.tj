@@ -13,7 +13,7 @@ import { Item } from "@/lib/services/item-service"; // Типи маълумот
 import { Badge } from "@/components/ui/badge"; // Компоненти нишон
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { Card, CardContent, CardFooter } from "@/components/ui/card"; // Компоненти корт
-import { MapPin, Calendar, Eye, Bookmark, Pencil, Archive, Trash2, Share2, Loader2, AlertTriangle, ShieldAlert, Clock, AlertCircle, Sparkles } from "lucide-react"; // Иконкаҳо
+import { MapPin, Calendar, Bookmark, Pencil, Archive, Trash2, Share2, Loader2, AlertTriangle, ShieldAlert, Clock, AlertCircle, Sparkles } from "lucide-react"; // Иконкаҳо
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 import { format } from "date-fns"; // Барои формат кардани вақт
 import { cn } from "@/lib/utils"; // Барои классҳои CSS
@@ -209,13 +209,6 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
     }
   };
 
-  // Функсия барои пеш-боркунии акси саҳифаи навбатӣ (Image Preloading)
-  const preloadNextImage = () => {
-    if (images[0]?.image_url) {
-      const img = new window.Image();
-      img.src = images[0].image_url;
-    }
-  };
 
   return (
     <>
@@ -223,22 +216,8 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
         href={`/items/${item.id}`}
         prefetch={true}
         className="block h-fit"
-        onMouseEnter={() => {
-          setIsHovered(true);
-          preloadNextImage();
-        }}
-        onMouseLeave={() => {
-          setIsHovered(false);
-          setCurrentImageIndex(0);
-        }}
-        onPointerEnter={() => {
-          setIsHovered(true);
-          preloadNextImage();
-        }}
-        onPointerLeave={() => {
-          setIsHovered(false);
-          setCurrentImageIndex(0);
-        }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => { setIsHovered(false); setCurrentImageIndex(0); }}
       >
         <div className={cn(
           "relative aspect-square overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shimmer-bg group shadow-sm",
@@ -262,34 +241,30 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
                   "object-cover",
                   i === currentImageIndex ? "opacity-100" : "opacity-0"
                 )}
-                priority={index < 8 && i === 0} // Танҳо барои 8 корти аввал priority мемонем
+                priority={index < 12 && i === 0} // Танҳо барои 8 корти аввал priority мемонем
               />
             );
           })}
 
-          {/* Overlay (Title, Description, Date) - Darker bottom, clearer top */}
-          <div 
+          {/* Overlay (Title, Date, Reward) - Darker bottom, clearer top */}
+          <div
             className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent p-3 pt-12 flex flex-col gap-1 z-10 pointer-events-none"
           >
-            <div className="flex justify-between items-center gap-2">
-              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white drop-shadow-md">
+            {item.type === 'lost' && item.reward && (
+              <div className="flex justify-end">
+                <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[8px] sm:text-[10px] px-1.5 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap pointer-events-auto">
+                  {t('reward_gives_viewer')} {item.reward} TJS
+                </Badge>
+              </div>
+            )}
+            <div className="flex justify-between items-start gap-2">
+              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-2 leading-tight uppercase tracking-tight flex-1 min-w-0 break-words text-white drop-shadow-md">
                 {item.title}
               </h3>
               <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/60 px-1.5 py-0.5 rounded border border-white/10">
                 <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span>{exactDate}</span>
               </div>
-            </div>
-            <div className="flex justify-between items-start gap-2">
-              <p className="text-white/90 text-[10px] sm:text-xs line-clamp-1 leading-tight font-medium flex-1 drop-shadow-md">
-                {item.description}
-              </p>
-              {item.views !== undefined && item.views > 0 && (
-                <div className="flex items-center gap-1 text-white/80 text-[8px] sm:text-[10px] shrink-0 mt-0.5">
-                  <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  <span>{item.views}</span>
-                </div>
-              )}
             </div>
           </div>
           
@@ -362,13 +337,6 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
             </button>
           </div>
 
-          {item.type === 'lost' && item.reward && (
-            <div className="absolute bottom-[54px] sm:bottom-[64px] right-2 z-20 h-6 flex items-center justify-end">
-              <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[8px] sm:text-[10px] px-1.5 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
-                {t('reward_gives_viewer')} {item.reward} TJS
-              </Badge>
-            </div>
-          )}
 
           {isOwner && item.moderation_status === 'pending' && (
             <div 

@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+* { -webkit-tap-highlight-color: transparent; }
+.no-flicker { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
@@ -47,10 +50,10 @@
   }
 
   @keyframes scan-fast {
-    0% { top: 0; opacity: 0; }
+    0% { transform: translateY(0); opacity: 0; }
     10% { opacity: 1; }
     90% { opacity: 1; }
-    100% { top: 100%; opacity: 0; }
+    100% { transform: translateY(100vh); opacity: 0; }
   }
 
   @keyframes scan-overlay {
@@ -147,7 +150,9 @@
 }
 
 @keyframes logo-pop {
-  0% { transform: scale(0.85); opacity: 0; }
+  0%   { transform: scale(0.2); opacity: 0; }
+  60%  { transform: scale(1.12); opacity: 1; }
+  80%  { transform: scale(0.94); }
   100% { transform: scale(1); opacity: 1; }
 }
 
@@ -156,7 +161,7 @@
 }
 
 .animate-logo-pop {
-  animation: logo-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: logo-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 @keyframes shimmer {
@@ -179,6 +184,7 @@
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
+  will-change: transform;
   background: linear-gradient(
     90deg,
     transparent,

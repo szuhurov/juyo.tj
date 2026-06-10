@@ -65,7 +65,7 @@ export const ItemService = {
     
     let query = client
       .from('items')
-      .select('*, images:item_images(image_url)', { count: 'exact' })
+      .select('id, user_id, title, description, category, type, date, reward, created_at, is_resolved, moderation_status, images:item_images(image_url)', { count: 'exact' })
       .order('created_at', { ascending: false });
 
     // Пагинация (боркунии қисм-қисм)
@@ -206,7 +206,7 @@ export const ItemService = {
   async getSavedItems(supabaseClient: SupabaseClient, userId: string) {
     const { data, error } = await supabaseClient
       .from('saved_items')
-      .select('item_id, items(*, images:item_images(image_url))')
+      .select('item_id, items(id, user_id, title, description, category, type, date, reward, created_at, is_resolved, moderation_status, images:item_images(image_url))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 

@@ -4,6 +4,7 @@
  */
 
 import { Metadata } from "next";
+import { cache } from "react";
 import { ItemService } from "@/lib/services/item-service";
 import { translations } from "@/lib/translations";
 import { cookies } from "next/headers";
@@ -11,6 +12,8 @@ import ItemDetailsClient from "./item-details-client";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { notFound } from "next/navigation";
+
+const getItemCached = cache((id: string) => ItemService.getItemDetails(id));
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   
   try {
-    const item = await ItemService.getItemDetails(id);
+    const item = await getItemCached(id);
     if (!item) return { title: "JUYO.TJ" };
 
     const cookieStore = await cookies();
@@ -100,7 +103,7 @@ export default async function ItemDetailsPage({ params }: Props) {
   let initialItem = null;
   let jsonLd: object | null = null;
   try {
-    initialItem = await ItemService.getItemDetails(id);
+    initialItem = await getItemCached(id);
     if (initialItem) {
       const cookieStore = await cookies();
       const locale = cookieStore.get("juyo-locale")?.value || "tg";
