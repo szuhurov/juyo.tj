@@ -24,6 +24,39 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+function ScanOverlay({ size }: { size: number }) {
+  const dark = "rgba(0,0,0,0.6)";
+  return (
+    <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+      {/* SVG overlay — чоркунҷаи шаффоф дар марказ */}
+      <svg className="absolute inset-0 w-full h-full">
+        <defs>
+          <mask id="scan-mask">
+            <rect width="100%" height="100%" fill="white" />
+            <rect
+              x="50%"
+              y="50%"
+              width={size}
+              height={size}
+              rx="16"
+              fill="black"
+              style={{ transform: `translate(-${size / 2}px, -${size / 2}px)` }}
+            />
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill={dark} mask="url(#scan-mask)" />
+      </svg>
+      {/* Кунҷҳои сабз */}
+      <div className="relative" style={{ width: size, height: size }}>
+        <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-emerald-400 rounded-tl-2xl" />
+        <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-emerald-400 rounded-tr-2xl" />
+        <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-emerald-400 rounded-bl-2xl" />
+        <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-emerald-400 rounded-br-2xl" />
+      </div>
+    </div>
+  );
+}
+
 export default function ScanPage() {
   const { t, locale } = useLanguage();
   const router = useRouter();
@@ -214,27 +247,29 @@ export default function ScanPage() {
     };
   }, []);
 
-  return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-12 pb-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleBack}
-          className="rounded-full bg-zinc-900/50 hover:bg-zinc-800 text-white border border-zinc-800"
-        >
-          <ChevronLeft className="w-6 h-6" />
-        </Button>
-        <h1 className="font-black uppercase tracking-widest text-[10px] text-zinc-400">{t('scannerTitle')}</h1>
-        <div className="w-10" />
-      </div>
+  const SCAN_SIZE = 260;
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-8">
-        {/* Scanner Container — квадрат, пур аз камера */}
-        <div className="w-full max-w-md relative rounded-[2rem] overflow-hidden bg-zinc-900">
+  return (
+    <div className="fixed inset-0 bg-black text-white overflow-hidden">
+
+      {/* Камера — fullscreen */}
+      {!isNativeWebView && !error && (
+        <div id="reader" className="absolute inset-0 w-full h-full" />
+      )}
+
+      {/* Loader */}
+      {!isNativeWebView && (isInitializing || !isScanning) && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 z-10">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('loading')}</p>
+        </div>
+      )}
+
+      {/* Error / Permission */}
+      {(error || isNativeWebView) && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-6 text-center gap-8 z-10">
           {isNativeWebView ? (
-            <div className="aspect-square flex flex-col items-center justify-center bg-zinc-900 gap-6 p-8 text-center">
+            <>
               <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center animate-pulse">
                 <Camera className="w-10 h-10 text-emerald-500" />
               </div>
@@ -244,59 +279,51 @@ export default function ScanPage() {
               >
                 Дубора кушодан
               </Button>
-            </div>
+            </>
           ) : (
-            <div className="aspect-square relative">
-              <div id="reader" className="absolute inset-0 w-full h-full" />
-
-              {/* Кунҷҳои сканнер */}
-              {isScanning && (
-                <div className="absolute inset-4 pointer-events-none z-10">
-                  <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-emerald-400 rounded-tl-xl" />
-                  <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
-                  <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
-                  <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
-                </div>
-              )}
-
-              {/* Loader */}
-              {(isInitializing || !isScanning) && !error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 gap-4 z-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('loading')}</p>
-                </div>
-              )}
-
-              {/* Error */}
-              {error && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 p-6 text-center gap-8 z-20">
-                  <p className="text-sm font-bold text-zinc-300 leading-relaxed">
-                    Барои скан кардан иҷозати камера лозим аст
-                  </p>
-                  <Button
-                    onClick={() => startScanner(true)}
-                    className="bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
-                  >
-                    {t('permissionGrant') || 'Иҷозат додан'}
-                  </Button>
-                </div>
-              )}
-            </div>
+            <>
+              <p className="text-sm font-bold text-zinc-300 leading-relaxed">
+                Барои скан кардан иҷозати камера лозим аст
+              </p>
+              <Button
+                onClick={() => startScanner(true)}
+                className="bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
+              >
+                {t('permissionGrant') || 'Иҷозат додан'}
+              </Button>
+            </>
           )}
         </div>
+      )}
 
-        {/* Instruction */}
-        {isScanning && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400">
-            <Info className="w-4 h-4 text-emerald-500" />
+      {/* Overlay — чоркунҷаи равшан дар маркaz, атроф торик */}
+      {isScanning && (
+        <ScanOverlay size={SCAN_SIZE} />
+      )}
+
+      {/* Header overlay */}
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-12 pb-4 z-20 bg-gradient-to-b from-black/70 to-transparent">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleBack}
+          className="rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </Button>
+        <h1 className="font-black uppercase tracking-widest text-[10px] text-white/70">{t('scannerTitle')}</h1>
+        <div className="w-10" />
+      </div>
+
+      {/* Instruction overlay — поён */}
+      {isScanning && (
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-16 pt-12 z-20 bg-gradient-to-t from-black/70 to-transparent">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 border border-white/10 text-white/70">
+            <Info className="w-4 h-4 text-emerald-400" />
             <span className="text-[10px] font-bold uppercase tracking-wider">{t('scannerInstruction')}</span>
           </div>
-        )}
-      </div>
-
-      <div className="p-8 text-center">
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">JUYO SAFETY SYSTEM • 2026</p>
-      </div>
+        </div>
+      )}
 
       {/* Модалка барои QR-коди номаълум */}
       <Dialog open={showUnknownQr} onOpenChange={setShowUnknownQr}>
@@ -326,7 +353,7 @@ export default function ScanPage() {
 
       <style jsx global>{`
         #reader { background: transparent !important; border: none !important; }
-        #reader video { object-fit: contain !important; width: 100% !important; height: 100% !important; background: transparent !important; }
+        #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; position: absolute !important; inset: 0 !important; }
         #reader__scan_region { background: transparent !important; min-height: unset !important; }
         #reader__scan_region > img { display: none !important; }
         #reader__scan_region > div { display: none !important; }
