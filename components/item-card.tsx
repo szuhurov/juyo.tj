@@ -80,28 +80,32 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
     // Optimistic Update: Аввал UI-ро иваз мекунем, баъд запрос мефиристем
     const previousSavedState = isSaved;
     const newSavedState = !previousSavedState;
-    
+
     setIsSaved(newSavedState);
+    setIsToggling(true);
     toast.success(newSavedState ? t('addedToSaved') : t('removedFromSaved'));
-    
+
     // Запрос ба База (Background task)
     try {
       const token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("No token");
-      
+
       const supabase = createClerkSupabaseClient(token);
-      const saved = await ItemService.toggleSaveItem(supabase, userId!, item.id);
-      
+      if (!userId) throw new Error("No userId");
+      const saved = await ItemService.toggleSaveItem(supabase, userId, item.id);
+
       if (saved !== newSavedState) {
         setIsSaved(saved);
       }
-      
+
       window.dispatchEvent(new Event('saved-items-updated'));
     } catch (e) {
       console.error("Toggle save error:", e);
       // Агар хатогӣ шавад, ба ҳолати пешина бармегардонем
       setIsSaved(previousSavedState);
       toast.error(t('error'));
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -164,8 +168,9 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
     setIsActionLoading(true);
     try {
       const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-      await ItemService.archiveToSafetyBox(supabase, item, userId!);
+      if (!token || !userId) throw new Error("Not authenticated");
+      const supabase = createClerkSupabaseClient(token);
+      await ItemService.archiveToSafetyBox(supabase, item, userId);
       toast.success(t('moveToSafeSuccess'));
       setShowArchiveConfirm(false);
       router.push('/profile?tab=safety');
@@ -191,7 +196,8 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
     setIsActionLoading(true);
     try {
       const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
+      if (!token) throw new Error("Not authenticated");
+      const supabase = createClerkSupabaseClient(token);
       await ItemService.deleteItem(supabase, item.id);
       toast.success(t('success'));
       setShowDeleteConfirm(false);

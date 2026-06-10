@@ -92,7 +92,7 @@ export const ItemService = {
     }
 
     if (search) {
-      const s = search.trim().slice(0, 200);
+      const s = search.trim().slice(0, 200).replace(/[%_\\]/g, '\\$&');
       query = query.or(`title.ilike.%${s}%,description.ilike.%${s}%`);
     }
 
@@ -116,14 +116,14 @@ export const ItemService = {
     // Харитасозии натиҷаҳо ба формати Item
     return data.results.map((res: any) => ({
       id: res.id,
-      user_id: '', 
+      user_id: res.user_id || '',
       title: res.title,
-      description: res.description || '', 
-      category: 'Other', 
-      type: 'lost', 
-      date: new Date().toISOString().split('T')[0], 
-      created_at: new Date().toISOString(), 
-      is_resolved: false,
+      description: res.description || '',
+      category: res.category || 'Other',
+      type: (res.type === 'found' ? 'found' : 'lost') as 'lost' | 'found',
+      date: res.date || new Date().toISOString().split('T')[0],
+      created_at: res.created_at || new Date().toISOString(),
+      is_resolved: res.is_resolved ?? false,
       similarity_score: res.score,
       images: [{ image_url: res.image_url }]
     })) as Item[];

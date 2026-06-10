@@ -27,6 +27,7 @@ export const ITEM_KEYS = {
   savedItems: (userId: string) => [...ITEM_KEYS.saved(), userId] as const,
   safety: () => [...ITEM_KEYS.all, "safety"] as const,
   safetyItems: (userId: string) => [...ITEM_KEYS.safety(), userId] as const,
+  safetyDetail: (id: string) => [...ITEM_KEYS.safety(), "detail", id] as const,
 };
 
 const PAGE_SIZE = 20;
@@ -169,7 +170,7 @@ export function useSafetyItems(userId?: string, token?: string | null) {
 // Хук барои гирифтани маълумоти муфассали як ашё аз Safety Box
 export function useSafetyItemDetails(id: string, token?: string | null) {
   return useQuery({
-    queryKey: ITEM_KEYS.detail(id), // Мо калиди detail-ро истифода мебарем барои кэш
+    queryKey: ITEM_KEYS.safetyDetail(id),
     queryFn: async () => {
       if (!token) return null;
       const { createClerkSupabaseClient } = await import("@/lib/supabase");
