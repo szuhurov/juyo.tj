@@ -133,8 +133,7 @@ export default function ScanPage() {
 
       const config = {
         fps: 20,
-        qrbox: { width: 260, height: 260 },
-        aspectRatio: window.innerHeight / window.innerWidth,
+        aspectRatio: 1.0,
       };
 
       // 3. Камераи ақибро интихоб мекунем
@@ -257,7 +256,6 @@ export default function ScanPage() {
                   <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-emerald-400 rounded-tr-xl" />
                   <div className="absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-emerald-400 rounded-bl-xl" />
                   <div className="absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-emerald-400 rounded-br-xl" />
-                  <div className="absolute inset-x-0 top-0 h-[2px] bg-emerald-400/70 shadow-[0_0_12px_rgba(52,211,153,0.6)] animate-[scan_3s_ease-in-out_infinite]" />
                 </div>
               )}
 
@@ -328,7 +326,7 @@ export default function ScanPage() {
 
       <style jsx global>{`
         #reader { background: transparent !important; border: none !important; }
-        #reader video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
+        #reader video { object-fit: contain !important; width: 100% !important; height: 100% !important; background: transparent !important; }
         #reader__scan_region { background: transparent !important; min-height: unset !important; }
         #reader__scan_region > img { display: none !important; }
         #reader__scan_region > div { display: none !important; }
