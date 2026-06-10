@@ -1,12 +1,12 @@
 "use client";
 
-/**
- * Карточкаи эълон (ItemCard).
- * Ҳамаи инфо дар бораи чизҳои гумшуда ё ёфтшуда ҳамин ҷо нишон дода мешавад.
- * Логикаи сав (save), шеар (share) ва редактирование (edit) ҳам дар ҳамин ҷост.
- */
+import Image from "next/image";
 
-import Image from "next/image"; // Барои нишон додани суратҳо
+declare global {
+  interface Window {
+    ReactNativeWebView?: { postMessage: (msg: string) => void };
+  }
+} // Барои нишон додани суратҳо
 import Link from "next/link"; // Барои пайвандҳо
 import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
 import { Item } from "@/lib/services/item-service"; // Типи маълумоти эълон
@@ -123,8 +123,9 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
       try {
         setIsActionLoading(true);
         await navigator.share(shareData);
-      } catch (error: any) {
-        if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
+      } catch (error: unknown) {
+        const name = error instanceof Error ? error.name : '';
+        if (name !== 'AbortError' && name !== 'NotAllowedError') {
           console.error("Share error:", error);
           navigator.clipboard.writeText(url);
           toast.success(t('success'));
@@ -132,9 +133,8 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
       } finally {
         setIsActionLoading(false);
       }
-    } else if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
-      // Агар дар дохили React Native WebView бошад
-      (window as any).ReactNativeWebView.postMessage(
+    } else if (typeof window !== "undefined" && window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(
         JSON.stringify({ type: "SHARE", payload: shareData })
       );
     } else {
@@ -206,7 +206,7 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
   // Функсия барои пеш-боркунии акси саҳифаи навбатӣ (Image Preloading)
   const preloadNextImage = () => {
     if (images[0]?.image_url) {
-      const img = new (window as any).Image();
+      const img = new window.Image();
       img.src = images[0].image_url;
     }
   };

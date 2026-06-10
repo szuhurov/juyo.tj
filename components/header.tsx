@@ -49,6 +49,8 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { VisualSearchModal } from "./visual-search-modal";
+import { useHomeState } from "@/lib/home-context";
+import type { Item } from "@/lib/services/item-service";
 
 export function Header() {
   const pathname = usePathname();
@@ -60,13 +62,14 @@ export function Header() {
   const { signOut } = useClerk();
 
   const { t, locale, setLocale } = useLanguage();
-  
+  const { setVisualSearchResults, setIsSearchTyping, triggerGoHome } = useHomeState();
+
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || "");
   const [mounted, setMounted] = useState(false);
   const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
   const [directFile, setDirectFile] = useState<File | null>(null);
 
-  const languages = [
+  const languages: Array<{ code: "tg" | "ru" | "en"; label: string }> = [
     { code: "tg", label: "Тоҷикӣ" },
     { code: "ru", label: "Русский" },
     { code: "en", label: "English" },
@@ -87,8 +90,8 @@ export function Header() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = (e: any) => {
-      const file = e.target.files?.[0];
+    input.onchange = (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         setDirectFile(file);
         setIsVisualSearchOpen(true);
@@ -97,21 +100,18 @@ export function Header() {
     input.click();
   };
 
-  const handleVisualSearchResults = (items: any[]) => {
-    // Ирсоли натиҷаҳо ба саҳифаи асосӣ тавассути Custom Event
-    window.dispatchEvent(new CustomEvent('visual-search-results', { detail: items }));
+  const handleVisualSearchResults = (items: Item[]) => {
+    setVisualSearchResults(items);
     setDirectFile(null);
   };
 
   useEffect(() => {
-    // Агар корбар чизе нанависад, ҳолати ҷустуҷӯро хомӯш мекунем
     if (searchValue === (searchParams.get('q') || "")) {
-      window.dispatchEvent(new CustomEvent('search-active', { detail: false }));
+      setIsSearchTyping(false);
       return;
     }
 
-    // Ҳамин ки корбар ба навиштан оғоз кард, хабар медиҳем, ки ҷустуҷӯ фаъол аст
-    window.dispatchEvent(new CustomEvent('search-active', { detail: true }));
+    setIsSearchTyping(true);
 
     const delayDebounceFn = setTimeout(() => {
       const params = new URLSearchParams(searchParams);
@@ -120,20 +120,17 @@ export function Header() {
       } else {
         params.delete('q');
       }
-      
+
       const newUrl = `/?${params.toString()}`;
       if (window.location.search !== `?${params.toString()}`) {
         router.push(newUrl, { scroll: false });
       }
-      
-      // Пас аз иваз шудани URL, як лаҳза мунтазир мешавем, ки React Query оғоз шавад
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('search-active', { detail: false }));
-      }, 50);
-    }, 150); // 150ms - суръати "Ultra-Live"
+
+      setTimeout(() => setIsSearchTyping(false), 50);
+    }, 150);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchValue, pathname, router, searchParams]);
+  }, [searchValue, pathname, router, searchParams, setIsSearchTyping]);
 
   return (
     <TooltipProvider>
@@ -148,9 +145,9 @@ export function Header() {
               onClick={(e) => {
                 if (pathname === "/") {
                   e.preventDefault();
-                  window.location.reload();
+                  router.refresh();
                 } else {
-                  window.dispatchEvent(new CustomEvent('go-home'));
+                  triggerGoHome();
                 }
               }}
             >
@@ -177,10 +174,10 @@ export function Header() {
                   
                   if (link.href === "/") {
                     if (pathname === "/") {
-                      window.location.reload();
+                      router.refresh();
                       return;
                     }
-                    window.dispatchEvent(new CustomEvent('go-home'));
+                    triggerGoHome();
                   }
 
                   if (isProtected && !userId) {
@@ -254,7 +251,7 @@ export function Header() {
                 {languages.map((lang) => (
                   <DropdownMenuItem
                     key={lang.code}
-                    onClick={() => setLocale(lang.code as any)}
+                    onClick={() => setLocale(lang.code)}
                     className={`font-bold text-xs uppercase tracking-tight cursor-pointer ${locale === lang.code ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20" : ""}`}
                   >
                     {lang.label}

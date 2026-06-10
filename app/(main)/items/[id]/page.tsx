@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const typeText = item.type === 'lost' ? t.lost : t.found;
     const title = `${typeText}: ${item.title} | JUYO.TJ`;
     const description = item.description?.substring(0, 160) || t.seoDesc;
-    const imageUrl = item.images?.[0]?.image_url || "https://juyo.tj/logo.png";
+    const imageUrl = item.images?.[0]?.image_url || "https://juyo.tj/juyo-logo.jpg";
 
     return {
       title,
@@ -112,7 +112,7 @@ export default async function ItemDetailsPage({ params }: Props) {
         "description": initialItem.description?.substring(0, 200),
         "url": `https://juyo.tj/items/${id}`,
         "datePublished": initialItem.created_at,
-        "image": initialItem.images?.[0]?.image_url || "https://juyo.tj/logo.png",
+        "image": initialItem.images?.[0]?.image_url || "https://juyo.tj/juyo-logo.jpg",
         "isPartOf": { "@id": "https://juyo.tj/#website" },
       };
     }

@@ -92,7 +92,7 @@ export async function generateMetadata() {
       description: t.seoDesc,
       images: [
         {
-          url: "https://juyo.tj/logo.png",
+          url: "https://juyo.tj/juyo-logo.jpg",
           width: 1200,
           height: 630,
           alt: "JUYO.TJ - Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда",
@@ -103,16 +103,17 @@ export async function generateMetadata() {
       card: "summary_large_image",
       title: t.seoTitle,
       description: t.seoDesc,
-      images: ["https://juyo.tj/logo.png"],
+      images: ["https://juyo.tj/juyo-logo.jpg"],
     },
     icons: {
       icon: [
+        { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+        { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
         { url: "/favicon.ico", sizes: "any" },
-        { url: "/logo.png", type: "image/png", sizes: "512x512" },
       ],
-      shortcut: "/favicon.ico",
+      shortcut: "/icon-192.png",
       apple: [
-        { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+        { url: "/apple-touch-icon.png", type: "image/png", sizes: "180x180" },
       ],
     },
   };
@@ -175,7 +176,7 @@ export default async function RootLayout({
                   "url": "https://juyo.tj",
                   "logo": {
                     "@type": "ImageObject",
-                    "url": "https://juyo.tj/logo.png",
+                    "url": "https://juyo.tj/juyo-logo.jpg",
                     "width": 512,
                     "height": 512,
                   },

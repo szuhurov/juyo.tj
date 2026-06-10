@@ -38,7 +38,7 @@ export function SplashScreen() {
         {/* Логотипи хурд бо кунҷҳои мулоим */}
         <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl shadow-emerald-500/10 border border-zinc-50 bg-white p-2">
           <Image 
-            src="/logo.png" 
+            src="/juyo-logo.jpg"
             alt="juyo" 
             width={80} 
             height={80} 

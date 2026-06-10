@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ItemService, CATEGORIES } from '@/lib/services/item-service';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Supabase query builder is thenable — every builder method returns `this`,
 // and the chain itself resolves when awaited.
@@ -31,7 +32,7 @@ const makeChain = (result = { data: [] as any, error: null as any }) => {
 
 const makeMockClient = (result?: { data: any; error: any }) => {
   const chain = makeChain(result);
-  return {
+  const mock = {
     from: vi.fn().mockReturnValue(chain),
     rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
     functions: { invoke: vi.fn().mockResolvedValue({ data: null, error: null }) },
@@ -43,6 +44,7 @@ const makeMockClient = (result?: { data: any; error: any }) => {
     },
     _chain: chain,
   };
+  return mock as typeof mock & SupabaseClient;
 };
 
 // ─────────────────────────────────────────────
@@ -129,33 +131,29 @@ describe('ItemService.getItems', () => {
     expect(eqCalls).toContainEqual(['type', 'lost']);
   });
 
-  it('applies full-text search with :* wildcard', async () => {
+  it('applies ilike search on title and description', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({ search: 'телефон' }, mock);
 
-    expect(mock._chain.textSearch).toHaveBeenCalledWith(
-      'search_vector',
-      expect.stringContaining(':*'),
-      expect.any(Object)
-    );
-  });
-
-  it('joins multi-word search terms with & operator', async () => {
-    const mock = makeMockClient();
-    await ItemService.getItems({ search: 'калид сиёҳ' }, mock);
-
-    const searchArg: string = mock._chain.textSearch.mock.calls[0][1];
-    expect(searchArg).toContain('&');
-    expect(searchArg).toContain('калид:*');
-    expect(searchArg).toContain('сиёҳ:*');
+    const orCalls: string[] = mock._chain.or.mock.calls.map((c: any[]) => c[0]);
+    expect(orCalls.some((arg: string) => arg.includes('ilike') && arg.includes('телефон'))).toBe(true);
   });
 
   it('trims whitespace from search query', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({ search: '  телефон  ' }, mock);
 
-    const searchArg: string = mock._chain.textSearch.mock.calls[0][1];
-    expect(searchArg).not.toContain('  ');
+    const orCalls: string[] = mock._chain.or.mock.calls.map((c: any[]) => c[0]);
+    expect(orCalls.some((arg: string) => arg.includes('телефон') && !arg.includes('  '))).toBe(true);
+  });
+
+  it('limits search query to 200 characters', async () => {
+    const longSearch = 'а'.repeat(300);
+    const mock = makeMockClient();
+    await ItemService.getItems({ search: longSearch }, mock);
+
+    const orCalls: string[] = mock._chain.or.mock.calls.map((c: any[]) => c[0]);
+    expect(orCalls.some((arg: string) => !arg.includes('а'.repeat(201)))).toBe(true);
   });
 
   it('uses correct pagination range for page 2 with pageSize 10', async () => {

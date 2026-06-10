@@ -112,14 +112,10 @@ export function PWAInstallPrompt() {
       <div className="bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/50 dark:border-zinc-800/50 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] rounded-2xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-3 backdrop-blur-lg border-b-2 border-b-zinc-300/30 dark:border-b-zinc-700/30">
         {/* Логотип бе замина ва хатҳои иловагӣ */}
         <div className="w-9 h-9 sm:w-10 sm:h-10 overflow-hidden shrink-0 relative">
-          <Image src="/logo.png" alt="juyo" width={40} height={40} className="w-full h-full object-contain" />
+          <Image src="/juyo-logo.jpg" alt="juyo" width={40} height={40} className="w-full h-full object-contain" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className="text-zinc-900 dark:text-zinc-100 font-black text-[12px] sm:text-[13px] tracking-tight mb-0.5 lowercase">
-            {t('pwa.title')}
-          </p>
-          {/* Матни тавсиф */}
           <p className="text-zinc-500 dark:text-zinc-400 font-bold text-[8px] sm:text-[9px] leading-tight uppercase">
             {t('pwa.desc')}
           </p>

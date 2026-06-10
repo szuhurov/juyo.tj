@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import type { Item } from "@/lib/services/item-service";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { 
   Dialog, 
@@ -20,7 +21,7 @@ import { cn } from "@/lib/utils";
 interface VisualSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onResults: (items: any[]) => void;
+  onResults: (items: Item[]) => void;
   directFile?: File | null;
 }
 
@@ -34,7 +35,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    let timer: any;
+    let timer: ReturnType<typeof setInterval> | undefined;
     if (isSearching) {
       timer = setInterval(() => {
         setElapsedSeconds(prev => Math.min(prev + 1, 60));
@@ -90,7 +91,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
       } else {
         toast.info(t('noItemsFound'));
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Visual Search Error:", error);
       toast.error(t('visualSearchError') || "Хатогӣ ҳангоми ҷустуҷӯи визуалӣ");
       onClose();

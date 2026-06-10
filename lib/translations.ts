@@ -481,9 +481,9 @@ export const translations: Record<string, any> = {
     },
     saveAndDownload: 'Захира ва боргирӣ',
     pwa: {
-      title: 'juyo',
+      title: '',
       desc: 'барои истифода',
-      install: 'СКАЧАТЬ'
+      install: 'БОРГИРӢ'
     },
     qrSecondaryModal: {
       title: 'Танзимоти амният ва тамос',
@@ -1068,9 +1068,9 @@ export const translations: Record<string, any> = {
     },
     saveAndDownload: 'Сохранить и скачать',
     pwa: {
-      title: 'juyo',
+      title: '',
       desc: 'Для использования без браузера',
-      install: 'УСТАНОВИТЬ'
+      install: 'СКАЧАТЬ'
     },
     qrSecondaryModal: {
       title: 'Настройки безопасности и связи',
@@ -1639,9 +1639,9 @@ export const translations: Record<string, any> = {
     },
     saveAndDownload: 'Save & Download',
     pwa: {
-      title: 'juyo',
+      title: '',
       desc: 'For use without browser',
-      install: 'INSTALL'
+      install: 'DOWNLOAD'
     },
     qrSecondaryModal: {
       title: 'Security & Contact Setup',

@@ -1,8 +1,5 @@
-/**
- * Сервис барои кор бо эълонҳо ва ашёҳо.
- * Функсияҳо барои гирифтан, илова кардан ва таҳрири эълонҳо дар ин ҷо ҳастанд.
- */
-import { supabase } from '../supabase'; // Барои пайваст шудан ба базаи маълумотҳо
+import { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '../supabase';
 
 // Сохтори маълумотии Ашё (Interface)
 export interface Item {
@@ -30,6 +27,21 @@ export interface Item {
   };
 }
 
+export interface SafetyItem {
+  id: string;
+  user_id: string;
+  item_name: string;
+  description?: string;
+  category?: string;
+  type: 'lost' | 'found';
+  reward?: string;
+  phone_number?: string;
+  images?: string[];
+  views?: number;
+  date?: string;
+  created_at: string;
+}
+
 // Категорияҳои асосии ашёҳо барои филтр ва ҷустуҷӯ
 export const CATEGORIES = [
   { id: '1', name: 'Electronics', icon: '📱' },
@@ -46,7 +58,7 @@ export const ItemService = {
    * Ин функсия имкон медиҳад, ки корбар аз рӯи категория, намуд (гумшуда/ёфтшуда)
    * ва матни ҷустуҷӯӣ эълонҳоро пайдо кунад.
    */
-  async getItems(filters: { search?: string; category?: string; type?: string | null; user_id?: string; page?: number; pageSize?: number } = {}, supabaseClient?: any) {
+  async getItems(filters: { search?: string; category?: string; type?: string | null; user_id?: string; page?: number; pageSize?: number } = {}, supabaseClient?: SupabaseClient) {
     const { search, category, type, user_id, page = 0, pageSize = 20 } = filters;
     
     const client = supabaseClient || supabase;
@@ -79,9 +91,8 @@ export const ItemService = {
       query = query.eq('type', type);
     }
 
-    // Ҷустуҷӯ дар title ва description бо ilike
     if (search) {
-      const s = search.trim();
+      const s = search.trim().slice(0, 200);
       query = query.or(`title.ilike.%${s}%,description.ilike.%${s}%`);
     }
 
@@ -90,13 +101,10 @@ export const ItemService = {
     return data as Item[];
   },
 
-  /**
-   * Ҷустуҷӯи визуалӣ бо истифода аз як акс (OpenAI Powered).
-   */
   async visualSearch(imageFile: File) {
     const formData = new FormData();
     formData.append('image', imageFile);
-    formData.append('type', 'lost'); // Ба таври пешфарз
+    formData.append('type', 'all');
 
     const { data, error } = await supabase.functions.invoke('visual-search', {
       body: formData
@@ -147,22 +155,15 @@ export const ItemService = {
     return { ...item, profiles: profile ?? null } as Item;
   },
 
-  /**
-   * Зиёд кардани шумораи биниши эълон (Views).
-   */
   async incrementView(id: string) {
-    const { data, error } = await supabase.rpc('increment_item_views', { item_id: id });
-    if (error) {
-      // Агар функсияи RPC дар база набошад, усули оддиро истифода мебарем
-      const { data: item } = await supabase.from('items').select('views').eq('id', id).single();
-      await supabase.from('items').update({ views: (item?.views || 0) + 1 }).eq('id', id);
-    }
+    const { error } = await supabase.rpc('increment_item_views', { item_id: id });
+    if (error) console.error('incrementView:', error.message);
   },
 
   /**
    * Илова ё нест кардани ашё аз рӯйхати "Захирашудаҳо" (Bookmarks).
    */
-  async toggleSaveItem(supabaseClient: any, userId: string, itemId: string) {
+  async toggleSaveItem(supabaseClient: SupabaseClient, userId: string, itemId: string) {
     try {
       // Санҷиши мавҷудияти ашё дар рӯйхати захирашудаҳо
       const { data: existing, error: checkError } = await supabaseClient
@@ -202,7 +203,7 @@ export const ItemService = {
   /**
    * Гирифтани рӯйхати ашёҳои захиракардаи корбар.
    */
-  async getSavedItems(supabaseClient: any, userId: string) {
+  async getSavedItems(supabaseClient: SupabaseClient, userId: string) {
     const { data, error } = await supabaseClient
       .from('saved_items')
       .select('item_id, items(*, images:item_images(image_url))')
@@ -216,7 +217,7 @@ export const ItemService = {
   /**
    * Гирифтани ашёҳо аз "Сандуқчаи бехатарӣ" (Safety Box).
    */
-  async getSafetyBoxItems(supabaseClient: any, userId: string) {
+  async getSafetyBoxItems(supabaseClient: SupabaseClient, userId: string) {
     const { data, error } = await supabaseClient
       .from('safety_box')
       .select('*')
@@ -230,7 +231,7 @@ export const ItemService = {
   /**
    * Гирифтани маълумоти муфассали як ашё аз "Сандуқчаи бехатарӣ".
    */
-  async getSafetyItemDetails(id: string, supabaseClient: any) {
+  async getSafetyItemDetails(id: string, supabaseClient: SupabaseClient) {
     const { data, error } = await supabaseClient
       .from('safety_box')
       .select('*')
@@ -244,7 +245,7 @@ export const ItemService = {
   /**
    * Нест кардани эълон ва аксҳои он аз база ва аз Storage.
    */
-  async deleteItem(supabaseClient: any, id: string) {
+  async deleteItem(supabaseClient: SupabaseClient, id: string) {
     try {
       // 1. Гирифтани рӯйхати аксҳо пеш аз нест кардани эълон
       const { data: images, error: imagesError } = await supabaseClient
@@ -288,7 +289,7 @@ export const ItemService = {
   /**
    * Интиқоли эълон аз лентаи умумӣ ба "Сандуқчаи бехатарӣ" (Архив).
    */
-  async archiveToSafetyBox(supabaseClient: any, item: Item, userId: string) {
+  async archiveToSafetyBox(supabaseClient: SupabaseClient, item: Item, userId: string) {
     const { error: insertError } = await supabaseClient.from('safety_box').insert([{
       user_id: userId,
       item_name: item.title,
@@ -315,7 +316,7 @@ export const ItemService = {
   /**
    * Нашри эълон аз "Сандуқчаи бехатарӣ" ба лентаи умумӣ.
    */
-  async publishFromSafetyBox(supabaseClient: any, safetyItem: any, userId: string, status: 'pending' | 'approved' = 'pending') {
+  async publishFromSafetyBox(supabaseClient: SupabaseClient, safetyItem: SafetyItem, userId: string, status: 'pending' | 'approved' = 'pending') {
     // 1. Сохтани эълони нав дар ҷадвали 'items'
     const { data: item, error: itemError } = await supabaseClient
       .from('items')
@@ -339,8 +340,8 @@ export const ItemService = {
     if (itemError) throw itemError;
 
     // 2. Илова кардани аксҳо ба ҷадвали 'item_images'
-    if (safetyItem.images?.length > 0) {
-      const imageRecords = safetyItem.images.map((url: string) => ({
+    if ((safetyItem.images?.length ?? 0) > 0) {
+      const imageRecords = safetyItem.images!.map((url: string) => ({
         item_id: item.id,
         image_url: url
       }));

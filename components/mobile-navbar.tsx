@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
+import { useHomeState } from "@/lib/home-context";
 import { Home, QrCode, PlusCircle, ScanLine, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,7 @@ export function MobileNavbar() {
   const pathname = usePathname();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
   const router = useRouter();
+  const { triggerGoHome } = useHomeState();
 
   // Reset optimistic path when real pathname changes
   useEffect(() => {
@@ -68,10 +70,10 @@ export function MobileNavbar() {
         
         if (href === "/") {
           if (pathname === "/") {
-            window.location.reload();
+            router.refresh();
             return;
           }
-          window.dispatchEvent(new CustomEvent('go-home'));
+          triggerGoHome();
         }
 
         setOptimisticPath(href);

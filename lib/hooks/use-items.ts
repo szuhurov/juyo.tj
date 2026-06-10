@@ -3,14 +3,22 @@
  * Ин файл аз React Query барои гирифтани маълумот, кэш ва навсозии автоматии рӯйхати ашёҳо истифода мебарад.
  */
 
-import { useQuery, keepPreviousData, useQueryClient, useInfiniteQuery } from "@tanstack/react-query"; // Барои идоракунии кэш ва запросҳо
-import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
+import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { Item, ItemService } from "@/lib/services/item-service";
 
-// Калидҳо барои React Query, то ки кэш дуруст идора карда шавад
+export interface ItemFilters {
+  search?: string;
+  category?: string;
+  type?: string | null;
+  user_id?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 export const ITEM_KEYS = {
   all: ["items"] as const,
   lists: () => [...ITEM_KEYS.all, "list"] as const,
-  list: (filters: any) => [...ITEM_KEYS.lists(), { filters }] as const,
+  list: (filters: ItemFilters) => [...ITEM_KEYS.lists(), { filters }] as const,
   details: () => [...ITEM_KEYS.all, "detail"] as const,
   detail: (id: string) => [...ITEM_KEYS.details(), id] as const,
   user: () => [...ITEM_KEYS.all, "user"] as const,
@@ -24,7 +32,7 @@ export const ITEM_KEYS = {
 const PAGE_SIZE = 20;
 const MAX_PAGES = 10; // Ҳадди аксари саҳифаҳо дар хотира (200 ашё)
 
-export function useItems(filters?: any) {
+export function useItems(filters?: ItemFilters) {
   return useInfiniteQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
     queryFn: ({ pageParam = 0 }) =>
@@ -60,36 +68,37 @@ export function useItemDetails(id: string, token: string | null | undefined, ini
     initialDataUpdatedAt: initialData ? 0 : undefined, // 0 = stale, refetch мешавад
     // Истифодаи маълумоти кэш (Home, Profile, Saved) барои намоиши лаҳзавӣ то query тайёр шавад
     placeholderData: initialData ? undefined : () => {
-      const findItem = (data: any) => {
-        if (!data) return undefined;
-        if (data.pages && Array.isArray(data.pages)) {
-          for (const page of data.pages) {
+      const findItem = (data: unknown): Item | undefined => {
+        if (!data || typeof data !== 'object') return undefined;
+        const d = data as Record<string, unknown>;
+        if (Array.isArray(d.pages)) {
+          for (const page of d.pages) {
             if (Array.isArray(page)) {
-              const item = page.find((i: Item) => i.id === id);
-              if (item) return item;
+              const found = page.find((i: Item) => i.id === id);
+              if (found) return found as Item;
             }
           }
         }
         if (Array.isArray(data)) {
-          return data.find((i: Item) => i.id === id);
+          return (data as Item[]).find((i) => i.id === id);
         }
         return undefined;
       };
 
-      const allLists = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.lists() });
-      for (const [_, list] of allLists) {
+      const allLists = queryClient.getQueriesData<unknown>({ queryKey: ITEM_KEYS.lists() });
+      for (const [, list] of allLists) {
         const item = findItem(list);
         if (item) return item;
       }
 
-      const userItems = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.user() });
-      for (const [_, list] of userItems) {
+      const userItems = queryClient.getQueriesData<unknown>({ queryKey: ITEM_KEYS.user() });
+      for (const [, list] of userItems) {
         const item = findItem(list);
         if (item) return item;
       }
 
-      const savedItems = queryClient.getQueriesData<any>({ queryKey: ITEM_KEYS.saved() });
-      for (const [_, list] of savedItems) {
+      const savedItems = queryClient.getQueriesData<unknown>({ queryKey: ITEM_KEYS.saved() });
+      for (const [, list] of savedItems) {
         const item = findItem(list);
         if (item) return item;
       }
@@ -138,7 +147,7 @@ export function useSavedItems(userId?: string, token?: string | null) {
 
 export function useIsItemSaved(itemId: string, userId?: string, token?: string | null) {
   const { data: savedItems = [] } = useSavedItems(userId, token);
-  return savedItems.some((item: any) => item.id === itemId);
+  return (savedItems as Item[]).some((item) => item.id === itemId);
 }
 
 // Хук барои гирифтани ашёҳо аз сандуқчаи амниятӣ (Safety Box)

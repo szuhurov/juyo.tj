@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ProfileService } from '@/lib/services/profile-service';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const makeMockClient = () => {
   const chain: any = {
@@ -9,7 +10,8 @@ const makeMockClient = () => {
     single: vi.fn().mockResolvedValue({ data: null, error: null }),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
   };
-  return { from: vi.fn().mockReturnValue(chain), _chain: chain };
+  const mock = { from: vi.fn().mockReturnValue(chain), _chain: chain };
+  return mock as typeof mock & SupabaseClient;
 };
 
 describe('ProfileService.getProfile', () => {

@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams } from "next/navigation";
 import { useItems, useSavedItems } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
+import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,10 +29,10 @@ function HomeContent() {
   const { ref, inView } = useInView();
   const { userId, getToken } = useAuth();
 
+  const { visualSearchResults, isSearchTyping, goHomeSignal, setVisualSearchResults } = useHomeState();
+
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
-  const [visualSearchResults, setVisualSearchResults] = useState<any[] | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ function HomeContent() {
   // Як query барои ҳамаи saved IDs — бе N+1
   const { data: savedItemsList = [] } = useSavedItems(userId ?? undefined, token);
   const savedItemIds = useMemo(
-    () => new Set(savedItemsList.map((i: any) => i.id as string)),
+    () => new Set(savedItemsList.map((i) => i.id)),
     [savedItemsList]
   );
 
@@ -68,45 +69,34 @@ function HomeContent() {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  // Cross-page cache invalidation (items-updated dispatched after add/delete/edit)
   useEffect(() => {
-    const handleUpdate = () => {
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-    };
-    
-    // Логика барои хабардор шудан аз ҷустуҷӯ
-    const handleSearchActive = (e: any) => {
-      setIsTyping(e.detail);
-    };
-
-    const handleVisualResults = (e: any) => {
-      setVisualSearchResults(e.detail);
-      // Вақте ҷустуҷӯи визуалӣ мешавад, филтрҳои дигарро тоза мекунем
-      setCategory("All");
-      setItemType(null);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const handleHomeClick = () => {
-      setVisualSearchResults(null);
-      setCategory("All");
-      setItemType(null);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
+    const handleUpdate = () => queryClient.invalidateQueries({ queryKey: ['items'] });
     window.addEventListener('items-updated', handleUpdate);
     window.addEventListener('saved-items-updated', handleUpdate);
-    window.addEventListener('search-active', handleSearchActive);
-    window.addEventListener('visual-search-results', handleVisualResults);
-    window.addEventListener('go-home', handleHomeClick);
-    
     return () => {
       window.removeEventListener('items-updated', handleUpdate);
       window.removeEventListener('saved-items-updated', handleUpdate);
-      window.removeEventListener('search-active', handleSearchActive);
-      window.removeEventListener('visual-search-results', handleVisualResults);
-      window.removeEventListener('go-home', handleHomeClick);
     };
   }, [queryClient]);
+
+  // Reset filters when visual search results arrive
+  useEffect(() => {
+    if (visualSearchResults) {
+      setCategory("All");
+      setItemType(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [visualSearchResults]);
+
+  // Reset everything when user clicks the home logo
+  useEffect(() => {
+    if (goHomeSignal === 0) return;
+    setVisualSearchResults(null);
+    setCategory("All");
+    setItemType(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [goHomeSignal, setVisualSearchResults]);
 
   // Ҷамъоварии ҳамаи ашёҳо аз ҳамаи саҳифаҳо
   const allItems = useMemo(() => {
@@ -218,7 +208,7 @@ function HomeContent() {
 
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[86px] md:pt-[65px] touch-pan-y">
-        {isLoading && allItems.length === 0 && !searchQuery && category === "All" && itemType === null && !isTyping ? (
+        {isLoading && allItems.length === 0 && !searchQuery && category === "All" && itemType === null && !isSearchTyping ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-3">
@@ -250,7 +240,7 @@ function HomeContent() {
         ) : (
           <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
             <h3 className="text-xl font-black uppercase tracking-tight flex items-center justify-center gap-1">
-              {(isLoading || isFetching || isTyping) ? (
+              {(isLoading || isFetching || isSearchTyping) ? (
                 <>
                   {t('search')}
                   <span className="flex gap-1 items-center ml-1">
@@ -261,7 +251,7 @@ function HomeContent() {
                 </>
               ) : t('noItemsFound')}
             </h3>
-            {!(isLoading || isFetching || isTyping) && (
+            {!(isLoading || isFetching || isSearchTyping) && (
               <p className="text-zinc-500 text-sm mt-2">
                 {t('noItemsSubtitle')}
               </p>

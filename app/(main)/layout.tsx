@@ -6,7 +6,7 @@
 
 import { Header } from "@/components/header";
 import { MobileNavbar } from "@/components/mobile-navbar";
-import { Suspense } from "react";
+import { HomeProvider } from "@/lib/home-context";
 
 export default function MainLayout({
   children,
@@ -14,6 +14,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
+    <HomeProvider>
     <div className="flex flex-col min-h-screen">
       {/* Ҳедери сайт (Шапка) - Persistent UI */}
       <Header />
@@ -36,5 +37,6 @@ export default function MainLayout({
       {/* Навбари мобилӣ (Bottom Navigation) - Persistent UI */}
       <MobileNavbar />
     </div>
+    </HomeProvider>
   );
 }

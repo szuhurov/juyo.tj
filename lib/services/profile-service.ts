@@ -3,7 +3,7 @@
  * Ин файл тамоми амалиётҳоро бо ҷадвали 'profiles' дар Supabase иҷро мекунад.
  */
 
-import { createClerkSupabaseClient } from '../supabase'; // Барои пайваст шудан ба база
+import { SupabaseClient } from '@supabase/supabase-js';
 
 // Сохтори маълумоти профил
 export interface Profile {
@@ -23,7 +23,7 @@ export interface Profile {
 
 export const ProfileService = {
   // Гирифтани маълумоти профили корбари ҷорӣ
-  async getProfile(supabaseClient: any, userId: string): Promise<Profile | null> {
+  async getProfile(supabaseClient: SupabaseClient, userId: string): Promise<Profile | null> {
     const { data, error } = await supabaseClient
       .from('profiles')
       .select('*')
@@ -35,7 +35,7 @@ export const ProfileService = {
   },
 
   // Навсозӣ ё сохтани профили нав (Upsert)
-  async updateProfile(supabaseClient: any, userId: string, updates: Partial<Profile>) {
+  async updateProfile(supabaseClient: SupabaseClient, userId: string, updates: Partial<Profile>) {
     try {
       const { data, error } = await supabaseClient
         .from('profiles')
@@ -55,7 +55,7 @@ export const ProfileService = {
   },
 
   // Гирифтани маълумоти оммавии корбар (барои дигарон намоён)
-  async getPublicProfile(supabaseClient: any, userId: string) {
+  async getPublicProfile(supabaseClient: SupabaseClient, userId: string) {
     const { data, error } = await supabaseClient
       .from('profiles')
       .select('first_name, last_name, avatar_url, phone, secondary_phone, is_qr_active')
