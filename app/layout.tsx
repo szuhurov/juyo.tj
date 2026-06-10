@@ -14,8 +14,7 @@ import { ClerkLocalizationProvider } from "@/components/clerk-localization-provi
 import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt"; // Пешниҳоди насби барнома
-import { SplashScreen } from "@/components/splash-screen"; // Сплейш-скрини PWA
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 
 // Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣ
 const inter = Inter({
@@ -209,7 +208,6 @@ export default async function RootLayout({
               <SpeedInsights />
               <Toaster position="top-center" richColors />
               <PWAInstallPrompt />
-              <SplashScreen />
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>

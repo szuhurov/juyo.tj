@@ -144,25 +144,6 @@
 }
 
 /* Сплейш-скрин аниматсияҳо */
-@keyframes splash-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; visibility: hidden; }
-}
-
-@keyframes logo-pop {
-  0%   { transform: scale(0.2); opacity: 0; }
-  60%  { transform: scale(1.12); opacity: 1; }
-  80%  { transform: scale(0.94); }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.animate-splash-fade-out {
-  animation: splash-fade-out 0.4s ease-in-out forwards;
-}
-
-.animate-logo-pop {
-  animation: logo-pop 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
 
 @keyframes shimmer {
   0% { transform: translateX(-100%); }

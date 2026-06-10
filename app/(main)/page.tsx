@@ -69,14 +69,14 @@ function HomeContent() {
     }
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Cross-page cache invalidation (items-updated dispatched after add/delete/edit)
   useEffect(() => {
-    const handleUpdate = () => queryClient.invalidateQueries({ queryKey: ['items'] });
-    window.addEventListener('items-updated', handleUpdate);
-    window.addEventListener('saved-items-updated', handleUpdate);
+    const handleItemsUpdate = () => queryClient.invalidateQueries({ queryKey: ['items', 'list'] });
+    const handleSavedUpdate = () => queryClient.invalidateQueries({ queryKey: ['items', 'saved'] });
+    window.addEventListener('items-updated', handleItemsUpdate);
+    window.addEventListener('saved-items-updated', handleSavedUpdate);
     return () => {
-      window.removeEventListener('items-updated', handleUpdate);
-      window.removeEventListener('saved-items-updated', handleUpdate);
+      window.removeEventListener('items-updated', handleItemsUpdate);
+      window.removeEventListener('saved-items-updated', handleSavedUpdate);
     };
   }, [queryClient]);
 

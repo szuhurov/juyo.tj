@@ -353,16 +353,14 @@ function ProfileContent() {
     },
   ];
 
-  // Вақте ки маълумот дар ягон ҷо нав мешавад, ин ҷо ҳам кэшро тоза мекунем
   useEffect(() => {
-    const handleUpdate = () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] });
-    };
-    window.addEventListener("saved-items-updated", handleUpdate);
-    window.addEventListener("items-updated", handleUpdate);
+    const handleItemsUpdate = () => queryClient.invalidateQueries({ queryKey: ["items", "list"] });
+    const handleSavedUpdate = () => queryClient.invalidateQueries({ queryKey: ["items", "saved"] });
+    window.addEventListener("items-updated", handleItemsUpdate);
+    window.addEventListener("saved-items-updated", handleSavedUpdate);
     return () => {
-      window.removeEventListener("saved-items-updated", handleUpdate);
-      window.removeEventListener("items-updated", handleUpdate);
+      window.removeEventListener("items-updated", handleItemsUpdate);
+      window.removeEventListener("saved-items-updated", handleSavedUpdate);
     };
   }, [queryClient]);
 
