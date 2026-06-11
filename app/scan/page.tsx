@@ -5,13 +5,12 @@ import { useRouter } from "next/navigation";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
-import { 
-  Loader2, 
+import {
+  Loader2,
   ChevronLeft,
   Info,
   Camera,
   QrCode,
-  ShieldAlert
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -22,13 +21,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 function ScanOverlay({ size }: { size: number }) {
   const dark = "rgba(0,0,0,0.6)";
   return (
     <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
-      {/* SVG overlay — чоркунҷаи шаффоф дар марказ */}
       <svg className="absolute inset-0 w-full h-full">
         <defs>
           <mask id="scan-mask">
@@ -46,7 +43,6 @@ function ScanOverlay({ size }: { size: number }) {
         </defs>
         <rect width="100%" height="100%" fill={dark} mask="url(#scan-mask)" />
       </svg>
-      {/* Кунҷҳои сабз */}
       <div className="relative" style={{ width: size, height: size }}>
         <div className="absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-emerald-400 rounded-tl-2xl" />
         <div className="absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-emerald-400 rounded-tr-2xl" />
@@ -67,187 +63,177 @@ export default function ScanPage() {
   const [showUnknownQr, setShowUnknownQr] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
+  const localeRef = useRef(locale);
+  useEffect(() => { localeRef.current = locale; }, [locale]);
 
-  // Тафтиши ин ки оё мо дар WebView ҳастем
   useEffect(() => {
     if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
       setIsNativeWebView(true);
       setIsInitializing(false);
-      // Фармон ба React Native барои кушодани сканнери Native
-      (window as any).ReactNativeWebView.postMessage(
-        JSON.stringify({ type: "OPEN_NATIVE_SCANNER" })
-      );
+      (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "OPEN_NATIVE_SCANNER" }));
     }
-
-    // Тафтиши статуси иҷозат (Permissions API)
-    if (navigator.permissions && (navigator.permissions as any).query) {
+    if (navigator.permissions?.query) {
       navigator.permissions.query({ name: 'camera' as any })
         .then((status) => {
-          if (status.state === 'denied') {
-            setIsBlocked(true);
-          }
+          if (status.state === 'denied') setIsBlocked(true);
           status.onchange = () => {
-            if (status.state === 'granted') {
-              startScanner(true);
-            } else if (status.state === 'denied') {
+            if (status.state === 'granted') window.location.reload();
+            else if (status.state === 'denied') {
               setIsBlocked(true);
-              setError("Браузер дастрасиро маҳкам кард. Лутфан аз танзимот иҷозат диҳед.");
+              setError("denied");
             }
           };
         })
-        .catch(console.error);
+        .catch(() => {});
     }
   }, []);
 
   const handleBack = () => {
-    if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-      html5QrCodeRef.current.stop().then(() => {
-        router.back();
-      }).catch(() => {
-        router.back();
-      });
+    if (html5QrCodeRef.current?.isScanning) {
+      html5QrCodeRef.current.stop().then(() => router.back()).catch(() => router.back());
     } else {
       router.back();
     }
   };
 
-  // Оғози танзимоти сканнер
-  const startScanner = async (isRetry = false) => {
-    if (isNativeWebView) return; // Дар WebView сканнери Вебро оғоз намекунем
+  // Stops and destroys the current scanner instance, clears #reader DOM
+  const cleanup = async () => {
+    if (html5QrCodeRef.current) {
+      try {
+        if (html5QrCodeRef.current.isScanning) {
+          await html5QrCodeRef.current.stop();
+        }
+      } catch (_) {}
+      html5QrCodeRef.current = null;
+    }
+    const el = document.getElementById('reader');
+    if (el) el.innerHTML = '';
+  };
 
-    if (isRetry) {
-      setError(null);
-      setIsInitializing(true);
-      setIsScanning(false);
-      setIsBlocked(false);
+  const onScanSuccess = (decodedText: string) => {
+    const ref = html5QrCodeRef.current;
+    if (!ref) return;
+
+    const isJuyoQr =
+      decodedText.includes('juyo.tj/qr/') ||
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decodedText);
+
+    if (!isJuyoQr) {
+      ref.stop().then(() => { setIsScanning(false); setShowUnknownQr(true); }).catch(console.error);
+      return;
     }
 
-    try {
-      // 1. Тафтиши медиа-дастгоҳҳо
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Камера дар ин браузер дастгирӣ намешавад ё пайвастшавии бехатар (HTTPS) лозим аст.");
-      }
+    ref.stop().then(() => {
+      toast.success(t('qrDetected'));
+      const targetPath = decodedText.includes('juyo.tj/qr/')
+        ? decodedText.split('juyo.tj')[1]
+        : `/qr/${decodedText}`;
+      const sep = targetPath.includes('?') ? '&' : '?';
+      const finalUrl = `${targetPath}${sep}lang=${localeRef.current}`;
+      if (decodedText.startsWith('http')) window.location.href = finalUrl;
+      else router.push(finalUrl);
+    }).catch(console.error);
+  };
 
-      // Cleanup previous instance
-      if (html5QrCodeRef.current) {
-        try {
-          if (html5QrCodeRef.current.isScanning) {
-            await html5QrCodeRef.current.stop();
-          }
-        } catch (e) {}
-      }
+  // Core scanner start — assumes permission is already granted
+  const runScanner = async () => {
+    await cleanup();
 
-      // Фармоиши иҷозати камера пеш аз оғоз (Force permission prompt)
-      // Ин кафолат медиҳад, ки браузер равзанаи иҷозатро нишон медиҳад
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        stream.getTracks().forEach(track => track.stop()); // Маҷрои санҷиширо мебандем
-      } catch (permErr: any) {
-        console.error("Permission request error:", permErr);
-        if (permErr.name === "NotAllowedError" || permErr.name === "PermissionDeniedError") {
-          setIsBlocked(true);
-          throw new Error("Браузер дастрасиро маҳкам кард. Лутфан аз танзимот иҷозат диҳед.");
-        }
-        throw permErr;
-      }
+    const cameras = await Html5Qrcode.getCameras();
+    if (!cameras?.length) throw new Error("notfound");
 
-      // 2. Пеш аз оғоз рӯйхати камераҳоро мепурсем
-      const cameras = await Html5Qrcode.getCameras();
-      
-      if (!cameras || cameras.length === 0) {
-        throw new Error("Камера ёфт нашуд. Лутфан боварӣ ҳосил кунед, ки камера фаъол аст.");
-      }
+    const html5QrCode = new Html5Qrcode("reader", {
+      formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      verbose: false,
+    });
+    html5QrCodeRef.current = html5QrCode;
 
-      const html5QrCode = new Html5Qrcode("reader", {
-        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
-        verbose: false
-      });
-      html5QrCodeRef.current = html5QrCode;
+    const backCamera =
+      cameras.find(c => /back|environment|rear/i.test(c.label)) ||
+      cameras[cameras.length - 1];
 
-      const config = {
-        fps: 20,
-        aspectRatio: 1.0,
-      };
+    await html5QrCode.start(backCamera.id, { fps: 20, aspectRatio: 1.0 }, onScanSuccess, () => {});
+    setIsScanning(true);
+    setIsInitializing(false);
+  };
 
-      // 3. Камераи ақибро интихоб мекунем
-      const backCamera = cameras.find(c => 
-        c.label.toLowerCase().includes('back') || 
-        c.label.toLowerCase().includes('environment') ||
-        c.label.toLowerCase().includes('rear')
-      ) || cameras[cameras.length - 1];
-
-      await html5QrCode.start(
-        backCamera.id,
-        config,
-        (decodedText) => {
-          // Тафтиши ин ки оё QR ба JUYO тааллуқ дорад ё не
-          const isJuyoQr = decodedText.includes('juyo.tj/qr/') || 
-                          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decodedText);
-
-          if (!isJuyoQr) {
-            html5QrCode.stop().then(() => {
-              setIsScanning(false);
-              setShowUnknownQr(true);
-            }).catch(console.error);
-            return;
-          }
-
-          html5QrCode.stop().then(() => {
-            toast.success(t('qrDetected'));
-            
-            // Илова кардани забон ба URL барои гузариши дуруст
-            const targetPath = decodedText.includes('juyo.tj/qr/') 
-              ? decodedText.split('juyo.tj')[1] 
-              : `/qr/${decodedText}`;
-            
-            const separator = targetPath.includes('?') ? '&' : '?';
-            const finalUrl = `${targetPath}${separator}lang=${locale}`;
-
-            if (decodedText.startsWith('http')) {
-              window.location.href = finalUrl;
-            } else {
-              router.push(finalUrl);
-            }
-          }).catch(console.error);
-        },
-        () => {} 
-      );
-
-      setIsScanning(true);
+  // Auto-start on mount — no explicit permission request, library handles it
+  const startScanner = async () => {
+    if (isNativeWebView) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError("unsupported");
       setIsInitializing(false);
+      return;
+    }
+    try {
+      await runScanner();
     } catch (err: any) {
-      console.error("Scanner Error:", err);
-      let msg = t('cameraError') || "Хатогии камера";
-      
-      if (err.name === "NotAllowedError" || err.message?.includes("Permission denied") || err.message?.includes("маҳкам кард")) {
-        msg = "Браузер дастрасиро маҳкам кард. Лутфан аз танзимот иҷозат диҳед.";
-        setIsBlocked(true);
-      } else if (err.name === "NotFoundError") {
-        msg = t('cameraNotFound') || "Камера ёфт нашуд.";
-      } else {
-        msg = err.message || msg;
-      }
-      
-      setError(msg);
       setIsInitializing(false);
       setIsScanning(false);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setIsBlocked(true);
+        setError("denied");
+      } else if (err.name === 'NotFoundError' || err.message === 'notfound') {
+        setError("notfound");
+      } else {
+        setError(err.message || "error");
+      }
+    }
+  };
+
+  // Button click handler — getUserMedia MUST be the very first await to keep user gesture alive
+  const handlePermissionClick = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) return;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+      });
+      stream.getTracks().forEach(t => t.stop());
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setIsBlocked(true);
+        setError("denied");
+      } else {
+        setError(err.message || "error");
+      }
+      return;
+    }
+
+    // Permission granted — now start scanner
+    setError(null);
+    setIsBlocked(false);
+    setIsInitializing(true);
+    setIsScanning(false);
+
+    try {
+      await runScanner();
+    } catch (err: any) {
+      setIsInitializing(false);
+      setIsScanning(false);
+      setError(err.message || "error");
     }
   };
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      startScanner();
-    }, 500);
-
+    const id = setTimeout(() => { startScanner(); }, 500);
     return () => {
-      clearTimeout(timeoutId);
-      if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+      clearTimeout(id);
+      if (html5QrCodeRef.current?.isScanning) {
         html5QrCodeRef.current.stop().catch(console.error);
       }
     };
   }, []);
 
   const SCAN_SIZE = 260;
+
+  const errorMsg = isBlocked || error === "denied"
+    ? "Браузер дастрасиро маҳкам кард. Дар танзимоти браузер иҷозати камераро фаъол кунед."
+    : error === "notfound"
+      ? "Камера ёфт нашуд. Лутфан камераро тафтиш кунед."
+      : error === "unsupported"
+        ? "Камера дар ин браузер дастгирӣ намешавад."
+        : "Барои скан кардан иҷозати камера лозим аст";
 
   return (
     <div className="fixed inset-0 bg-black text-white overflow-hidden">
@@ -258,7 +244,7 @@ export default function ScanPage() {
       )}
 
       {/* Loader */}
-      {!isNativeWebView && (isInitializing || !isScanning) && !error && (
+      {!isNativeWebView && isInitializing && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('loading')}</p>
@@ -282,21 +268,23 @@ export default function ScanPage() {
             </>
           ) : (
             <>
-              <p className="text-sm font-bold text-zinc-300 leading-relaxed">
-                Барои скан кардан иҷозати камера лозим аст
+              <p className="text-sm font-bold text-zinc-300 leading-relaxed max-w-xs">
+                {errorMsg}
               </p>
-              <Button
-                onClick={() => startScanner(true)}
-                className="bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
-              >
-                {t('permissionGrant') || 'Иҷозат додан'}
-              </Button>
+              {!isBlocked && (
+                <Button
+                  onClick={handlePermissionClick}
+                  className="bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
+                >
+                  {t('permissionGrant') || 'Иҷозат додан'}
+                </Button>
+              )}
             </>
           )}
         </div>
       )}
 
-      {/* Overlay — чоркунҷаи равшан дар маркaz, атроф торик */}
+      {/* Overlay — чоркунҷаи равшан дар марказ, атроф торик */}
       {isScanning && (
         <ScanOverlay size={SCAN_SIZE} />
       )}
@@ -315,7 +303,7 @@ export default function ScanPage() {
         <div className="w-10" />
       </div>
 
-      {/* Instruction overlay — поён */}
+      {/* Instruction overlay */}
       {isScanning && (
         <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-16 pt-12 z-20 bg-gradient-to-t from-black/70 to-transparent">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 border border-white/10 text-white/70">
@@ -342,7 +330,15 @@ export default function ScanPage() {
           </DialogHeader>
           <DialogFooter className="mt-6 sm:justify-center">
             <Button
-              onClick={() => { setShowUnknownQr(false); startScanner(true); }}
+              onClick={async () => {
+                setShowUnknownQr(false);
+                setIsInitializing(true);
+                setIsScanning(false);
+                try { await runScanner(); } catch (err: any) {
+                  setIsInitializing(false);
+                  setError(err.message || "error");
+                }
+              }}
               className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"
             >
               {t('confirm') || 'OK'}

@@ -29,16 +29,13 @@ const inter = Inter({
 export async function generateMetadata() {
   const cookieStore = await cookies();
   const savedLocale = cookieStore.get("juyo-locale")?.value || "tg";
-  const locale = ["tg", "ru", "en"].includes(savedLocale) ? savedLocale : "tg";
-
-  const t = translations[locale];
 
   return {
     title: {
-      default: t.seoTitle,
-      template: "%s | juyo",
+      default: "juyo",
+      template: "%s",
     },
-    description: t.seoDesc,
+    description: "",
     manifest: "/manifest.json",
     themeColor: [
       { media: "(prefers-color-scheme: light)", color: "#ffffff" },
@@ -88,8 +85,8 @@ export async function generateMetadata() {
             : "tg_TJ",
       url: "https://juyo.tj",
       siteName: "juyo",
-      title: t.seoTitle,
-      description: t.seoDesc,
+      title: "juyo",
+      description: "",
       images: [
         {
           url: "https://juyo.tj/juyo-logo.jpg",
@@ -101,8 +98,8 @@ export async function generateMetadata() {
     },
     twitter: {
       card: "summary_large_image",
-      title: t.seoTitle,
-      description: t.seoDesc,
+      title: "juyo",
+      description: "",
       images: ["https://juyo.tj/juyo-logo.jpg"],
     },
     icons: {
