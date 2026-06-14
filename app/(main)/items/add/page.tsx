@@ -11,7 +11,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { ItemService, CATEGORIES } from "@/lib/services/item-service";
 import { ProfileService } from "@/lib/services/profile-service";
-import { createClerkSupabaseClient } from "@/lib/supabase";
+import { createClerkSupabaseClient, supabase as anonSupabase } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Loader2, Plus, X, Upload, ArrowLeft, ShieldAlert, CheckCircle2, Search, Camera, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useRef } from "react";
 import {
@@ -140,15 +141,20 @@ function AddItemForm() {
   // Санҷиши AI ва Авто-пуркунӣ (AI Brain Check & Auto-fill)
   const runAIAnalysis = async (selectedImages: File[]) => {
     if (selectedImages.length === 0) return;
-    
+
     setStep(3); // Қадами 3: Таҳлили AI
     setModerationStatus('checking');
     setModerationError(null);
-    
+
     try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-      
+      let supabaseClient;
+      if (userId) {
+        const token = await getToken({ template: 'supabase' });
+        supabaseClient = createClerkSupabaseClient(token!);
+      } else {
+        supabaseClient = anonSupabase;
+      }
+
       const formDataAI = new FormData();
       
       // Compress images before sending to AI to prevent timeouts and OOM
@@ -165,7 +171,7 @@ function AddItemForm() {
       formDataAI.append('type', formData.type || 'lost');
       formDataAI.append('mode', 'full'); 
 
-      const { data, error } = await supabase.functions.invoke('ai-brain', {
+      const { data, error } = await supabaseClient.functions.invoke('ai-brain', {
         body: formDataAI,
       });
 
@@ -275,32 +281,30 @@ function AddItemForm() {
   };
 
   const onFinalSubmit = async () => {
-    if (!userId) return;
-    
     setShowSafetyModal(false);
-    
+
     // 1. САНҶИШИ ТАҒЙИРОТИ МАТН
     const isTitleChanged = formData.title !== aiSuggestions?.title;
     const isDescChanged = formData.description !== aiSuggestions?.description;
 
     if (isTitleChanged || isDescChanged) {
-      setStep(3); // Баргаштан ба "Сканер"
+      setStep(3);
       setModerationStatus('checking');
       setScanMessage(t('ai_steps.checking_custom_text') || "AI матни нави шуморо месанҷад...");
-      
+
       try {
-        const token = await getToken({ template: 'supabase' });
-        const supabase = createClerkSupabaseClient(token!);
-        
-        // Танҳо матнро барои модератсия мефиристем
-        const { data: textData, error: textError } = await supabase.functions.invoke('text-moderation', {
-          body: { 
-            record: { 
-              title: formData.title, 
-              description: formData.description,
-              moderation_status: 'pending' 
-            },
-            lang: locale // Интиқоли забони ҷорӣ
+        let supabaseClient;
+        if (userId) {
+          const token = await getToken({ template: 'supabase' });
+          supabaseClient = createClerkSupabaseClient(token!);
+        } else {
+          supabaseClient = anonSupabase;
+        }
+
+        const { data: textData, error: textError } = await supabaseClient.functions.invoke('text-moderation', {
+          body: {
+            record: { title: formData.title, description: formData.description, moderation_status: 'pending' },
+            lang: locale
           },
         });
 
@@ -310,7 +314,6 @@ function AddItemForm() {
           return;
         }
 
-        // Агар матн тоза бошад, 1.5 сония аниматсияи муваффақият нишон медиҳем
         setModerationStatus('passed');
         setScanMessage(t('ai_steps.text_passed') || "Матн қабул шуд!");
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -321,13 +324,42 @@ function AddItemForm() {
       }
     }
 
-    // 2. НАШРИ АСЛИИ ЭЪЛОН (АГАР САНҶИШ ГУЗАШТ)
+    // 2. НАШРИ ЭЪЛОН
     setLoading(true);
-    
+
     try {
+      // ---- МЕҲМОН (GUEST) ----
+      if (!userId) {
+        const guestForm = new FormData();
+        guestForm.append('type', formData.type!);
+        guestForm.append('title', formData.title);
+        guestForm.append('description', formData.description);
+        guestForm.append('category', formData.category);
+        guestForm.append('phone', formData.phone);
+        if (formData.reward) guestForm.append('reward', formData.reward);
+        if (aiSuggestions?.forensic) guestForm.append('forensic_text', aiSuggestions.forensic);
+
+        for (const file of images) {
+          const compressed = await compressImage(file);
+          guestForm.append('image', compressed);
+        }
+
+        const res = await fetch('/api/items/guest', { method: 'POST', body: guestForm });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Failed to submit');
+        }
+
+        toast.success(t('guestSubmitSuccess') || 'Пост нашр шуд!');
+        window.dispatchEvent(new Event('items-updated'));
+        router.push('/');
+        return;
+      }
+
+      // ---- КОРБАРИ БАҚАЙДГИРИФТАШУДА ----
       let token = await getToken({ template: 'supabase' });
       if (!token) throw new Error("Authentication token missing");
-      
+
       let supabase = createClerkSupabaseClient(token);
 
       const imageUrls = [];
@@ -359,27 +391,20 @@ function AddItemForm() {
       if (itemError) throw itemError;
 
       if (imageUrls.length > 0) {
-        const imageRecords = imageUrls.map((url) => {
-          return { 
-            item_id: item.id, 
-            image_url: url,
-            embedding: null 
-          };
-        });
+        const imageRecords = imageUrls.map((url) => ({
+          item_id: item.id,
+          image_url: url,
+          embedding: null
+        }));
 
         const { error: imagesError } = await supabase.from('item_images').insert(imageRecords);
-        
+
         if (imagesError) {
           console.error("DATABASE ERROR:", imagesError.message);
         } else {
-          // Барои visual search мувофиқати беҳтар: forensic тавсиф embed мешавад
-          // (AI forensic description ва visual search ҳарду бо забони англисӣ кор мекунанд)
           const embeddingText = aiSuggestions?.forensic || `${itemData.title} ${itemData.description}`;
           supabase.functions.invoke('generate-embedding', {
-            body: {
-                item_id: item.id,
-                text: embeddingText
-            }
+            body: { item_id: item.id, text: embeddingText }
           }).catch(err => console.error("Background embedding failed:", err));
         }
       }
@@ -411,6 +436,21 @@ function AddItemForm() {
             />
           ))}
         </div>
+
+        {/* Guest Banner */}
+        {!userId && (
+          <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 bg-amber-50 border-b border-amber-100">
+            <p className="text-[10px] font-bold text-amber-700 leading-tight">
+              {t('guestBanner')}
+            </p>
+            <Link
+              href="/sign-up"
+              className="shrink-0 text-[9px] font-black uppercase tracking-widest text-amber-700 border border-amber-300 rounded-lg px-2.5 py-1.5 hover:bg-amber-100 transition-all"
+            >
+              {t('guestBannerRegister')}
+            </Link>
+          </div>
+        )}
 
         <CardContent className="p-2 sm:p-4 md:p-6 lg:p-8 flex-1 flex flex-col justify-start pt-10 sm:pt-6 overflow-y-auto scrollbar-none">
           {/* Step 1: Photos First (Refined) */}

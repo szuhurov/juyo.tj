@@ -594,6 +594,12 @@ export const translations: Record<string, any> = {
     analyzing: 'Таҳлил...',
     clearResults: 'Тоза кардани натиҷаҳо',
     visualSearchResultsTitle: 'Натиҷаҳои ҷустуҷӯи визуалӣ',
+
+    // Guest Post
+    guestBanner: 'Шумо бе ҳисоб нашр мекунед. Пост баъд аз 6 моҳ нест мешавад.',
+    guestBannerRegister: 'Сабти ном кунед',
+    guestPostExpiry: 'Ин пост баъд аз 6 моҳ автоматӣ нест мешавад',
+    guestSubmitSuccess: 'Постро шумо бо муваффақият нашр кардед!',
   },
   ru: {
     settings: 'Настройки',
@@ -1180,6 +1186,12 @@ export const translations: Record<string, any> = {
     analyzing: 'Анализ...',
     clearResults: 'Очистить результаты',
     visualSearchResultsTitle: 'Результаты поиска по фото',
+
+    // Guest Post
+    guestBanner: 'Вы публикуете без аккаунта. Пост будет удалён через 6 месяцев.',
+    guestBannerRegister: 'Зарегистрироваться',
+    guestPostExpiry: 'Этот пост будет автоматически удалён через 6 месяцев',
+    guestSubmitSuccess: 'Ваш пост успешно опубликован!',
   },
   en: {
     settings: 'Settings',
@@ -1741,5 +1753,11 @@ export const translations: Record<string, any> = {
     analyzing: 'Analyzing...',
     clearResults: 'Clear results',
     visualSearchResultsTitle: 'Visual Search Results',
+
+    // Guest Post
+    guestBanner: 'You are posting without an account. Post will be deleted after 6 months.',
+    guestBannerRegister: 'Register',
+    guestPostExpiry: 'This post will be automatically deleted after 6 months',
+    guestSubmitSuccess: 'Your post was published successfully!',
   }
 };

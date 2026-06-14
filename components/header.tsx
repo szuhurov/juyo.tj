@@ -264,6 +264,12 @@ export function Header() {
             <div className="hidden sm:flex items-center space-x-2">
               {!userId ? (
                 <div className="flex items-center gap-2">
+                  <Button size="sm" className="rounded-lg font-black text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-md h-9 px-4" asChild>
+                    <Link href="/items/add">
+                      <PlusCircle className="h-4 w-4 mr-1.5" />
+                      {t('addItemTitle')}
+                    </Link>
+                  </Button>
                   <Button variant="secondary" size="sm" className="font-bold text-[10px] text-zinc-900 dark:text-zinc-100 h-9 px-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100" asChild>
                     <Link href="/sign-in">{t('login')}</Link>
                   </Button>
@@ -275,7 +281,7 @@ export function Header() {
                 <div className="flex items-center gap-3">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" className="rounded-lg font-black text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 shadow-md h-9 px-4" asChild>
+                      <Button size="sm" className="rounded-lg font-black text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white shadow-md h-9 px-4" asChild>
                         <Link href="/items/add">
                           <PlusCircle className="h-4 w-4 mr-1.5" />
                           {t('addItemTitle')}

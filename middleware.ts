@@ -4,7 +4,6 @@ import { rateLimit } from "@/lib/rate-limit";
 
 const isProtectedRoute = createRouteMatcher([
   "/profile(.*)",
-  "/items/add",
   "/items/(.*)/edit",
 ]);
 

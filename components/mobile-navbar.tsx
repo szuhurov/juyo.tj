@@ -61,7 +61,7 @@ export function MobileNavbar() {
   const handleNavClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      const isProtected = href.includes("/profile") || href.includes("/items/add");
+      const isProtected = href.includes("/profile");
 
       if (isProtected && !userId) {
         router.push("/sign-up");
