@@ -17,6 +17,8 @@ export interface Item {
   views?: number;
   moderation_status?: 'pending' | 'approved' | 'rejected';
   moderation_result?: string;
+  is_guest?: boolean;
+  expires_at?: string;
   images?: { image_url: string }[];
   similarity_score?: number;
   profiles?: {

@@ -51,7 +51,7 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
   const [isHovered, setIsHovered] = useState(false);
 
   // Санҷиши соҳиби эълон
-  const isOwner = userId === item.user_id;
+  const isOwner = !!userId && userId === item.user_id;
   const exactDate = format(new Date(item.created_at), "dd.MM.yyyy");
 
   // Синхронизатсияи isSaved ҳангоми иваз шудани savedItemIds аз берун

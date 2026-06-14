@@ -600,6 +600,7 @@ export const translations: Record<string, any> = {
     guestBannerRegister: 'Сабти ном кунед',
     guestPostExpiry: 'Ин пост баъд аз 6 моҳ автоматӣ нест мешавад',
     guestSubmitSuccess: 'Постро шумо бо муваффақият нашр кардед!',
+    guestUser: 'Корбари тасдиқнашуда',
   },
   ru: {
     settings: 'Настройки',
@@ -1192,6 +1193,7 @@ export const translations: Record<string, any> = {
     guestBannerRegister: 'Зарегистрироваться',
     guestPostExpiry: 'Этот пост будет автоматически удалён через 6 месяцев',
     guestSubmitSuccess: 'Ваш пост успешно опубликован!',
+    guestUser: 'Неверифицированный пользователь',
   },
   en: {
     settings: 'Settings',
@@ -1759,5 +1761,6 @@ export const translations: Record<string, any> = {
     guestBannerRegister: 'Register',
     guestPostExpiry: 'This post will be automatically deleted after 6 months',
     guestSubmitSuccess: 'Your post was published successfully!',
+    guestUser: 'Unverified user',
   }
 };

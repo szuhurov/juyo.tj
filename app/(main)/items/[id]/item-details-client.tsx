@@ -59,7 +59,7 @@ export default function ItemDetailsClient({ id, initialItem }: { id: string; ini
   }, [isLoaded, getToken]);
 
   const { data: item, isLoading: loading } = useItemDetails(id, token, initialItem);
-  const isOwner = userId === item?.user_id;
+  const isOwner = !!userId && userId === item?.user_id;
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isManualScroll = useRef(false);
@@ -293,7 +293,16 @@ export default function ItemDetailsClient({ id, initialItem }: { id: string; ini
 
           <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
-              {item?.profiles ? (
+              {item?.is_guest ? (
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                    <User className="w-6 h-6 text-zinc-400" />
+                  </div>
+                  <div className="flex flex-col">
+                    <p className="font-black text-sm leading-tight">{t('guestUser')}</p>
+                  </div>
+                </div>
+              ) : item?.profiles ? (
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
                     {item.profiles?.avatar_url ? (<Image src={item.profiles.avatar_url} alt="User" width={48} height={48} className="object-cover" />) : (<User className="w-6 h-6 text-zinc-400" />)}
