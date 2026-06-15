@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v5";
+const CACHE_NAME = "juyo-v6";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -8,9 +8,32 @@ const STATIC_ASSETS = [
   "/manifest.json",
 ];
 
+const OFFLINE_FALLBACK = `<!DOCTYPE html>
+<html lang="tg">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>juyo — Offline</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:sans-serif;background:#09090b;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}
+h1{font-size:20px;margin-bottom:12px}
+p{color:#a1a1aa;font-size:14px;margin-bottom:24px}
+button{background:#fff;color:#09090b;border:none;padding:12px 28px;border-radius:8px;font-size:15px;cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<h1>Пайвастшавӣ нест / Нет связи / Offline</h1>
+<p>Интернетро санҷед / Проверьте интернет / Check your connection</p>
+<button onclick="location.reload()">Retry / Повторить</button>
+</body>
+</html>`;
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .catch(() => {})
   );
   self.skipWaiting();
 });
@@ -24,13 +47,23 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-function fetchWithTimeout(request, ms = 500) {
+function networkWithTimeout(request, ms = 500) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("timeout")), ms);
-    fetch(request).then(
+    fetch(request.clone()).then(
       (res) => { clearTimeout(timer); resolve(res); },
       (err) => { clearTimeout(timer); reject(err); }
     );
+  });
+}
+
+function offlineResponse() {
+  return caches.match(OFFLINE_URL).then((cached) => {
+    if (cached) return cached;
+    return new Response(OFFLINE_FALLBACK, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   });
 }
 
@@ -42,13 +75,15 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetchWithTimeout(event.request, 3000)
+      networkWithTimeout(event.request, 500)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
+          }
           return response;
         })
-        .catch(() => caches.match(OFFLINE_URL))
+        .catch(() => offlineResponse())
     );
     return;
   }
@@ -56,23 +91,21 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-      return fetchWithTimeout(event.request, 3000)
+      return networkWithTimeout(event.request, 500)
         .then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
           }
           return response;
         })
-        .catch(() => caches.match(OFFLINE_URL));
+        .catch(() => offlineResponse());
     })
   );
 });
 
 self.addEventListener("sync", (event) => {
-  if (event.tag === "juyo-sync") {
-    event.waitUntil(Promise.resolve());
-  }
+  if (event.tag === "juyo-sync") event.waitUntil(Promise.resolve());
 });
 
 self.addEventListener("push", (event) => {
@@ -92,7 +125,5 @@ self.addEventListener("notificationclick", (event) => {
 });
 
 self.addEventListener("periodicsync", (event) => {
-  if (event.tag === "juyo-periodic") {
-    event.waitUntil(Promise.resolve());
-  }
+  if (event.tag === "juyo-periodic") event.waitUntil(Promise.resolve());
 });
