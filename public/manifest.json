@@ -31,6 +31,59 @@
       "purpose": "maskable"
     }
   ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+juyo",
+      "url": "/qr/%s"
+    },
+    {
+      "protocol": "mailto",
+      "url": "/profile?email=%s"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "file_handlers": [
+    {
+      "action": "/items/add",
+      "accept": {
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/webp": [".webp"]
+      }
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Эълон гузоштан",
+      "short_name": "Эълон",
+      "description": "Эълони нав гузоштан",
+      "url": "/items/add",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Профил",
+      "short_name": "Профил",
+      "description": "Профили шахсӣ",
+      "url": "/profile",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Эълонҳои ман",
+      "short_name": "Эълонҳо",
+      "description": "Эълонҳои гузоштаи ман",
+      "url": "/profile/my-posts",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "QR-код",
+      "short_name": "QR",
+      "description": "QR-коди шахсӣ",
+      "url": "/qr",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "screenshots": [
     {
       "src": "/icon-512.png",
