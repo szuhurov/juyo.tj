@@ -6,7 +6,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "display_override": ["tabbed", "window-controls-overlay", "standalone", "minimal-ui", "browser"],
   "background_color": "#ffffff",
   "theme_color": "#09090b",
   "orientation": "portrait-primary",
@@ -126,8 +126,37 @@
   "launch_handler": {
     "client_mode": "focus-existing"
   },
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "scope_extensions": [
-    { "origin": "https://juyo.tj" }
+    { "origin": "https://juyo.tj" },
+    { "origin": "https://www.juyo.tj" }
+  ],
+  "widgets": [
+    {
+      "name": "juyo",
+      "short_name": "juyo",
+      "description": "Ашёи гумшуда ва ёфтшуда",
+      "tag": "juyo-widget",
+      "template": "generic-template",
+      "ms_ac_template": "/widgets/template.json",
+      "data": "/widgets/data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "/icon-512.png",
+          "sizes": "512x512",
+          "label": "juyo widget"
+        }
+      ],
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ],
+      "auth": false,
+      "update": 86400
+    }
   ],
   "edge_side_panel": {
     "preferred_width": 400

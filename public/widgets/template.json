@@ -1,0 +1,30 @@
+{
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "juyo.tj",
+      "weight": "Bolder",
+      "size": "Medium"
+    },
+    {
+      "type": "TextBlock",
+      "text": "Ашёи гумшуда ва ёфтшуда дар Тоҷикистон",
+      "wrap": true,
+      "size": "Small"
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.OpenUrl",
+      "title": "Кушо",
+      "url": "https://juyo.tj"
+    },
+    {
+      "type": "Action.OpenUrl",
+      "title": "Эълон гузор",
+      "url": "https://juyo.tj/items/add"
+    }
+  ]
+}
