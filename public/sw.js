@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v6";
+const CACHE_NAME = "juyo-v7";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -30,10 +30,23 @@ button{background:#fff;color:#09090b;border:none;padding:12px 28px;border-radius
 </html>`;
 
 self.addEventListener("install", (event) => {
+  // Skip waiting immediately so the SW activates without delay.
+  // Do NOT gate skipWaiting() behind cache operations — if the network is
+  // blocked during install, cache.add() hangs and the SW never activates.
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      Promise.allSettled(STATIC_ASSETS.map((url) => cache.add(url)))
-    ).then(() => self.skipWaiting())
+      Promise.allSettled(
+        STATIC_ASSETS.map((url) =>
+          Promise.race([
+            cache.add(url),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("cache-add timeout")), 5000)
+            ),
+          ])
+        )
+      )
+    )
   );
 });
 
@@ -46,7 +59,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-function networkWithTimeout(request, ms = 500) {
+function networkWithTimeout(request, ms) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("timeout")), ms);
     fetch(request.clone()).then(
@@ -74,15 +87,16 @@ self.addEventListener("fetch", (event) => {
 
   if (event.request.mode === "navigate") {
     event.respondWith(
-      networkWithTimeout(event.request, 500)
+      networkWithTimeout(event.request, 3000)
         .then((response) => {
           if (response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, response.clone()));
           }
           return response;
         })
-        .catch(() => offlineResponse())
+        .catch(() =>
+          caches.match(event.request).then((cached) => cached || offlineResponse())
+        )
     );
     return;
   }
@@ -90,11 +104,10 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-      return networkWithTimeout(event.request, 500)
+      return networkWithTimeout(event.request, 3000)
         .then((response) => {
           if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, clone));
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, response.clone()));
           }
           return response;
         })
