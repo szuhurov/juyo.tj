@@ -6,6 +6,7 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["tabbed", "window-controls-overlay", "standalone", "minimal-ui", "browser"],
   "background_color": "#ffffff",
   "theme_color": "#09090b",
   "orientation": "portrait-primary",
@@ -20,7 +21,6 @@
       "id": "tj.juyo.twa"
     }
   ],
-  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -87,6 +87,16 @@
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
+  "file_handlers": [
+    {
+      "action": "/items/add",
+      "accept": {
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/webp": [".webp"]
+      }
+    }
+  ],
   "share_target": {
     "action": "/items/add",
     "method": "POST",
@@ -102,5 +112,62 @@
         }
       ]
     }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+juyo",
+      "url": "/qr/%s"
+    },
+    {
+      "protocol": "mailto",
+      "url": "/profile?email=%s"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "tab_strip": {
+    "home_tab": {
+      "url": "/"
+    },
+    "new_tab_button": {
+      "url": "/items/add"
+    }
+  },
+  "note_taking": {
+    "new_note_url": "/items/add"
+  },
+  "scope_extensions": [
+    { "origin": "https://juyo.tj" }
+  ],
+  "widgets": [
+    {
+      "name": "juyo",
+      "short_name": "juyo",
+      "description": "Ашёи гумшуда ва ёфтшуда",
+      "tag": "juyo-widget",
+      "ms_ac_template": "/widgets/template.json",
+      "data": "/widgets/data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "/icon-512.png",
+          "sizes": "512x512",
+          "label": "juyo widget"
+        }
+      ],
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ],
+      "auth": false,
+      "update": 86400
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
   }
 }
