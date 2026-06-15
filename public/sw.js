@@ -1,3 +1,4 @@
+// juyo.tj service worker
 const CACHE_NAME = "juyo-v1";
 const STATIC_ASSETS = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png"];
 
