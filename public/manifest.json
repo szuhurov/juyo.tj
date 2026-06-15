@@ -6,11 +6,21 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
   "background_color": "#ffffff",
   "theme_color": "#09090b",
   "orientation": "portrait-primary",
   "lang": "tg",
+  "dir": "ltr",
   "categories": ["utilities", "social", "lifestyle"],
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=tj.juyo.twa",
+      "id": "tj.juyo.twa"
+    }
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -31,27 +41,20 @@
       "purpose": "maskable"
     }
   ],
-  "protocol_handlers": [
+  "screenshots": [
     {
-      "protocol": "web+juyo",
-      "url": "/qr/%s"
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "juyo - Платформаи ёфтани ашёҳои гумшуда"
     },
     {
-      "protocol": "mailto",
-      "url": "/profile?email=%s"
-    }
-  ],
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  },
-  "file_handlers": [
-    {
-      "action": "/items/add",
-      "accept": {
-        "image/jpeg": [".jpg", ".jpeg"],
-        "image/png": [".png"],
-        "image/webp": [".webp"]
-      }
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "juyo - Нусхаи desktop"
     }
   ],
   "shortcuts": [
@@ -84,13 +87,49 @@
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
-  "screenshots": [
+  "file_handlers": [
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "juyo - Платформаи ёфтани ашёҳои гумшуда"
+      "action": "/items/add",
+      "accept": {
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/webp": [".webp"]
+      }
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/items/add",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "image",
+          "accept": ["image/jpeg", "image/png", "image/webp"]
+        }
+      ]
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+juyo",
+      "url": "/qr/%s"
+    },
+    {
+      "protocol": "mailto",
+      "url": "/profile?email=%s"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "scope_extensions": [
+    { "origin": "https://juyo.tj" }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
 }
