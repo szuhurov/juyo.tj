@@ -135,6 +135,9 @@
       "url": "/items/add"
     }
   },
+  "note_taking": {
+    "new_note_url": "/items/add"
+  },
   "scope_extensions": [
     { "origin": "https://juyo.tj" },
     { "origin": "https://www.juyo.tj" }
@@ -145,7 +148,6 @@
       "short_name": "juyo",
       "description": "Ашёи гумшуда ва ёфтшуда",
       "tag": "juyo-widget",
-      "template": "generic-template",
       "ms_ac_template": "/widgets/template.json",
       "data": "/widgets/data.json",
       "type": "application/json",
