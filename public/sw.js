@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v3";
+const CACHE_NAME = "juyo-v4";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -24,35 +24,47 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function fetchWithTimeout(request, ms = 3000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    fetch(request).then(
+      (res) => { clearTimeout(timer); resolve(res); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
+
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
-
-  // Only handle same-origin requests
   if (url.origin !== self.location.origin) return;
 
-  // For navigation requests (HTML pages)
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() =>
-        caches.match(OFFLINE_URL)
-      )
+      fetchWithTimeout(event.request, 3000)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(OFFLINE_URL))
     );
     return;
   }
 
-  // For static assets — cache first, then network
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => caches.match(OFFLINE_URL));
+      return fetchWithTimeout(event.request, 3000)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(OFFLINE_URL));
     })
   );
 });

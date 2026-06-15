@@ -1,0 +1,10 @@
+{
+  "web_apps": [
+    {
+      "manifest": "https://juyo.tj/manifest.json",
+      "details": {
+        "paths": ["/*"]
+      }
+    }
+  ]
+}
