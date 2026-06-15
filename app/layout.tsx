@@ -39,7 +39,7 @@ export async function generateMetadata() {
     manifest: "/manifest.json",
     themeColor: [
       { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-      { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+      { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
     ],
     appleWebApp: {
       capable: true,

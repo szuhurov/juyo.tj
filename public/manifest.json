@@ -8,7 +8,7 @@
   "display": "standalone",
   "display_override": ["tabbed", "window-controls-overlay", "standalone", "minimal-ui", "browser"],
   "background_color": "#ffffff",
-  "theme_color": "#09090b",
+  "theme_color": "#ffffff",
   "orientation": "portrait-primary",
   "lang": "tg",
   "dir": "ltr",
