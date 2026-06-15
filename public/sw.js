@@ -1,11 +1,11 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v2";
-const OFFLINE_URL = "/";
+const CACHE_NAME = "juyo-v3";
+const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
-  "/",
-  "/manifest.json",
+  "/offline.html",
   "/icon-192.png",
   "/icon-512.png",
+  "/manifest.json",
 ];
 
 self.addEventListener("install", (event) => {
@@ -26,20 +26,33 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  if (!event.request.url.startsWith(self.location.origin)) return;
 
+  const url = new URL(event.request.url);
+
+  // Only handle same-origin requests
+  if (url.origin !== self.location.origin) return;
+
+  // For navigation requests (HTML pages)
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match(OFFLINE_URL)
+      )
+    );
+    return;
+  }
+
+  // For static assets — cache first, then network
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-      return fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === "basic") {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match(OFFLINE_URL));
+      return fetch(event.request).then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(OFFLINE_URL));
     })
   );
 });

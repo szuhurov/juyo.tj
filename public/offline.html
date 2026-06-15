@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="tg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>juyo — No connection</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      background: #09090b;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 24px;
+    }
+    .app-icon { width: 72px; height: 72px; border-radius: 16px; margin-bottom: 20px; }
+    .wifi-icon { margin-bottom: 16px; }
+    .lang-switcher { display: flex; gap: 8px; margin-bottom: 24px; }
+    .lang-btn {
+      background: transparent;
+      color: #a1a1aa;
+      border: 1px solid #3f3f46;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .lang-btn.active {
+      background: #fff;
+      color: #09090b;
+      border-color: #fff;
+      font-weight: 600;
+    }
+    h1 { font-size: 20px; margin-bottom: 10px; }
+    p { font-size: 14px; color: #a1a1aa; margin-bottom: 28px; line-height: 1.7; }
+    .retry-btn {
+      background: #fff;
+      color: #09090b;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .text-content { display: none; }
+    .text-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <img class="app-icon" src="/icon-192.png" alt="juyo" />
+
+  <div class="wifi-icon">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="1" y1="1" x2="23" y2="23"/>
+      <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+      <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+      <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+      <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+      <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+      <circle cx="12" cy="20" r="1" fill="#ef4444"/>
+    </svg>
+  </div>
+
+  <div class="lang-switcher">
+    <button class="lang-btn active" onclick="setLang('tg')">TG</button>
+    <button class="lang-btn" onclick="setLang('ru')">RU</button>
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+  </div>
+
+  <div id="tg" class="text-content active">
+    <h1>Пайвастшавӣ нест</h1>
+    <p>Интернетро санҷед ва дубора кӯшиш кунед.</p>
+    <button class="retry-btn" onclick="window.location.reload()">Дубора кӯшиш</button>
+  </div>
+
+  <div id="ru" class="text-content">
+    <h1>Нет подключения</h1>
+    <p>Проверьте интернет и попробуйте снова.</p>
+    <button class="retry-btn" onclick="window.location.reload()">Попробовать снова</button>
+  </div>
+
+  <div id="en" class="text-content">
+    <h1>No internet connection</h1>
+    <p>Check your connection and try again.</p>
+    <button class="retry-btn" onclick="window.location.reload()">Try again</button>
+  </div>
+
+  <script>
+    function setLang(lang) {
+      document.querySelectorAll('.text-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(lang).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    const browserLang = navigator.language?.slice(0, 2);
+    if (browserLang === 'ru') setLang('ru');
+    else if (browserLang === 'en') setLang('en');
+  </script>
+</body>
+</html>
