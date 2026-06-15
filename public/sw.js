@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v4";
+const CACHE_NAME = "juyo-v5";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -24,7 +24,7 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-function fetchWithTimeout(request, ms = 3000) {
+function fetchWithTimeout(request, ms = 500) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error("timeout")), ms);
     fetch(request).then(
