@@ -127,9 +127,18 @@
     "client_mode": "focus-existing"
   },
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "tab_strip": {
+    "home_tab": {
+      "url": "/"
+    },
+    "new_tab_button": {
+      "url": "/items/add"
+    }
+  },
   "scope_extensions": [
     { "origin": "https://juyo.tj" },
-    { "origin": "https://www.juyo.tj" }
+    { "origin": "https://www.juyo.tj" },
+    { "origin": "https://clerk.juyo.tj" }
   ],
   "widgets": [
     {
