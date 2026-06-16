@@ -63,6 +63,9 @@ export async function generateMetadata() {
     verification: {
       google: "OlHxk_CFMu0ekUQbcbj9aaTRk4bn_kCIoR_7PCNO8L4",
     },
+    other: {
+      "google-adsense-account": "ca-pub-2002195129032167",
+    },
     metadataBase: new URL("https://juyo.tj"),
     alternates: {
       canonical: "/",
@@ -215,6 +218,13 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
           }}
+        />
+        <Script
+          id="adsense"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2002195129032167"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
         />
       </body>
     </html>
