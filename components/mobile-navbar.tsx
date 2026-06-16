@@ -93,8 +93,11 @@ export function MobileNavbar() {
                   onTouchStart={() => handlePrefetch(item.href)}
                   className="flex items-center justify-center"
                 >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-transform duration-150 text-zinc-400">
-                    <item.icon className="h-6 w-6" />
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all duration-150",
+                    isActive ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "text-zinc-400 dark:text-zinc-500"
+                  )}>
+                    <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                   </div>
                 </button>
               );
