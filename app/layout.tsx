@@ -15,6 +15,7 @@ import { QueryProvider } from "@/components/query-provider"; // Барои ид�
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { SplashScreen } from "@/components/splash-screen";
 import Script from "next/script";
 
 // Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣ
@@ -205,7 +206,8 @@ export default async function RootLayout({
               <Analytics />
               <SpeedInsights />
               <Toaster position="top-center" richColors />
-              <PWAInstallPrompt />
+              <SplashScreen />
+        <PWAInstallPrompt />
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>

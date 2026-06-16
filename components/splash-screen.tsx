@@ -36,7 +36,7 @@ export function SplashScreen() {
         !isVisible && "opacity-0 pointer-events-none"
       )}
     >
-      <div className="flex flex-col items-center animate-logo-pop">
+      <div className="flex flex-col items-center">
         <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-xl shadow-zinc-200 border border-zinc-100 bg-white p-2">
           <Image
             src="/juyo-logo.jpg"

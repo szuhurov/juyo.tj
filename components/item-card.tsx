@@ -258,7 +258,7 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
               </div>
             )}
             <div className="relative w-full">
-              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-2 leading-snug uppercase tracking-tight text-white drop-shadow-md pr-[70px] sm:pr-[82px]">
+              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-2 leading-snug uppercase tracking-tight text-white drop-shadow-md pr-[82px] sm:pr-[100px]">
                 {item.title}
               </h3>
               <div className="absolute right-0 top-0 flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold bg-black/60 px-1.5 py-0.5 rounded border border-white/10">

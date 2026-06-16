@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v9";
+const CACHE_NAME = "juyo-v10";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
