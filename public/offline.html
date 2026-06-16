@@ -103,19 +103,19 @@
   <div id="tg" class="text-content active">
     <h1>Пайвастшавӣ нест</h1>
     <p>Интернетро санҷед ва дубора кӯшиш кунед.</p>
-    <button class="retry-btn" onclick="window.location.reload()">Дубора кӯшиш</button>
+    <button class="retry-btn" onclick="retry()">Дубора кӯшиш</button>
   </div>
 
   <div id="ru" class="text-content">
     <h1>Нет подключения</h1>
     <p>Проверьте интернет и попробуйте снова.</p>
-    <button class="retry-btn" onclick="window.location.reload()">Попробовать снова</button>
+    <button class="retry-btn" onclick="retry()">Попробовать снова</button>
   </div>
 
   <div id="en" class="text-content">
     <h1>No internet connection</h1>
     <p>Check your connection and try again.</p>
-    <button class="retry-btn" onclick="window.location.reload()">Try again</button>
+    <button class="retry-btn" onclick="retry()">Try again</button>
   </div>
 
   <script>
@@ -125,9 +125,9 @@
       document.getElementById(lang).classList.add('active');
       document.querySelector('[data-lang="' + lang + '"]').classList.add('active');
     }
-    const browserLang = (navigator.language || '').slice(0, 2);
-    if (browserLang === 'ru') setLang('ru');
-    else if (browserLang === 'en') setLang('en');
+    function retry() {
+      window.location.href = '/';
+    }
   </script>
 </body>
 </html>
