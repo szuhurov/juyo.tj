@@ -62,48 +62,9 @@ export default function ScanPage() {
   const [isNativeWebView, setIsNativeWebView] = useState(false);
   const [showUnknownQr, setShowUnknownQr] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
-  const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const localeRef = useRef(locale);
   useEffect(() => { localeRef.current = locale; }, [locale]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
-      setIsNativeWebView(true);
-      setIsInitializing(false);
-      (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "OPEN_NATIVE_SCANNER" }));
-      return;
-    }
-    if (navigator.permissions?.query) {
-      navigator.permissions.query({ name: 'camera' as any })
-        .then((status) => {
-          if (status.state === 'granted') {
-            // Already allowed — start directly
-          } else if (status.state === 'denied') {
-            setIsBlocked(true);
-            setError("denied");
-            setIsInitializing(false);
-          } else {
-            setShowPermissionPrompt(true);
-            setIsInitializing(false);
-          }
-          status.onchange = () => {
-            if (status.state === 'granted') window.location.reload();
-            else if (status.state === 'denied') {
-              setIsBlocked(true);
-              setError("denied");
-            }
-          };
-        })
-        .catch(() => {
-          setShowPermissionPrompt(true);
-          setIsInitializing(false);
-        });
-    } else {
-      setShowPermissionPrompt(true);
-      setIsInitializing(false);
-    }
-  }, []);
 
   const handleBack = () => {
     if (html5QrCodeRef.current?.isScanning) {
@@ -196,7 +157,6 @@ export default function ScanPage() {
   };
 
   const handlePermissionClick = async () => {
-    setShowPermissionPrompt(false);
     setError(null);
     setIsBlocked(false);
     setIsInitializing(true);
@@ -219,18 +179,14 @@ export default function ScanPage() {
   };
 
   useEffect(() => {
-    let id: ReturnType<typeof setTimeout>;
-    if (navigator.permissions?.query) {
-      navigator.permissions.query({ name: 'camera' as any })
-        .then((status) => {
-          if (status.state === 'granted') {
-            id = setTimeout(() => { startScanner(); }, 500);
-          }
-        })
-        .catch(() => {});
+    if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
+      setIsNativeWebView(true);
+      setIsInitializing(false);
+      (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "OPEN_NATIVE_SCANNER" }));
+      return;
     }
+    startScanner();
     return () => {
-      clearTimeout(id);
       if (html5QrCodeRef.current?.isScanning) {
         html5QrCodeRef.current.stop().catch(console.error);
       }
@@ -255,29 +211,8 @@ export default function ScanPage() {
         <div id="reader" className="absolute inset-0 w-full h-full" />
       )}
 
-      {/* Custom permission explanation */}
-      {!isNativeWebView && showPermissionPrompt && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white p-8 text-center gap-8 z-10">
-          <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center">
-            <Camera className="w-12 h-12 text-emerald-500" />
-          </div>
-          <div>
-            <h2 className="text-xl font-black uppercase text-zinc-900 mb-3">{t('cameraPermissionTitle') || 'Иҷозати камера'}</h2>
-            <p className="text-sm font-medium text-zinc-500 leading-relaxed max-w-xs">
-              {t('cameraPermissionDesc') || 'Барои скан кардани QR-код, барномаи juyo ба камераи шумо дастрасӣ лозим дорад'}
-            </p>
-          </div>
-          <Button
-            onClick={handlePermissionClick}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all"
-          >
-            {t('permissionGrant') || 'Иҷозат додан'}
-          </Button>
-        </div>
-      )}
-
       {/* Loader */}
-      {!isNativeWebView && isInitializing && !error && !showPermissionPrompt && (
+      {!isNativeWebView && isInitializing && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-4 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('loading')}</p>
