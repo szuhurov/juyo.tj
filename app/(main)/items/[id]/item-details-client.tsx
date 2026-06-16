@@ -64,6 +64,16 @@ export default function ItemDetailsClient({ id, initialItem }: { id: string; ini
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isManualScroll = useRef(false);
 
+  const goToPrev = () => {
+    const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
+    scrollContainerRef.current?.scrollTo({ left: prevIndex * (scrollContainerRef.current.clientWidth), behavior: 'smooth' });
+  };
+
+  const goToNext = () => {
+    const nextIndex = (currentImageIndex + 1) % images.length;
+    scrollContainerRef.current?.scrollTo({ left: nextIndex * (scrollContainerRef.current.clientWidth), behavior: 'smooth' });
+  };
+
   // Агар маълумот дар кэш бошад (аз саҳифаи асосӣ), онро фавран истифода мебарем
   const images = item?.images && item.images.length > 0 
     ? item.images 
@@ -272,6 +282,17 @@ export default function ItemDetailsClient({ id, initialItem }: { id: string; ini
               </div>
               
               {images.length > 1 && (
+                <>
+                  <button onClick={goToPrev} className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button onClick={goToNext} className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              {images.length > 1 && (
                 <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
                   {images.map((_, i) => (
                     <div key={i} className={cn("h-1.5 rounded-full transition-all duration-300 shadow-sm", i === currentImageIndex ? "bg-white w-4" : "bg-white/40 w-1.5")} />
@@ -324,7 +345,10 @@ export default function ItemDetailsClient({ id, initialItem }: { id: string; ini
               <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black uppercase"><Eye className="w-4 h-4" /> {item?.views || 0}</div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none mb-6">{item?.title}</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none mb-3">{item?.title}</h1>
+            <Badge className={cn("uppercase font-black rounded-md px-3 py-1 shadow-md border-none mb-6 w-fit text-sm", item?.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
+              {item?.type === 'lost' ? t('lost') : t('found')}
+            </Badge>
             
             {item?.type === 'lost' && item.reward && (
               <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 rounded-2xl p-5 mb-8 shadow-sm">
