@@ -84,7 +84,6 @@ export default function ScanPage() {
             setError("denied");
             setIsInitializing(false);
           } else {
-            // 'prompt' — show custom explanation first
             setShowPermissionPrompt(true);
             setIsInitializing(false);
           }
@@ -114,7 +113,6 @@ export default function ScanPage() {
     }
   };
 
-  // Stops and destroys the current scanner instance, clears #reader DOM
   const cleanup = async () => {
     if (html5QrCodeRef.current) {
       try {
@@ -153,7 +151,6 @@ export default function ScanPage() {
     }).catch(console.error);
   };
 
-  // Core scanner start — assumes permission is already granted
   const runScanner = async () => {
     await cleanup();
 
@@ -175,7 +172,6 @@ export default function ScanPage() {
     setIsInitializing(false);
   };
 
-  // Auto-start on mount — no explicit permission request, library handles it
   const startScanner = async () => {
     if (isNativeWebView) return;
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -199,7 +195,6 @@ export default function ScanPage() {
     }
   };
 
-  // Button click handler — getUserMedia MUST be the very first await to keep user gesture alive
   const handlePermissionClick = async () => {
     if (!navigator.mediaDevices?.getUserMedia) return;
 
@@ -218,7 +213,6 @@ export default function ScanPage() {
       return;
     }
 
-    // Permission granted — now start scanner
     setError(null);
     setIsBlocked(false);
     setShowPermissionPrompt(false);
@@ -264,22 +258,22 @@ export default function ScanPage() {
         : "Барои скан кардан иҷозати камера лозим аст";
 
   return (
-    <div className="fixed inset-0 bg-black text-white overflow-hidden">
+    <div className="fixed inset-0 overflow-hidden" style={{ zIndex: 4999 }}>
 
-      {/* Камера — fullscreen, ҳамеша дар DOM */}
+      {/* Camera feed — always in DOM when scanning */}
       {!isNativeWebView && (
         <div id="reader" className="absolute inset-0 w-full h-full" />
       )}
 
-      {/* Custom permission explanation — shown before system dialog */}
+      {/* Custom permission explanation */}
       {!isNativeWebView && showPermissionPrompt && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-8 z-10">
-          <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white p-8 text-center gap-8 z-10">
+          <div className="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center">
             <Camera className="w-12 h-12 text-emerald-500" />
           </div>
           <div>
-            <h2 className="text-xl font-black uppercase text-white mb-3">{t('cameraPermissionTitle') || 'Иҷозати камера'}</h2>
-            <p className="text-sm font-medium text-zinc-400 leading-relaxed max-w-xs">
+            <h2 className="text-xl font-black uppercase text-zinc-900 mb-3">{t('cameraPermissionTitle') || 'Иҷозати камера'}</h2>
+            <p className="text-sm font-medium text-zinc-500 leading-relaxed max-w-xs">
               {t('cameraPermissionDesc') || 'Барои скан кардани QR-код, барномаи juyo ба камераи шумо дастрасӣ лозим дорад'}
             </p>
           </div>
@@ -293,19 +287,19 @@ export default function ScanPage() {
       )}
 
       {/* Loader */}
-      {!isNativeWebView && isInitializing && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black gap-4 z-10">
+      {!isNativeWebView && isInitializing && !error && !showPermissionPrompt && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-4 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">{t('loading')}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('loading')}</p>
         </div>
       )}
 
-      {/* Error / Permission */}
+      {/* Error */}
       {(error || isNativeWebView) && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-6 text-center gap-8 z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white p-6 text-center gap-8 z-10">
           {isNativeWebView ? (
             <>
-              <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center animate-pulse">
+              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center animate-pulse">
                 <Camera className="w-10 h-10 text-emerald-500" />
               </div>
               <Button
@@ -317,13 +311,16 @@ export default function ScanPage() {
             </>
           ) : (
             <>
-              <p className="text-sm font-bold text-zinc-300 leading-relaxed max-w-xs">
+              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
+                <Camera className="w-10 h-10 text-red-400" />
+              </div>
+              <p className="text-sm font-bold text-zinc-600 leading-relaxed max-w-xs">
                 {errorMsg}
               </p>
               {!isBlocked && (
                 <Button
                   onClick={handlePermissionClick}
-                  className="bg-emerald-500 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
+                  className="bg-zinc-900 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
                 >
                   {t('permissionGrant') || 'Иҷозат додан'}
                 </Button>
@@ -333,28 +330,26 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Overlay — чоркунҷаи равшан дар марказ, атроф торик */}
-      {isScanning && (
-        <ScanOverlay size={SCAN_SIZE} />
-      )}
+      {/* Scan overlay */}
+      {isScanning && <ScanOverlay size={SCAN_SIZE} />}
 
-      {/* Header overlay */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-12 pb-4 z-20 bg-gradient-to-b from-black/70 to-transparent">
+      {/* Header */}
+      <div className={`absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-12 pb-4 z-20 ${isScanning ? 'bg-gradient-to-b from-black/70 to-transparent' : 'bg-white border-b border-zinc-100'}`}>
         <Button
           variant="ghost"
           size="icon"
           onClick={handleBack}
-          className="rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10"
+          className={`rounded-full border ${isScanning ? 'bg-black/40 hover:bg-black/60 text-white border-white/10' : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-900 border-zinc-200'}`}
         >
           <ChevronLeft className="w-6 h-6" />
         </Button>
-        <h1 className="font-black uppercase tracking-widest text-[10px] text-white/70">{t('scannerTitle')}</h1>
+        <h1 className={`font-black uppercase tracking-widest text-[10px] ${isScanning ? 'text-white/70' : 'text-zinc-500'}`}>{t('scannerTitle')}</h1>
         <div className="w-10" />
       </div>
 
-      {/* Instruction overlay */}
+      {/* Instruction */}
       {isScanning && (
-        <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-16 pt-12 z-20 bg-gradient-to-t from-black/70 to-transparent">
+        <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-20 pt-12 z-20 bg-gradient-to-t from-black/70 to-transparent">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 border border-white/10 text-white/70">
             <Info className="w-4 h-4 text-emerald-400" />
             <span className="text-[10px] font-bold uppercase tracking-wider">{t('scannerInstruction')}</span>
@@ -362,18 +357,17 @@ export default function ScanPage() {
         </div>
       )}
 
-      {/* Модалка барои QR-коди номаълум */}
       <Dialog open={showUnknownQr} onOpenChange={setShowUnknownQr}>
-        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-900 outline-none">
+        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl bg-white outline-none">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+            <div className="w-16 h-16 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <QrCode className="w-8 h-8 text-red-500" />
             </div>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-zinc-900">
               {t('unknownQrTitle')}
             </DialogTitle>
-            <DialogDescription className="text-zinc-600 dark:text-zinc-400 font-bold text-base leading-relaxed">
+            <DialogDescription className="text-zinc-600 font-bold text-base leading-relaxed">
               {t('unknownQrDesc')}
             </DialogDescription>
           </DialogHeader>
