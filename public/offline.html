@@ -6,10 +6,13 @@
   <title>juyo — No connection</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      background: #ffffff;
+    }
     body {
       font-family: sans-serif;
-      background: #09090b;
-      color: #fff;
+      color: #09090b;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -18,32 +21,49 @@
       text-align: center;
       padding: 24px;
     }
-    .app-icon { width: 72px; height: 72px; border-radius: 16px; margin-bottom: 20px; }
-    .wifi-icon { margin-bottom: 16px; }
-    .lang-switcher { display: flex; gap: 8px; margin-bottom: 24px; }
+    .wifi-icon { margin-bottom: 20px; }
+    .lang-switcher {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
     .lang-btn {
       background: transparent;
-      color: #a1a1aa;
-      border: 1px solid #3f3f46;
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-size: 13px;
+      border: 2px solid transparent;
+      padding: 4px;
+      border-radius: 50%;
       cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
     }
     .lang-btn.active {
-      background: #fff;
-      color: #09090b;
-      border-color: #fff;
-      font-weight: 600;
+      border-color: #09090b;
     }
-    h1 { font-size: 20px; margin-bottom: 10px; }
-    p { font-size: 14px; color: #a1a1aa; margin-bottom: 28px; line-height: 1.7; }
-    .retry-btn {
-      background: #fff;
+    .lang-btn img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .lang-btn span {
+      font-size: 11px;
+      color: #71717a;
+      font-weight: 500;
+    }
+    .lang-btn.active span {
       color: #09090b;
+      font-weight: 700;
+    }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; color: #09090b; }
+    p { font-size: 14px; color: #71717a; margin-bottom: 28px; line-height: 1.7; }
+    .retry-btn {
+      background: #09090b;
+      color: #fff;
       border: none;
-      padding: 12px 28px;
-      border-radius: 8px;
+      padding: 13px 32px;
+      border-radius: 10px;
       font-size: 15px;
       cursor: pointer;
       font-weight: 600;
@@ -53,8 +73,6 @@
   </style>
 </head>
 <body>
-  <img class="app-icon" src="/icon-192.png" alt="juyo" />
-
   <div class="wifi-icon">
     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
       <line x1="1" y1="1" x2="23" y2="23"/>
@@ -68,9 +86,18 @@
   </div>
 
   <div class="lang-switcher">
-    <button class="lang-btn active" onclick="setLang('tg')">TG</button>
-    <button class="lang-btn" onclick="setLang('ru')">RU</button>
-    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn active" data-lang="tg" onclick="setLang('tg')">
+      <img src="/flags/flag-tj.jpg" alt="TJ" />
+      <span>TJ</span>
+    </button>
+    <button class="lang-btn" data-lang="ru" onclick="setLang('ru')">
+      <img src="/flags/flag-ru.webp" alt="RU" />
+      <span>RU</span>
+    </button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')">
+      <img src="/flags/flag-en.jpg" alt="EN" />
+      <span>EN</span>
+    </button>
   </div>
 
   <div id="tg" class="text-content active">
@@ -96,10 +123,9 @@
       document.querySelectorAll('.text-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
       document.getElementById(lang).classList.add('active');
-      event.target.classList.add('active');
+      document.querySelector('[data-lang="' + lang + '"]').classList.add('active');
     }
-
-    const browserLang = navigator.language?.slice(0, 2);
+    const browserLang = (navigator.language || '').slice(0, 2);
     if (browserLang === 'ru') setLang('ru');
     else if (browserLang === 'en') setLang('en');
   </script>
