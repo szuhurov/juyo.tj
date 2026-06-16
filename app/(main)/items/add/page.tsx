@@ -412,6 +412,7 @@ function AddItemForm() {
       toast.success(t('imageModeration.submitted'));
       await queryClient.invalidateQueries({ queryKey: ITEM_KEYS.user() });
       window.dispatchEvent(new Event('items-updated'));
+      fetch(`https://www.google.com/ping?sitemap=https://juyo.tj/sitemap.xml`).catch(() => {});
       router.push('/profile?tab=posts');
     } catch (error: any) {
       console.error(error);

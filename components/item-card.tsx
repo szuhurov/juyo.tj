@@ -220,7 +220,7 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
         onMouseLeave={() => { setIsHovered(false); setCurrentImageIndex(0); }}
       >
         <div className={cn(
-          "relative aspect-square overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shimmer-bg group shadow-sm",
+          "relative aspect-square overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shimmer-bg group shadow-sm",
           item.moderation_status === 'rejected' && isOwner && "opacity-75 grayscale-[0.5]"
         )}>
           {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
@@ -257,11 +257,11 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
                 </Badge>
               </div>
             )}
-            <div className="flex justify-between items-start gap-2">
-              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-2 leading-tight uppercase tracking-tight flex-1 min-w-0 break-words text-white drop-shadow-md">
+            <div className="relative">
+              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-2 leading-snug uppercase tracking-tight text-white drop-shadow-md pr-[70px] sm:pr-[82px]">
                 {item.title}
               </h3>
-              <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/60 px-1.5 py-0.5 rounded border border-white/10">
+              <div className="absolute right-0 top-0 flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold bg-black/60 px-1.5 py-0.5 rounded border border-white/10">
                 <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span>{exactDate}</span>
               </div>

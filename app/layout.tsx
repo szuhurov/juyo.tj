@@ -32,10 +32,10 @@ export async function generateMetadata() {
 
   return {
     title: {
-      default: "juyo",
+      default: "juyo.tj — Ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
       template: "%s",
     },
-    description: "",
+    description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
     manifest: "/manifest.json",
     appleWebApp: {
       capable: true,
@@ -81,21 +81,21 @@ export async function generateMetadata() {
             : "tg_TJ",
       url: "https://juyo.tj",
       siteName: "juyo",
-      title: "juyo",
-      description: "",
+      title: "juyo.tj — Ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
+      description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
       images: [
         {
           url: "https://juyo.tj/juyo-logo.jpg",
           width: 1200,
           height: 630,
-          alt: "JUYO.TJ - Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда",
+          alt: "juyo.tj — Ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: "juyo",
-      description: "",
+      title: "juyo.tj — Ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
+      description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
       images: ["https://juyo.tj/juyo-logo.jpg"],
     },
     icons: {

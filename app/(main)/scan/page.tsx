@@ -196,26 +196,9 @@ export default function ScanPage() {
   };
 
   const handlePermissionClick = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) return;
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-      });
-      stream.getTracks().forEach(t => t.stop());
-    } catch (err: any) {
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setIsBlocked(true);
-        setError("denied");
-      } else {
-        setError(err.message || "error");
-      }
-      return;
-    }
-
+    setShowPermissionPrompt(false);
     setError(null);
     setIsBlocked(false);
-    setShowPermissionPrompt(false);
     setIsInitializing(true);
     setIsScanning(false);
 
@@ -224,7 +207,14 @@ export default function ScanPage() {
     } catch (err: any) {
       setIsInitializing(false);
       setIsScanning(false);
-      setError(err.message || "error");
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setIsBlocked(true);
+        setError("denied");
+      } else if (err.name === 'NotFoundError' || err.message === 'notfound') {
+        setError("notfound");
+      } else {
+        setError(err.message || "error");
+      }
     }
   };
 

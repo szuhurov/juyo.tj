@@ -34,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .from('items')
       .select('id, updated_at')
       .eq('moderation_status', 'approved')
-      .eq('is_resolved', false);
+      .or('is_resolved.eq.false,is_resolved.is.null');
 
     // 3. Сохтани URL-ҳо барои ҳар як эълон
     const itemUrls = (items || []).map((item) => ({

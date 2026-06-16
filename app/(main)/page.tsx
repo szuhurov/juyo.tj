@@ -110,11 +110,11 @@ function HomeContent() {
   }, [allItems, visualSearchResults]);
 
   return (
-    <div className="pb-18">
+    <div className="pb-18 bg-white dark:bg-white">
       {/* Қисмати Филтрҳо (Header/Filters) */}
       <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-100 dark:border-zinc-900">
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-1 pb-1.5 sm:py-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-1.5 md:gap-1 md:h-14">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-0.5 pb-1 sm:py-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-0.5 md:gap-1 md:h-14">
             {/* Кнопкаҳои категорияҳо */}
             <div className={cn(
               "flex items-center overflow-x-auto no-scrollbar -mx-1 px-1",
@@ -131,7 +131,7 @@ function HomeContent() {
                   {t('clearResults')}
                 </Button>
               ) : (
-                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                   <button
                     onClick={() => setCategory("All")}
                     className={cn(
@@ -165,7 +165,7 @@ function HomeContent() {
             {/* Интихоби навъ: Гумшуда ё Ёфтшуда */}
             {!visualSearchResults && (
               <div className="flex items-center self-end md:self-auto mb-0.5 md:mb-0">
-                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                   <button
                     onClick={() => setItemType(null)}
                     className={cn(
@@ -207,7 +207,7 @@ function HomeContent() {
       </div>
 
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
-      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[86px] md:pt-[65px] touch-pan-y">
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px] touch-pan-y">
         {isLoading && allItems.length === 0 && !searchQuery && category === "All" && itemType === null && !isSearchTyping ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
             {[...Array(8)].map((_, i) => (
@@ -265,7 +265,7 @@ function HomeContent() {
 
 function HomeSkeleton() {
   return (
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[86px] md:pt-[65px]">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px]">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         {[...Array(8)].map((_, i) => (
           <div key={i} className="space-y-3">

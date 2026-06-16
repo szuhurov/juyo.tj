@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const t = (translations as any)[locale] || translations.tg;
 
     const typeText = item.type === 'lost' ? t.lost : t.found;
-    const title = `${typeText}: ${item.title} | JUYO.TJ`;
+    const title = `${item.title} — ${typeText} | juyo.tj`;
     const description = item.description?.substring(0, 160) || t.seoDesc;
     const imageUrl = item.images?.[0]?.image_url || "https://juyo.tj/juyo-logo.jpg";
 
@@ -111,7 +111,7 @@ export default async function ItemDetailsPage({ params }: Props) {
       jsonLd = {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        "name": `${initialItem.type === 'lost' ? t.lost : t.found}: ${initialItem.title}`,
+        "name": `${initialItem.title} — ${initialItem.type === 'lost' ? t.lost : t.found} | juyo.tj`,
         "description": initialItem.description?.substring(0, 200),
         "url": `https://juyo.tj/items/${id}`,
         "datePublished": initialItem.created_at,

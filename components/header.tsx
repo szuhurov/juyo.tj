@@ -212,7 +212,7 @@ export function Header() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
             <Input
               placeholder={t('search')}
-              className="pl-8 pr-10 h-8 rounded-xl sm:rounded-full bg-zinc-100/50 border border-zinc-200 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-[10px] w-full"
+              className="pl-8 pr-10 h-8 rounded-lg bg-zinc-100/50 border border-zinc-200 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-[10px] w-full"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
