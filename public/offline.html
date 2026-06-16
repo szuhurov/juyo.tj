@@ -90,7 +90,26 @@
       font-size: 15px;
       cursor: pointer;
       font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: opacity 0.2s;
     }
+    .retry-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    .spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .retry-btn.loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .text-content { display: none; }
     .text-content.active { display: block; }
   </style>
@@ -124,21 +143,21 @@
   </div>
 
   <div id="tg" class="text-content active">
-    <h1>Пайвастшавӣ нест</h1>
+    <h1>Интернет нест</h1>
     <p>Интернетро санҷед ва дубора кӯшиш кунед.</p>
-    <button class="retry-btn" onclick="retry()">Дубора кӯшиш</button>
+    <button class="retry-btn" id="retry-tg" onclick="retry(this)"><span class="spinner"></span>Дубора кӯшиш</button>
   </div>
 
   <div id="ru" class="text-content">
     <h1>Нет подключения</h1>
     <p>Проверьте интернет и попробуйте снова.</p>
-    <button class="retry-btn" onclick="retry()">Попробовать снова</button>
+    <button class="retry-btn" id="retry-ru" onclick="retry(this)"><span class="spinner"></span>Попробовать снова</button>
   </div>
 
   <div id="en" class="text-content">
     <h1>No internet connection</h1>
     <p>Check your connection and try again.</p>
-    <button class="retry-btn" onclick="retry()">Try again</button>
+    <button class="retry-btn" id="retry-en" onclick="retry(this)"><span class="spinner"></span>Try again</button>
   </div>
 
   <script>
@@ -149,8 +168,10 @@
       document.querySelector('[data-lang="' + lang + '"]').classList.add('active');
       try { localStorage.setItem('juyo-lang', lang); } catch(e) {}
     }
-    function retry() {
-      var lang = (document.querySelector('.lang-btn.active') || {}).dataset && document.querySelector('.lang-btn.active').dataset.lang || 'tg';
+    function retry(btn) {
+      btn.classList.add('loading');
+      btn.disabled = true;
+      var lang = document.querySelector('.lang-btn.active') ? document.querySelector('.lang-btn.active').dataset.lang : 'tg';
       document.cookie = 'juyo-locale=' + lang + '; path=/; max-age=31536000';
       window.location.href = '/';
     }

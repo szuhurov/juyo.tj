@@ -257,7 +257,7 @@ export function ItemCard({ item, index = 0, savedItemIds }: { item: Item, index?
                 </Badge>
               </div>
             )}
-            <div className="relative">
+            <div className="relative w-full">
               <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-2 leading-snug uppercase tracking-tight text-white drop-shadow-md pr-[70px] sm:pr-[82px]">
                 {item.title}
               </h3>
