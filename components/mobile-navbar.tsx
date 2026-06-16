@@ -68,7 +68,7 @@ export function MobileNavbar() {
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
       <div className="mx-3 pointer-events-auto">
-        <div className="flex items-center justify-around h-[60px] bg-white dark:bg-zinc-900 rounded-[20px] shadow-[0_4px_24px_rgba(0,0,0,0.12),0_1px_4px_rgba(0,0,0,0.06)] border border-zinc-100 dark:border-zinc-800 px-2">
+        <div className="flex items-center justify-around h-[60px] bg-white dark:bg-zinc-900 rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.12),0_1px_4px_rgba(0,0,0,0.06)] border border-zinc-100 dark:border-zinc-800 px-2">
           {navItems.map((item) => {
             const currentPath = optimisticPath || pathname;
             let isActive = currentPath === item.href;

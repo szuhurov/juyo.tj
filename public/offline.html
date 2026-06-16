@@ -29,27 +29,45 @@
       margin-bottom: 28px;
     }
     .lang-btn {
-      background: #f4f4f5;
-      border: 2px solid transparent;
-      padding: 6px 6px 5px;
-      border-radius: 10px;
+      background: transparent;
+      border: none;
+      padding: 4px 4px 8px;
+      border-radius: 8px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .lang-btn.active {
-      border-color: #10b981;
-      background: #f0fdf4;
+      gap: 6px;
+      transition: transform 0.15s;
+      position: relative;
     }
     .lang-btn img {
       width: 56px;
       height: 36px;
-      border-radius: 6px;
+      border-radius: 5px;
       object-fit: cover;
       display: block;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .lang-btn.active img {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      transform: scale(1.06);
+    }
+    .lang-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 3px;
+      border-radius: 2px;
+      background: #09090b;
+      transition: width 0.15s;
+    }
+    .lang-btn.active::after {
+      width: 20px;
     }
     .lang-btn span {
       font-size: 11px;
@@ -58,7 +76,7 @@
       letter-spacing: 0.03em;
     }
     .lang-btn.active span {
-      color: #10b981;
+      color: #09090b;
       font-weight: 700;
     }
     h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #09090b; }
@@ -132,6 +150,8 @@
       try { localStorage.setItem('juyo-lang', lang); } catch(e) {}
     }
     function retry() {
+      var lang = (document.querySelector('.lang-btn.active') || {}).dataset && document.querySelector('.lang-btn.active').dataset.lang || 'tg';
+      document.cookie = 'juyo-locale=' + lang + '; path=/; max-age=31536000';
       window.location.href = '/';
     }
     // Restore last chosen language (default: tg)
