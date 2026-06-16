@@ -37,10 +37,6 @@ export async function generateMetadata() {
     },
     description: "",
     manifest: "/manifest.json",
-    themeColor: [
-      { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-      { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
-    ],
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
@@ -124,6 +120,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
+  ],
 };
 
 export default async function RootLayout({

@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#ffffff" />
   <title>juyo — No connection</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,42 +22,46 @@
       text-align: center;
       padding: 24px;
     }
-    .wifi-icon { margin-bottom: 20px; }
+    .wifi-icon { margin-bottom: 24px; }
     .lang-switcher {
       display: flex;
-      gap: 16px;
+      gap: 12px;
       margin-bottom: 28px;
     }
     .lang-btn {
-      background: transparent;
+      background: #f4f4f5;
       border: 2px solid transparent;
-      padding: 4px;
-      border-radius: 50%;
+      padding: 6px 6px 5px;
+      border-radius: 10px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 5px;
+      transition: border-color 0.15s, background 0.15s;
     }
     .lang-btn.active {
-      border-color: #09090b;
+      border-color: #10b981;
+      background: #f0fdf4;
     }
     .lang-btn img {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
+      width: 56px;
+      height: 36px;
+      border-radius: 6px;
       object-fit: cover;
+      display: block;
     }
     .lang-btn span {
       font-size: 11px;
       color: #71717a;
-      font-weight: 500;
+      font-weight: 600;
+      letter-spacing: 0.03em;
     }
     .lang-btn.active span {
-      color: #09090b;
+      color: #10b981;
       font-weight: 700;
     }
-    h1 { font-size: 22px; font-weight: 700; margin-bottom: 10px; color: #09090b; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #09090b; }
     p { font-size: 14px; color: #71717a; margin-bottom: 28px; line-height: 1.7; }
     .retry-btn {
       background: #09090b;
@@ -120,14 +125,20 @@
 
   <script>
     function setLang(lang) {
-      document.querySelectorAll('.text-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.text-content').forEach(function(el) { el.classList.remove('active'); });
+      document.querySelectorAll('.lang-btn').forEach(function(el) { el.classList.remove('active'); });
       document.getElementById(lang).classList.add('active');
       document.querySelector('[data-lang="' + lang + '"]').classList.add('active');
+      try { localStorage.setItem('juyo-lang', lang); } catch(e) {}
     }
     function retry() {
       window.location.href = '/';
     }
+    // Restore last chosen language (default: tg)
+    try {
+      var saved = localStorage.getItem('juyo-lang');
+      if (saved && (saved === 'tg' || saved === 'ru' || saved === 'en')) setLang(saved);
+    } catch(e) {}
   </script>
 </body>
 </html>
