@@ -32,7 +32,7 @@ export async function generateMetadata() {
 
   return {
     title: {
-      default: "juyo.tj — Ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
+      default: "juyo",
       template: "%s",
     },
     description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
@@ -81,7 +81,7 @@ export async function generateMetadata() {
             : "tg_TJ",
       url: "https://juyo.tj",
       siteName: "juyo",
-      title: "juyo.tj — Ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
+      title: "juyo",
       description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
       images: [
         {
