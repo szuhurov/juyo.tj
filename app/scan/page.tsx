@@ -62,6 +62,7 @@ export default function ScanPage() {
   const [isNativeWebView, setIsNativeWebView] = useState(false);
   const [showUnknownQr, setShowUnknownQr] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const localeRef = useRef(locale);
   useEffect(() => { localeRef.current = locale; }, [locale]);
@@ -71,11 +72,22 @@ export default function ScanPage() {
       setIsNativeWebView(true);
       setIsInitializing(false);
       (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "OPEN_NATIVE_SCANNER" }));
+      return;
     }
     if (navigator.permissions?.query) {
       navigator.permissions.query({ name: 'camera' as any })
         .then((status) => {
-          if (status.state === 'denied') setIsBlocked(true);
+          if (status.state === 'granted') {
+            // Already allowed — start directly
+          } else if (status.state === 'denied') {
+            setIsBlocked(true);
+            setError("denied");
+            setIsInitializing(false);
+          } else {
+            // 'prompt' — show custom explanation first
+            setShowPermissionPrompt(true);
+            setIsInitializing(false);
+          }
           status.onchange = () => {
             if (status.state === 'granted') window.location.reload();
             else if (status.state === 'denied') {
@@ -84,7 +96,13 @@ export default function ScanPage() {
             }
           };
         })
-        .catch(() => {});
+        .catch(() => {
+          setShowPermissionPrompt(true);
+          setIsInitializing(false);
+        });
+    } else {
+      setShowPermissionPrompt(true);
+      setIsInitializing(false);
     }
   }, []);
 
@@ -203,6 +221,7 @@ export default function ScanPage() {
     // Permission granted — now start scanner
     setError(null);
     setIsBlocked(false);
+    setShowPermissionPrompt(false);
     setIsInitializing(true);
     setIsScanning(false);
 
@@ -216,7 +235,16 @@ export default function ScanPage() {
   };
 
   useEffect(() => {
-    const id = setTimeout(() => { startScanner(); }, 500);
+    let id: ReturnType<typeof setTimeout>;
+    if (navigator.permissions?.query) {
+      navigator.permissions.query({ name: 'camera' as any })
+        .then((status) => {
+          if (status.state === 'granted') {
+            id = setTimeout(() => { startScanner(); }, 500);
+          }
+        })
+        .catch(() => {});
+    }
     return () => {
       clearTimeout(id);
       if (html5QrCodeRef.current?.isScanning) {
@@ -241,6 +269,27 @@ export default function ScanPage() {
       {/* Камера — fullscreen, ҳамеша дар DOM */}
       {!isNativeWebView && (
         <div id="reader" className="absolute inset-0 w-full h-full" />
+      )}
+
+      {/* Custom permission explanation — shown before system dialog */}
+      {!isNativeWebView && showPermissionPrompt && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black p-8 text-center gap-8 z-10">
+          <div className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center">
+            <Camera className="w-12 h-12 text-emerald-500" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black uppercase text-white mb-3">{t('cameraPermissionTitle') || 'Иҷозати камера'}</h2>
+            <p className="text-sm font-medium text-zinc-400 leading-relaxed max-w-xs">
+              {t('cameraPermissionDesc') || 'Барои скан кардани QR-код, барномаи juyo ба камераи шумо дастрасӣ лозим дорад'}
+            </p>
+          </div>
+          <Button
+            onClick={handlePermissionClick}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all"
+          >
+            {t('permissionGrant') || 'Иҷозат додан'}
+          </Button>
+        </div>
       )}
 
       {/* Loader */}
