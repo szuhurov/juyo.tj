@@ -15,6 +15,7 @@ import { QueryProvider } from "@/components/query-provider"; // Барои ид�
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import Script from "next/script";
 
 // Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣ
 const inter = Inter({
@@ -144,11 +145,6 @@ export default async function RootLayout({
     >
       <head>
         <script
-          dangerouslySetInnerHTML={{
-            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
-          }}
-        />
-        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
@@ -213,6 +209,13 @@ export default async function RootLayout({
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>
+        <Script
+          id="sw-register"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
+          }}
+        />
       </body>
     </html>
   );
