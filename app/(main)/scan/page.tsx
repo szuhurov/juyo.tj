@@ -115,8 +115,9 @@ export default function ScanPage() {
   const runScanner = async () => {
     await cleanup();
 
-    const cameras = await Html5Qrcode.getCameras();
-    if (!cameras?.length) throw new Error("notfound");
+    // Trigger Chrome native permission dialog directly
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    stream.getTracks().forEach(t => t.stop());
 
     const html5QrCode = new Html5Qrcode("reader", {
       formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
@@ -124,11 +125,12 @@ export default function ScanPage() {
     });
     html5QrCodeRef.current = html5QrCode;
 
-    const backCamera =
-      cameras.find(c => /back|environment|rear/i.test(c.label)) ||
-      cameras[cameras.length - 1];
-
-    await html5QrCode.start(backCamera.id, { fps: 20, aspectRatio: 1.0 }, onScanSuccess, () => {});
+    await html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 20, aspectRatio: 1.0 },
+      onScanSuccess,
+      () => {}
+    );
     setIsScanning(true);
     setIsInitializing(false);
   };
