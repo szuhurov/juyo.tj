@@ -94,7 +94,7 @@ export async function generateMetadata() {
     },
     twitter: {
       card: "summary_large_image",
-      title: "juyo.tj — Ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон",
+      title: "juyo",
       description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
       images: ["https://juyo.tj/juyo-logo.jpg"],
     },
