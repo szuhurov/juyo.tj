@@ -35,7 +35,9 @@ export function NetworkStatus() {
 
     // Логика: Вақте интернет гум мешавад
     const handleOffline = () => {
-      setStatus("offline");
+      if (!window.location.pathname.startsWith("/offline")) {
+        window.location.href = "/offline.html";
+      }
     };
 
     // Слушательҳо (Listeners) барои тағйирёбии шабака

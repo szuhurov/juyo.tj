@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v8";
+const CACHE_NAME = "juyo-v9";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -88,9 +88,7 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() =>
-          caches.match(event.request).then((cached) => cached || offlineResponse())
-        )
+        .catch(() => offlineResponse())
     );
     return;
   }
