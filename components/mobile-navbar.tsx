@@ -64,6 +64,7 @@ export function MobileNavbar() {
 
   return (
     <nav
+      data-nosnippet
       className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden pointer-events-none"
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >

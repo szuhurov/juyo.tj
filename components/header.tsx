@@ -134,7 +134,7 @@ export function Header() {
 
   return (
     <TooltipProvider>
-      <header className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-sm dark:bg-zinc-950/95 border-b border-zinc-100 dark:border-zinc-900/50">
+      <header data-nosnippet className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-sm dark:bg-zinc-950/95 border-b border-zinc-100 dark:border-zinc-900/50">
         <div className="w-full max-w-[1600px] mx-auto flex h-12 sm:h-16 items-center px-3 sm:px-4 gap-2 sm:gap-4">
           
           {/* Қисми чап: Логотип ва Паймоиш */}
