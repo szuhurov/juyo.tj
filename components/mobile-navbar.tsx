@@ -111,8 +111,7 @@ export function MobileNavbar() {
                 >
                   <div className={cn(
                     "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150",
-                    isActive ? "bg-zinc-900 dark:bg-zinc-100" : "",
-                    isNavigatingTo && "animate-pulse"
+                    isActive ? "bg-zinc-900 dark:bg-zinc-100" : ""
                   )}>
                     <Avatar className="h-7 w-7">
                       <AvatarImage src={user?.imageUrl} />
@@ -140,8 +139,7 @@ export function MobileNavbar() {
                   "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150",
                   isActive
                     ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
-                    : "text-zinc-400 dark:text-zinc-500",
-                  isNavigatingTo && "animate-pulse"
+                    : "text-zinc-400 dark:text-zinc-500"
                 )}>
                   <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                 </div>
