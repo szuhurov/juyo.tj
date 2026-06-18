@@ -1,6 +1,7 @@
 /**
  * Тарҳбандии асосии барнома (Root Layout), ки сохтори умумии HTML-ро муайян мекунад.
  * Дар ин ҷо таъминкунандагони (providers) глобалӣ ва метамаълумоти SEO танзим карда мешаванд.
+ * Test commit: git push санҷиш.
  */
 import type { Viewport } from "next"; // Барои танзими маълумоти SEO ва экран
 import { Inter } from "next/font/google"; // Барои истифодаи шрифти Inter
@@ -17,7 +18,7 @@ import { cookies } from "next/headers"; // Барои кор бо кукиҳои
 import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import Script from "next/script";
 
-// Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣ
+// Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣa
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
   variable: "--font-inter",
@@ -196,10 +197,10 @@ export default async function RootLayout({
           <ClerkLocalizationProvider>
             {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
             <h1 className="sr-only">
-              роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. 
-              Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд, 
-              метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд. 
-              Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад, 
+              роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон.
+              Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд,
+              метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд.
+              Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад,
               то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.
             </h1>
             <QueryProvider>
@@ -208,7 +209,7 @@ export default async function RootLayout({
               <Analytics />
               <SpeedInsights />
               <Toaster position="top-center" richColors />
-        <PWAInstallPrompt />
+              <PWAInstallPrompt />
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>
