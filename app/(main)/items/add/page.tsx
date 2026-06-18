@@ -40,16 +40,17 @@ import {
 } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
+import { CameraCaptureModal } from "@/components/camera-capture-modal";
 
 function AddItemForm() {
   const { t, locale } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
   const queryClient = useQueryClient();
-  
+
   // Refs for inputs
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [showCameraCapture, setShowCameraCapture] = useState(false);
   
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
@@ -207,21 +208,24 @@ function AddItemForm() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const addNewFiles = (files: File[]) => {
     if (images.length + files.length > 5) {
       toast.error(t('maxImagesReached'));
       return;
     }
-    
+
     const newImages = [...images, ...files];
     setImages(newImages);
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setPreviews(prev => [...prev, ...newPreviews]);
-    
+
     // Reset AI state when images change
     setModerationStatus('idle');
     setAiSuggestions(null);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    addNewFiles(Array.from(e.target.files || []));
   };
 
   const removeImage = (index: number) => {
@@ -495,16 +499,9 @@ function AddItemForm() {
                 type="file"
                 className="hidden"
                 accept="image/*"
-                ref={cameraInputRef}
-                onChange={handleImageChange}
-              />
-              <input 
-                type="file" 
-                className="hidden" 
-                accept="image/*" 
-                multiple 
+                multiple
                 ref={galleryInputRef}
-                onChange={handleImageChange} 
+                onChange={handleImageChange}
               />
 
               <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
@@ -520,7 +517,7 @@ function AddItemForm() {
                       className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-blue-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                       onClick={() => {
                         setShowPhotoChoice(false);
-                        cameraInputRef.current?.click();
+                        setShowCameraCapture(true);
                       }}
                     >
                       <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all shadow-sm">
@@ -544,6 +541,12 @@ function AddItemForm() {
                   </div>
                 </DialogContent>
               </Dialog>
+
+              <CameraCaptureModal
+                isOpen={showCameraCapture}
+                onClose={() => setShowCameraCapture(false)}
+                onCapture={(file) => addNewFiles([file])}
+              />
             </div>
           )}
 

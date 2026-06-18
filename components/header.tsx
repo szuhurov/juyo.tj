@@ -56,6 +56,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { VisualSearchModal } from "./visual-search-modal";
+import { CameraCaptureModal } from "./camera-capture-modal";
 import { useHomeState } from "@/lib/home-context";
 import type { Item } from "@/lib/services/item-service";
 
@@ -76,7 +77,7 @@ export function Header() {
   const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
   const [directFile, setDirectFile] = useState<File | null>(null);
   const [showPhotoChoice, setShowPhotoChoice] = useState(false);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showCameraCapture, setShowCameraCapture] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const languages: Array<{ code: "tg" | "ru" | "en"; label: string }> = [
@@ -103,6 +104,11 @@ export function Header() {
       setIsVisualSearchOpen(true);
     }
     e.target.value = "";
+  };
+
+  const handleCameraCapture = (file: File) => {
+    setDirectFile(file);
+    setIsVisualSearchOpen(true);
   };
 
   const handleVisualSearchResults = (items: Item[]) => {
@@ -453,13 +459,6 @@ export function Header() {
             type="file"
             className="hidden"
             accept="image/*"
-            ref={cameraInputRef}
-            onChange={handlePhotoPicked}
-          />
-          <input
-            type="file"
-            className="hidden"
-            accept="image/*"
             ref={galleryInputRef}
             onChange={handlePhotoPicked}
           />
@@ -477,7 +476,7 @@ export function Header() {
                   className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-blue-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                   onClick={() => {
                     setShowPhotoChoice(false);
-                    cameraInputRef.current?.click();
+                    setShowCameraCapture(true);
                   }}
                 >
                   <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all shadow-sm">
@@ -501,6 +500,12 @@ export function Header() {
               </div>
             </DialogContent>
           </Dialog>
+
+          <CameraCaptureModal
+            isOpen={showCameraCapture}
+            onClose={() => setShowCameraCapture(false)}
+            onCapture={handleCameraCapture}
+          />
         </>
       )}
     </TooltipProvider>

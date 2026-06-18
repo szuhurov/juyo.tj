@@ -313,7 +313,8 @@ export const translations: Record<string, any> = {
     camera: 'Камера',
     gallery: 'Галерея',
     choose_photo_method: 'Усули иловакуниро интихоб кунед',
-    
+    cameraPermissionDenied: 'Дастрасӣ ба камера дода нашуд. Лутфан иҷозати камераро дар танзимот фаъол кунед.',
+
     terms: {
       title: 'Тасдиқи шартҳо',
       description: 'Барои идома додани истифодаи барнома, шумо бояд ба шартҳо ва қоидаҳои мо розӣ шавед.',
@@ -908,6 +909,7 @@ export const translations: Record<string, any> = {
     camera: 'Камера',
     gallery: 'Галерея',
     choose_photo_method: 'Выберите способ добавления',
+    cameraPermissionDenied: 'Доступ к камере не предоставлен. Включите разрешение камеры в настройках.',
 
     terms: {      title: 'Подтверждение условий',
       description: 'Чтобы продолжить использование приложения, вы должны согласиться с нашими условиями и правилами.',
