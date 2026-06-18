@@ -117,6 +117,8 @@ export function Header() {
   };
 
   useEffect(() => {
+    if (pathname !== "/") return;
+
     if (searchValue === (searchParams.get('q') || "")) {
       setIsSearchTyping(false);
       return;
