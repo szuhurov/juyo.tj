@@ -491,13 +491,12 @@ function AddItemForm() {
               </div>
 
               {/* Hidden Inputs */}
-              <input 
-                type="file" 
-                className="hidden" 
-                accept="image/*" 
-                capture="environment" 
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
                 ref={cameraInputRef}
-                onChange={handleImageChange} 
+                onChange={handleImageChange}
               />
               <input 
                 type="file" 
