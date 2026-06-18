@@ -59,7 +59,6 @@ export default function ScanPage() {
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isNativeWebView, setIsNativeWebView] = useState(false);
   const [showUnknownQr, setShowUnknownQr] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
@@ -136,7 +135,6 @@ export default function ScanPage() {
   };
 
   const startScanner = async () => {
-    if (isNativeWebView) return;
     if (!navigator.mediaDevices?.getUserMedia) {
       setError("unsupported");
       setIsInitializing(false);
@@ -181,12 +179,6 @@ export default function ScanPage() {
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
-      setIsNativeWebView(true);
-      setIsInitializing(false);
-      (window as any).ReactNativeWebView.postMessage(JSON.stringify({ type: "OPEN_NATIVE_SCANNER" }));
-      return;
-    }
     startScanner();
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
@@ -209,12 +201,10 @@ export default function ScanPage() {
     <div className="fixed inset-0 overflow-hidden" style={{ zIndex: 4999 }}>
 
       {/* Camera feed — always in DOM when scanning */}
-      {!isNativeWebView && (
-        <div id="reader" className="absolute inset-0 w-full h-full" />
-      )}
+      <div id="reader" className="absolute inset-0 w-full h-full" />
 
       {/* Loader */}
-      {!isNativeWebView && isInitializing && !error && (
+      {isInitializing && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-4 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('loading')}</p>
@@ -222,37 +212,21 @@ export default function ScanPage() {
       )}
 
       {/* Error */}
-      {(error || isNativeWebView) && (
+      {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white p-6 text-center gap-8 z-10">
-          {isNativeWebView ? (
-            <>
-              <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center animate-pulse">
-                <Camera className="w-10 h-10 text-emerald-500" />
-              </div>
-              <Button
-                onClick={() => (window as any).ReactNativeWebView?.postMessage(JSON.stringify({ type: "OPEN_NATIVE_SCANNER" }))}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase text-[10px] tracking-widest px-8 h-12 rounded-xl"
-              >
-                Дубора кушодан
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
-                <Camera className="w-10 h-10 text-red-400" />
-              </div>
-              <p className="text-sm font-bold text-zinc-600 leading-relaxed max-w-xs">
-                {errorMsg}
-              </p>
-              {!isBlocked && (
-                <Button
-                  onClick={handlePermissionClick}
-                  className="bg-zinc-900 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
-                >
-                  {t('permissionGrant') || 'Иҷозат додан'}
-                </Button>
-              )}
-            </>
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
+            <Camera className="w-10 h-10 text-red-400" />
+          </div>
+          <p className="text-sm font-bold text-zinc-600 leading-relaxed max-w-xs">
+            {errorMsg}
+          </p>
+          {!isBlocked && (
+            <Button
+              onClick={handlePermissionClick}
+              className="bg-zinc-900 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
+            >
+              {t('permissionGrant') || 'Иҷозат додан'}
+            </Button>
           )}
         </div>
       )}

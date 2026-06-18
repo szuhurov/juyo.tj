@@ -26,6 +26,7 @@ import {
   Briefcase,
   Bookmark,
   Camera,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -46,7 +47,13 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { VisualSearchModal } from "./visual-search-modal";
 import { useHomeState } from "@/lib/home-context";
@@ -68,6 +75,9 @@ export function Header() {
   const [mounted, setMounted] = useState(false);
   const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
   const [directFile, setDirectFile] = useState<File | null>(null);
+  const [showPhotoChoice, setShowPhotoChoice] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const languages: Array<{ code: "tg" | "ru" | "en"; label: string }> = [
     { code: "tg", label: "Тоҷикӣ" },
@@ -86,18 +96,13 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  const handleCameraClick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e: Event) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        setDirectFile(file);
-        setIsVisualSearchOpen(true);
-      }
-    };
-    input.click();
+  const handlePhotoPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDirectFile(file);
+      setIsVisualSearchOpen(true);
+    }
+    e.target.value = "";
   };
 
   const handleVisualSearchResults = (items: Item[]) => {
@@ -225,8 +230,8 @@ export function Header() {
                   <X className="h-3 w-3" />
                 </button>
               )}
-              <button 
-                onClick={handleCameraClick}
+              <button
+                onClick={() => setShowPhotoChoice(true)}
                 className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                 title={t('visualSearchTitle') || "Ҷустуҷӯ бо акс"}
               >
@@ -432,15 +437,72 @@ export function Header() {
           </div>
         </div>
       </header>
-      <VisualSearchModal 
-        isOpen={isVisualSearchOpen} 
+      <VisualSearchModal
+        isOpen={isVisualSearchOpen}
         onClose={() => {
           setIsVisualSearchOpen(false);
           setDirectFile(null);
-        }} 
+        }}
         onResults={handleVisualSearchResults}
         directFile={directFile}
       />
+
+      {mounted && (
+        <>
+          <input
+            type="file"
+            className="hidden"
+            accept="image/*"
+            ref={cameraInputRef}
+            onChange={handlePhotoPicked}
+          />
+          <input
+            type="file"
+            className="hidden"
+            accept="image/*"
+            ref={galleryInputRef}
+            onChange={handlePhotoPicked}
+          />
+
+          <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
+            <DialogContent className="max-w-[320px] rounded-[1.5rem] p-5 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
+              <DialogHeader className="mb-2">
+                <DialogTitle className="text-lg font-black uppercase tracking-tight text-center text-emerald-600">
+                  {t('choose_photo_method')}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-blue-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                  onClick={() => {
+                    setShowPhotoChoice(false);
+                    cameraInputRef.current?.click();
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all shadow-sm">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-700">{t('camera')}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-orange-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                  onClick={() => {
+                    setShowPhotoChoice(false);
+                    galleryInputRef.current?.click();
+                  }}
+                >
+                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all shadow-sm">
+                    <ImageIcon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-orange-700">{t('gallery')}</span>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
     </TooltipProvider>
   );
 }
