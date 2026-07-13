@@ -41,7 +41,6 @@ export default function OGImage() {
             color: '#a1a1aa',
             fontWeight: 600,
             letterSpacing: '2px',
-            textTransform: 'uppercase',
           }}
         >
           Гумшуда · Ёфтшуда · Тоҷикистон

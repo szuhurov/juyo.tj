@@ -2,9 +2,7 @@
  * Ин саҳифаи асосии мост (Главная).
  * Дар ин ҷо ҳамаи эълонҳо нишон дода мешаванд. Одамон метавонанд аз рӯи категорияҳо филтр кунанд
  * ё ҷустуҷӯ кунанд, то чизҳои гумшуда ё ёфтшударо пайдо намоянд.
- */
-
-"use client";
+ */ "use client";
 
 import { useState, Suspense, useEffect, useMemo } from "react";
 import { ItemService, CATEGORIES } from "@/lib/services/item-service";
@@ -17,49 +15,81 @@ import { useItems, useSavedItems } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
-import { X } from "lucide-react";
+import {
+  X,
+  Cpu,
+  IdCard,
+  KeyRound,
+  Shirt,
+  PawPrint,
+  Package,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/nextjs";
+
+// Icon per category, used in the home-feed filter pills. Monochrome — inherits the button's text color.
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  Electronics: Cpu,
+  Documents: IdCard,
+  Keys: KeyRound,
+  Clothing: Shirt,
+  Pets: PawPrint,
+  Other: Package,
+};
 
 function HomeContent() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
-  const searchQuery = searchParams.get('q') || "";
+  const searchQuery = searchParams.get("q") || "";
   const queryClient = useQueryClient();
   const { ref, inView } = useInView();
   const { userId, getToken } = useAuth();
 
-  const { visualSearchResults, isSearchTyping, goHomeSignal, setVisualSearchResults } = useHomeState();
+  const {
+    visualSearchResults,
+    isSearchTyping,
+    goHomeSignal,
+    setVisualSearchResults,
+  } = useHomeState();
 
   const [category, setCategory] = useState("All");
-  const [itemType, setItemType] = useState<'lost' | 'found' | null>(null);
+  const [itemType, setItemType] = useState<"lost" | "found" | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) { setToken(null); return; }
-    getToken({ template: 'supabase' }).then(t => setToken(t));
+    if (!userId) {
+      setToken(null);
+      return;
+    }
+    getToken({ template: "supabase" }).then((t) => setToken(t));
   }, [userId, getToken]);
 
   // Як query барои ҳамаи saved IDs — бе N+1
-  const { data: savedItemsList = [] } = useSavedItems(userId ?? undefined, token);
+  const { data: savedItemsList = [] } = useSavedItems(
+    userId ?? undefined,
+    token,
+  );
   const savedItemIds = useMemo(
     () => new Set(savedItemsList.map((i) => i.id)),
-    [savedItemsList]
+    [savedItemsList],
   );
 
-  const filters = useMemo(() => ({ 
-    category: category === "All" ? undefined : category,
-    type: itemType || undefined,
-    search: searchQuery
-  }), [category, itemType, searchQuery]);
+  const filters = useMemo(
+    () => ({
+      category: category === "All" ? undefined : category,
+      type: itemType || undefined,
+      search: searchQuery,
+    }),
+    [category, itemType, searchQuery],
+  );
 
-  const { 
-    data, 
-    isLoading, 
-    isFetching, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage 
+  const {
+    data,
+    isLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useItems(filters);
 
   // Боркунии саҳифаи навбатӣ ҳангоми расидан ба охири рӯйхат
@@ -70,13 +100,15 @@ function HomeContent() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   useEffect(() => {
-    const handleItemsUpdate = () => queryClient.invalidateQueries({ queryKey: ['items', 'list'] });
-    const handleSavedUpdate = () => queryClient.invalidateQueries({ queryKey: ['items', 'saved'] });
-    window.addEventListener('items-updated', handleItemsUpdate);
-    window.addEventListener('saved-items-updated', handleSavedUpdate);
+    const handleItemsUpdate = () =>
+      queryClient.invalidateQueries({ queryKey: ["items", "list"] });
+    const handleSavedUpdate = () =>
+      queryClient.invalidateQueries({ queryKey: ["items", "saved"] });
+    window.addEventListener("items-updated", handleItemsUpdate);
+    window.addEventListener("saved-items-updated", handleSavedUpdate);
     return () => {
-      window.removeEventListener('items-updated', handleItemsUpdate);
-      window.removeEventListener('saved-items-updated', handleSavedUpdate);
+      window.removeEventListener("items-updated", handleItemsUpdate);
+      window.removeEventListener("saved-items-updated", handleSavedUpdate);
     };
   }, [queryClient]);
 
@@ -85,7 +117,7 @@ function HomeContent() {
     if (visualSearchResults) {
       setCategory("All");
       setItemType(null);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [visualSearchResults]);
 
@@ -95,15 +127,15 @@ function HomeContent() {
     setVisualSearchResults(null);
     setCategory("All");
     setItemType(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, [goHomeSignal, setVisualSearchResults]);
 
   // Ҷамъоварии ҳамаи ашёҳо аз ҳамаи саҳифаҳо
   const allItems = useMemo(() => {
-    return data?.pages.flatMap(page => page) || [];
+    return data?.pages.flatMap((page) => page) || [];
   }, [data]);
 
-  // Усули "Pro": Намоиши ашёҳо бидуни филтри зиёдатии фронтенд (чун backend аллакай филтр мекунад)
+  // Усули"Pro": Намоиши ашёҳо бидуни филтри зиёдатии фронтенд (чун backend аллакай филтр мекунад)
   const displayedItems = useMemo(() => {
     if (visualSearchResults) return visualSearchResults;
     return allItems;
@@ -116,48 +148,54 @@ function HomeContent() {
         <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-0.5 pb-1 sm:py-0">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-0.5 md:gap-1 md:h-14">
             {/* Кнопкаҳои категорияҳо */}
-            <div className={cn(
-              "flex items-center overflow-x-auto no-scrollbar -mx-1 px-1",
-              visualSearchResults && "w-full justify-end"
-            )}>
+            <div
+              className={cn(
+                "flex items-center overflow-x-auto no-scrollbar -mx-1 px-1",
+                visualSearchResults && "w-full justify-end",
+              )}
+            >
               {visualSearchResults ? (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setVisualSearchResults(null)}
-                  className="rounded-xl h-8 text-[10px] font-black uppercase tracking-widest border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400"
+                  className="rounded-xl h-8 text-[10px] font-black tracking-widest border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400"
                 >
                   <X className="h-3.5 w-3.5 mr-2" />
-                  {t('clearResults')}
+                  {t("clearResults")}
                 </Button>
               ) : (
                 <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                   <button
                     onClick={() => setCategory("All")}
                     className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap",
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer whitespace-nowrap",
                       category === "All"
                         ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
                     )}
                   >
-                    {t('all')}
+                    {t("all")}
                   </button>
-                  {CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setCategory(cat.name)}
-                      className={cn(
-                        "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
-                        category === cat.name
-                          ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-                      )}
-                    >
-                      <span className="text-xs">{cat.icon}</span>
-                      {t(`categories.${cat.id}`)}
-                    </button>
-                  ))}
+                  {CATEGORIES.map((cat) => {
+                    const active = category === cat.name;
+                    const Icon = CATEGORY_ICONS[cat.name] ?? Package;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setCategory(cat.name)}
+                        className={cn(
+                          "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+                          active
+                            ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                        )}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-emerald-500" />
+                        {t(`categories.${cat.id}`)}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -169,35 +207,35 @@ function HomeContent() {
                   <button
                     onClick={() => setItemType(null)}
                     className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
                       itemType === null
                         ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
                     )}
                   >
-                    {t('all')}
+                    {t("all")}
                   </button>
                   <button
-                    onClick={() => setItemType('lost')}
+                    onClick={() => setItemType("lost")}
                     className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
-                      itemType === 'lost'
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
+                      itemType === "lost"
                         ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-red-500 hover:text-red-600"
+                        : "text-red-500 hover:text-red-600",
                     )}
                   >
-                    {t('filterLost')}
+                    {t("filterLost")}
                   </button>
                   <button
-                    onClick={() => setItemType('found')}
+                    onClick={() => setItemType("found")}
                     className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] uppercase tracking-wider transition-all cursor-pointer",
-                      itemType === 'found'
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
+                      itemType === "found"
                         ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-emerald-500 hover:text-emerald-600"
+                        : "text-emerald-500 hover:text-emerald-600",
                     )}
                   >
-                    {t('filterFound')}
+                    {t("filterFound")}
                   </button>
                 </div>
               </div>
@@ -208,7 +246,12 @@ function HomeContent() {
 
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
       <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px] touch-pan-y">
-        {isLoading && allItems.length === 0 && !searchQuery && category === "All" && itemType === null && !isSearchTyping ? (
+        {isLoading &&
+        allItems.length === 0 &&
+        !searchQuery &&
+        category === "All" &&
+        itemType === null &&
+        !isSearchTyping ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
             {[...Array(8)].map((_, i) => (
               <div key={i} className="space-y-3">
@@ -222,12 +265,20 @@ function HomeContent() {
             {/* Версияи Desktop ва Mobile: Рӯйхати умумӣ */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
               {displayedItems.map((item, index) => (
-                <ItemCard key={item.id} item={item} index={index} savedItemIds={savedItemIds} />
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  savedItemIds={savedItemIds}
+                />
               ))}
             </div>
 
             {/* Элемент барои Infinite Scroll */}
-            <div ref={ref} className="h-10 mt-4 flex items-center justify-center">
+            <div
+              ref={ref}
+              className="h-10 mt-4 flex items-center justify-center"
+            >
               {isFetchingNextPage && (
                 <div className="flex gap-1.5 items-center">
                   <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s]"></span>
@@ -239,21 +290,23 @@ function HomeContent() {
           </>
         ) : (
           <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-            <h3 className="text-xl font-black uppercase tracking-tight flex items-center justify-center gap-1">
-              {(isLoading || isFetching || isSearchTyping) ? (
+            <h3 className="text-xl font-black tracking-tight flex items-center justify-center gap-1">
+              {isLoading || isFetching || isSearchTyping ? (
                 <>
-                  {t('search')}
+                  {t("search")}
                   <span className="flex gap-1 items-center ml-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s]"></span>
                     <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
                     <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
                   </span>
                 </>
-              ) : t('noItemsFound')}
+              ) : (
+                t("noItemsFound")
+              )}
             </h3>
             {!(isLoading || isFetching || isSearchTyping) && (
               <p className="text-zinc-500 text-sm mt-2">
-                {t('noItemsSubtitle')}
+                {t("noItemsSubtitle")}
               </p>
             )}
           </div>

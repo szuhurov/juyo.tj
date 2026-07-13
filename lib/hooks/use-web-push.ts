@@ -1,0 +1,65 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
+import { createClerkSupabaseClient } from "@/lib/supabase";
+
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
+export type WebPushStatus = "unsupported" | "denied" | "default" | "granted";
+
+export function useWebPush() {
+  const { userId, getToken } = useAuth();
+  const [status, setStatus] = useState<WebPushStatus>("default");
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
+      setStatus("unsupported");
+      return;
+    }
+    setStatus(Notification.permission as WebPushStatus);
+  }, []);
+
+  const subscribe = useCallback(async () => {
+    if (!userId || !VAPID_PUBLIC_KEY) return false;
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return false;
+
+    const permission = await Notification.requestPermission();
+    setStatus(permission as WebPushStatus);
+    if (permission !== "granted") return false;
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as BufferSource,
+        });
+      }
+
+      const token = await getToken({ template: "supabase" });
+      if (!token) return false;
+      const supabase = createClerkSupabaseClient(token);
+      await supabase
+        .from("push_tokens")
+        .upsert(
+          { user_id: userId, platform: "web", token: JSON.stringify(subscription) },
+          { onConflict: "user_id,token" },
+        );
+      return true;
+    } catch (err) {
+      console.error("web push subscribe failed:", err);
+      return false;
+    }
+  }, [userId, getToken]);
+
+  return { status, subscribe };
+}

@@ -148,10 +148,10 @@ export function MandatoryPhoneModal() {
           </div>
           
           <DialogHeader className="space-y-1">
-            <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">
               {t('phoneRequiredTitle')}
             </DialogTitle>
-            <p className="text-zinc-400 font-bold text-[10px] uppercase tracking-widest leading-none">
+            <p className="text-zinc-400 font-bold text-[10px] tracking-widest leading-none">
               {t('phoneRequiredDesc')}
             </p>
           </DialogHeader>
@@ -159,7 +159,7 @@ export function MandatoryPhoneModal() {
           <form onSubmit={handleSaveData} id="mandatory-form" className="space-y-4 text-left">
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-[8px] font-black uppercase text-zinc-400 tracking-widest ml-2">
+                <Label className="text-[8px] font-black text-zinc-400 tracking-widest ml-2">
                   {t('phoneLabel')}
                 </Label>
                 <Input 
@@ -188,7 +188,7 @@ export function MandatoryPhoneModal() {
                   </Label>
                   <button 
                     type="button"
-                    className="text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
+                    className="text-[9px] font-black tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
                     onClick={() => setShowTermsDetails(true)}
                   >
                     {t('terms.link')}
@@ -203,7 +203,7 @@ export function MandatoryPhoneModal() {
         <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
           <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
             <DialogHeader className="space-y-3">
-              <DialogTitle className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+              <DialogTitle className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">
                 {t('terms.link')}
               </DialogTitle>
             </DialogHeader>
@@ -214,7 +214,7 @@ export function MandatoryPhoneModal() {
             </div>
             <Button 
               onClick={() => setShowTermsDetails(false)}
-              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
             >
               {t('ok')}
             </Button>
@@ -225,7 +225,7 @@ export function MandatoryPhoneModal() {
           <Button 
             type="submit" 
             form="mandatory-form"
-            className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+            className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
             disabled={loading || !acceptedTerms}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}
@@ -237,7 +237,7 @@ export function MandatoryPhoneModal() {
               setShowModal(false);
               await signOut();
             }}
-            className="w-full mt-4 text-[8px] font-black uppercase tracking-[0.3em] text-red-500 hover:text-red-600 transition-colors"
+            className="w-full mt-4 text-[8px] font-black tracking-[0.3em] text-red-500 hover:text-red-600 transition-colors"
           >
             {t('signOut')}
           </button>

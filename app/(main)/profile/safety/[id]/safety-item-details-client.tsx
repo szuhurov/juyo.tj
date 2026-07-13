@@ -306,7 +306,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
                 </div>
               )}
 
-              <Badge className={cn("absolute top-4 left-4 uppercase font-black rounded-md px-3 py-1 shadow-md border-none z-10", item.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
+              <Badge className={cn("absolute top-4 left-4 font-black rounded-md px-3 py-1 shadow-md border-none z-10", item.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
                 {item.type === 'lost' ? t('lost') : t('found')}
               </Badge>
               
@@ -324,28 +324,28 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
                   {user?.imageUrl ? <Image src={user.imageUrl} alt="User" width={48} height={48} className="object-cover" /> : <User className="w-6 h-6 text-zinc-400" />}
                 </div>
                 <div className="flex flex-col">
-                  <p className="font-black text-sm leading-tight uppercase">{user?.firstName || t('user')}</p>
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">{t('mySafeItem') || 'Ашёи ман дар архив'}</p>
+                  <p className="font-black text-sm leading-tight">{user?.firstName || t('user')}</p>
+                  <p className="text-[10px] text-zinc-500 font-bold tracking-tight">{t('mySafeItem') || 'Ашёи ман дар архив'}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black uppercase"><Calendar className="w-4 h-4" /> {new Date(item.created_at).toLocaleDateString()}</div>
+              <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black"><Calendar className="w-4 h-4" /> {new Date(item.created_at).toLocaleDateString()}</div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter uppercase leading-none mb-6">{item.item_name}</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-6">{item.item_name}</h1>
             
             <div className="flex flex-wrap gap-2 mb-8">
-              <Badge variant="outline" className="bg-zinc-50 dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 text-zinc-500 font-bold uppercase text-[10px] px-3 py-1">
+              <Badge variant="outline" className="bg-zinc-50 dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 text-zinc-500 font-bold text-[10px] px-3 py-1">
                 {t(`categories.${CATEGORIES.find(c => c.name === item.category)?.id || "6"}`)}
               </Badge>
               {item.reward && (
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black uppercase text-[10px] px-3 py-1 border-none">
+                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black text-[10px] px-3 py-1 border-none">
                   {t('reward')}: {item.reward} TJS
                 </Badge>
               )}
             </div>
 
             <div className="mb-8">
-              <h3 className="font-black text-[10px] uppercase text-zinc-400 mb-4">{t('description')}</h3>
+              <h3 className="font-black text-[10px] text-zinc-400 mb-4">{t('description')}</h3>
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">{item.description}</p>
             </div>
 
@@ -354,7 +354,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
                 <Phone className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest">{t("phoneLabel")}</div>
+                <div className="text-[8px] font-black text-blue-400 tracking-widest">{t("phoneLabel")}</div>
                 <div className="text-sm font-black text-blue-700 dark:text-blue-400">+{item.phone_number}</div>
               </div>
             </div>
@@ -362,7 +362,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
             <div className="flex flex-row items-center gap-2.5 mb-10">
               <Button variant="secondary" size="icon" className="h-14 w-14 shrink-0 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm" asChild><Link href={`/profile?tab=safety&edit=${id}`}><Pencil className="w-6 h-6" /></Link></Button>
               <Button variant="secondary" size="icon" className="h-14 w-14 shrink-0 rounded-2xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm" onClick={() => setShowDeleteConfirm(true)} disabled={isActionLoading}><Trash2 className="w-6 h-6" /></Button>
-              <Button size="lg" className="h-14 flex-1 rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg uppercase tracking-widest" onClick={handlePublish} disabled={isActionLoading}>
+              <Button size="lg" className="h-14 flex-1 rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg tracking-widest" onClick={handlePublish} disabled={isActionLoading}>
                 <Send className="w-5 h-5 mr-2" /> {t('publish')}
               </Button>
             </div>
@@ -372,7 +372,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
         {/* Delete Confirm Dialog */}
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
           <DialogContent className="rounded-3xl border-none shadow-2xl">
-            <DialogHeader><DialogTitle className="text-red-600 font-black uppercase">{t('deleteConfirmTitle')}</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="text-red-600 font-black">{t('deleteConfirmTitle')}</DialogTitle></DialogHeader>
             <DialogDescription>{t('removeFromSafeConfirm')}</DialogDescription>
             <DialogFooter className="flex gap-3 pt-4">
               <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowDeleteConfirm(false)} disabled={isActionLoading}>{t('cancel')}</Button>
@@ -404,13 +404,13 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
                         <div className="absolute inset-0 opacity-90 animate-grid-scan z-10 pointer-events-none" style={{ backgroundImage: "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)", backgroundSize: "25px 25px" }} />
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
                           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[10px] font-black text-white uppercase tracking-widest">{t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}</span>
+                          <span className="text-[10px] font-black text-white tracking-widest">{t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}</span>
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="h-6 flex items-center justify-center">
-                    <p className="text-emerald-600 font-black text-[10px] uppercase tracking-[0.2em] animate-in slide-in-from-bottom-2 duration-700">{scanMessage}</p>
+                    <p className="text-emerald-600 font-black text-[10px] tracking-[0.2em] animate-in slide-in-from-bottom-2 duration-700">{scanMessage}</p>
                   </div>
                 </div>
               )}
@@ -418,9 +418,9 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
                 <div className="space-y-6 text-center animate-in zoom-in duration-300">
                   <div className="w-20 h-20 rounded-[2rem] bg-red-50 flex items-center justify-center mx-auto shadow-sm"><ShieldAlert className="w-10 h-10 text-red-500" /></div>
                   <div className="space-y-3">
-                    <h2 className="text-xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
+                    <h2 className="text-xl font-black tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
                     <p className="text-red-700 font-bold text-sm leading-relaxed">{moderationError || t('error')}</p>
-                    <Button variant="outline" onClick={() => setModerationStatus('idle')} className="w-full rounded-xl h-12 font-black uppercase text-[10px] text-red-600 border-red-200">
+                    <Button variant="outline" onClick={() => setModerationStatus('idle')} className="w-full rounded-xl h-12 font-black text-[10px] text-red-600 border-red-200">
                       {t('close')}
                     </Button>
                   </div>
@@ -430,7 +430,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
                 <div className="space-y-6 animate-in zoom-in duration-300">
                   <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 flex items-center justify-center mx-auto shadow-sm"><CheckCircle2 className="w-10 h-10 text-emerald-500" /></div>
                   <div className="space-y-2">
-                    <h2 className="text-xl font-black uppercase tracking-tight text-emerald-600">{t('success')}</h2>
+                    <h2 className="text-xl font-black tracking-tight text-emerald-600">{t('success')}</h2>
                     <p className="text-zinc-500 font-bold text-sm">{t('imageModeration.submitted')}</p>
                   </div>
                 </div>

@@ -1,8 +1,7 @@
 /**
  * Компоненти корти QR-код (QR Card Component).
  * Ин компонент стикери махсуси JUYO-ро бо истифода аз qr-code-styling месозад.
- */
-"use client";
+ */ "use client";
 
 import React, { useEffect, useRef } from "react";
 import QRCodeStyling, {
@@ -12,7 +11,7 @@ import QRCodeStyling, {
   ErrorCorrectionLevel,
   DotType,
   CornerSquareType,
-  CornerDotType
+  CornerDotType,
 } from "qr-code-styling";
 import { cn } from "@/lib/utils";
 
@@ -37,23 +36,28 @@ interface QRCardProps {
   innerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export const QRCard: React.FC<QRCardProps> = ({ settings, id, className, innerRef }) => {
-  const { 
-    qrColor, 
-    bgColor, 
-    borderRadius, 
-    shadow, 
-    hasBorder, 
+export const QRCard: React.FC<QRCardProps> = ({
+  settings,
+  id,
+  className,
+  innerRef,
+}) => {
+  const {
+    qrColor,
+    bgColor,
+    borderRadius,
+    shadow,
+    hasBorder,
     text,
     dotsType = "square",
     cornersSquareType = "square",
-    cornersDotType = "square"
+    cornersDotType = "square",
   } = settings;
 
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const qrCodeInstance = useRef<QRCodeStyling | null>(null);
 
-  const qrUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/qr/${id}`;
+  const qrUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/qr/${id}`;
 
   useEffect(() => {
     if (!qrCodeInstance.current) {
@@ -66,30 +70,30 @@ export const QRCard: React.FC<QRCardProps> = ({ settings, id, className, innerRe
         qrOptions: {
           typeNumber: 0 as TypeNumber,
           mode: "Byte" as Mode,
-          errorCorrectionLevel: "H" as ErrorCorrectionLevel
+          errorCorrectionLevel: "H" as ErrorCorrectionLevel,
         },
         imageOptions: {
           hideBackgroundDots: true,
           imageSize: 0.4,
-          margin: 5
+          margin: 5,
         },
         dotsOptions: {
           color: qrColor,
-          type: dotsType
+          type: dotsType,
         },
         backgroundOptions: {
           color: bgColor,
         },
         cornersSquareOptions: {
           color: qrColor,
-          type: cornersSquareType
+          type: cornersSquareType,
         },
         cornersDotOptions: {
           color: qrColor,
-          type: cornersDotType
-        }
+          type: cornersDotType,
+        },
       });
-      
+
       if (qrContainerRef.current) {
         qrCodeInstance.current.append(qrContainerRef.current);
       }
@@ -100,19 +104,19 @@ export const QRCard: React.FC<QRCardProps> = ({ settings, id, className, innerRe
         data: qrUrl,
         dotsOptions: {
           color: qrColor,
-          type: dotsType
+          type: dotsType,
         },
         backgroundOptions: {
           color: bgColor,
         },
         cornersSquareOptions: {
           color: qrColor,
-          type: cornersSquareType
+          type: cornersSquareType,
         },
         cornersDotOptions: {
           color: qrColor,
-          type: cornersDotType
-        }
+          type: cornersDotType,
+        },
       });
     }
   }, [qrUrl, qrColor, bgColor, dotsType, cornersSquareType, cornersDotType]);
@@ -131,41 +135,46 @@ export const QRCard: React.FC<QRCardProps> = ({ settings, id, className, innerRe
 
   return (
     <div className={cn("inline-block", className)}>
-      <div 
+      <div
         ref={innerRef}
         className={cn(
           "relative flex flex-col items-center pt-2 px-2 pb-2 transition-all duration-300 w-fit overflow-hidden",
           radiusMap[borderRadius],
           shadowMap[shadow],
-          hasBorder && "border-2 border-zinc-100 dark:border-zinc-800"
+          hasBorder && "border-2 border-zinc-100 dark:border-zinc-800",
         )}
         style={{ backgroundColor: bgColor }}
       >
-        <div className="relative z-10 flex items-center justify-center" style={{ backgroundColor: bgColor }}>
+        <div
+          className="relative z-10 flex items-center justify-center"
+          style={{ backgroundColor: bgColor }}
+        >
           <div ref={qrContainerRef} />
-          
+
           {/* Логотипи JUYO дар маркази QR-код */}
-          <div 
-            className="absolute flex items-center justify-center px-1.5 rounded-sm"
-            style={{ 
-              backgroundColor: bgColor,
-              minWidth: '55px',
-              height: '24px'
-            }}
-          >
-            <span 
-              className="text-[20px] font-[900] tracking-[0.1em] block leading-none" 
-              style={{ color: qrColor }}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              className="flex items-center justify-center px-1.5 rounded-sm"
+              style={{
+                backgroundColor: bgColor,
+                minWidth: "55px",
+                height: "24px",
+              }}
             >
-              JUYO
-            </span>
+              <span
+                className="text-[20px] font-[900] tracking-[0.1em] block leading-none"
+                style={{ color: qrColor }}
+              >
+                JUYO
+              </span>
+            </div>
           </div>
         </div>
 
         {text && (
           <div className="relative z-10 text-center px-1 mt-1 max-w-[210px]">
-            <p 
-              className="font-black uppercase tracking-widest text-[11px] break-words leading-tight"
+            <p
+              className="font-black tracking-widest text-[11px] break-words leading-tight"
               style={{ color: qrColor }}
             >
               {text}

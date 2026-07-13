@@ -1,9 +1,9 @@
 /**
  * Хизматрасониҳо барои кор бо профили корбар (Profile Service).
- * Ин файл тамоми амалиётҳоро бо ҷадвали 'profiles' дар Supabase иҷро мекунад.
+ * Ин файл тамоми амалиётҳоро бо ҷадвали'profiles'дар Supabase иҷро мекунад.
  */
 
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from "@supabase/supabase-js";
 
 // Сохтори маълумоти профил
 export interface Profile {
@@ -23,11 +23,14 @@ export interface Profile {
 
 export const ProfileService = {
   // Гирифтани маълумоти профили корбари ҷорӣ
-  async getProfile(supabaseClient: SupabaseClient, userId: string): Promise<Profile | null> {
+  async getProfile(
+    supabaseClient: SupabaseClient,
+    userId: string,
+  ): Promise<Profile | null> {
     const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
       .maybeSingle();
 
     if (error) throw error;
@@ -35,19 +38,29 @@ export const ProfileService = {
   },
 
   // Навсозӣ ё сохтани профили нав (Upsert)
-  async updateProfile(supabaseClient: SupabaseClient, userId: string, updates: Partial<Profile>) {
+  async updateProfile(
+    supabaseClient: SupabaseClient,
+    userId: string,
+    updates: Partial<Profile>,
+  ) {
     try {
       const { data, error } = await supabaseClient
-        .from('profiles')
+        .from("profiles")
         .upsert({
           id: userId,
           ...updates,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      if (updates.is_qr_active === true) {
+        const { error: rpcError } = await supabaseClient.rpc("increment_qr_activation_count", { p_user_id: userId });
+        if (rpcError) console.error("increment_qr_activation_count:", rpcError.message);
+      }
+
       return data;
     } catch (err) {
       throw err;
@@ -57,12 +70,14 @@ export const ProfileService = {
   // Гирифтани маълумоти оммавии корбар (барои дигарон намоён)
   async getPublicProfile(supabaseClient: SupabaseClient, userId: string) {
     const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('first_name, last_name, avatar_url, phone, secondary_phone, is_qr_active')
-      .eq('id', userId)
+      .from("profiles")
+      .select(
+        "first_name, last_name, avatar_url, phone, secondary_phone, is_qr_active",
+      )
+      .eq("id", userId)
       .single();
 
     if (error) throw error;
     return data;
-  }
+  },
 };

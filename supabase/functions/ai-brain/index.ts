@@ -115,7 +115,70 @@ STRICT RULES:
 2. PROHIBITED: Only 18+, extreme violence, or illegal weapons.
 Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null"}`;
 
-    const promptToUse = mode === 'moderation_only' ? MODERATION_PROMPT : MASTER_PROMPT;
+    // SUGGEST-ONLY PROMPT — pure vision auto-fill, no moderation verdict at all.
+    // Used for the early "analyzing photo" step so it never blocks the user;
+    // the one and only accept/reject decision happens later, in final_check.
+    const SUGGEST_PROMPT = `You are an elite forensic AI analyst for JUYO.tj (Tajikistan).
+Analyze ALL images together as one set and provide an EXHAUSTIVE, high-quality description.
+Do NOT perform any moderation or safety judgement — only describe what you see.
+
+CONTEXT: User reports this as {{TYPE}}.
+STRICT LANGUAGE: All your output text (title, description) MUST BE IN {{LANG}}.
+
+TASKS:
+1. DESCRIPTION: Provide a CONCISE, professional description in {{LANG}}.
+- STRICT RULE: IGNORE the background surroundings. Focus ONLY on the item.
+- Paragraph 1: Start DIRECTLY with "{{START_PHRASE}} [object]..." (e.g., "Ман ёфтам як ҳамёни хурди норанҷӣ...").
+  - Write 1-2 high-signal sentences about the item's appearance and condition.
+  - Talk like a real person writing a post about an item they found or lost.
+  - End this paragraph with a semicolon and a final observation about the item's state.
+- Bullet Point 1: Start with •. Provide 1-2 sentences about physical details (brands, materials, unique marks).
+- Bullet Point 2: Start with •. Provide 1-2 sentences about text found or specific identifiers.
+- MASKING: Replace ALL sensitive numbers and ID/Passport numbers with XXXX.
+- EXCEPTION FOR DOCUMENTS: If you detect a document, you MUST find the OWNER'S NAME on it. Include this NAME in both the title and description. Do NOT mask the name in documents.
+- NO MARKDOWN: Use plain text only.
+2. TITLE: 2-4 word plain text title in {{LANG}}.
+- DOCUMENT RULE: If it's a document, the title MUST include the type and the NAME found.
+- ELECTRONICS RULE: Use brand names (e.g., "iPhone", "Samsung").
+- NO COLONS. NO MARKDOWN.
+3. CATEGORY: Electronics, Documents, Keys, Clothing, Pets, or Other.
+4. FORENSIC: EXHAUSTIVE forensic technical string in English for 100% vector matching. Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear). NO MARKDOWN.
+
+Return JSON:
+{ "title": "...", "description": "...", "category": "...", "forensic": "..." }`;
+
+    // FINAL-CHECK PROMPT — the single moderation gate. Runs once, right
+    // before publish, against the user's FINAL images + FINAL text together
+    // (whatever they ended up editing), so there is exactly one AI safety
+    // decision per submission instead of an early image check plus a later
+    // separate text check.
+    const FINAL_CHECK_PROMPT = `You are a moderator for a LOST & FOUND app (JUYO.tj).
+Review the attached image(s) AND the text below TOGETHER as one submission.
+
+TEXT TITLE: {{FINAL_TITLE}}
+TEXT DESCRIPTION: {{FINAL_DESCRIPTION}}
+
+IMAGE RULES:
+1. ALLOWED (is_safe: true): DOCUMENTS (passports, ID cards, licenses, bank cards), animals, electronics, everyday items.
+2. PROHIBITED: Nudity, extreme violence/gore, illegal weapons, narcotics.
+
+TEXT RULES:
+1. PROHIBITED: profanity/harassment, illegal trade (drugs/weapons/tracked goods), scams/fraud, hate speech.
+2. ALLOWED: normal contextual mentions (e.g. "found a kitchen knife" describing a household item), normal frustration without targeting individuals.
+
+If the text is not already in {{LANG}}, still judge it, but write "reason" in {{LANG}}.
+If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", quoting the exact original text if it's a text violation.
+
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null"}`;
+
+    let promptToUse = MASTER_PROMPT;
+    if (mode === 'moderation_only') promptToUse = MODERATION_PROMPT;
+    else if (mode === 'suggest') promptToUse = SUGGEST_PROMPT;
+    else if (mode === 'final_check') {
+      promptToUse = FINAL_CHECK_PROMPT
+        .replace(/{{FINAL_TITLE}}/g, String(formData.get('title') || ''))
+        .replace(/{{FINAL_DESCRIPTION}}/g, String(formData.get('description') || ''));
+    }
 
     const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -147,13 +210,24 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
 
     const result = JSON.parse(aiData.choices[0].message.content);
 
+    // suggest mode never renders a moderation verdict — just the auto-fill suggestion.
+    if (mode === 'suggest') {
+      return new Response(JSON.stringify({
+        is_safe: true,
+        title: result.title,
+        description: result.description,
+        category: result.category,
+        forensic: result.forensic
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // If unsafe, return immediately
     if (!result.is_safe) {
        return new Response(JSON.stringify({ is_safe: false, reason: result.reason }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // For moderation_only, we are done
-    if (mode === 'moderation_only') {
+    // moderation_only and final_check are pure accept/reject decisions — no auto-fill payload.
+    if (mode === 'moderation_only' || mode === 'final_check') {
       return new Response(JSON.stringify({ is_safe: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 

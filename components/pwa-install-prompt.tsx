@@ -114,7 +114,7 @@ export function PWAInstallPrompt() {
         </div>
         
         <div className="flex-1 min-w-0">
-          <p className="text-zinc-500 dark:text-zinc-400 font-bold text-[8px] sm:text-[9px] leading-tight uppercase">
+          <p className="text-zinc-500 dark:text-zinc-400 font-bold text-[8px] sm:text-[9px] leading-tight">
             {t('pwa.desc')}
           </p>
         </div>
@@ -123,7 +123,7 @@ export function PWAInstallPrompt() {
           <Button 
             size="sm"
             onClick={handleInstallClick}
-            className="bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 font-black uppercase text-[8px] sm:text-[9px] tracking-widest px-3 sm:px-4 h-8 sm:h-10 rounded-xl active:scale-95 transition-all border-none animate-pulse-slow"
+            className="bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 font-black text-[8px] sm:text-[9px] tracking-widest px-3 sm:px-4 h-8 sm:h-10 rounded-xl active:scale-95 transition-all border-none animate-pulse-slow"
           >
             {t('pwa.install')}
           </Button>

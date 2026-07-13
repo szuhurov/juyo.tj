@@ -1,17 +1,23 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
+import { isAdminUser } from "@/lib/admin-auth";
 
 const isProtectedRoute = createRouteMatcher([
   "/profile(.*)",
+  "/items/add",
   "/items/(.*)/edit",
+  "/admin(.*)",
+  "/api/admin(.*)",
 ]);
+
+const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
 
 // Rate limit rules: [path prefix, requests per window, window ms]
 const RATE_RULES: Array<{ prefix: string; limit: number; windowMs: number }> = [
-  { prefix: "/items/add",    limit: 10,  windowMs: 60_000 },  // 10 item uploads/min
-  { prefix: "/api/",         limit: 60,  windowMs: 60_000 },  // 60 API calls/min
-  { prefix: "/",             limit: 200, windowMs: 60_000 },  // 200 page views/min
+  { prefix: "/items/add", limit: 10, windowMs: 60_000 }, // 10 item uploads/min
+  { prefix: "/api/", limit: 60, windowMs: 60_000 }, // 60 API calls/min
+  { prefix: "/", limit: 200, windowMs: 60_000 }, // 200 page views/min
 ];
 
 function getClientIp(request: Request): string {
@@ -27,12 +33,17 @@ export default clerkMiddleware(async (auth, request) => {
   const path = new URL(request.url).pathname;
 
   // Find the most specific matching rule
-  const rule = RATE_RULES.find(r => path.startsWith(r.prefix)) ?? RATE_RULES[RATE_RULES.length - 1];
+  const rule =
+    RATE_RULES.find((r) => path.startsWith(r.prefix)) ??
+    RATE_RULES[RATE_RULES.length - 1];
   const key = `${rule.prefix}:${ip}`;
 
   if (!(await rateLimit(key, rule.limit, rule.windowMs))) {
     return new NextResponse(
-      JSON.stringify({ error: "Too Many Requests", retryAfter: Math.ceil(rule.windowMs / 1000) }),
+      JSON.stringify({
+        error: "Too Many Requests",
+        retryAfter: Math.ceil(rule.windowMs / 1000),
+      }),
       {
         status: 429,
         headers: {
@@ -40,18 +51,27 @@ export default clerkMiddleware(async (auth, request) => {
           "Retry-After": String(Math.ceil(rule.windowMs / 1000)),
           "X-RateLimit-Limit": String(rule.limit),
         },
-      }
+      },
     );
   }
 
   if (isProtectedRoute(request)) {
     await auth.protect();
   }
+
+  if (isAdminRoute(request)) {
+    const { userId } = await auth();
+    if (!isAdminUser(userId)) {
+      return path.startsWith("/api/admin")
+        ? NextResponse.json({ error: "Not found" }, { status: 404 })
+        : NextResponse.redirect(new URL("/", request.url));
+    }
+  }
 });
 
 export const config = {
   matcher: [
-    '/((?!_next|.well-known|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    '/(api|trpc)(.*)',
+    "/((?!_next|.well-known|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
   ],
 };

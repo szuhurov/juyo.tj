@@ -37,7 +37,8 @@ export async function generateMetadata() {
       default: "juyo",
       template: "%s",
     },
-    description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
+    description:
+      "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
     manifest: "/manifest.json",
     appleWebApp: {
       capable: true,
@@ -64,17 +65,11 @@ export async function generateMetadata() {
     verification: {
       google: "OlHxk_CFMu0ekUQbcbj9aaTRk4bn_kCIoR_7PCNO8L4",
     },
-    other: {
-      "google-adsense-account": "ca-pub-2002195129032167",
-    },
+    other: { "google-adsense-account": "ca-pub-2002195129032167" },
     metadataBase: new URL("https://juyo.tj"),
     alternates: {
       canonical: "/",
-      languages: {
-        "tg-TJ": "/tg",
-        "ru-RU": "/ru",
-        "en-US": "/en",
-      },
+      languages: { "tg-TJ": "/tg", "ru-RU": "/ru", "en-US": "/en" },
     },
     openGraph: {
       type: "website",
@@ -87,7 +82,8 @@ export async function generateMetadata() {
       url: "https://juyo.tj",
       siteName: "juyo",
       title: "juyo",
-      description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
+      description:
+        "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
       images: [
         {
           url: "https://juyo.tj/juyo-logo.jpg",
@@ -100,7 +96,8 @@ export async function generateMetadata() {
     twitter: {
       card: "summary_large_image",
       title: "juyo",
-      description: "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
+      description:
+        "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
       images: ["https://juyo.tj/juyo-logo.jpg"],
     },
     icons: {
@@ -157,16 +154,16 @@ export default async function RootLayout({
                 {
                   "@type": "WebSite",
                   "@id": "https://juyo.tj/#website",
-                  "name": "juyo",
-                  "alternateName": "juyo.tj",
-                  "url": "https://juyo.tj",
-                  "description": t.seoDesc,
-                  "inLanguage": ["tg", "ru", "en"],
-                  "potentialAction": {
+                  name: "juyo",
+                  alternateName: "juyo.tj",
+                  url: "https://juyo.tj",
+                  description: t.seoDesc,
+                  inLanguage: ["tg", "ru", "en"],
+                  potentialAction: {
                     "@type": "SearchAction",
-                    "target": {
+                    target: {
                       "@type": "EntryPoint",
-                      "urlTemplate": "https://juyo.tj/?q={search_term_string}",
+                      urlTemplate: "https://juyo.tj/?q={search_term_string}",
                     },
                     "query-input": "required name=search_term_string",
                   },
@@ -174,18 +171,15 @@ export default async function RootLayout({
                 {
                   "@type": "Organization",
                   "@id": "https://juyo.tj/#organization",
-                  "name": "juyo",
-                  "url": "https://juyo.tj",
-                  "logo": {
+                  name: "juyo",
+                  url: "https://juyo.tj",
+                  logo: {
                     "@type": "ImageObject",
-                    "url": "https://juyo.tj/juyo-logo.jpg",
-                    "width": 512,
-                    "height": 512,
+                    url: "https://juyo.tj/juyo-logo.jpg",
+                    width: 512,
+                    height: 512,
                   },
-                  "areaServed": {
-                    "@type": "Country",
-                    "name": "Tajikistan",
-                  },
+                  areaServed: { "@type": "Country", name: "Tajikistan" },
                 },
               ],
             }),
@@ -197,11 +191,12 @@ export default async function RootLayout({
           <ClerkLocalizationProvider>
             {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
             <h1 className="sr-only">
-              роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон.
-              Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд,
-              метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд.
-              Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад,
-              то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.
+              роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар
+              Тоҷикистон. Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки
+              ашёи худро гум кардаанд, метавонанд эълон гузошта бо ҳамдигар
+              иртибот пайдо кунанд. Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба
+              ашёҳои арзишманд часпонда шавад, то дар ҳолати гум шудан,
+              ёбандагон зуд тамос гирифта, онро баргардонанд.
             </h1>
             <QueryProvider>
               {children}
@@ -213,13 +208,26 @@ export default async function RootLayout({
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>
-        <Script
-          id="sw-register"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
-          }}
-        />
+        {process.env.NODE_ENV === "production" ? (
+          <Script
+            id="sw-register"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `if ('serviceWorker'in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
+            }}
+          />
+        ) : (
+          // Дар dev ҳеҷ гоҳ SW-ро сабт накун — агар аз пеш сабт шуда бошад
+          // (масалан аз production build-и қаблӣ), онро худкор нест кун,
+          // то кэши SW тағйиротро дар вақти рушд пинҳон накунад.
+          <Script
+            id="sw-unregister-dev"
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `if ('serviceWorker'in navigator) { navigator.serviceWorker.getRegistrations().then(function(regs) { regs.forEach(function(r) { r.unregister(); }); }); if (window.caches) { caches.keys().then(function(keys) { keys.forEach(function(k) { caches.delete(k); }); }); } }`,
+            }}
+          />
+        )}
         <Script
           id="adsense"
           async

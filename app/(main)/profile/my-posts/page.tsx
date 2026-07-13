@@ -94,7 +94,7 @@ export default function MyPostsPage() {
     <div className="max-w-[1600px] mx-auto px-2 sm:px-4 py-8">
       {/* Сарлавҳаи саҳифа */}
       <div className="flex items-center gap-4 mb-8 px-2 sm:px-0">
-        <h1 className="text-2xl font-black uppercase tracking-tight">{t('myPosts')}</h1>
+        <h1 className="text-2xl font-black tracking-tight">{t('myPosts')}</h1>
       </div>
 
       {loading ? (
@@ -131,7 +131,7 @@ export default function MyPostsPage() {
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
           <PackageSearch className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2">{t('noItemsFound')}</h2>
-          <Button asChild className="rounded-md font-bold uppercase text-xs">
+          <Button asChild className="rounded-md font-bold text-xs">
             <Link href="/items/add">{t('addItemTitle')}</Link>
           </Button>
         </div>
@@ -141,12 +141,12 @@ export default function MyPostsPage() {
       <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
         <DialogContent className="rounded-2xl max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight text-red-600">{t('deleteConfirmTitle')}</DialogTitle>
+            <DialogTitle className="text-xl font-black tracking-tight text-red-600">{t('deleteConfirmTitle')}</DialogTitle>
             <DialogDescription className="font-medium pt-2">{t('deletePostConfirm')}</DialogDescription>
             </DialogHeader>
             <div className="flex gap-3 mt-4">
-            <Button variant="outline" className="flex-1 rounded-xl font-bold uppercase text-xs h-12" onClick={() => setItemToDelete(null)}>{t('cancel')}</Button>
-            <Button variant="destructive" className="flex-1 rounded-xl font-bold uppercase text-xs h-12 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete} disabled={isActionLoading}>{t('delete')}</Button>
+            <Button variant="outline" className="flex-1 rounded-xl font-bold text-xs h-12" onClick={() => setItemToDelete(null)}>{t('cancel')}</Button>
+            <Button variant="destructive" className="flex-1 rounded-xl font-bold text-xs h-12 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete} disabled={isActionLoading}>{t('delete')}</Button>
             </div>
         </DialogContent>
       </Dialog>

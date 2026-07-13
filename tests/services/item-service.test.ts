@@ -302,41 +302,29 @@ describe('ItemService.toggleSaveItem', () => {
 // deleteItem
 // ─────────────────────────────────────────────
 describe('ItemService.deleteItem', () => {
-  it('queries item_images table before deleting', async () => {
-    const mock = makeMockClient({ data: [], error: null });
-
-    await ItemService.deleteItem(mock, 'item-1');
-
-    const fromCalls: string[] = mock.from.mock.calls.map((c: any[]) => c[0]);
-    expect(fromCalls).toContain('item_images');
-  });
-
-  it('deletes item from items table', async () => {
+  it('soft-deletes by updating the items table, not removing the row', async () => {
     const mock = makeMockClient({ data: [], error: null });
 
     await ItemService.deleteItem(mock, 'item-42');
 
     const fromCalls: string[] = mock.from.mock.calls.map((c: any[]) => c[0]);
     expect(fromCalls).toContain('items');
+    expect(mock._chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'deleted', deleted_at: expect.any(String) }),
+    );
+    expect(mock._chain.eq).toHaveBeenCalledWith('id', 'item-42');
   });
 
-  it('removes storage files when images exist', async () => {
+  it('does not touch storage', async () => {
     const mock = makeMockClient({ data: [], error: null });
-    // First from() call returns images
-    mock._chain.eq.mockReturnValue({
-      ...mock._chain,
-      then: (resolve: Function) =>
-        resolve({ data: [{ image_url: 'https://proj.supabase.co/storage/v1/object/public/items/photo.jpg' }], error: null }),
-    });
 
     await ItemService.deleteItem(mock, 'item-1');
 
-    expect(mock.storage.from).toHaveBeenCalledWith('items');
+    expect(mock.storage.from).not.toHaveBeenCalled();
   });
 
-  it('throws when image fetch fails', async () => {
-    const mock = makeMockClient({ data: null, error: new Error('Storage error') });
-    mock._chain.maybeSingle.mockResolvedValue({ data: null, error: null });
+  it('throws when the update fails', async () => {
+    const mock = makeMockClient({ data: null, error: new Error('DB error') });
 
     await expect(ItemService.deleteItem(mock, 'item-1')).rejects.toThrow();
   });

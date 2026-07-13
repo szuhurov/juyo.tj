@@ -1,10 +1,8 @@
 /**
  * Ин саҳифаи Профили корбар ҳаст.
  * Дар ин ҷо корбар метавонад эълонҳои худро идора кунад, маълумоти шахсиашро иваз кунад,
- * QR-коди худро созад ва ашёҳояшро дар "Қуттии бехатарӣ" (Safety Box) нигоҳ дорад.
- */
-
-"use client";
+ * QR-коди худро созад ва ашёҳояшро дар"Қуттии бехатарӣ"(Safety Box) нигоҳ дорад.
+ */ "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
 import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
@@ -40,7 +38,6 @@ import {
   Trash2,
   Loader2,
   Clock,
-  Upload,
   X,
   Send,
   ShieldCheck,
@@ -63,8 +60,8 @@ import {
   CheckCircle2,
   Calendar,
   Eye,
-  } from "lucide-react";
- // Иконкаҳои гуногун барои интерфейс
+} from "lucide-react";
+// Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
 import Image from "next/image"; // Барои нишон додани суратҳои оптимизатсияшуда
 import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
@@ -127,6 +124,73 @@ function ProfileContent() {
   );
   const [showWhyQRModal, setShowWhyQRModal] = useState(false);
   const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
+  const [emailStep, setEmailStep] = useState<"input" | "verify">("input");
+  const [newEmailInput, setNewEmailInput] = useState("");
+  const [emailCodeInput, setEmailCodeInput] = useState("");
+  const [pendingEmailAddress, setPendingEmailAddress] = useState<any>(null);
+  const [emailSubmitting, setEmailSubmitting] = useState(false);
+
+  const resetEmailModal = () => {
+    setShowEmailChangeModal(false);
+    setEmailStep("input");
+    setNewEmailInput("");
+    setEmailCodeInput("");
+    setPendingEmailAddress(null);
+  };
+
+  const handleStartEmailChange = async () => {
+    if (!user || !newEmailInput) return;
+    setEmailSubmitting(true);
+    try {
+      const emailAddress = await user.createEmailAddress({
+        email: newEmailInput,
+      });
+      await emailAddress.prepareVerification({ strategy: "email_code" });
+      setPendingEmailAddress(emailAddress);
+      setEmailStep("verify");
+    } catch (err: any) {
+      toast.error(err.errors?.[0]?.message || err.message || t("error"));
+    } finally {
+      setEmailSubmitting(false);
+    }
+  };
+
+  const handleVerifyEmailChange = async () => {
+    if (!user || !pendingEmailAddress) return;
+    setEmailSubmitting(true);
+    try {
+      const oldEmail = user.primaryEmailAddress;
+      await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
+      await user.update({ primaryEmailAddressId: pendingEmailAddress.id });
+      if (oldEmail && oldEmail.id !== pendingEmailAddress.id) {
+        await oldEmail.destroy();
+      }
+      await user.reload();
+      toast.success(t("emailChangeSuccess"));
+      resetEmailModal();
+    } catch (err: any) {
+      toast.error(err.errors?.[0]?.message || err.message || t("error"));
+    } finally {
+      setEmailSubmitting(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setDeletingAccount(true);
+    try {
+      await user.delete();
+      toast.success(t("deleteAccountSuccess"));
+      router.push("/");
+    } catch (err: any) {
+      toast.error(err.message || t("error"));
+      setDeletingAccount(false);
+    }
+  };
 
   // Стейтҳо барои нигоҳ доштани маълумоти профил ва нишон додани модалҳо
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -191,13 +255,12 @@ function ProfileContent() {
     token,
   );
 
-  // Стейтҳо барои идоракунии ашёҳо дар "Қуттии бехатарӣ" (Safety Box)
+  // Стейтҳо барои идоракунии ашёҳо дар"Қуттии бехатарӣ"(Safety Box)
   const [safetySubmitting, setSafetySubmitting] = useState(false);
   const [safetyType, setSafetyType] = useState<"lost" | "found">("lost");
   const [safetyCategory, setSafetyCategory] = useState("");
   const [safetyImages, setSafetyImages] = useState<File[]>([]);
   const [safetyPreviews, setSafetyPreviews] = useState<string[]>([]);
-  const [isAddingSafetyItem, setIsAddingSafetyItem] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [selectedSafetyItem, setSelectedSafetyItem] = useState<any>(null);
   const [editingSafetyItem, setEditingSafetyItem] = useState<any>(null);
@@ -256,7 +319,9 @@ function ProfileContent() {
   });
 
   // AI Moderation States for Safety Box Publishing
-  const [moderationStatus, setModerationStatus] = useState<'idle' | 'checking' | 'passed' | 'failed'>('idle');
+  const [moderationStatus, setModerationStatus] = useState<
+    "idle" | "checking" | "passed" | "failed"
+  >("idle");
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -267,40 +332,39 @@ function ProfileContent() {
     let interval: any;
     let timer: any;
 
-    if (moderationStatus === 'checking') {
+    if (moderationStatus === "checking") {
       const technicalSteps = [
-        t('ai_steps.scanning_pixels'),
-        t('ai_steps.detecting_features'),
-        t('ai_steps.checking_safety'),
-        t('ai_steps.matching_categories'),
-        t('ai_steps.optimizing_description'),
-        t('ai_steps.forensic_engine')
+        t("ai_steps.scanning_pixels"),
+        t("ai_steps.detecting_features"),
+        t("ai_steps.checking_safety"),
+        t("ai_steps.matching_categories"),
+        t("ai_steps.optimizing_description"),
+        t("ai_steps.forensic_engine"),
       ];
 
-      setScanMessage(t('ai_steps.brain_started'));
-      
+      setScanMessage(t("ai_steps.brain_started"));
+
       let stepCount = 0;
       interval = setInterval(() => {
         stepCount++;
         if (stepCount % 6 === 3) {
-          setScanMessage(t('ai_steps.please_wait'));
+          setScanMessage(t("ai_steps.please_wait"));
         } else if (stepCount % 6 === 0) {
-          setScanMessage(t('ai_steps.do_not_exit'));
+          setScanMessage(t("ai_steps.do_not_exit"));
         } else {
-          const techIndex = (Math.floor(stepCount / 2)) % technicalSteps.length;
+          const techIndex = Math.floor(stepCount / 2) % technicalSteps.length;
           setScanMessage(technicalSteps[techIndex]);
         }
       }, 3000);
 
       timer = setInterval(() => {
-        setElapsedSeconds(prev => Math.min(prev + 1, 120));
+        setElapsedSeconds((prev) => Math.min(prev + 1, 120));
       }, 1000);
-
     } else {
       setElapsedSeconds(0);
       setScanMessage("");
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
       if (timer) clearInterval(timer);
@@ -354,8 +418,10 @@ function ProfileContent() {
   ];
 
   useEffect(() => {
-    const handleItemsUpdate = () => queryClient.invalidateQueries({ queryKey: ["items", "list"] });
-    const handleSavedUpdate = () => queryClient.invalidateQueries({ queryKey: ["items", "saved"] });
+    const handleItemsUpdate = () =>
+      queryClient.invalidateQueries({ queryKey: ["items", "list"] });
+    const handleSavedUpdate = () =>
+      queryClient.invalidateQueries({ queryKey: ["items", "saved"] });
     window.addEventListener("items-updated", handleItemsUpdate);
     window.addEventListener("saved-items-updated", handleSavedUpdate);
     return () => {
@@ -368,12 +434,16 @@ function ProfileContent() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (activePicker && !target.closest('.color-picker-container') && !target.closest('.color-trigger')) {
+      if (
+        activePicker &&
+        !target.closest(".color-picker-container") &&
+        !target.closest(".color-trigger")
+      ) {
         setActivePicker(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activePicker]);
 
   /**
@@ -399,86 +469,6 @@ function ProfileContent() {
   };
 
   /**
-   * Функсия барои бақайдгирии ашёи нав дар Қуттии бехатарӣ
-   */
-  const handleRegisterSafetyItem = async (
-    e: React.FormEvent<HTMLFormElement>,
-  ) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const name = ((formData.get("name") as string) || "").trim();
-    const description = ((formData.get("description") as string) || "").trim();
-    const phone = ((formData.get("phone") as string) || "").trim();
-    const reward = ((formData.get("reward") as string) || "").trim();
-
-    if (!name || !description || !safetyCategory || !phone) {
-      toast.error(t("fillAllFields"));
-      return;
-    }
-
-    setSafetySubmitting(true);
-    try {
-      const imageUrls = [];
-      for (const file of safetyImages) {
-        const uploadToken = await getToken({ template: "supabase" });
-        const uploadSupabase = createClerkSupabaseClient(uploadToken!);
-
-        const compressedFile = await compressImage(file);
-
-        const ext = compressedFile.name.split(".").pop();
-        const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const { error: uploadError } = await uploadSupabase.storage
-          .from("items")
-          .upload(fileName, compressedFile);
-        if (uploadError) throw uploadError;
-        const {
-          data: { publicUrl },
-        } = uploadSupabase.storage.from("items").getPublicUrl(fileName);
-        imageUrls.push(publicUrl);
-      }
-
-      const dbToken = await getToken({ template: "supabase" });
-      const supabase = createClerkSupabaseClient(dbToken!);
-
-      const { data, error } = await supabase
-        .from("safety_box")
-        .insert([
-          {
-            user_id: userId,
-            item_name: name,
-            category: safetyCategory,
-            type: safetyType,
-            description,
-            phone_number: phone,
-            reward: reward ? `${reward}` : null,
-            images: imageUrls,
-          },
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({
-        queryKey: ITEM_KEYS.safetyItems(userId || ""),
-      });
-
-      toast.success(t("success"));
-      setSafetyImages([]);
-      setSafetyPreviews([]);
-      setSafetyCategory("");
-      setSafetyType("lost");
-      setIsAddingSafetyItem(false);
-    } catch (error: any) {
-      console.error("Detailed Safety Box Error:", error);
-      const errorMsg = error.message || "Unknown error";
-      toast.error(`Хатогӣ: ${errorMsg}`);
-    } finally {
-      setSafetySubmitting(false);
-    }
-  };
-
-  /**
    * Функсия барои нав кардани маълумоти ашё дар Қуттии бехатарӣ
    */
   const handleUpdateSafetyItem = async (
@@ -500,13 +490,18 @@ function ProfileContent() {
 
       const supabase = createClerkSupabaseClient(supabaseToken);
 
-      const originalItem = safetyItems.find((it: any) => it.id === editingSafetyItem.id);
+      const originalItem = safetyItems.find(
+        (it: any) => it.id === editingSafetyItem.id,
+      );
       const originalImages = originalItem?.images || [];
       const currentImagesInState = editingSafetyItem.images || [];
-      
-      const textChanged = name !== originalItem?.item_name || description !== originalItem?.description;
+
+      const textChanged =
+        name !== originalItem?.item_name ||
+        description !== originalItem?.description;
       const hasNewImages = safetyImages.length > 0;
-      const imagesRemoved = originalImages.length !== currentImagesInState.length;
+      const imagesRemoved =
+        originalImages.length !== currentImagesInState.length;
       const imagesChanged = hasNewImages || imagesRemoved;
 
       const removedUrls = originalImages.filter(
@@ -561,7 +556,9 @@ function ProfileContent() {
           reward: reward ? `${reward}` : null,
           images: imageUrls,
           text_moderated: textChanged ? false : originalItem?.text_moderated,
-          images_moderated: imagesChanged ? false : originalItem?.images_moderated,
+          images_moderated: imagesChanged
+            ? false
+            : originalItem?.images_moderated,
         })
         .eq("id", editingSafetyItem.id)
         .select()
@@ -598,15 +595,29 @@ function ProfileContent() {
       try {
         const supabaseToken = await getToken({ template: "supabase" });
         const supabase = createClerkSupabaseClient(supabaseToken!);
-        
-        const item = await ItemService.publishFromSafetyBox(supabase, safetyItem, userId!, 'approved');
-        
-        supabase.functions.invoke('generate-embedding', {
-          body: { item_id: item.id, text: `${item.title} ${item.description}` }
-        }).catch(err => console.error("Background embedding failed:", err));
 
-        queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "") });
-        queryClient.invalidateQueries({ queryKey: ITEM_KEYS.userItems(userId || "") });
+        const item = await ItemService.publishFromSafetyBox(
+          supabase,
+          safetyItem,
+          userId!,
+          "approved",
+        );
+
+        supabase.functions
+          .invoke("generate-embedding", {
+            body: {
+              item_id: item.id,
+              text: `${item.title} ${item.description}`,
+            },
+          })
+          .catch((err) => console.error("Background embedding failed:", err));
+
+        queryClient.invalidateQueries({
+          queryKey: ITEM_KEYS.safetyItems(userId || ""),
+        });
+        queryClient.invalidateQueries({
+          queryKey: ITEM_KEYS.userItems(userId || ""),
+        });
         toast.success(t("success"));
         return;
       } catch (err) {
@@ -615,67 +626,87 @@ function ProfileContent() {
       }
     }
 
-    setModerationStatus('checking');
+    setModerationStatus("checking");
     setModerationError(null);
     setElapsedSeconds(0);
-    
+
     try {
       const supabaseToken = await getToken({ template: "supabase" });
       const supabase = createClerkSupabaseClient(supabaseToken!);
 
       // --- 1. МОДЕРАТСИЯИ МАТН (Агар лозим бошад) ---
       if (needsTextModeration) {
-        setScanMessage(t('ai_steps.checking_custom_text') || "AI матни шуморо месанҷад...");
-        const { data: textData, error: textError } = await supabase.functions.invoke('text-moderation', {
-          body: { 
-            record: { title: safetyItem.item_name, description: safetyItem.description, moderation_status: 'pending' },
-            lang: locale
-          },
-        });
+        setScanMessage(
+          t("ai_steps.checking_custom_text") || "AI матни шуморо месанҷад...",
+        );
+        const { data: textData, error: textError } =
+          await supabase.functions.invoke("text-moderation", {
+            body: {
+              record: {
+                title: safetyItem.item_name,
+                description: safetyItem.description,
+                moderation_status: "pending",
+              },
+              lang: locale,
+            },
+          });
 
         if (textError || (textData && textData.is_safe === false)) {
-          setModerationStatus('failed');
-          setModerationError(textData?.reason || t('ai_steps.text_moderation_failed') || "Матни шумо ба қоидаҳо мувофиқат намекунад.");
+          setModerationStatus("failed");
+          setModerationError(
+            textData?.reason ||
+              t("ai_steps.text_moderation_failed") ||
+              "Матни шумо ба қоидаҳо мувофиқат намекунад.",
+          );
           return;
         }
-        setScanMessage(t('ai_steps.text_passed') || "Матн қабул шуд!");
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setScanMessage(t("ai_steps.text_passed") || "Матн қабул шуд!");
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       }
 
       // --- 2. МОДЕРАТСИЯИ АКСҲО (Агар лозим бошад) ---
       if (needsImageModeration) {
-        setScanMessage(t('ai_steps.brain_started') || "AI Brain ба кор даромад...");
+        setScanMessage(
+          t("ai_steps.brain_started") || "AI Brain ба кор даромад...",
+        );
         const formDataAI = new FormData();
-        
+
         if (safetyItem.images && safetyItem.images.length > 0) {
           const imageFiles = await Promise.all(
             safetyItem.images.map(async (url: string, index: number) => {
               try {
                 const response = await fetch(url);
                 const blob = await response.blob();
-                return new File([blob], `image-${index}.jpg`, { type: "image/jpeg" });
+                return new File([blob], `image-${index}.jpg`, {
+                  type: "image/jpeg",
+                });
               } catch (e) {
                 return null;
               }
-            })
+            }),
           );
-          imageFiles.filter(Boolean).forEach((file) => formDataAI.append('image', file as File));
+          imageFiles
+            .filter(Boolean)
+            .forEach((file) => formDataAI.append("image", file as File));
         }
 
-        formDataAI.append('lang', locale);
-        formDataAI.append('type', safetyItem.type || 'lost');
-        formDataAI.append('mode', 'moderation_only'); 
+        formDataAI.append("lang", locale);
+        formDataAI.append("type", safetyItem.type || "lost");
+        formDataAI.append("mode", "moderation_only");
 
-        const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-brain', {
-          body: formDataAI,
-        });
+        const { data: aiResponse, error: aiError } =
+          await supabase.functions.invoke("ai-brain", {
+            body: formDataAI,
+          });
 
         if (aiError || (aiResponse && aiResponse.is_safe === false)) {
-          setModerationStatus('failed');
-          setModerationError(aiResponse?.reason || aiError?.message || t('error'));
+          setModerationStatus("failed");
+          setModerationError(
+            aiResponse?.reason || aiError?.message || t("error"),
+          );
           return;
         }
-        setScanMessage(t('ai_steps.images_passed') || "Аксҳо қабул шуданд!");
+        setScanMessage(t("ai_steps.images_passed") || "Аксҳо қабул шуданд!");
       }
 
       // 3. Агар ҳама санҷишҳо гузаштанд, нашр мекунем
@@ -683,32 +714,42 @@ function ProfileContent() {
         supabase,
         safetyItem,
         userId!,
-        'approved'
+        "approved",
       );
 
       // --- 4. ТАҶДИДИ ВЕКТОРИ ҶУСТУҶӮ (Embedding) ---
-      supabase.functions.invoke('generate-embedding', {
-        body: { 
-            item_id: item.id, 
-            text: `${item.title} ${item.description}` 
-        }
-      }).catch(err => console.error("Background embedding failed (Safety Box Publish):", err));
+      supabase.functions
+        .invoke("generate-embedding", {
+          body: {
+            item_id: item.id,
+            text: `${item.title} ${item.description}`,
+          },
+        })
+        .catch((err) =>
+          console.error(
+            "Background embedding failed (Safety Box Publish):",
+            err,
+          ),
+        );
 
-      queryClient.invalidateQueries({ queryKey: ITEM_KEYS.safetyItems(userId || "") });
-      queryClient.invalidateQueries({ queryKey: ITEM_KEYS.userItems(userId || "") });
+      queryClient.invalidateQueries({
+        queryKey: ITEM_KEYS.safetyItems(userId || ""),
+      });
+      queryClient.invalidateQueries({
+        queryKey: ITEM_KEYS.userItems(userId || ""),
+      });
 
-      setModerationStatus('passed');
+      setModerationStatus("passed");
       toast.success(t("imageModeration.submitted"));
-      
+
       setTimeout(() => {
-        setModerationStatus('idle');
+        setModerationStatus("idle");
         setScanMessage("");
       }, 2000);
-
     } catch (error: any) {
       console.error("Publishing Moderation Error:", error);
-      setModerationStatus('failed');
-      setModerationError(error.message || t('error'));
+      setModerationStatus("failed");
+      setModerationError(error.message || t("error"));
     }
   };
 
@@ -811,7 +852,7 @@ function ProfileContent() {
       // Агар дар дохили React Native WebView бошад
       if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
         (window as any).ReactNativeWebView.postMessage(
-          JSON.stringify({ type: "DOWNLOAD_QR", payload: dataUrl })
+          JSON.stringify({ type: "DOWNLOAD_QR", payload: dataUrl }),
         );
         toast.success(t("qrSavedSuccess"));
         return;
@@ -835,10 +876,10 @@ function ProfileContent() {
    * Функсия барои боргирии QR-код ҳамчун сурат (Download)
    */
   const handleDownloadQR = async () => {
-    const isMissingData = 
-      !profile?.phone || 
-      !profile?.secondary_phone || 
-      !profile?.secondary_phone_type || 
+    const isMissingData =
+      !profile?.phone ||
+      !profile?.secondary_phone ||
+      !profile?.secondary_phone_type ||
       profile?.accepted_terms !== true;
 
     if (isMissingData) {
@@ -856,13 +897,14 @@ function ProfileContent() {
     e: React.FormEvent<HTMLFormElement>,
   ) => {
     e.preventDefault();
-    
+
     const needsPhone = !profile?.phone;
-    const needsSecondary = !profile?.secondary_phone || !profile?.secondary_phone_type;
+    const needsSecondary =
+      !profile?.secondary_phone || !profile?.secondary_phone_type;
     const needsTerms = profile?.accepted_terms !== true;
 
     if (needsTerms && !acceptedTerms) {
-      toast.error(t('terms.error') || "Лутфан шартҳоро қабул кунед");
+      toast.error(t("terms.error") || "Лутфан шартҳоро қабул кунед");
       return;
     }
 
@@ -873,7 +915,9 @@ function ProfileContent() {
 
     const formData = new FormData(e.currentTarget);
     const phone = ((formData.get("phone") as string) || "").trim();
-    const secondary_phone = ((formData.get("secondary_phone") as string) || "").trim();
+    const secondary_phone = (
+      (formData.get("secondary_phone") as string) || ""
+    ).trim();
 
     if (needsPhone && phone.length < 9) {
       toast.error(t("phoneMinLength"));
@@ -907,7 +951,11 @@ function ProfileContent() {
         updates.terms_version = "v1.0";
       }
 
-      const updated = await ProfileService.updateProfile(supabase, userId!, updates);
+      const updated = await ProfileService.updateProfile(
+        supabase,
+        userId!,
+        updates,
+      );
 
       setProfile(updated);
       setShowSecondaryPhoneModal(false);
@@ -936,7 +984,7 @@ function ProfileContent() {
 
     if (navigator.share) {
       navigator.share(shareData).catch((error) => {
-        if (error.name !== 'AbortError') {
+        if (error.name !== "AbortError") {
           navigator.clipboard.writeText(url);
           toast.success(t("success"));
         }
@@ -972,7 +1020,7 @@ function ProfileContent() {
               ) : (
                 <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
                   <PackageSearch className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 uppercase text-xs tracking-widest">
+                  <h4 className="font-bold text-zinc-400 text-xs tracking-widest">
                     {t("noItemsFound")}
                   </h4>
                 </div>
@@ -1001,7 +1049,7 @@ function ProfileContent() {
               ) : (
                 <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
                   <PackageSearch className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 uppercase text-xs tracking-widest">
+                  <h4 className="font-bold text-zinc-400 text-xs tracking-widest">
                     {t("noItemsFound")}
                   </h4>
                 </div>
@@ -1016,43 +1064,46 @@ function ProfileContent() {
             {/* Сарлавҳаи таби QR-код */}
             <div className="hidden sm:block sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-start gap-4">
-                <h3 className="text-lg font-black uppercase tracking-tight">
+                <h3 className="text-lg font-black tracking-tight">
                   {t("qrMyCode")}
                 </h3>
-                
+
                 <div className="flex flex-col items-end gap-1 mt-1">
                   <button
                     onClick={async () => {
                       if (!profile) return;
                       const previousState = profile.is_qr_active;
                       const newState = !previousState;
-                      
+
                       // Optimistic update
                       setProfile({ ...profile, is_qr_active: newState });
-                      
+
                       try {
                         const token = await getToken({
                           template: "supabase",
                         });
                         const supabase = createClerkSupabaseClient(token!);
-                        
+
                         // Background update
-                        ProfileService.updateProfile(
-                          supabase,
-                          userId!,
-                          { is_qr_active: newState }
-                        ).then(updated => {
-                          setProfile(updated);
-                          toast.success(
-                            newState
-                              ? t("qrActivatedSuccess")
-                              : t("qrDeactivatedSuccess"),
-                          );
-                        }).catch(err => {
-                          console.error(err);
-                          setProfile({ ...profile, is_qr_active: previousState });
-                          toast.error(t("error"));
-                        });
+                        ProfileService.updateProfile(supabase, userId!, {
+                          is_qr_active: newState,
+                        })
+                          .then((updated) => {
+                            setProfile(updated);
+                            toast.success(
+                              newState
+                                ? t("qrActivatedSuccess")
+                                : t("qrDeactivatedSuccess"),
+                            );
+                          })
+                          .catch((err) => {
+                            console.error(err);
+                            setProfile({
+                              ...profile,
+                              is_qr_active: previousState,
+                            });
+                            toast.error(t("error"));
+                          });
                       } catch (err) {
                         console.error(err);
                         setProfile({ ...profile, is_qr_active: previousState });
@@ -1075,12 +1126,13 @@ function ProfileContent() {
                       )}
                     />
                   </button>
-                  
+
                   <button
                     onClick={() => setShowSecurityModal(true)}
                     className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
                   >
-                    {t("qrSecurityStatusWhy") || "Барои чӣ QR-код статус лозим?"}
+                    {t("qrSecurityStatusWhy") ||
+                      "Барои чӣ QR-код статус лозим?"}
                   </button>
                 </div>
               </div>
@@ -1091,12 +1143,11 @@ function ProfileContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
                 <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  
                   {/* Тугмаҳои амалиёт - дар болои QR */}
                   <div className="flex justify-between gap-1.5 mb-2 sm:mb-6 w-full">
                     <Button
                       onClick={() => setShowWhyQRModal(true)}
-                      className="flex-1 h-9 sm:h-10 rounded-lg bg-emerald-500 text-white border-none font-black uppercase text-[8px] sm:text-[9px] tracking-widest hover:bg-emerald-600 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
+                      className="flex-1 h-9 sm:h-10 rounded-lg bg-emerald-500 text-white border-none font-black text-[8px] sm:text-[9px] tracking-widest hover:bg-emerald-600 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
                     >
                       <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                       {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
@@ -1104,7 +1155,7 @@ function ProfileContent() {
                     <Button
                       onClick={handleDownloadQR}
                       disabled={isDownloading}
-                      className="flex-1 h-9 sm:h-10 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black uppercase text-[8px] sm:text-[9px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
+                      className="flex-1 h-9 sm:h-10 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black text-[8px] sm:text-[9px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
                     >
                       {isDownloading ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -1151,18 +1202,30 @@ function ProfileContent() {
                       </div>
                       <Select
                         value={qrSettings.dotsType}
-                        onValueChange={(val) => setQrSettings({ ...qrSettings, dotsType: val as any })}
+                        onValueChange={(val) =>
+                          setQrSettings({ ...qrSettings, dotsType: val as any })
+                        }
                       >
                         <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-[11px] font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
-                          <SelectItem value="square">{t("qrDotSquare")}</SelectItem>
+                          <SelectItem value="square">
+                            {t("qrDotSquare")}
+                          </SelectItem>
                           <SelectItem value="dots">{t("qrDotDots")}</SelectItem>
-                          <SelectItem value="rounded">{t("qrDotRounded")}</SelectItem>
-                          <SelectItem value="extra-rounded">{t("qrDotExtraRounded")}</SelectItem>
-                          <SelectItem value="classy">{t("qrDotClassy")}</SelectItem>
-                          <SelectItem value="classy-rounded">{t("qrDotClassyRounded")}</SelectItem>
+                          <SelectItem value="rounded">
+                            {t("qrDotRounded")}
+                          </SelectItem>
+                          <SelectItem value="extra-rounded">
+                            {t("qrDotExtraRounded")}
+                          </SelectItem>
+                          <SelectItem value="classy">
+                            {t("qrDotClassy")}
+                          </SelectItem>
+                          <SelectItem value="classy-rounded">
+                            {t("qrDotClassyRounded")}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1178,11 +1241,12 @@ function ProfileContent() {
                         value={qrSettings.cornersSquareType}
                         onValueChange={(val) => {
                           const cornerStyle = val as any;
-                          const dotStyle = cornerStyle === "square" ? "square" : "dot";
-                          setQrSettings({ 
-                            ...qrSettings, 
+                          const dotStyle =
+                            cornerStyle === "square" ? "square" : "dot";
+                          setQrSettings({
+                            ...qrSettings,
                             cornersSquareType: cornerStyle,
-                            cornersDotType: dotStyle as any
+                            cornersDotType: dotStyle as any,
                           });
                         }}
                       >
@@ -1190,9 +1254,15 @@ function ProfileContent() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
-                          <SelectItem value="square">{t("qrCornerSquare")}</SelectItem>
-                          <SelectItem value="dot">{t("qrCornerDot")}</SelectItem>
-                          <SelectItem value="extra-rounded">{t("qrCornerRounded")}</SelectItem>
+                          <SelectItem value="square">
+                            {t("qrCornerSquare")}
+                          </SelectItem>
+                          <SelectItem value="dot">
+                            {t("qrCornerDot")}
+                          </SelectItem>
+                          <SelectItem value="extra-rounded">
+                            {t("qrCornerRounded")}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1214,11 +1284,11 @@ function ProfileContent() {
                         }}
                         className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all active:scale-95 color-trigger px-2 shadow-sm hover:bg-zinc-50"
                       >
-                        <div 
-                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5" 
+                        <div
+                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
                           style={{ backgroundColor: qrSettings.qrColor }}
                         />
-                        <span className="font-mono text-[11px] font-bold text-zinc-500 uppercase">
+                        <span className="font-mono text-[11px] font-bold text-zinc-500">
                           {qrSettings.qrColor}
                         </span>
                       </button>
@@ -1235,11 +1305,11 @@ function ProfileContent() {
                         }}
                         className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all active:scale-95 color-trigger px-2 shadow-sm hover:bg-zinc-50"
                       >
-                        <div 
-                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5" 
+                        <div
+                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
                           style={{ backgroundColor: qrSettings.bgColor }}
                         />
-                        <span className="font-mono text-[11px] font-bold text-zinc-500 uppercase">
+                        <span className="font-mono text-[11px] font-bold text-zinc-500">
                           {qrSettings.bgColor}
                         </span>
                       </button>
@@ -1279,7 +1349,7 @@ function ProfileContent() {
                         </div>
                         <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
                           <Button
-                            className="w-full h-12 sm:h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
+                            className="w-full h-12 sm:h-12 rounded-xl font-black tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
                             onClick={() => {
                               setActivePicker(null);
                               handleDownloadQR();
@@ -1294,7 +1364,7 @@ function ProfileContent() {
 
                   {/* Текст */}
                   <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                    <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                       {t("qrFooterText")}
                     </Label>
                     <Input
@@ -1315,14 +1385,15 @@ function ProfileContent() {
                     <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-white">
+                          <span className="text-[10px] font-black tracking-widest text-zinc-900 dark:text-white">
                             {t("qrStatus")}
                           </span>
                           <button
                             onClick={() => setShowSecurityModal(true)}
                             className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
                           >
-                            {t("qrSecurityStatusWhy") || "Барои чӣ QR-код статус лозим?"}
+                            {t("qrSecurityStatusWhy") ||
+                              "Барои чӣ QR-код статус лозим?"}
                           </button>
                         </div>
                       </div>
@@ -1331,35 +1402,60 @@ function ProfileContent() {
                           if (!profile) return;
                           const previousState = profile.is_qr_active;
                           const newState = !previousState;
-                          
+
                           // Optimistic update
                           setProfile({ ...profile, is_qr_active: newState });
-                          
+
                           try {
-                            const token = await getToken({ template: "supabase" });
-                            const supabase = createClerkSupabaseClient(token!);
-                            
-                            // Background update
-                            ProfileService.updateProfile(supabase, userId!, { is_qr_active: newState }).then(updated => {
-                              setProfile(updated);
-                              toast.success(newState ? t("qrActivatedSuccess") : t("qrDeactivatedSuccess"));
-                            }).catch(err => {
-                              console.error(err);
-                              setProfile({ ...profile, is_qr_active: previousState });
-                              toast.error(t("error"));
+                            const token = await getToken({
+                              template: "supabase",
                             });
+                            const supabase = createClerkSupabaseClient(token!);
+
+                            // Background update
+                            ProfileService.updateProfile(supabase, userId!, {
+                              is_qr_active: newState,
+                            })
+                              .then((updated) => {
+                                setProfile(updated);
+                                toast.success(
+                                  newState
+                                    ? t("qrActivatedSuccess")
+                                    : t("qrDeactivatedSuccess"),
+                                );
+                              })
+                              .catch((err) => {
+                                console.error(err);
+                                setProfile({
+                                  ...profile,
+                                  is_qr_active: previousState,
+                                });
+                                toast.error(t("error"));
+                              });
                           } catch (err) {
                             console.error(err);
-                            setProfile({ ...profile, is_qr_active: previousState });
+                            setProfile({
+                              ...profile,
+                              is_qr_active: previousState,
+                            });
                             toast.error(t("error"));
                           }
                         }}
                         className={cn(
                           "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                          profile?.is_qr_active ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                          profile?.is_qr_active
+                            ? "bg-emerald-500"
+                            : "bg-zinc-300 dark:bg-zinc-700",
                         )}
                       >
-                        <span className={cn("pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out", profile?.is_qr_active ? "translate-x-5" : "translate-x-0")} />
+                        <span
+                          className={cn(
+                            "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                            profile?.is_qr_active
+                              ? "translate-x-5"
+                              : "translate-x-0",
+                          )}
+                        />
                       </button>
                     </div>
                   </div>
@@ -1373,7 +1469,7 @@ function ProfileContent() {
         return (
           <div className="space-y-8 pb-20">
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <h3 className="text-lg font-black uppercase tracking-tight">
+              <h3 className="text-lg font-black tracking-tight">
                 {t("aboutApp") || "Оид ба JUYU"}
               </h3>
             </div>
@@ -1383,7 +1479,7 @@ function ProfileContent() {
               <section className="space-y-6">
                 <div className="bg-zinc-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full -mr-16 -mt-16" />
-                  <h4 className="text-2xl font-black uppercase tracking-tight mb-4 relative z-10">
+                  <h4 className="text-2xl font-black tracking-tight mb-4 relative z-10">
                     {t("guide.problemTitle")}
                   </h4>
                   <div className="text-zinc-400 font-bold leading-relaxed relative z-10 space-y-4">
@@ -1394,7 +1490,7 @@ function ProfileContent() {
 
               {/* Solution */}
               <section className="space-y-6">
-                <h4 className="text-2xl font-black uppercase tracking-tight px-4">
+                <h4 className="text-2xl font-black tracking-tight px-4">
                   {t("guide.solutionTitle")}
                 </h4>
                 <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-4">
@@ -1418,7 +1514,7 @@ function ProfileContent() {
                   <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
                     <PackageSearch className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h5 className="font-black uppercase text-sm tracking-wider">
+                  <h5 className="font-black text-sm tracking-wider">
                     {t("guide.foundTitle")}
                   </h5>
                   <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
@@ -1432,7 +1528,7 @@ function ProfileContent() {
                   <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
                     <Search className="w-6 h-6 text-red-600" />
                   </div>
-                  <h5 className="font-black uppercase text-sm tracking-wider">
+                  <h5 className="font-black text-sm tracking-wider">
                     {t("guide.lostTitle")}
                   </h5>
                   <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
@@ -1447,7 +1543,7 @@ function ProfileContent() {
               <section className="space-y-6">
                 <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full -mr-32 -mt-32" />
-                  <h4 className="text-2xl font-black uppercase tracking-tight mb-4 relative z-10">
+                  <h4 className="text-2xl font-black tracking-tight mb-4 relative z-10">
                     {t("guide.qrSystemTitle")}
                   </h4>
                   <p className="text-zinc-400 font-bold mb-8 relative z-10">
@@ -1460,7 +1556,7 @@ function ProfileContent() {
                         key={i}
                         className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl text-center border border-white/10"
                       >
-                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-300">
+                        <p className="text-[10px] font-black tracking-widest text-zinc-300">
                           {item}
                         </p>
                       </div>
@@ -1468,7 +1564,7 @@ function ProfileContent() {
                   </div>
 
                   <div className="mt-12 p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4 relative z-10">
-                    <h5 className="font-black uppercase text-xs tracking-[0.2em] text-emerald-400">
+                    <h5 className="font-black text-xs tracking-[0.2em] text-emerald-400">
                       {t("guide.qrHowTitle")}
                     </h5>
                     <ul className="space-y-3">
@@ -1488,7 +1584,7 @@ function ProfileContent() {
                   </div>
 
                   <div className="mt-6 flex justify-center relative z-10">
-                    <div className="bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-2xl border border-emerald-500/20 font-black uppercase text-[10px] tracking-widest">
+                    <div className="bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-2xl border border-emerald-500/20 font-black text-[10px] tracking-widest">
                       {t("guide.qrAdvantage")}
                     </div>
                   </div>
@@ -1498,7 +1594,7 @@ function ProfileContent() {
               {/* Goal */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
                 <div className="p-8 rounded-[2.5rem] bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
-                  <h5 className="font-black uppercase text-sm tracking-wider text-amber-600">
+                  <h5 className="font-black text-sm tracking-wider text-amber-600">
                     {t("guide.safetyBoxGoalTitle")}
                   </h5>
                   <p className="text-sm text-amber-700/70 dark:text-amber-500/70 font-bold leading-relaxed">
@@ -1506,7 +1602,7 @@ function ProfileContent() {
                   </p>
                 </div>
                 <div className="p-8 rounded-[2.5rem] bg-zinc-900 text-white space-y-4 shadow-xl">
-                  <h5 className="font-black uppercase text-sm tracking-wider text-emerald-400">
+                  <h5 className="font-black text-sm tracking-wider text-emerald-400">
                     {t("guide.mainGoalTitle")}
                   </h5>
                   <p className="text-sm text-zinc-400 font-bold leading-relaxed">
@@ -1523,7 +1619,7 @@ function ProfileContent() {
           <div className="space-y-12 pb-20">
             {/* Сарлавҳаи таби Маълумоти шахсӣ */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <h3 className="text-lg font-black uppercase tracking-tight">
+              <h3 className="text-lg font-black tracking-tight">
                 {t("personalInfo")}
               </h3>
             </div>
@@ -1533,7 +1629,7 @@ function ProfileContent() {
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <User className="w-4 h-4 text-zinc-400" />
-                  <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400">
+                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
                     {t("avatarAndName")}
                   </h4>
                 </div>
@@ -1545,11 +1641,8 @@ function ProfileContent() {
                         {user?.firstName?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 cursor-pointer rounded-2xl transition-all">
-                      <Upload className="w-6 h-6 text-white" />
-                      <span className="text-[8px] font-black text-white uppercase mt-1 opacity-80">
-                        {t("changePhoto")}
-                      </span>
+                    <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-zinc-900 border-2 border-white dark:border-zinc-800 flex items-center justify-center cursor-pointer shadow-md">
+                      <Pencil className="w-3.5 h-3.5 text-white" />
                       <input
                         type="file"
                         className="hidden"
@@ -1634,7 +1727,7 @@ function ProfileContent() {
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                           {t("firstName")}
                         </Label>
                         <Input
@@ -1644,7 +1737,7 @@ function ProfileContent() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                           {t("lastName")}
                         </Label>
                         <Input
@@ -1657,7 +1750,7 @@ function ProfileContent() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                           {t("phoneLabel")}
                         </Label>
                         <div className="relative">
@@ -1679,7 +1772,7 @@ function ProfileContent() {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                           {t("phoneSecondaryLabel")}
                         </Label>
                         <div className="relative">
@@ -1706,7 +1799,7 @@ function ProfileContent() {
                       type="submit"
                       size="sm"
                       disabled={safetySubmitting}
-                      className="rounded-lg bg-zinc-900 text-white font-black uppercase text-[9px] tracking-widest px-6 w-full sm:w-auto"
+                      className="rounded-lg bg-zinc-900 text-white font-black text-[9px] tracking-widest px-6 w-full sm:w-auto"
                     >
                       {safetySubmitting ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -1722,19 +1815,55 @@ function ProfileContent() {
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
                   <Mail className="w-4 h-4 text-zinc-400" />
-                  <h4 className="font-black uppercase text-[10px] tracking-[0.2em] text-zinc-400">
+                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
                     {t("email")}
                   </h4>
                 </div>
                 <div className="bg-zinc-50 dark:bg-zinc-900/30 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-900 space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                    <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                       {t("currentEmail")}
                     </Label>
-                    <div className="h-10 flex items-center px-4 rounded-xl bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-500 font-bold text-sm">
-                      {user?.primaryEmailAddress?.emailAddress}
+                    <div className="flex items-center gap-2">
+                      <div className="h-10 flex-1 flex items-center px-4 rounded-xl bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-500 font-bold text-sm truncate">
+                        {user?.primaryEmailAddress?.emailAddress}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowEmailChangeModal(true)}
+                        className="h-10 rounded-xl font-black text-[9px] tracking-widest gap-1.5 shrink-0"
+                      >
+                        <Pencil className="w-3 h-3" />
+                        {t("changeEmail")}
+                      </Button>
                     </div>
                   </div>
+                </div>
+              </section>
+
+              {/* Минтақаи хатарнок (Danger Zone) */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  <h4 className="font-black text-[10px] tracking-[0.2em] text-red-400">
+                    {t("dangerZone")}
+                  </h4>
+                </div>
+                <div className="bg-red-50/50 dark:bg-red-950/10 p-6 rounded-3xl border border-red-100 dark:border-red-900/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
+                    {t("deleteAccountDesc")}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowDeleteAccountModal(true)}
+                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-950/30 font-black text-[10px] tracking-widest gap-2 shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    {t("deleteAccount")}
+                  </Button>
                 </div>
               </section>
             </div>
@@ -1747,7 +1876,7 @@ function ProfileContent() {
             {/* Сарлавҳаи таби Захирашудаҳо */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-black uppercase tracking-tight">
+                <h3 className="text-lg font-black tracking-tight">
                   {t("savedItems")}
                 </h3>
                 <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white">
@@ -1773,13 +1902,13 @@ function ProfileContent() {
               ) : (
                 <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
                   <Bookmark className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 uppercase text-xs tracking-widest">
+                  <h4 className="font-bold text-zinc-400 text-xs tracking-widest">
                     {t("savedItemsEmpty")}
                   </h4>
                   <Button
                     asChild
                     size="sm"
-                    className="mt-6 rounded-md font-black uppercase text-[10px] tracking-wider"
+                    className="mt-6 rounded-md font-black text-[10px] tracking-wider"
                   >
                     <Link href="/">{t("home")}</Link>
                   </Button>
@@ -1795,7 +1924,7 @@ function ProfileContent() {
             {/* Сарлавҳаи таби Қуттии бехатарӣ */}
             <div className="sticky top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-black uppercase tracking-tight">
+                <h3 className="text-lg font-black tracking-tight">
                   {t("mySafe")}
                 </h3>
                 <div className="flex items-center gap-2">
@@ -1803,20 +1932,11 @@ function ProfileContent() {
                     {safetyItems.length}
                   </div>
                   <Button
-                    onClick={() => setIsAddingSafetyItem(!isAddingSafetyItem)}
+                    onClick={() => router.push("/items/add?target=safety")}
                     size="icon"
-                    className={cn(
-                      "h-6 w-6 rounded transition-all shadow-sm",
-                      isAddingSafetyItem
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-zinc-900 text-white hover:bg-zinc-100 hover:text-zinc-900 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-white",
-                    )}
+                    className="h-6 w-6 rounded transition-all shadow-sm bg-zinc-900 text-white hover:bg-zinc-100 hover:text-zinc-900 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-white"
                   >
-                    {isAddingSafetyItem ? (
-                      <X className="h-3.5 w-3.5" />
-                    ) : (
-                      <PlusCircle className="h-3.5 w-3.5" />
-                    )}
+                    <PlusCircle className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
@@ -1824,27 +1944,23 @@ function ProfileContent() {
 
             {/* Идоракунии Қуттии бехатарӣ (Safety Box) */}
             <div className="animate-in fade-in duration-200">
-              {isAddingSafetyItem || editingSafetyItem ? (
+              {editingSafetyItem ? (
                 /* Формаи илова кардан ё таҳрир кардани ашё */
                 <div className="max-w-4xl mx-auto px-2">
                   <Card className="rounded-3xl border border-zinc-100 dark:border-zinc-800 shadow-xl overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
                     <CardHeader className="bg-zinc-50 dark:bg-zinc-900/50 p-6 border-b border-zinc-100 dark:border-zinc-800">
-                      <CardTitle className="text-lg font-black uppercase tracking-wider flex items-center gap-3">
+                      <CardTitle className="text-lg font-black tracking-wider flex items-center gap-3">
                         <Briefcase className="w-5 h-5 text-amber-500" />
-                        {editingSafetyItem ? t("edit") : t("registerNewItem")}
+                        {t("edit")}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-8">
                       <form
-                        onSubmit={
-                          editingSafetyItem
-                            ? handleUpdateSafetyItem
-                            : handleRegisterSafetyItem
-                        }
+                        onSubmit={handleUpdateSafetyItem}
                         className="space-y-6"
                       >
                         <div className="space-y-3">
-                          <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                          <Label className="text-[10px] font-black text-zinc-400 tracking-widest ml-1">
                             {t("what_happened")}
                           </Label>
                           <RadioGroup
@@ -1865,7 +1981,7 @@ function ProfileContent() {
                                 className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-red-600 peer-data-[state=checked]:bg-red-50 cursor-pointer transition-all"
                               >
                                 <span className="text-2xl mb-1">🔍</span>
-                                <span className="font-bold text-xs uppercase">
+                                <span className="font-bold text-xs">
                                   {t("lost")}
                                 </span>
                               </Label>
@@ -1881,7 +1997,7 @@ function ProfileContent() {
                                 className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-emerald-50 cursor-pointer transition-all"
                               >
                                 <span className="text-2xl mb-1">🎁</span>
-                                <span className="font-bold text-xs uppercase">
+                                <span className="font-bold text-xs">
                                   {t("found")}
                                 </span>
                               </Label>
@@ -1893,7 +2009,7 @@ function ProfileContent() {
                           <div className="space-y-2">
                             <Label
                               htmlFor="name"
-                              className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1"
+                              className="text-[10px] font-black text-zinc-400 tracking-widest ml-1"
                             >
                               {t("titleLabel")}
                             </Label>
@@ -1908,7 +2024,7 @@ function ProfileContent() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                            <Label className="text-[10px] font-black text-zinc-400 tracking-widest ml-1">
                               {t("categoryLabel")}
                             </Label>
                             <Select
@@ -1933,7 +2049,7 @@ function ProfileContent() {
                         <div className="space-y-2">
                           <Label
                             htmlFor="description"
-                            className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1"
+                            className="text-[10px] font-black text-zinc-400 tracking-widest ml-1"
                           >
                             {t("description")}
                           </Label>
@@ -1951,7 +2067,7 @@ function ProfileContent() {
                           <div className="space-y-2">
                             <Label
                               htmlFor="phone"
-                              className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1"
+                              className="text-[10px] font-black text-zinc-400 tracking-widest ml-1"
                             >
                               {t("phoneLabel")}
                             </Label>
@@ -1976,7 +2092,7 @@ function ProfileContent() {
                             <div className="space-y-2 animate-in fade-in slide-in-from-left-2 duration-300">
                               <Label
                                 htmlFor="reward"
-                                className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1"
+                                className="text-[10px] font-black text-zinc-400 tracking-widest ml-1"
                               >
                                 {t("rewardLabel")}
                               </Label>
@@ -1992,7 +2108,7 @@ function ProfileContent() {
                         </div>
 
                         <div className="space-y-4">
-                          <Label className="text-[10px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                          <Label className="text-[10px] font-black text-zinc-400 tracking-widest ml-1">
                             {t("addImages")} ({safetyPreviews.length}/5)
                           </Label>
                           <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
@@ -2034,7 +2150,7 @@ function ProfileContent() {
                             {safetyPreviews.length < 5 && (
                               <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/50 cursor-pointer transition-all group">
                                 <PlusCircle className="w-6 h-6 text-zinc-300 group-hover:text-zinc-400 transition-colors" />
-                                <span className="text-[8px] font-black uppercase text-zinc-400 mt-2">
+                                <span className="text-[8px] font-black text-zinc-400 mt-2">
                                   {t("add")}
                                 </span>
                                 <input
@@ -2052,27 +2168,24 @@ function ProfileContent() {
                         <div className="flex gap-4 pt-4">
                           <Button
                             type="submit"
-                            className="flex-1 rounded-xl h-14 font-black uppercase tracking-wider text-xs bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg shadow-zinc-100 dark:shadow-none"
+                            className="flex-1 rounded-xl h-14 font-black tracking-wider text-xs bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg shadow-zinc-100 dark:shadow-none"
                             disabled={safetySubmitting}
                           >
                             {safetySubmitting ? (
                               <Loader2 className="animate-spin w-5 h-5" />
-                            ) : editingSafetyItem ? (
-                              t("updateBtn")
                             ) : (
-                              t("saveItem")
+                              t("updateBtn")
                             )}
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => {
-                              setIsAddingSafetyItem(false);
                               setEditingSafetyItem(null);
                               setSafetyPreviews([]);
                               setSafetyImages([]);
                             }}
-                            className="rounded-xl h-14 px-8 font-black uppercase tracking-wider text-xs"
+                            className="rounded-xl h-14 px-8 font-black tracking-wider text-xs"
                           >
                             {t("cancel")}
                           </Button>
@@ -2099,7 +2212,9 @@ function ProfileContent() {
                         <div
                           key={item.id}
                           className="relative aspect-square overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 group shadow-sm cursor-pointer"
-                          onClick={() => router.push(`/profile/safety/${item.id}`)}
+                          onClick={() =>
+                            router.push(`/profile/safety/${item.id}`)
+                          }
                         >
                           {/* Image */}
                           {item.images?.[0] ? (
@@ -2119,12 +2234,16 @@ function ProfileContent() {
                           {/* Overlay Gradient (Same as ItemCard) */}
                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent p-3 pt-12 flex flex-col gap-1 z-10 pointer-events-none">
                             <div className="flex justify-between items-center gap-2">
-                              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight uppercase tracking-tight flex-1 text-white drop-shadow-md">
+                              <h3 className="font-extrabold text-[11px] sm:text-sm lg:text-base line-clamp-1 leading-tight tracking-tight flex-1 text-white drop-shadow-md">
                                 {item.item_name}
                               </h3>
                               <div className="flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold shrink-0 bg-black/60 px-1.5 py-0.5 rounded border border-white/10">
                                 <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                                <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                                <span>
+                                  {new Date(
+                                    item.created_at,
+                                  ).toLocaleDateString()}
+                                </span>
                               </div>
                             </div>
                             <p className="text-white/90 text-[10px] sm:text-xs line-clamp-1 leading-tight font-medium drop-shadow-md">
@@ -2136,13 +2255,13 @@ function ProfileContent() {
                           <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
                             <Badge
                               className={cn(
-                                "uppercase font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap",
-                                item.type === 'lost'
+                                "font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap",
+                                item.type === "lost"
                                   ? "bg-red-600 text-white hover:bg-red-700"
-                                  : "bg-emerald-600 text-white hover:bg-emerald-700"
+                                  : "bg-emerald-600 text-white hover:bg-emerald-700",
                               )}
                             >
-                              {item.type === 'lost' ? t('lost') : t('found')}
+                              {item.type === "lost" ? t("lost") : t("found")}
                             </Badge>
                           </div>
 
@@ -2179,10 +2298,10 @@ function ProfileContent() {
                           </div>
 
                           {/* Reward Badge if exists */}
-                          {item.type === 'lost' && item.reward && (
+                          {item.type === "lost" && item.reward && (
                             <div className="absolute bottom-[54px] sm:bottom-[64px] right-2 z-20 h-6 flex items-center justify-end">
                               <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[8px] sm:text-[10px] px-1.5 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
-                                {t('reward_gives_viewer')} {item.reward} TJS
+                                {t("reward_gives_viewer")} {item.reward} TJS
                               </Badge>
                             </div>
                           )}
@@ -2191,7 +2310,7 @@ function ProfileContent() {
                     </div>
                   ) : (
                     <div className="text-center py-24 border-2 border-dashed rounded-[40px] border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-900/10">
-                      <p className="text-zinc-400 text-[11px] font-black uppercase tracking-[0.2em]">
+                      <p className="text-zinc-400 text-[11px] font-black tracking-[0.2em]">
                         {t("safetyBoxEmpty")}
                       </p>
                     </div>
@@ -2225,7 +2344,7 @@ function ProfileContent() {
               </Avatar>
 
               <div className="flex-1 flex flex-col gap-1">
-                <h2 className="text-xl font-black tracking-tight text-zinc-900 dark:text-white uppercase leading-none">
+                <h2 className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-none">
                   {user?.firstName} {user?.lastName}
                 </h2>
                 <p className="text-xs font-bold text-zinc-500 truncate max-w-[200px]">
@@ -2237,14 +2356,14 @@ function ProfileContent() {
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => handleTabChange("info")}
-                className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase text-[10px] tracking-wider border-none shadow-none"
+                className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black text-[10px] tracking-wider border-none shadow-none"
               >
                 <Pencil className="w-3.5 h-3.5 mr-2" />
                 {t("edit") || "Edit"}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black uppercase text-[10px] tracking-wider border-none shadow-none gap-2">
+                  <Button className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black text-[10px] tracking-wider border-none shadow-none gap-2">
                     <MenuIcon className="w-4 h-4" />
                     {t("settings") || "Settings"}
                   </Button>
@@ -2258,13 +2377,15 @@ function ProfileContent() {
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
                       className={cn(
-                        "flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] uppercase tracking-wider",
+                        "flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] tracking-wider",
                         activeTab === item.id
                           ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                           : "text-zinc-500",
                       )}
                     >
-                      <div className={cn("p-1.5 rounded-md", item.bg, item.color)}>
+                      <div
+                        className={cn("p-1.5 rounded-md", item.bg, item.color)}
+                      >
                         <item.icon className="w-3.5 h-3.5" />
                       </div>
                       {item.title}
@@ -2273,7 +2394,7 @@ function ProfileContent() {
                   <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-1 my-1" />
                   <DropdownMenuItem className="p-0">
                     <SignOutButton>
-                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-red-500 font-bold text-[11px] uppercase tracking-wider">
+                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-red-500 font-bold text-[11px] tracking-wider">
                         <div className="p-1.5 rounded-md bg-red-50 dark:bg-red-900/20">
                           <LogOut className="w-3.5 h-3.5" />
                         </div>
@@ -2314,7 +2435,7 @@ function ProfileContent() {
                       >
                         <item.icon className="w-4 h-4" />
                       </div>
-                      <span className="font-black text-[10px] uppercase tracking-wider">
+                      <span className="font-black text-[10px] tracking-wider">
                         {item.title}
                       </span>
                     </div>
@@ -2335,7 +2456,7 @@ function ProfileContent() {
                 <SignOutButton>
                   <Button
                     variant="ghost"
-                    className="w-full h-11 rounded-xl font-black text-[10px] uppercase tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4"
+                    className="w-full h-11 rounded-xl font-black text-[10px] tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4"
                   >
                     <LogOut className="w-4 h-4" />
                     {t("signOut")}
@@ -2361,7 +2482,7 @@ function ProfileContent() {
       >
         <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight">
+            <DialogTitle className="text-2xl font-black tracking-tight">
               {confirmDialog.title}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
@@ -2372,7 +2493,7 @@ function ProfileContent() {
             <Button
               type="button"
               className={cn(
-                "flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px]",
+                "flex-1 h-12 rounded-xl font-black tracking-widest text-[10px]",
                 confirmDialog.variant === "destructive"
                   ? "bg-red-600 hover:bg-red-700 text-white"
                   : "bg-zinc-900 hover:bg-zinc-800 text-white",
@@ -2391,7 +2512,7 @@ function ProfileContent() {
             <Button
               type="button"
               variant="outline"
-              className="flex-1 h-12 rounded-xl font-black uppercase tracking-widest text-[10px] border-zinc-200"
+              className="flex-1 h-12 rounded-xl font-black tracking-widest text-[10px] border-zinc-200"
               onClick={() =>
                 setConfirmDialog((prev) => ({ ...prev, open: false }))
               }
@@ -2414,7 +2535,7 @@ function ProfileContent() {
             </div>
 
             <DialogHeader className="space-y-2">
-              <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white">
+              <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">
                 {t("qrSecondaryModal.title")}
               </DialogTitle>
               <DialogDescription className="text-zinc-500 font-bold text-[11px] leading-relaxed">
@@ -2431,7 +2552,7 @@ function ProfileContent() {
                 {/* Рақами асосӣ (агар набошад) */}
                 {(!profile?.phone || profile.phone.trim() === "") && (
                   <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                    <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                       {t("phoneLabel")}
                     </Label>
                     <div className="relative">
@@ -2442,7 +2563,10 @@ function ProfileContent() {
                         required
                         inputMode="numeric"
                         onChange={(e) =>
-                          (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                          (e.target.value = e.target.value.replace(
+                            /[^0-9]/g,
+                            "",
+                          ))
                         }
                       />
                     </div>
@@ -2450,10 +2574,11 @@ function ProfileContent() {
                 )}
 
                 {/* Рақами дуюм (агар набошад) */}
-                {(!profile?.secondary_phone || !profile?.secondary_phone_type) && (
+                {(!profile?.secondary_phone ||
+                  !profile?.secondary_phone_type) && (
                   <>
                     <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                      <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.label")}
                       </Label>
                       <div className="relative">
@@ -2464,27 +2589,37 @@ function ProfileContent() {
                           required
                           inputMode="numeric"
                           onChange={(e) =>
-                            (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                            (e.target.value = e.target.value.replace(
+                              /[^0-9]/g,
+                              "",
+                            ))
                           }
                         />
                       </div>
-                      <p className="text-[8px] font-bold text-zinc-400 px-1 leading-tight uppercase tracking-wider">
-                        {t("phoneSecondaryDescription") || "Дар ҳолати гум шудани телефони шумо, ёбанда ба ин рақам занг мезанад."}
+                      <p className="text-[8px] font-bold text-zinc-400 px-1 leading-tight tracking-wider">
+                        {t("phoneSecondaryDescription") ||
+                          "Дар ҳолати гум шудани телефони шумо, ёбанда ба ин рақам занг мезанад."}
                       </p>
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-[9px] font-black uppercase text-zinc-400 tracking-widest ml-1">
+                      <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.ownerQuestion")}
                       </Label>
                       <div className="grid grid-cols-2 gap-2">
-                        {["father", "mother", "brother", "sister", "spouse"].map((type) => (
+                        {[
+                          "father",
+                          "mother",
+                          "brother",
+                          "sister",
+                          "spouse",
+                        ].map((type) => (
                           <button
                             key={type}
                             type="button"
                             onClick={() => setSecondaryType(type)}
                             className={cn(
-                              "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black uppercase text-[10px] tracking-wider",
+                              "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black text-[10px] tracking-wider",
                               secondaryType === type
                                 ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]"
                                 : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
@@ -2501,10 +2636,12 @@ function ProfileContent() {
                 {/* Қабули шартҳо (агар қабул нашуда бошад) */}
                 {profile?.accepted_terms !== true && (
                   <div className="flex items-start space-x-3 pt-2 px-1">
-                    <Checkbox 
-                      id="terms-profile" 
+                    <Checkbox
+                      id="terms-profile"
                       checked={acceptedTerms}
-                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                      onCheckedChange={(checked) =>
+                        setAcceptedTerms(checked === true)
+                      }
                       className="mt-1 border-2 border-zinc-200 dark:border-zinc-800 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 rounded-md transition-all duration-300"
                     />
                     <div className="grid gap-1.5 leading-none">
@@ -2512,14 +2649,14 @@ function ProfileContent() {
                         htmlFor="terms-profile"
                         className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 leading-relaxed cursor-pointer select-none"
                       >
-                        {t('terms.checkbox')}
+                        {t("terms.checkbox")}
                       </Label>
-                      <button 
+                      <button
                         type="button"
-                        className="text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
+                        className="text-[9px] font-black tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
                         onClick={() => setShowTermsDetails(true)}
                       >
-                        {t('terms.link')}
+                        {t("terms.link")}
                       </button>
                     </div>
                   </div>
@@ -2532,8 +2669,14 @@ function ProfileContent() {
             <Button
               type="submit"
               form="secondary-phone-form"
-              className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
-              disabled={secondaryLoading || ( (!profile?.secondary_phone || !profile?.secondary_phone_type) && !secondaryType ) || (profile?.accepted_terms !== true && !acceptedTerms)}
+              className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+              disabled={
+                secondaryLoading ||
+                ((!profile?.secondary_phone ||
+                  !profile?.secondary_phone_type) &&
+                  !secondaryType) ||
+                (profile?.accepted_terms !== true && !acceptedTerms)
+              }
             >
               {secondaryLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin mx-auto" />
@@ -2544,7 +2687,7 @@ function ProfileContent() {
             <Button
               variant="ghost"
               onClick={() => setShowSecondaryPhoneModal(false)}
-              className="w-full mt-2 text-[9px] font-black uppercase tracking-widest text-zinc-400"
+              className="w-full mt-2 text-[9px] font-black tracking-widest text-zinc-400"
             >
               {t("cancel")}
             </Button>
@@ -2556,20 +2699,20 @@ function ProfileContent() {
       <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
         <DialogContent className="w-[96%] sm:max-w-[400px] rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-white">
-              {t('terms.link')}
+            <DialogTitle className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">
+              {t("terms.link")}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed">
-              {t('terms.content')}
+              {t("terms.content")}
             </p>
           </div>
-          <Button 
+          <Button
             onClick={() => setShowTermsDetails(false)}
-            className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
+            className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
           >
-            {t('ok')}
+            {t("ok")}
           </Button>
         </DialogContent>
       </Dialog>
@@ -2580,27 +2723,31 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <QrCode className="w-8 h-8 text-emerald-500" />
             </div>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white leading-tight">
+            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
               {t("qrWhyGuideTitle") || "Чӣ тавр QR-код ба шумо кӯмак мекунад?"}
             </DialogTitle>
             <DialogDescription asChild>
               <div className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed space-y-4 text-left mt-4">
                 <p className="text-center mb-6">
-                  {t("qrWhyGuideDesc") || "Ин стикери махсусест, ки ашёҳои шуморо муҳофизат мекунад. Тарзи кораш хеле оддӣ аст:"}
+                  {t("qrWhyGuideDesc") ||
+                    "Ин стикери махсусест, ки ашёҳои шуморо муҳофизат мекунад. Тарзи кораш хеле оддӣ аст:"}
                 </p>
-                
+
                 <div className="space-y-5 mt-4 bg-zinc-50 dark:bg-zinc-900/50 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800">
                   {/* Step 1 */}
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-black text-zinc-900 dark:text-white text-xs">1</span>
+                      <span className="font-black text-zinc-900 dark:text-white text-xs">
+                        1
+                      </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] uppercase tracking-wider text-zinc-900 dark:text-white">
+                      <h5 className="font-black text-[11px] tracking-wider text-zinc-900 dark:text-white">
                         {t("qrWhyStep1Title") || "Дизайн ва скачат кунед"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                        {t("qrWhyStep1Desc") || "Аввал QR-кодро бо услуби худ дизайн кунед, сипас онро скачат карда, чоп кунед ва ба ашёҳоятон часпонед."}
+                        {t("qrWhyStep1Desc") ||
+                          "Аввал QR-кодро бо услуби худ дизайн кунед, сипас онро скачат карда, чоп кунед ва ба ашёҳоятон часпонед."}
                       </p>
                     </div>
                   </div>
@@ -2608,14 +2755,17 @@ function ProfileContent() {
                   {/* Step 2 */}
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-black text-zinc-900 dark:text-white text-xs">2</span>
+                      <span className="font-black text-zinc-900 dark:text-white text-xs">
+                        2
+                      </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] uppercase tracking-wider text-zinc-900 dark:text-white">
+                      <h5 className="font-black text-[11px] tracking-wider text-zinc-900 dark:text-white">
                         {t("qrWhyStep2Title") || "Ёбанда скан мекунад"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                        {t("qrWhyStep2Desc") || "Ашё гум шавад, шахси ёфтагӣ танҳо камераи телефонашро ба QR-код наздик мекунад."}
+                        {t("qrWhyStep2Desc") ||
+                          "Ашё гум шавад, шахси ёфтагӣ танҳо камераи телефонашро ба QR-код наздик мекунад."}
                       </p>
                     </div>
                   </div>
@@ -2623,14 +2773,17 @@ function ProfileContent() {
                   {/* Step 3 */}
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-black text-zinc-900 dark:text-white text-xs">3</span>
+                      <span className="font-black text-zinc-900 dark:text-white text-xs">
+                        3
+                      </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] uppercase tracking-wider text-zinc-900 dark:text-white">
+                      <h5 className="font-black text-[11px] tracking-wider text-zinc-900 dark:text-white">
                         {t("qrWhyStep3Title") || "Алоқаи фаврӣ ва бехатар"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
-                        {t("qrWhyStep3Desc") || "Саҳифаи шумо кушода мешавад ва ёбанда бевосита ба шумо занг мезанад. Рақамҳои эҳтиётӣ низ дастрас мешаванд."}
+                        {t("qrWhyStep3Desc") ||
+                          "Саҳифаи шумо кушода мешавад ва ёбанда бевосита ба шумо занг мезанад. Рақамҳои эҳтиётӣ низ дастрас мешаванд."}
                       </p>
                     </div>
                   </div>
@@ -2639,9 +2792,9 @@ function ProfileContent() {
             </DialogDescription>
           </DialogHeader>
           <div className="mt-8 flex flex-col gap-2">
-            <Button 
+            <Button
               onClick={() => setShowWhyQRModal(false)}
-              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2656,7 +2809,7 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <ShieldCheck className="w-8 h-8 text-emerald-500" />
             </div>
-            <DialogTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-white leading-tight">
+            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
               {t("qrSecurityTitle") || "Реҷаи амниятӣ"}
             </DialogTitle>
             <DialogDescription asChild>
@@ -2667,15 +2820,16 @@ function ProfileContent() {
                   </p>
                 </div>
                 <p className="text-[11px] text-zinc-500 dark:text-zinc-400 text-center px-2">
-                  {t("qrSecurityQuestionDescription") || "Ин тугма танҳо барои он лозим аст, ки маълумоти шуморо ҳангоми зарурат муҳофизат кунад."}
+                  {t("qrSecurityQuestionDescription") ||
+                    "Ин тугма танҳо барои он лозим аст, ки маълумоти шуморо ҳангоми зарурат муҳофизат кунад."}
                 </p>
               </div>
             </DialogDescription>
           </DialogHeader>
           <div className="mt-8">
-            <Button 
+            <Button
               onClick={() => setShowSecurityModal(false)}
-              className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2683,17 +2837,159 @@ function ProfileContent() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Account Confirmation Modal */}
+      <Dialog
+        open={showDeleteAccountModal}
+        onOpenChange={(open) =>
+          !deletingAccount && setShowDeleteAccountModal(open)
+        }
+      >
+        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+          <DialogHeader className="space-y-4 text-center">
+            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <Trash2 className="w-8 h-8 text-red-500" />
+            </div>
+            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+              {t("deleteAccountConfirmTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+              {t("deleteAccountConfirmDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-6 flex flex-col gap-3">
+            <Button
+              onClick={handleDeleteAccount}
+              disabled={deletingAccount}
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-95"
+            >
+              {deletingAccount ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t("deleteAccount")
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={deletingAccount}
+              onClick={() => setShowDeleteAccountModal(false)}
+              className="w-full h-11 rounded-xl font-black tracking-widest text-[10px] text-zinc-500"
+            >
+              {t("cancel")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Change Modal */}
+      <Dialog
+        open={showEmailChangeModal}
+        onOpenChange={(open) =>
+          !emailSubmitting &&
+          (open ? setShowEmailChangeModal(true) : resetEmailModal())
+        }
+      >
+        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+          <DialogHeader className="space-y-4 text-center">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <Mail className="w-8 h-8 text-blue-500" />
+            </div>
+            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+              {t("changeEmail")}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+              {emailStep === "input"
+                ? t("changeEmailDesc")
+                : t("changeEmailVerifyDesc")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {emailStep === "input" ? (
+            <div className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                  {t("newEmail")}
+                </Label>
+                <Input
+                  type="email"
+                  value={newEmailInput}
+                  onChange={(e) => setNewEmailInput(e.target.value)}
+                  placeholder="example@mail.com"
+                  className="h-11 rounded-xl font-bold text-sm"
+                  required
+                />
+              </div>
+              <Button
+                onClick={handleStartEmailChange}
+                disabled={emailSubmitting || !newEmailInput}
+                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg transition-all active:scale-95"
+              >
+                {emailSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  t("sendCode")
+                )}
+              </Button>
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                  {t("verificationCode")}
+                </Label>
+                <Input
+                  inputMode="numeric"
+                  value={emailCodeInput}
+                  onChange={(e) =>
+                    setEmailCodeInput(e.target.value.replace(/[^0-9]/g, ""))
+                  }
+                  placeholder="000000"
+                  className="h-11 rounded-xl font-bold text-sm text-center tracking-[0.3em]"
+                  maxLength={6}
+                  required
+                />
+              </div>
+              <Button
+                onClick={handleVerifyEmailChange}
+                disabled={emailSubmitting || emailCodeInput.length < 6}
+                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              >
+                {emailSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  t("confirm")
+                )}
+              </Button>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            disabled={emailSubmitting}
+            onClick={resetEmailModal}
+            className="w-full h-11 rounded-xl font-black tracking-widest text-[10px] text-zinc-500 mt-2"
+          >
+            {t("cancel")}
+          </Button>
+        </DialogContent>
+      </Dialog>
+
       {/* AI Moderation Scan Dialog for Safety Box */}
-      <Dialog open={moderationStatus !== 'idle'} onOpenChange={(open) => !open && moderationStatus !== 'checking' && setModerationStatus('idle')}>
+      <Dialog
+        open={moderationStatus !== "idle"}
+        onOpenChange={(open) =>
+          !open &&
+          moderationStatus !== "checking" &&
+          setModerationStatus("idle")
+        }
+      >
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl bg-white dark:bg-zinc-950">
           <div className="p-10 space-y-6 text-center">
             <DialogTitle className="sr-only">AI Moderation</DialogTitle>
-            {moderationStatus === 'checking' && (
+            {moderationStatus === "checking" && (
               <div className="flex flex-col items-center gap-4 w-full">
                 <div className="relative group w-full aspect-square max-w-[85vw] sm:max-w-[40vh] lg:max-w-[30vh]">
                   {/* Soft Glow */}
                   <div className="absolute -inset-4 bg-emerald-500/10 rounded-[3rem] blur-2xl opacity-50 animate-pulse"></div>
-                  
+
                   {/* Image Container - Exact Visual Search Style */}
                   <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
                     <div className="flex flex-col items-center h-full w-full">
@@ -2701,22 +2997,22 @@ function ProfileContent() {
                         {selectedSafetyItem?.images?.[activeImageIndex] && (
                           <>
                             {/* Blurred background for empty spaces */}
-                            <Image 
-                              src={selectedSafetyItem.images[activeImageIndex]} 
-                              alt="" 
-                              fill 
+                            <Image
+                              src={selectedSafetyItem.images[activeImageIndex]}
+                              alt=""
+                              fill
                               className="object-cover blur-3xl opacity-40 scale-110"
                             />
-                            <Image 
-                              src={selectedSafetyItem.images[activeImageIndex]} 
-                              alt="Analyzing" 
-                              fill 
+                            <Image
+                              src={selectedSafetyItem.images[activeImageIndex]}
+                              alt="Analyzing"
+                              fill
                               className="object-contain opacity-60 transition-all duration-1000 relative z-10"
                               key={activeImageIndex}
                             />
                           </>
                         )}
-                        
+
                         {/* Laser Scanner - Exact match to modal */}
                         <div className="absolute inset-0 z-20 pointer-events-none">
                           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast" />
@@ -2724,19 +3020,23 @@ function ProfileContent() {
                         </div>
 
                         {/* Neural Grid Overlay - Exact match to modal */}
-                        <div 
+                        <div
                           className="absolute inset-0 opacity-90 animate-grid-scan z-10 pointer-events-none"
                           style={{
-                            backgroundImage: "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
-                            backgroundSize: "25px 25px"
+                            backgroundImage:
+                              "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
+                            backgroundSize: "25px 25px",
                           }}
                         />
 
                         {/* Timer & Counter Overlay */}
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
                           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
-                            {t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}
+                          <span className="text-[10px] font-black text-white tracking-widest whitespace-nowrap">
+                            {t("ai_steps.seconds_left").replace(
+                              "%{count}",
+                              elapsedSeconds.toString(),
+                            )}
                           </span>
                         </div>
                       </div>
@@ -2747,8 +3047,8 @@ function ProfileContent() {
                 {/* Status Text & Info */}
                 <div className="space-y-4 w-full px-6">
                   <div className="h-6 flex items-center justify-center">
-                    <p 
-                      className="text-emerald-600 font-black text-[10px] sm:text-xs uppercase tracking-[0.2em] text-center animate-in slide-in-from-bottom-2 duration-700" 
+                    <p
+                      className="text-emerald-600 font-black text-[10px] sm:text-xs tracking-[0.2em] text-center animate-in slide-in-from-bottom-2 duration-700"
                       key={scanMessage}
                     >
                       {scanMessage}
@@ -2758,38 +3058,42 @@ function ProfileContent() {
               </div>
             )}
 
-            {moderationStatus === 'failed' && (
+            {moderationStatus === "failed" && (
               <div className="space-y-6 text-center max-w-md mx-auto p-6 bg-red-50 rounded-[2.5rem] border border-red-100 shadow-sm animate-in zoom-in duration-300">
                 <div className="w-20 h-20 rounded-[2rem] bg-white flex items-center justify-center mx-auto shadow-sm">
                   <ShieldAlert className="w-10 h-10 text-red-500" />
                 </div>
                 <div className="space-y-3">
-                  <h2 className="text-xl font-black uppercase tracking-tight text-red-600">{t('ai_steps.step5_failed')}</h2>
+                  <h2 className="text-xl font-black tracking-tight text-red-600">
+                    {t("ai_steps.step5_failed")}
+                  </h2>
                   <div className="bg-white p-4 rounded-2xl border border-red-100">
                     <p className="text-red-700 font-bold text-sm leading-relaxed text-left">
-                      {moderationError || t('error')}
+                      {moderationError || t("error")}
                     </p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setModerationStatus('idle')} 
-                    className="w-full rounded-xl h-12 font-black uppercase text-[10px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100 transition-all active:scale-95"
+                  <Button
+                    variant="outline"
+                    onClick={() => setModerationStatus("idle")}
+                    className="w-full rounded-xl h-12 font-black text-[10px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100 transition-all active:scale-95"
                   >
-                    {t('close')}
+                    {t("close")}
                   </Button>
                 </div>
               </div>
             )}
 
-            {moderationStatus === 'passed' && (
+            {moderationStatus === "passed" && (
               <div className="space-y-6 animate-in zoom-in duration-300">
                 <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
                   <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                 </div>
                 <div className="space-y-2">
-                  <h2 className="text-xl font-black uppercase tracking-tight text-emerald-600">{t('success')}</h2>
+                  <h2 className="text-xl font-black tracking-tight text-emerald-600">
+                    {t("success")}
+                  </h2>
                   <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm tracking-tight">
-                    {t('imageModeration.submitted')}
+                    {t("imageModeration.submitted")}
                   </p>
                 </div>
               </div>

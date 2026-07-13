@@ -4,15 +4,26 @@
  * Ҳамаи саҳифаҳои ин раздел дар дохили ин файл рендеринг мешаванд.
  */
 
+import { auth } from "@clerk/nextjs/server";
 import { Header } from "@/components/header";
 import { MobileNavbar } from "@/components/mobile-navbar";
 import { HomeProvider } from "@/lib/home-context";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { BlockedAccountScreen } from "@/components/blocked-account-screen";
 
-export default function MainLayout({
+export default async function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { userId } = await auth();
+  if (userId) {
+    const { data: profile } = await supabaseAdmin.from("profiles").select("status").eq("id", userId).maybeSingle();
+    if (profile?.status === "deleted") {
+      return <BlockedAccountScreen />;
+    }
+  }
+
   return (
     <HomeProvider>
     <div className="flex flex-col min-h-screen bg-white">

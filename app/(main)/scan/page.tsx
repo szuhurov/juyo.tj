@@ -207,7 +207,7 @@ export default function ScanPage() {
       {isInitializing && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-4 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">{t('loading')}</p>
+          <p className="text-[10px] font-black tracking-widest text-zinc-400">{t('loading')}</p>
         </div>
       )}
 
@@ -223,7 +223,7 @@ export default function ScanPage() {
           {!isBlocked && (
             <Button
               onClick={handlePermissionClick}
-              className="bg-zinc-900 text-white font-black uppercase text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
+              className="bg-zinc-900 text-white font-black text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
             >
               {t('permissionGrant') || 'Иҷозат додан'}
             </Button>
@@ -244,7 +244,7 @@ export default function ScanPage() {
         >
           <ChevronLeft className="w-6 h-6" />
         </Button>
-        <h1 className={`font-black uppercase tracking-widest text-[10px] ${isScanning ? 'text-white/70' : 'text-zinc-500'}`}>{t('scannerTitle')}</h1>
+        <h1 className={`font-black tracking-widest text-[10px] ${isScanning ? 'text-white/70' : 'text-zinc-500'}`}>{t('scannerTitle')}</h1>
         <div className="w-10" />
       </div>
 
@@ -253,7 +253,7 @@ export default function ScanPage() {
         <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-20 pt-12 z-20 bg-gradient-to-t from-black/70 to-transparent">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 border border-white/10 text-white/70">
             <Info className="w-4 h-4 text-emerald-400" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">{t('scannerInstruction')}</span>
+            <span className="text-[10px] font-bold tracking-wider">{t('scannerInstruction')}</span>
           </div>
         </div>
       )}
@@ -265,7 +265,7 @@ export default function ScanPage() {
             <div className="w-16 h-16 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <QrCode className="w-8 h-8 text-red-500" />
             </div>
-            <DialogTitle className="text-2xl font-black uppercase tracking-tight text-zinc-900">
+            <DialogTitle className="text-2xl font-black tracking-tight text-zinc-900">
               {t('unknownQrTitle')}
             </DialogTitle>
             <DialogDescription className="text-zinc-600 font-bold text-base leading-relaxed">
@@ -283,7 +283,7 @@ export default function ScanPage() {
                   setError(err.message || "error");
                 }
               }}
-              className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black uppercase tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"
+              className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"
             >
               {t('confirm') || 'OK'}
             </Button>
