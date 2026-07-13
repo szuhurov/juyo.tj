@@ -5,7 +5,8 @@
  */ "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
-import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
+import { useUser, SignOutButton, useAuth, useReverification } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
+import { isReverificationCancelledError } from "@clerk/nextjs/errors"; // Барои ошкор кардани бекоркунии тасдиқи иловагӣ
 import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
 import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо хизматрасониҳои эълонҳо ва категорияҳо
 import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
@@ -108,6 +109,9 @@ function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
+  // Нест кардани ҳисоб амали ҳассос аст — Clerk метавонад тасдиқи иловагӣ
+  // (парол/2FA-и охирин) талаб кунад пеш аз иҷозат додан.
+  const deleteAccountWithReverification = useReverification(() => user!.delete());
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -183,11 +187,15 @@ function ProfileContent() {
     if (!user) return;
     setDeletingAccount(true);
     try {
-      await user.delete();
+      await deleteAccountWithReverification();
       toast.success(t("deleteAccountSuccess"));
       router.push("/");
     } catch (err: any) {
-      toast.error(err.message || t("error"));
+      if (isReverificationCancelledError(err)) {
+        setDeletingAccount(false);
+        return;
+      }
+      toast.error(err.errors?.[0]?.message || err.message || t("error"));
       setDeletingAccount(false);
     }
   };
