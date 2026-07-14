@@ -109,9 +109,14 @@ function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
-  // Нест кардани ҳисоб амали ҳассос аст — Clerk метавонад тасдиқи иловагӣ
-  // (парол/2FA-и охирин) талаб кунад пеш аз иҷозат додан.
+  // Нест кардани ҳисоб ва тағйири почта амалҳои ҳассосанд — Clerk метавонад
+  // тасдиқи иловагӣ (парол/2FA-и охирин) талаб кунад пеш аз иҷозат додан.
   const deleteAccountWithReverification = useReverification(() => user!.delete());
+  const createEmailWithReverification = useReverification((email: string) => user!.createEmailAddress({ email }));
+  const setPrimaryEmailWithReverification = useReverification((emailAddressId: string) =>
+    user!.update({ primaryEmailAddressId: emailAddressId }),
+  );
+  const destroyEmailWithReverification = useReverification((email: any) => email.destroy());
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -150,13 +155,12 @@ function ProfileContent() {
     if (!user || !newEmailInput) return;
     setEmailSubmitting(true);
     try {
-      const emailAddress = await user.createEmailAddress({
-        email: newEmailInput,
-      });
+      const emailAddress = await createEmailWithReverification(newEmailInput);
       await emailAddress.prepareVerification({ strategy: "email_code" });
       setPendingEmailAddress(emailAddress);
       setEmailStep("verify");
     } catch (err: any) {
+      if (isReverificationCancelledError(err)) return;
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
@@ -169,14 +173,15 @@ function ProfileContent() {
     try {
       const oldEmail = user.primaryEmailAddress;
       await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
-      await user.update({ primaryEmailAddressId: pendingEmailAddress.id });
+      await setPrimaryEmailWithReverification(pendingEmailAddress.id);
       if (oldEmail && oldEmail.id !== pendingEmailAddress.id) {
-        await oldEmail.destroy();
+        await destroyEmailWithReverification(oldEmail);
       }
       await user.reload();
       toast.success(t("emailChangeSuccess"));
       resetEmailModal();
     } catch (err: any) {
+      if (isReverificationCancelledError(err)) return;
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
