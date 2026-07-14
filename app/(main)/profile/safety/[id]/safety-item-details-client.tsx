@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSafetyItemDetails } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
+import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
 
 export default function SafetyItemDetailsClient({ id }: { id: string }) {
   const { t, locale } = useLanguage();
@@ -50,6 +51,12 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [scanMessage, setScanMessage] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Муҳаррири ҳимояи махфият — ниг. items/add/page.tsx
+  const [privacyReview, setPrivacyReview] = useState<{
+    file: File;
+    resolve: (result: File | null) => void;
+  } | null>(null);
 
   useEffect(() => {
     if (authLoaded) {
@@ -136,7 +143,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
       try {
         const supabaseToken = await getToken({ template: "supabase" });
         const supabase = createClerkSupabaseClient(supabaseToken!);
-        
+
         const publishedItem = await ItemService.publishFromSafetyBox(supabase, item, userId!, 'approved');
         
         supabase.functions.invoke('generate-embedding', {
@@ -156,7 +163,9 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
     setModerationStatus('checking');
     setModerationError(null);
     setElapsedSeconds(0);
-    
+
+    let finalItem = item;
+
     try {
       const supabaseToken = await getToken({ template: "supabase" });
       const supabase = createClerkSupabaseClient(supabaseToken!);
@@ -165,7 +174,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
       if (needsTextModeration) {
         setScanMessage(t('ai_steps.checking_custom_text') || "AI матни шуморо месанҷад...");
         const { data: textData, error: textError } = await supabase.functions.invoke('text-moderation', {
-          body: { 
+          body: {
             record: { title: item.item_name, description: item.description, moderation_status: 'pending' },
             lang: locale
           },
@@ -184,9 +193,10 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
       if (needsImageModeration) {
         setScanMessage(t('ai_steps.brain_started'));
         const formDataAI = new FormData();
-        
+        let imageFiles: (File | null)[] = [];
+
         if (item.images && item.images.length > 0) {
-          const imageFiles = await Promise.all(
+          imageFiles = await Promise.all(
             item.images.map(async (url: string, index: number) => {
               try {
                 const response = await fetch(url);
@@ -200,7 +210,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
 
         formDataAI.append('lang', locale);
         formDataAI.append('type', item.type || 'lost');
-        formDataAI.append('mode', 'moderation_only'); 
+        formDataAI.append('mode', 'moderation_only');
 
         const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-brain', {
           body: formDataAI,
@@ -212,10 +222,51 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
           return;
         }
         setScanMessage(t('ai_steps.images_passed'));
+
+        // Ин натиҷаи ҳамин санҷиши боло аст (is_document) — на даъвати AI-и
+        // нав. Агар ҳуҷҷат бошад, корбар худаш бо қалам минтақаҳои махфиро
+        // дар ҳар акс мозаика мекунад, пеш аз он ки ба лентаи умумӣ нашр шавад.
+        if (aiResponse?.is_document) {
+          setModerationStatus('idle');
+          const oldUrls = item.images || [];
+          const newUrls: string[] = [];
+          for (const file of imageFiles) {
+            if (!file) continue;
+            const result = await new Promise<File | null>((resolve) => {
+              setPrivacyReview({ file, resolve });
+            });
+            if (!result) {
+              // Корбар баромад — нашрро бас мекунем, то акси бе мозаика нашр нашавад.
+              return;
+            }
+            const ext = result.name.split('.').pop() || 'jpg';
+            const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+            const { error: uploadError } = await supabase.storage.from('items').upload(fileName, result);
+            if (uploadError) throw uploadError;
+            const { data: { publicUrl } } = supabase.storage.from('items').getPublicUrl(fileName);
+            newUrls.push(publicUrl);
+          }
+          const oldPaths = oldUrls
+            .map((urlStr: string) => {
+              try {
+                const u = new URL(urlStr);
+                const parts = u.pathname.split('/public/items/');
+                return parts.length > 1 ? parts[1] : null;
+              } catch {
+                const parts = urlStr.split('/public/items/');
+                return parts.length > 1 ? parts[1].split('?')[0] : null;
+              }
+            })
+            .filter(Boolean) as string[];
+          if (oldPaths.length > 0) {
+            await supabase.storage.from('items').remove(oldPaths);
+          }
+          finalItem = { ...item, images: newUrls };
+        }
       }
 
       // 3. Нашр
-      const publishedItem = await ItemService.publishFromSafetyBox(supabase, item, userId!, 'approved');
+      const publishedItem = await ItemService.publishFromSafetyBox(supabase, finalItem, userId!, 'approved');
 
       supabase.functions.invoke('generate-embedding', {
         body: { item_id: publishedItem.id, text: `${publishedItem.title} ${publishedItem.description}` }
@@ -508,6 +559,23 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
             </div>
         </DialogContent>
       </Dialog>
+
+      {privacyReview && (
+        <PrivacyBlurEditor
+          open
+          file={privacyReview.file}
+          onConfirm={(finalFile) => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(finalFile);
+          }}
+          onCancel={() => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(null);
+          }}
+        />
+      )}
     </div>
   </TooltipProvider>
   );

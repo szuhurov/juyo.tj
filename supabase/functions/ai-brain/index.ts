@@ -114,7 +114,8 @@ STRICT RULES:
    - ANIMALS & ELECTRONICS: 100% ALLOWED.
    - A hand or body part visibly holding/wearing the lost/found item is fine.
 2. PROHIBITED: 18+, extreme violence, illegal weapons, or a selfie/full-body/portrait photo where a PERSON (not the item) is the main subject.
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null"}`;
+ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly.
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false}`;
 
     // SUGGEST-ONLY PROMPT — pure vision auto-fill, no moderation verdict at all.
     // Used for the early "analyzing photo" step so it never blocks the user;
@@ -170,7 +171,9 @@ TEXT RULES:
 If the text is not already in {{LANG}}, still judge it, but write "reason" in {{LANG}}.
 If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", quoting the exact original text if it's a text violation.
 
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null"}`;
+ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly — this is independent of is_safe.
+
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false}`;
 
     let promptToUse = MASTER_PROMPT;
     if (mode === 'moderation_only') promptToUse = MODERATION_PROMPT;
@@ -227,9 +230,11 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
        return new Response(JSON.stringify({ is_safe: false, reason: result.reason }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // moderation_only and final_check are pure accept/reject decisions — no auto-fill payload.
+    // moderation_only and final_check are pure accept/reject decisions — no auto-fill payload,
+    // but DO include is_document so the client can offer the manual privacy-blur tool
+    // without a separate AI call (piggybacks on this moderation pass, zero extra latency).
     if (mode === 'moderation_only' || mode === 'final_check') {
-      return new Response(JSON.stringify({ is_safe: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ is_safe: true, is_document: !!result.is_document }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({

@@ -1,11 +1,13 @@
 /**
- * Муҳаррири ҳимояи махфият — пеш аз боркунии акс, минтақаҳои махфии
- * ошкоркардаи AI (рақами шиноснома, MRZ, QR, IBAN ва ғ.) ҳамчун
- * pixelation (мозаика, на blur-и оддӣ — зеро blur баъзан баргардонида
- * мешавад, pixelation не) дар canvas татбиқ мешавад. Корбар метавонад
- * минтақаҳоро дасти илова/нест/андоза/ҳаракат диҳад пеш аз тасдиқ.
- * Худи AI акси навро НАМЕСОЗАД — танҳо координатаҳоро медиҳад, боқиро
- * ҳамин компонент бо canvas иҷро мекунад.
+ * Муҳаррири ҳимояи махфият — вақте ки AI moderation (final_check/
+ * moderation_only дар ai-brain) муайян кард, ки акс ҳуҷҷат аст
+ * (is_document), ин тиреза кушода мешавад. Ягон AI дигар минтақаро
+ * ошкор НАМЕКУНАД (ин ҳамон даъвати AI-и аллакай-иҷрошударо истифода
+ * мебарад — на даъвати нави алоҳида, то суръат гум нашавад). Корбар
+ * худаш бо "қалам" (кашидан бо муш/ангушт) болои рақамҳо/MRZ/QR
+ * мекашад, он ҷо pixelate (мозаика, на blur-и оддӣ — зеро blur баъзан
+ * баргардонида мешавад, pixelation не) мешавад. Пас аз кашидан,
+ * минтақаро метавон андоза/ҳаракат дод ё нест кард.
  */
 "use client";
 
@@ -18,22 +20,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Undo2,
-  Redo2,
-  ZoomIn,
-  ZoomOut,
-  Trash2,
-  ShieldCheck,
-  Plus,
-  X,
-} from "lucide-react";
+import { Undo2, Redo2, ZoomIn, ZoomOut, Trash2, ShieldCheck, X } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
-import type { PrivacyRegion } from "@/lib/privacy-scan";
 
-interface EditableRegion extends PrivacyRegion {
+interface EditableRegion {
   id: string;
+  x: number; // 0-1
+  y: number; // 0-1
+  width: number; // 0-1
+  height: number; // 0-1
 }
 
 type DragKind = "new" | "move" | "resize";
@@ -46,10 +42,16 @@ interface DragState {
   startPointerX: number; // 0-1
   startPointerY: number; // 0-1
   startRegion: EditableRegion;
+  // Барои "new": ҳамаи нуқтаҳои роҳи қалам — bbox дар анҷом аз инҳо ҳисоб мешавад.
+  pathMinX?: number;
+  pathMinY?: number;
+  pathMaxX?: number;
+  pathMaxY?: number;
 }
 
 const MAX_WORKING_WIDTH = 1400;
-const MIN_SIZE = 0.015;
+const MIN_SIZE = 0.03; // Ҳадди ақали минтақа — то каши хеле хурд/тасодуфӣ намонад
+const PEN_PADDING = 0.02; // Изофаи атрофи роҳи қалам, то мукаммал пӯшад
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
@@ -88,13 +90,11 @@ function pixelateRect(
 export function PrivacyBlurEditor({
   open,
   file,
-  initialRegions,
   onConfirm,
   onCancel,
 }: {
   open: boolean;
   file: File | null;
-  initialRegions: PrivacyRegion[];
   onConfirm: (finalFile: File) => void;
   /** Пахши "×"/Escape/click-и берун — акси ҳозира аз рӯйхат нест карда мешавад
    * (акси бе тасдиқ ҳаргиз ба upload намеравад). */
@@ -107,14 +107,14 @@ export function PrivacyBlurEditor({
   const dragRef = useRef<DragState | null>(null);
 
   const [regions, setRegions] = useState<EditableRegion[]>([]);
-  const [history, setHistory] = useState<EditableRegion[][]>([]);
+  const [history, setHistory] = useState<EditableRegion[][]>([[]]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [addMode, setAddMode] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Боркунии акс дар canvas-и корӣ (андозаи маҳдуд барои суръат)
+  // Боркунии акс дар canvas-и корӣ (андозаи маҳдуд барои суръат) — canvas
+  // ҳамеша аз НАВ бо минтақаҳои ХОЛӢ сар мешавад, чунки AI координата намедиҳад.
   useEffect(() => {
     if (!file || !open) {
       setReady(false);
@@ -138,16 +138,11 @@ export function PrivacyBlurEditor({
       bctx?.drawImage(img, 0, 0, w, h);
       baseRef.current = base;
 
-      const initial: EditableRegion[] = initialRegions.map((r, i) => ({
-        ...r,
-        id: `region-${i}-${Date.now()}`,
-      }));
-      setRegions(initial);
-      setHistory([initial]);
+      setRegions([]);
+      setHistory([[]]);
       setHistoryIndex(0);
       setZoom(1);
       setSelectedId(null);
-      setAddMode(false);
       setReady(true);
       URL.revokeObjectURL(url);
     };
@@ -155,7 +150,7 @@ export function PrivacyBlurEditor({
     return () => {
       cancelled = true;
     };
-  }, [file, open, initialRegions]);
+  }, [file, open]);
 
   // Рендери canvas: акси асосӣ + pixelation-и ҳар минтақа
   const render = useCallback(() => {
@@ -247,48 +242,52 @@ export function PrivacyBlurEditor({
       return;
     }
 
-    // Click-и холӣ
-    if (addMode) {
-      const id = `region-new-${Date.now()}`;
-      const newRegion: EditableRegion = {
-        id,
-        label: "manual",
-        x: pos.x,
-        y: pos.y,
-        width: 0,
-        height: 0,
-      };
-      setRegions((prev) => [...prev, newRegion]);
-      setSelectedId(id);
-      dragRef.current = {
-        kind: "new",
-        regionId: id,
-        startPointerX: pos.x,
-        startPointerY: pos.y,
-        startRegion: newRegion,
-      };
-    } else {
-      setSelectedId(null);
-    }
+    // Каши холӣ — ин ҳамеша "қалам"-и нав аст (addMode лозим нест,
+    // кашидан худи амали пешфарз аст).
+    const id = `region-new-${Date.now()}`;
+    const newRegion: EditableRegion = { id, x: pos.x, y: pos.y, width: 0, height: 0 };
+    setRegions((prev) => [...prev, newRegion]);
+    setSelectedId(id);
+    dragRef.current = {
+      kind: "new",
+      regionId: id,
+      startPointerX: pos.x,
+      startPointerY: pos.y,
+      startRegion: newRegion,
+      pathMinX: pos.x,
+      pathMinY: pos.y,
+      pathMaxX: pos.x,
+      pathMaxY: pos.y,
+    };
   };
 
   const handleWrapPointerMove = (e: React.PointerEvent) => {
     const drag = dragRef.current;
     if (!drag) return;
     const pos = getRelPos(e);
+
+    if (drag.kind === "new") {
+      // Роҳи қаламро васеъ мекунем (на танҳо аввал→ҳозир, балки ҳамаи
+      // нуқтаҳое, ки қалам аз онҳо гузашт) — то каши каҷ низ пурра пӯшида шавад.
+      drag.pathMinX = Math.min(drag.pathMinX!, pos.x);
+      drag.pathMinY = Math.min(drag.pathMinY!, pos.y);
+      drag.pathMaxX = Math.max(drag.pathMaxX!, pos.x);
+      drag.pathMaxY = Math.max(drag.pathMaxY!, pos.y);
+      const x = Math.max(0, drag.pathMinX - PEN_PADDING);
+      const y = Math.max(0, drag.pathMinY - PEN_PADDING);
+      const width = Math.min(1 - x, drag.pathMaxX - drag.pathMinX + PEN_PADDING * 2);
+      const height = Math.min(1 - y, drag.pathMaxY - drag.pathMinY + PEN_PADDING * 2);
+      setRegions((prev) =>
+        prev.map((r) => (r.id === drag.regionId ? { ...r, x, y, width, height } : r)),
+      );
+      return;
+    }
+
     const dx = pos.x - drag.startPointerX;
     const dy = pos.y - drag.startPointerY;
-
     setRegions((prev) =>
       prev.map((r) => {
         if (r.id !== drag.regionId) return r;
-        if (drag.kind === "new") {
-          const x = Math.min(drag.startPointerX, pos.x);
-          const y = Math.min(drag.startPointerY, pos.y);
-          const width = Math.abs(pos.x - drag.startPointerX);
-          const height = Math.abs(pos.y - drag.startPointerY);
-          return { ...r, x, y, width, height };
-        }
         if (drag.kind === "move") {
           const maxX = 1 - drag.startRegion.width;
           const maxY = 1 - drag.startRegion.height;
@@ -334,15 +333,21 @@ export function PrivacyBlurEditor({
     dragRef.current = null;
     if (!drag) return;
 
-    if (drag.kind === "new") {
-      setAddMode(false);
-    }
-
     setRegions((prev) => {
-      // Минтақаи хеле хурд (пахши тасодуфӣ) — бекор мекунем
-      const cleaned = prev.filter((r) => {
-        if (r.id !== drag.regionId) return true;
-        return r.width > MIN_SIZE / 2 && r.height > MIN_SIZE / 2;
+      // Каши хеле хурд (пахши тасодуфӣ бе кашидан) — ба ҳадди ақал мерасонем,
+      // на бекор мекунем, то як tap-и оддӣ низ доғи дидашавандаи блур диҳад.
+      const cleaned = prev.map((r) => {
+        if (r.id !== drag.regionId) return r;
+        if (r.width >= MIN_SIZE && r.height >= MIN_SIZE) return r;
+        const cx = r.x + r.width / 2;
+        const cy = r.y + r.height / 2;
+        return {
+          ...r,
+          x: clamp01(cx - MIN_SIZE / 2),
+          y: clamp01(cy - MIN_SIZE / 2),
+          width: MIN_SIZE,
+          height: MIN_SIZE,
+        };
       });
       pushHistory(cleaned);
       return cleaned;
@@ -396,19 +401,13 @@ export function PrivacyBlurEditor({
           <div
             ref={wrapRef}
             className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 touch-none"
-            style={{ maxHeight: "55vh", overflow: zoom > 1 ? "auto" : "hidden" }}
+            style={{ maxHeight: "55vh", overflow: zoom > 1 ? "auto" : "hidden", cursor: "crosshair" }}
             onPointerDown={handleWrapPointerDown}
             onPointerMove={handleWrapPointerMove}
             onPointerUp={handleWrapPointerUp}
             onPointerCancel={handleWrapPointerUp}
           >
-            <div
-              style={{
-                width: `${zoom * 100}%`,
-                position: "relative",
-                cursor: addMode ? "crosshair" : "default",
-              }}
-            >
+            <div style={{ width: `${zoom * 100}%`, position: "relative" }}>
               {!ready ? (
                 <div className="w-full aspect-square animate-pulse bg-zinc-200 dark:bg-zinc-800" />
               ) : (
@@ -478,30 +477,16 @@ export function PrivacyBlurEditor({
 
           {/* Toolbar */}
           <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <Button
-                type="button"
-                variant={addMode ? "default" : "outline"}
-                size="sm"
-                className="h-9 rounded-xl gap-1.5 font-bold text-xs"
-                onClick={() => {
-                  setAddMode((v) => !v);
-                  setSelectedId(null);
-                }}
-              >
-                <Plus className="w-3.5 h-3.5" /> {t("privacyAddArea")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-xl"
-                onClick={deleteSelected}
-                disabled={!selectedId}
-              >
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-xl"
+              onClick={deleteSelected}
+              disabled={!selectedId}
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </Button>
             <div className="flex items-center gap-1.5">
               <Button
                 type="button"

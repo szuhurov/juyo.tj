@@ -15,7 +15,6 @@ import {
   supabase as anonSupabase,
 } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
-import { scanImageForPrivacy, type PrivacyRegion } from "@/lib/privacy-scan";
 import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 import { Button } from "@/components/ui/button";
@@ -92,13 +91,12 @@ function AddItemForm() {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
-  // Санҷиши махфияти ҳуҷҷатҳо — пеш аз он ки акс ба previews/images ворид
-  // шавад, AI онро месанҷад; агар ҳуҷҷат бо майдонҳои махфӣ ёфт шавад,
-  // тирезаи тасдиқ/таҳрири mozaica кушода мешавад (ниг. runPrivacyCheck).
-  const [privacyScanning, setPrivacyScanning] = useState(false);
+  // Муҳаррири ҳимояи махфият — на даъвати AI-и алоҳида, балки ҳамон
+  // натиҷаи final_check-и аллакай-иҷрошуда (is_document) истифода мешавад.
+  // Агар ҳуҷҷат бошад, пас аз тасдиқи moderation, ин тиреза барои ҳар акс
+  // паси ҳам кушода мешавад — корбар худаш бо қалам минтақаҳоро мекашад.
   const [privacyReview, setPrivacyReview] = useState<{
     file: File;
-    regions: PrivacyRegion[];
     resolve: (result: File | null) => void;
   } | null>(null);
 
@@ -181,66 +179,19 @@ function AddItemForm() {
   }, [userId, getToken]);
 
 
-  // Танҳо санҷиши AI (даъвати шабака) — координатаҳоро мебарорад, ягон
-  // диалог намекушояд. Ин қисм барои ҳамаи аксҳо ПАРАЛЕЛ иҷро мешавад, то
-  // илова кардани якчанд акс якбора N×вақт нагирад.
-  const scanFileForPrivacy = async (file: File) => {
-    try {
-      let supabaseClient;
-      if (userId) {
-        const token = await getToken({ template: "supabase" });
-        supabaseClient = createClerkSupabaseClient(token!);
-      } else {
-        supabaseClient = anonSupabase;
-      }
-      return await scanImageForPrivacy(supabaseClient, file);
-    } catch (err) {
-      // Агар худи санҷиш ноком шавад (масалан хатогии шабака), ҳамчун
-      // "ҳуҷҷат нест" ҳисоб мекунем — ин feature набояд равандии умумии
-      // нашри эълонро банд кунад.
-      console.error("Privacy scan error:", err);
-      return { is_document: false, document_type: null, regions: [] as PrivacyRegion[] };
-    }
-  };
-
-  const addNewFiles = async (files: File[]) => {
+  const addNewFiles = (files: File[]) => {
     if (images.length + files.length > 5) {
       toast.error(t("maxImagesReached"));
       return;
     }
 
-    setPrivacyScanning(true);
-    try {
-      // 1. Санҷиши AI — ҳамаи аксҳо ПАРАЛЕЛ (на паси ҳам).
-      const scanResults = await Promise.all(files.map(scanFileForPrivacy));
+    const newImages = [...images, ...files];
+    setImages(newImages);
+    const newPreviews = files.map((file) => URL.createObjectURL(file));
+    setPreviews((prev) => [...prev, ...newPreviews]);
 
-      // 2. Тирезаи тасдиқ/таҳрир — танҳо барои аксҳое, ки ҳуҷҷат бо
-      // майдони махфӣ доранд, як-як (диалог якто аст, паси ҳам мекушояд).
-      const processed: File[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const result = scanResults[i];
-        if (!result.is_document || result.regions.length === 0) {
-          processed.push(file);
-          continue;
-        }
-        const finalFile = await new Promise<File | null>((resolve) => {
-          setPrivacyReview({ file, regions: result.regions, resolve });
-        });
-        if (finalFile) processed.push(finalFile);
-      }
-      if (processed.length === 0) return;
-
-      const newImages = [...images, ...processed];
-      setImages(newImages);
-      const newPreviews = processed.map((file) => URL.createObjectURL(file));
-      setPreviews((prev) => [...prev, ...newPreviews]);
-
-      // Reset AI state when images change
-      setModerationStatus("idle");
-    } finally {
-      setPrivacyScanning(false);
-    }
+    // Reset AI state when images change
+    setModerationStatus("idle");
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,6 +268,7 @@ function AddItemForm() {
 
   const onFinalSubmit = async () => {
     setShowSafetyModal(false);
+    let finalImages: File[] = images;
 
     // Пурсиши иҷозати огоҳиномаро ҳамин ҷо оғоз мекунем (на баъд аз upload/insert) —
     // то браузер онро ҳамчун идомаи бевоситаи клики корбар шиносад (баъзе браузерҳо
@@ -375,6 +327,28 @@ function AddItemForm() {
       setModerationStatus("passed");
       setScanMessage(t("ai_steps.text_passed") || "Қабул шуд!");
       await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document) — на даъвати
+      // AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар худаш бо қалам
+      // минтақаҳои махфиро дар ҳар акс мозаика мекунад.
+      if (checkData?.is_document) {
+        setModerationStatus("idle");
+        const blurred: File[] = [];
+        for (const file of images) {
+          const result = await new Promise<File | null>((resolve) => {
+            setPrivacyReview({ file, resolve });
+          });
+          if (!result) {
+            // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
+            // ҳуҷҷати бе мозаика ҳаргиз нашр нашавад.
+            setStep(4);
+            return;
+          }
+          blurred.push(result);
+        }
+        setImages(blurred);
+        finalImages = blurred;
+      }
     } catch (err: any) {
       setModerationStatus("failed");
       setModerationError(err.message);
@@ -391,7 +365,7 @@ function AddItemForm() {
       let supabase = createClerkSupabaseClient(token);
 
       const imageUrls = [];
-      for (const file of images) {
+      for (const file of finalImages) {
         const compressedFile = await compressImage(file);
         const ext = compressedFile.name.split(".").pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
@@ -1195,22 +1169,10 @@ function AddItemForm() {
         </DialogContent>
       </Dialog>
 
-      {/* Санҷиши махфияти ҳуҷҷат — акси нав, пеш аз он ки ба previews ворид шавад */}
-      {privacyScanning && (
-        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center px-6">
-          <div className="bg-white dark:bg-zinc-950 rounded-3xl px-8 py-7 flex flex-col items-center gap-3 shadow-2xl">
-            <Loader2 className="w-7 h-7 text-emerald-500 animate-spin" />
-            <p className="text-xs font-bold text-zinc-500 text-center">
-              {t("privacyScanningImages")}
-            </p>
-          </div>
-        </div>
-      )}
       {privacyReview && (
         <PrivacyBlurEditor
           open
           file={privacyReview.file}
-          initialRegions={privacyReview.regions}
           onConfirm={(finalFile) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
