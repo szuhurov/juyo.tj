@@ -40,8 +40,9 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
   
   const [token, setToken] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
-  
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // AI Moderation States
@@ -57,6 +58,25 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
   }, [authLoaded, getToken]);
 
   const { data: item, isLoading: loading } = useSafetyItemDetails(id, token);
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isManualScroll = useRef(false);
+
+  const goToPrev = () => {
+    const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
+    scrollContainerRef.current?.scrollTo({
+      left: prevIndex * scrollContainerRef.current.clientWidth,
+      behavior: "smooth",
+    });
+  };
+
+  const goToNext = () => {
+    const nextIndex = (currentImageIndex + 1) % images.length;
+    scrollContainerRef.current?.scrollTo({
+      left: nextIndex * scrollContainerRef.current.clientWidth,
+      behavior: "smooth",
+    });
+  };
 
   // Animation Logic for AI Moderation
   useEffect(() => {
@@ -215,6 +235,26 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
     }
   };
 
+  const images = item?.images && item.images.length > 0 ? item.images : item ? ["https://placehold.co/600x600/e2e8f0/64748b?text=JUYO"] : [];
+
+  useEffect(() => {
+    if (!isAutoPlaying || images.length <= 1 || !scrollContainerRef.current) return;
+
+    const interval = setInterval(() => {
+      if (isManualScroll.current) return;
+
+      const nextIndex = (currentImageIndex + 1) % images.length;
+      const container = scrollContainerRef.current;
+
+      if (container) {
+        const width = container.clientWidth;
+        container.scrollTo({ left: nextIndex * width, behavior: "smooth" });
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, images.length, currentImageIndex]);
+
   const handleDelete = async () => {
     setIsActionLoading(true);
     try {
@@ -261,47 +301,65 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
 
   if (!item && !loading) return <div className="container mx-auto px-4 py-20 text-center"><h1 className="text-2xl font-bold">{t('itemNotFound')}</h1></div>;
 
-  const images = item.images && item.images.length > 0 ? item.images : ["https://placehold.co/600x600/e2e8f0/64748b?text=JUYO"];
-
   return (
     <TooltipProvider>
       <div className="mx-auto max-w-6xl md:pt-8 md:px-4">
         <div className="flex flex-col md:grid md:grid-cols-2 gap-0 md:gap-12 md:items-start relative">
-          
+
           {/* Image Section */}
           <div className="sticky top-0 md:top-24 z-0 w-full h-[100vw] md:h-auto md:aspect-square flex items-start justify-center md:self-start">
-            <div className="relative w-full h-full md:rounded-[32px] overflow-hidden border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 md:shadow-xl group">
-              <div className="flex h-full w-full overflow-hidden relative">
-                <Image 
-                  src={images[currentImageIndex]} 
-                  alt={item.item_name} 
-                  fill 
-                  className="object-cover" 
-                  priority
-                />
-                
-                {images.length > 1 && (
-                  <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4">
-                    <Button 
-                      size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white/80 backdrop-blur"
-                      onClick={() => setCurrentImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1)}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      size="icon" variant="secondary" className="h-8 w-8 rounded-full bg-white/80 backdrop-blur"
-                      onClick={() => setCurrentImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1)}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
+            <div className="relative w-full h-full md:rounded-[32px] overflow-hidden border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 md:shadow-xl group shimmer-bg">
+              <div
+                ref={scrollContainerRef}
+                className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                onScroll={(e) => {
+                  const scrollLeft = (e.target as HTMLDivElement).scrollLeft;
+                  const width = (e.target as HTMLDivElement).clientWidth;
+                  const index = Math.round(scrollLeft / width);
+                  if (index !== currentImageIndex) {
+                    setCurrentImageIndex(index);
+                  }
+                }}
+                onTouchStart={() => {
+                  isManualScroll.current = true;
+                  setIsAutoPlaying(false);
+                }}
+              >
+                {images.map((url: string, index: number) => (
+                  <div key={index} className="h-full w-full shrink-0 snap-center relative">
+                    <Image
+                      src={url}
+                      alt={item.item_name}
+                      fill
+                      className="object-cover"
+                      priority={index === 0}
+                      quality={90}
+                    />
                   </div>
-                )}
+                ))}
               </div>
 
               {images.length > 1 && (
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20">
+                <>
+                  <button
+                    onClick={goToPrev}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={goToNext}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              {images.length > 1 && (
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
                   {images.map((_: any, i: number) => (
-                    <div key={i} className={cn("h-1.5 rounded-full transition-all duration-300", i === currentImageIndex ? "bg-white w-4" : "bg-white/40 w-1.5")} />
+                    <div key={i} className={cn("h-1.5 rounded-full transition-all duration-300 shadow-sm", i === currentImageIndex ? "bg-white w-4" : "bg-white/40 w-1.5")} />
                   ))}
                 </div>
               )}
@@ -309,7 +367,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
               <Badge className={cn("absolute top-4 left-4 font-black rounded-md px-3 py-1 shadow-md border-none z-10", item.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
                 {item.type === 'lost' ? t('lost') : t('found')}
               </Badge>
-              
+
               <Link href="/profile?tab=safety" className="absolute top-4 right-4 h-10 w-10 rounded-full bg-black/20 hover:bg-black/40 backdrop-blur flex items-center justify-center text-white transition-all z-20">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
@@ -320,7 +378,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
           <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200">
+                <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
                   {user?.imageUrl ? <Image src={user.imageUrl} alt="User" width={48} height={48} className="object-cover" /> : <User className="w-6 h-6 text-zinc-400" />}
                 </div>
                 <div className="flex flex-col">
@@ -331,25 +389,30 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
               <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black"><Calendar className="w-4 h-4" /> {new Date(item.created_at).toLocaleDateString()}</div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-6">{item.item_name}</h1>
-            
+            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-3">{item.item_name}</h1>
+            <Badge className={cn("font-black rounded-md px-3 py-1 shadow-md border-none mb-6 w-fit text-sm", item.type === 'lost' ? "bg-red-600 text-white" : "bg-emerald-600 text-white")}>
+              {item.type === 'lost' ? t('lost') : t('found')}
+            </Badge>
+
             <div className="flex flex-wrap gap-2 mb-8">
               <Badge variant="outline" className="bg-zinc-50 dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800 text-zinc-500 font-bold text-[10px] px-3 py-1">
                 {t(`categories.${CATEGORIES.find(c => c.name === item.category)?.id || "6"}`)}
               </Badge>
-              {item.reward && (
-                <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-200 font-black text-[10px] px-3 py-1 border-none">
-                  {t('reward')}: {item.reward} TJS
-                </Badge>
-              )}
             </div>
+
+            {item.type === 'lost' && item.reward && (
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 rounded-2xl p-5 mb-8 shadow-sm">
+                <p className="text-emerald-600 font-black text-[10px] mb-1">{t('reward_gives_viewer')}</p>
+                <p className="text-3xl font-black text-emerald-900 dark:text-emerald-100">{item.reward} TJS</p>
+              </div>
+            )}
 
             <div className="mb-8">
               <h3 className="font-black text-[10px] text-zinc-400 mb-4">{t('description')}</h3>
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">{item.description}</p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/20 mb-10 flex items-center gap-3">
+            <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/20 mb-8 flex items-center gap-3">
               <div className="h-10 w-10 rounded-xl bg-blue-500 text-white flex items-center justify-center shadow-sm">
                 <Phone className="w-5 h-5" />
               </div>
@@ -359,10 +422,17 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
               </div>
             </div>
 
-            <div className="flex flex-row items-center gap-2.5 mb-10">
-              <Button variant="secondary" size="icon" className="h-14 w-14 shrink-0 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm" asChild><Link href={`/profile?tab=safety&edit=${id}`}><Pencil className="w-6 h-6" /></Link></Button>
-              <Button variant="secondary" size="icon" className="h-14 w-14 shrink-0 rounded-2xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm" onClick={() => setShowDeleteConfirm(true)} disabled={isActionLoading}><Trash2 className="w-6 h-6" /></Button>
-              <Button size="lg" className="h-14 flex-1 rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg tracking-widest" onClick={handlePublish} disabled={isActionLoading}>
+            <div className="flex flex-row items-center gap-2.5 mb-10 overflow-x-auto no-scrollbar pb-1">
+              <Button variant="secondary" size="icon" className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm" asChild>
+                <Link href={`/profile?tab=safety&edit=${id}`}><Pencil className="w-5 h-5 md:w-7 md:h-7" /></Link>
+              </Button>
+              <Button variant="secondary" size="icon" className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm" onClick={() => setShowDeleteConfirm(true)} disabled={isActionLoading}>
+                <Trash2 className="w-5 h-5 md:w-7 md:h-7" />
+              </Button>
+            </div>
+
+            <div className="mt-auto flex flex-col gap-3">
+              <Button size="lg" className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg tracking-widest" onClick={handlePublish} disabled={isActionLoading}>
                 <Send className="w-5 h-5 mr-2" /> {t('publish')}
               </Button>
             </div>
