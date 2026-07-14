@@ -36,7 +36,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await webpush.sendNotification(subscription, JSON.stringify(payload ?? {}));
+    // urgency: "high" — то хидмати push онро тез расонад ва Android
+    // эҳтимоли бештар барои нишон додани heads-up (пайдоиши фаврӣ дар
+    // болои экран, бе кашидани notification shade) дошта бошад.
+    await webpush.sendNotification(subscription, JSON.stringify(payload ?? {}), { urgency: "high" });
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     // 200 — статуси HTTP-и ин route-ро бо статуси push-и ноком омехта накунем;

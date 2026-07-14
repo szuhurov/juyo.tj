@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v12";
+const CACHE_NAME = "juyo-v13";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -123,6 +123,13 @@ self.addEventListener("push", (event) => {
       // Аксаи калон (Pinterest-монанд) — агар фиристода шуда бошад
       // (масалан барои эълони нав дар категория).
       ...(data.image ? { image: data.image } : {}),
+      // Ларзиш — ба Android имрсол медиҳад, ки ин огоҳинома муҳим аст,
+      // то эҳтимоли пайдоиши heads-up (фавран дар болои экран, бе
+      // кашидани notification shade) зиёд шавад. Кафолати 100% нест —
+      // ин ниҳоят аз рӯи танзимоти ахамияти канали Android (ки худи
+      // корбар дар Settings иваз карда метавонад) муайян мешавад.
+      vibrate: [200, 100, 200],
+      requireInteraction: true,
       data: data.data ?? {},
     })
   );
