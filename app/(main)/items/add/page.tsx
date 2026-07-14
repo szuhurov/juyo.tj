@@ -71,7 +71,10 @@ function AddItemForm() {
 
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
-  const totalSteps = 5;
+  // Тартиби воқеии қадамҳо аз рӯи навигатсия — қадами 3 (санҷиши AI)
+  // охирин аст, на сеюм (ниг. nextStep/onFinalSubmit поён).
+  const stepOrder = [1, 2, 4, 5, 3];
+  const stepIndex = stepOrder.indexOf(step);
   const [loading, setLoading] = useState(false);
 
   // Маълумоти эълон (Consolidated State for better stability)
@@ -482,15 +485,21 @@ function AddItemForm() {
     <div className="container mx-auto px-0 sm:px-0 py-0 sm:py-0 max-w-none h-[calc(100vh-144px)] sm:h-[calc(100vh-64px)] flex flex-col">
       <Card className="flex-1 rounded-none overflow-hidden border-none shadow-none flex flex-col bg-white">
         {/* Step Indicator */}
+        {/* Тартиби воқеии қадамҳо аз рӯи навигатсия 1→2→3→4→5 НЕСТ — қадами
+            3 (санҷиши AI) охирин аст, танҳо ҳангоми нашр (onFinalSubmit)
+            нишон дода мешавад: 1 → 2 → 4 → 5 → 3. Муқоисаи рақамии оддии
+            step > i+1 нодуруст буд — вақте ки step=3 мешуд, қадамҳои 4 ва 5
+            (ки аллакай гузашта буданд) хато холӣ (khokistarranga) нишон
+            дода мешуданд. */}
         <div className="w-full flex h-1.5 gap-1 bg-zinc-50 dark:bg-zinc-900 overflow-hidden shrink-0">
-          {Array.from({ length: totalSteps }).map((_, i) => (
+          {stepOrder.map((s, i) => (
             <div
-              key={i}
+              key={s}
               className={cn(
                 "h-full flex-1 transition-all duration-700 ease-in-out",
-                step > i + 1
+                stepIndex > i
                   ? "bg-emerald-500"
-                  : step === i + 1
+                  : stepIndex === i
                     ? "bg-emerald-400"
                     : "bg-zinc-100 dark:bg-zinc-800",
               )}
