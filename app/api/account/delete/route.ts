@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 function extractStoragePath(imageUrl: string | null | undefined): string | null {
@@ -17,12 +17,13 @@ const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, 
 
 /**
  * Худи корбар ҳисоби худро нест мекунад (Танзимот → "Нест кардани ҳисоб").
- * Тозакунии Supabase-ро мустақим ҳамин ҷо иҷро мекунад — на танҳо ба
- * webhook-и user.deleted такя мекунад (ки дар Clerk Dashboard бояд дастӣ
- * фаъол шавад ва метавонад ноком шавад). Клиент ин route-ро ПЕШ АЗ
- * user.delete()-и Clerk мезанад, то сессия то охир эътибор дошта бошад.
- * Ҳамон snapshot+cascade-delete-и "Пурра нест кардан"-и admin такрор
- * мешавад, то дар архиви admin низ дида шавад.
+ * Ҳам Clerk ва ҳам Supabase-ро мустақим аз ин ҷо (Backend API, бо
+ * secret key) нест мекунад — на тавассути user.delete()-и клиент, зеро он
+ * reverification талаб мекунад (парол/телефон), ки бисёр ҳисобҳо (масалан
+ * бо Google бе парол) надоранд ва ба "Cannot verify your account" дучор
+ * мешаванд. Дархости сервер-ба-сервер ин талаботро надорад. Ҳамон
+ * snapshot+cascade-delete-и "Пурра нест кардан"-и admin такрор мешавад,
+ * то дар архиви admin низ дида шавад.
  */
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -35,6 +36,13 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
     if (!profile) {
       return NextResponse.json({ ok: true });
+    }
+
+    const client = await clerkClient();
+    try {
+      await client.users.deleteUser(userId);
+    } catch (clerkErr: any) {
+      if (clerkErr?.status !== 404) throw clerkErr;
     }
 
     const [{ data: items }, { data: savedItems }, { data: safetyBoxItems }, { data: verificationAttempts }] = await Promise.all([

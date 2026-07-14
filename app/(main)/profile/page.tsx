@@ -109,16 +109,11 @@ function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
-  // Ин амалҳо аз тарафи сервери Clerk "ҳассос" ҳисобида мешаванд — reverification
-  // талаботи Clerk аст, на чизе, ки мо метавонем аз фронтенд хомӯш кунем.
-  // useReverification танҳо ба он бо як модали хушрӯй ҷавоб медиҳад.
-  const deleteAccountWithReverification = useReverification(() => user!.delete());
+  // Сохтани почтаи нав (createEmailAddress) баъзан reverification мепурсад;
+  // боқии амалҳои ҳассос (нест кардани account, асосӣ кардани почтаи нав,
+  // тоза кардани почтаи куҳна) акнун аз сервер (Backend API) иҷро мешаванд —
+  // ниг. /api/account/delete ва /api/account/change-email.
   const createEmailWithReverification = useReverification((email: string) => user!.createEmailAddress({ email }));
-  const setPrimaryEmailWithReverification = useReverification((emailAddressId: string) =>
-    user!.update({ primaryEmailAddressId: emailAddressId }),
-  );
-  const destroyEmailWithReverification = useReverification((email: any) => email.destroy());
-  const destroyExternalAccountWithReverification = useReverification((account: any) => account.destroy());
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -188,45 +183,20 @@ function ProfileContent() {
     if (!user || !pendingEmailAddress) return;
     setEmailSubmitting(true);
     try {
-      const oldEmail = user.primaryEmailAddress;
-      const newEmailValue = pendingEmailAddress.emailAddress;
       await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
-      await setPrimaryEmailWithReverification(pendingEmailAddress.id);
 
-      // Почтаи навро дар Supabase-ҳам ҳамин ҷо нависем — ПЕШ АЗ кӯшиши
-      // тоза кардани почтаи куҳна. Он марҳила метавонад ба бунбасти
-      // reverification дучор шавад (масалан ҳисоби бе парол/телефон),
-      // ва набояд ин қисми муҳимро бе иҷро гузорад.
-      try {
-        const token = await getToken({ template: "supabase" });
-        if (token) {
-          const supabase = createClerkSupabaseClient(token);
-          await ProfileService.updateProfile(supabase, userId!, { email: newEmailValue });
-        }
-      } catch (syncErr) {
-        console.error("Supabase email sync error:", syncErr);
-      }
-
-      // Почтаи куҳнаро пурра озод мекунем — то он барои ҳисоби нави
-      // ҷудогона дар juyo истифода шавад. Агар ба ҳисоби беруна (Google)
-      // пайваст бошад, аввал худи пайвастро (external account) канда
-      // мепартоем, баъд почтаро нест мекунем. Агар ин марҳила бо сабаби
-      // дигар (масалан ҳисоб ягон factor надорад) ноком шавад — огоҳӣ
-      // медиҳем, аммо тағйироти асосӣ (боло) аллакай сабт шудааст.
-      if (oldEmail && oldEmail.id !== pendingEmailAddress.id) {
-        try {
-          const linkedAccounts = user.externalAccounts.filter((acc) => acc.emailAddress === oldEmail.emailAddress);
-          for (const account of linkedAccounts) {
-            await destroyExternalAccountWithReverification(account);
-          }
-          await destroyEmailWithReverification(oldEmail);
-        } catch (destroyErr: any) {
-          if (!isReverificationCancelledError(destroyErr)) {
-            console.error("Old email destroy error:", destroyErr);
-            toast.error(t("oldEmailNotRemoved"));
-          }
-        }
-      }
+      // Боқии кор — асосӣ кардани почтаи нав, канда партофтани пайвасти
+      // беруна (агар почтаи куҳна ба Google пайваст бошад), нест кардани
+      // почтаи куҳна ва синхронизатсия бо Supabase — аз сервер (Backend
+      // API, бо secret key) иҷро мешавад. Ин reverification талаб
+      // намекунад, пас ҳисобҳои бе parol (масалан бо Google) низ бе
+      // "Cannot verify your account" кор мекунанд.
+      const res = await fetch("/api/account/change-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newEmailId: pendingEmailAddress.id }),
+      });
+      if (!res.ok) throw new Error("Failed to change email");
 
       await user.reload();
       toast.success(t("emailChangeSuccess"));
@@ -244,21 +214,17 @@ function ProfileContent() {
     if (!user) return;
     setDeletingAccount(true);
     try {
-      // Аввал маълумоти Supabase-ро мустақим пок мекунем (то ба webhook-и
-      // эҳтимол ноком такя накунем), баъд худи ҳисоби Clerk-ро.
+      // Route-и сервер ҳам Clerk (Backend API, secret key) ва ҳам Supabase-ро
+      // мустақим нест мекунад — reverification (парол/телефон) лозим намекунад,
+      // пас ҳисобҳои бе parol (масалан бо Google) низ бе мушкил нест мешаванд.
       const res = await fetch("/api/account/delete", { method: "POST" });
-      if (!res.ok) throw new Error("Failed to clean up account data");
+      if (!res.ok) throw new Error("Failed to delete account");
 
-      await deleteAccountWithReverification();
       toast.success(t("deleteAccountSuccess"));
       router.push("/");
     } catch (err: any) {
-      if (isReverificationCancelledError(err)) {
-        setDeletingAccount(false);
-        return;
-      }
-      console.error("Clerk error:", err);
-      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
+      console.error("Delete account error:", err);
+      toast.error(t("error"));
       setDeletingAccount(false);
     }
   };
