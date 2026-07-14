@@ -180,7 +180,8 @@ function ProfileContent() {
       setEmailStep("verify");
     } catch (err: any) {
       if (isReverificationCancelledError(err)) return;
-      toast.error(err.errors?.[0]?.message || err.message || t("error"));
+      console.error("Clerk error:", err);
+      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
     }
@@ -195,11 +196,26 @@ function ProfileContent() {
       await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
       await setPrimaryEmailWithReverification(pendingEmailAddress.id);
 
+      // Почтаи навро дар Supabase-ҳам ҳамин ҷо нависем — ПЕШ АЗ кӯшиши
+      // тоза кардани почтаи куҳна. Он марҳила метавонад ба бунбасти
+      // reverification дучор шавад (масалан ҳисоби бе парол/телефон),
+      // ва набояд ин қисми муҳимро бе иҷро гузорад.
+      try {
+        const token = await getToken({ template: "supabase" });
+        if (token) {
+          const supabase = createClerkSupabaseClient(token);
+          await ProfileService.updateProfile(supabase, userId!, { email: newEmailValue });
+        }
+      } catch (syncErr) {
+        console.error("Supabase email sync error:", syncErr);
+      }
+
       // Почтаи куҳнаро пурра озод мекунем — то он барои ҳисоби нави
       // ҷудогона дар juyo истифода шавад. Агар ба ҳисоби беруна (Google)
       // пайваст бошад, аввал худи пайвастро (external account) канда
       // мепартоем, баъд почтаро нест мекунем. Агар ин марҳила бо сабаби
-      // дигар ноком шавад, огоҳӣ медиҳем, то корбар донад чаро мондааст.
+      // дигар (масалан ҳисоб ягон factor надорад) ноком шавад — огоҳӣ
+      // медиҳем, аммо тағйироти асосӣ (боло) аллакай сабт шудааст.
       if (oldEmail && oldEmail.id !== pendingEmailAddress.id) {
         try {
           const linkedAccounts = user.externalAccounts.filter((acc) => acc.emailAddress === oldEmail.emailAddress);
@@ -215,23 +231,13 @@ function ProfileContent() {
         }
       }
 
-      // Почтаи навро дар Supabase-ҳам нависем — на танҳо ба webhook такя кунем.
-      try {
-        const token = await getToken({ template: "supabase" });
-        if (token) {
-          const supabase = createClerkSupabaseClient(token);
-          await ProfileService.updateProfile(supabase, userId!, { email: newEmailValue });
-        }
-      } catch (syncErr) {
-        console.error("Supabase email sync error:", syncErr);
-      }
-
       await user.reload();
       toast.success(t("emailChangeSuccess"));
       resetEmailModal();
     } catch (err: any) {
       if (isReverificationCancelledError(err)) return;
-      toast.error(err.errors?.[0]?.message || err.message || t("error"));
+      console.error("Clerk error:", err);
+      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
     }
@@ -254,7 +260,8 @@ function ProfileContent() {
         setDeletingAccount(false);
         return;
       }
-      toast.error(err.errors?.[0]?.message || err.message || t("error"));
+      console.error("Clerk error:", err);
+      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
       setDeletingAccount(false);
     }
   };
@@ -1767,7 +1774,8 @@ function ProfileContent() {
                       } catch (err: any) {
                         if (!isReverificationCancelledError(err)) {
                           console.error("Profile Update Error:", err);
-                          toast.error(err.errors?.[0]?.message || err.message || t("error"));
+                          console.error("Clerk error:", err);
+      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
                         }
                       } finally {
                         setSafetySubmitting(false);
