@@ -15,6 +15,7 @@ import {
   type PendingVerification,
 } from "@/lib/hooks/use-pending-verifications";
 import { useWebPush } from "@/lib/hooks/use-web-push";
+import { ClaimantAvatar } from "@/components/claimant-avatar";
 
 function StatusIcon({ status }: { status: PendingVerification["status"] }) {
   if (status === "passed") return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />;
@@ -24,7 +25,7 @@ function StatusIcon({ status }: { status: PendingVerification["status"] }) {
 
 export function NotificationBell() {
   const { t } = useLanguage();
-  const { items, count } = usePendingVerifications();
+  const { items, count, markAllSeen } = usePendingVerifications();
   const { status, subscribe } = useWebPush();
 
   // Агар иҷозат аллакай дода шуда бошад (масалан аз сессияи қаблӣ), бидуни
@@ -35,7 +36,7 @@ export function NotificationBell() {
   }, [status, subscribe]);
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => open && markAllSeen()}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="secondary"
@@ -81,17 +82,7 @@ export function NotificationBell() {
                 href={`/items/${item.itemId}`}
                 className="flex items-start gap-3 rounded-xl p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
-                {item.claimantAvatar ? (
-                  <img
-                    src={item.claimantAvatar}
-                    alt=""
-                    className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-100 dark:border-zinc-800"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-black text-zinc-400 shrink-0">
-                    {(item.claimantName || "?").charAt(0)}
-                  </div>
-                )}
+                <ClaimantAvatar url={item.claimantAvatar} name={item.claimantName} className="w-8 h-8 text-xs" />
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
                     {item.claimantName || t("verifyUnknownClaimant")}

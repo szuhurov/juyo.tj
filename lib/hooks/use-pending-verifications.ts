@@ -7,6 +7,7 @@ import { useLanguage } from "@/lib/language-context";
 import { toast } from "sonner";
 
 const POLL_MS = 20_000;
+const SEEN_STORAGE_KEY = "juyo_seen_verification_ids";
 
 export interface PendingVerification {
   attemptId: string;
@@ -18,11 +19,21 @@ export interface PendingVerification {
   claimantAvatar: string | null;
 }
 
+function loadSeenIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY) || "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
 export function usePendingVerifications() {
   const { userId, getToken } = useAuth();
   const { t } = useLanguage();
   const [items, setItems] = useState<PendingVerification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [seenIds, setSeenIds] = useState<Set<string>>(() => loadSeenIds());
   const seenPendingIds = useRef<Set<string> | null>(null);
 
   const fetchPending = useCallback(async () => {
@@ -72,7 +83,25 @@ export function usePendingVerifications() {
     return () => clearInterval(interval);
   }, [userId, fetchPending]);
 
-  const count = items.filter((item) => item.status === "pending_review").length;
+  // Вақте ки корбар менюи зангро мекушояд, ҳамаи pending-ҳои ҳозираро
+  // "дида шуд" мегузорем — badge то дархости воқеан нав пайдо нашуда, боз
+  // намепайдояд.
+  const markAllSeen = useCallback(() => {
+    setSeenIds((prev) => {
+      const next = new Set(prev);
+      for (const item of items) {
+        if (item.status === "pending_review") next.add(item.attemptId);
+      }
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...next]));
+      }
+      return next;
+    });
+  }, [items]);
 
-  return { items, count, loading, refetch: fetchPending };
+  const count = items.filter(
+    (item) => item.status === "pending_review" && !seenIds.has(item.attemptId),
+  ).length;
+
+  return { items, count, loading, refetch: fetchPending, markAllSeen };
 }

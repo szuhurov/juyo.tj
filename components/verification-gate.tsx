@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Phone, ShieldQuestion, Loader2, CheckCircle2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getTemplatesForCategory } from "@/lib/verification-questions";
+import { ClaimantAvatar } from "@/components/claimant-avatar";
 
 interface Question {
   id: string;
@@ -181,17 +182,7 @@ export function VerificationGate({
                   className="w-full flex items-center justify-between gap-2 p-3.5 text-left"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    {attempt.matched_avatar_url ? (
-                      <img
-                        src={attempt.matched_avatar_url}
-                        alt=""
-                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-100 dark:border-zinc-800"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-black text-zinc-400 shrink-0">
-                        {(name || "?").charAt(0)}
-                      </div>
-                    )}
+                    <ClaimantAvatar url={attempt.matched_avatar_url} name={name} className="w-8 h-8 text-xs" />
                     <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
                       {name || t("verifyUnknownClaimant")}
                     </span>
