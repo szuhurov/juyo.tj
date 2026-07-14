@@ -96,6 +96,8 @@ import { QRCard } from "@/components/qr-editor/qr-card"; // Компонент �
 import { toPng } from "html-to-image"; // Барои табдил додани HTML ба сурати PNG
 import { HexColorPicker } from "react-colorful"; // Барои интихоби ранги QR-код
 import { compressImage } from "@/lib/image-utils"; // Барои фишурдани суратҳо
+import { scanImageForPrivacy, type PrivacyRegion } from "@/lib/privacy-scan";
+import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -320,6 +322,14 @@ function ProfileContent() {
   const [safetyCategory, setSafetyCategory] = useState("");
   const [safetyImages, setSafetyImages] = useState<File[]>([]);
   const [safetyPreviews, setSafetyPreviews] = useState<string[]>([]);
+
+  // Санҷиши махфияти ҳуҷҷатҳо барои аксҳои нав дар Қуттии бехатарӣ (ниг. items/add/page.tsx)
+  const [privacyScanning, setPrivacyScanning] = useState(false);
+  const [privacyReview, setPrivacyReview] = useState<{
+    file: File;
+    regions: PrivacyRegion[];
+    resolve: (result: File | null) => void;
+  } | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [selectedSafetyItem, setSelectedSafetyItem] = useState<any>(null);
   const [editingSafetyItem, setEditingSafetyItem] = useState<any>(null);
@@ -508,15 +518,43 @@ function ProfileContent() {
   /**
    * Функсия барои коркарди суратҳо дар Қуттии бехатарӣ
    */
-  const handleSafetyImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Акси мушаххасро барои ҳуҷҷат будан месанҷад — ниг. items/add/page.tsx
+  const runPrivacyCheck = async (file: File): Promise<File | null> => {
+    try {
+      const token = await getToken({ template: "supabase" });
+      const supabaseClient = createClerkSupabaseClient(token!);
+      const result = await scanImageForPrivacy(supabaseClient, file);
+      if (!result.is_document || result.regions.length === 0) return file;
+      return await new Promise<File | null>((resolve) => {
+        setPrivacyReview({ file, regions: result.regions, resolve });
+      });
+    } catch (err) {
+      console.error("Privacy scan error:", err);
+      return file;
+    }
+  };
+
+  const handleSafetyImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (safetyImages.length + files.length > 5) {
       toast.error(t("maxImagesReached"));
       return;
     }
-    setSafetyImages((prev) => [...prev, ...files]);
-    const newPreviews = files.map((file) => URL.createObjectURL(file));
-    setSafetyPreviews((prev) => [...prev, ...newPreviews]);
+    setPrivacyScanning(true);
+    try {
+      const processed: File[] = [];
+      for (const file of files) {
+        const result = await runPrivacyCheck(file);
+        if (result) processed.push(result);
+      }
+      if (processed.length === 0) return;
+
+      setSafetyImages((prev) => [...prev, ...processed]);
+      const newPreviews = processed.map((file) => URL.createObjectURL(file));
+      setSafetyPreviews((prev) => [...prev, ...newPreviews]);
+    } finally {
+      setPrivacyScanning(false);
+    }
   };
 
   /**
@@ -3251,6 +3289,34 @@ function ProfileContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {privacyScanning && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center px-6">
+          <div className="bg-white dark:bg-zinc-950 rounded-3xl px-8 py-7 flex flex-col items-center gap-3 shadow-2xl">
+            <Loader2 className="w-7 h-7 text-emerald-500 animate-spin" />
+            <p className="text-xs font-bold text-zinc-500 text-center">
+              {t("privacyScanningImages")}
+            </p>
+          </div>
+        </div>
+      )}
+      {privacyReview && (
+        <PrivacyBlurEditor
+          open
+          file={privacyReview.file}
+          initialRegions={privacyReview.regions}
+          onConfirm={(finalFile) => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(finalFile);
+          }}
+          onCancel={() => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(null);
+          }}
+        />
+      )}
     </TooltipProvider>
   );
 }

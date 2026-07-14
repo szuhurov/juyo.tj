@@ -15,6 +15,8 @@ import {
   supabase as anonSupabase,
 } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
+import { scanImageForPrivacy, type PrivacyRegion } from "@/lib/privacy-scan";
+import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,6 +91,16 @@ function AddItemForm() {
 
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+
+  // Санҷиши махфияти ҳуҷҷатҳо — пеш аз он ки акс ба previews/images ворид
+  // шавад, AI онро месанҷад; агар ҳуҷҷат бо майдонҳои махфӣ ёфт шавад,
+  // тирезаи тасдиқ/таҳрири mozaica кушода мешавад (ниг. runPrivacyCheck).
+  const [privacyScanning, setPrivacyScanning] = useState(false);
+  const [privacyReview, setPrivacyReview] = useState<{
+    file: File;
+    regions: PrivacyRegion[];
+    resolve: (result: File | null) => void;
+  } | null>(null);
 
   // Саволҳои санҷиши моликият — танҳо барои эълонҳои "Ёфтшуда" (ихтиёрӣ).
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
@@ -169,19 +181,57 @@ function AddItemForm() {
   }, [userId, getToken]);
 
 
-  const addNewFiles = (files: File[]) => {
+  // Акси мушаххасро барои ҳуҷҷат будан месанҷад; агар майдони махфӣ ёфт
+  // шавад, тирезаи тасдиқ/таҳрирро кушода, натиҷаи ниҳоии (mozaica-шуда ё
+  // аслӣ) файлро бармегардонад. Агар корбар аз тирезаи тасдиқ баромада
+  // равад (cancel), null бармегардонад — он акс аслан илова намешавад.
+  const runPrivacyCheck = async (file: File): Promise<File | null> => {
+    try {
+      let supabaseClient;
+      if (userId) {
+        const token = await getToken({ template: "supabase" });
+        supabaseClient = createClerkSupabaseClient(token!);
+      } else {
+        supabaseClient = anonSupabase;
+      }
+      const result = await scanImageForPrivacy(supabaseClient, file);
+      if (!result.is_document || result.regions.length === 0) return file;
+      return await new Promise<File | null>((resolve) => {
+        setPrivacyReview({ file, regions: result.regions, resolve });
+      });
+    } catch (err) {
+      // Агар худи санҷиш ноком шавад (масалан хатогии шабака), акси аслиро
+      // мегузорем — ин feature набояд равандии умумии нашри эълонро банд кунад.
+      console.error("Privacy scan error:", err);
+      return file;
+    }
+  };
+
+  const addNewFiles = async (files: File[]) => {
     if (images.length + files.length > 5) {
       toast.error(t("maxImagesReached"));
       return;
     }
 
-    const newImages = [...images, ...files];
-    setImages(newImages);
-    const newPreviews = files.map((file) => URL.createObjectURL(file));
-    setPreviews((prev) => [...prev, ...newPreviews]);
+    setPrivacyScanning(true);
+    try {
+      const processed: File[] = [];
+      for (const file of files) {
+        const result = await runPrivacyCheck(file);
+        if (result) processed.push(result);
+      }
+      if (processed.length === 0) return;
 
-    // Reset AI state when images change
-    setModerationStatus("idle");
+      const newImages = [...images, ...processed];
+      setImages(newImages);
+      const newPreviews = processed.map((file) => URL.createObjectURL(file));
+      setPreviews((prev) => [...prev, ...newPreviews]);
+
+      // Reset AI state when images change
+      setModerationStatus("idle");
+    } finally {
+      setPrivacyScanning(false);
+    }
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1135,6 +1185,35 @@ function AddItemForm() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Санҷиши махфияти ҳуҷҷат — акси нав, пеш аз он ки ба previews ворид шавад */}
+      {privacyScanning && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center px-6">
+          <div className="bg-white dark:bg-zinc-950 rounded-3xl px-8 py-7 flex flex-col items-center gap-3 shadow-2xl">
+            <Loader2 className="w-7 h-7 text-emerald-500 animate-spin" />
+            <p className="text-xs font-bold text-zinc-500 text-center">
+              {t("privacyScanningImages")}
+            </p>
+          </div>
+        </div>
+      )}
+      {privacyReview && (
+        <PrivacyBlurEditor
+          open
+          file={privacyReview.file}
+          initialRegions={privacyReview.regions}
+          onConfirm={(finalFile) => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(finalFile);
+          }}
+          onCancel={() => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(null);
+          }}
+        />
+      )}
 
       <style jsx global>{`
         @keyframes scan-fast {

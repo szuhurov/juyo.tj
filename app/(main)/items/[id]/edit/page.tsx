@@ -29,6 +29,8 @@ import { Loader2, Plus, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react";
 import Image from "next/image"; // Барои суратҳо
 import Link from "next/link"; // Барои гузаштан ба саҳифаҳо
 import { compressImage } from "@/lib/image-utils";
+import { scanImageForPrivacy, type PrivacyRegion } from "@/lib/privacy-scan";
+import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
 
 import {
   Tooltip,
@@ -60,6 +62,14 @@ export default function EditItemPage({
   const [previews, setPreviews] = useState<
     { url: string; isExisting: boolean }[]
   >([]);
+
+  // Санҷиши махфияти ҳуҷҷатҳо барои аксҳои нав (ниг. items/add/page.tsx)
+  const [privacyScanning, setPrivacyScanning] = useState(false);
+  const [privacyReview, setPrivacyReview] = useState<{
+    file: File;
+    regions: PrivacyRegion[];
+    resolve: (result: File | null) => void;
+  } | null>(null);
 
   // Стейтҳои модерация (AI Moderation States)
   const [moderationStatus, setModerationStatus] = useState<
@@ -163,22 +173,50 @@ export default function EditItemPage({
     }
   };
 
+  // Акси мушаххасро барои ҳуҷҷат будан месанҷад — ниг. items/add/page.tsx
+  const runPrivacyCheck = async (file: File): Promise<File | null> => {
+    try {
+      const token = await getToken({ template: "supabase" });
+      const supabaseClient = createClerkSupabaseClient(token!);
+      const result = await scanImageForPrivacy(supabaseClient, file);
+      if (!result.is_document || result.regions.length === 0) return file;
+      return await new Promise<File | null>((resolve) => {
+        setPrivacyReview({ file, regions: result.regions, resolve });
+      });
+    } catch (err) {
+      console.error("Privacy scan error:", err);
+      return file;
+    }
+  };
+
   /**
    * Функсия барои коркарди суратҳои нави интихобшуда
    */
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (previews.length + files.length > 5) {
       toast.error(t("maxImagesReached"));
       return;
     }
 
-    setImages((prev) => [...prev, ...files]);
-    const newPreviews = files.map((file) => ({
-      url: URL.createObjectURL(file),
-      isExisting: false,
-    }));
-    setPreviews((prev) => [...prev, ...newPreviews]);
+    setPrivacyScanning(true);
+    try {
+      const processed: File[] = [];
+      for (const file of files) {
+        const result = await runPrivacyCheck(file);
+        if (result) processed.push(result);
+      }
+      if (processed.length === 0) return;
+
+      setImages((prev) => [...prev, ...processed]);
+      const newPreviews = processed.map((file) => ({
+        url: URL.createObjectURL(file),
+        isExisting: false,
+      }));
+      setPreviews((prev) => [...prev, ...newPreviews]);
+    } finally {
+      setPrivacyScanning(false);
+    }
   };
 
   /**
@@ -821,6 +859,34 @@ export default function EditItemPage({
           </CardContent>
         </Card>
       </div>
+
+      {privacyScanning && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center px-6">
+          <div className="bg-white dark:bg-zinc-950 rounded-3xl px-8 py-7 flex flex-col items-center gap-3 shadow-2xl">
+            <Loader2 className="w-7 h-7 text-emerald-500 animate-spin" />
+            <p className="text-xs font-bold text-zinc-500 text-center">
+              {t("privacyScanningImages")}
+            </p>
+          </div>
+        </div>
+      )}
+      {privacyReview && (
+        <PrivacyBlurEditor
+          open
+          file={privacyReview.file}
+          initialRegions={privacyReview.regions}
+          onConfirm={(finalFile) => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(finalFile);
+          }}
+          onCancel={() => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(null);
+          }}
+        />
+      )}
     </TooltipProvider>
   );
 }
