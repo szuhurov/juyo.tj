@@ -16,6 +16,7 @@ import { Phone, ShieldQuestion, Loader2, CheckCircle2, HelpCircle } from "lucide
 import { toast } from "sonner";
 import { getTemplatesForCategory } from "@/lib/verification-questions";
 import { ClaimantAvatar } from "@/components/claimant-avatar";
+import { cn } from "@/lib/utils";
 
 interface Question {
   id: string;
@@ -162,39 +163,52 @@ export function VerificationGate({
   if (isOwner) {
     if (!pendingAttempts || pendingAttempts.length === 0) return null;
     return (
-      <div className="space-y-3">
-        <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-black text-xs uppercase tracking-wider">
-          <ShieldQuestion className="w-4 h-4" />
-          {t("verifyPendingCount").replace("%{count}", String(pendingAttempts.length))}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl px-4 py-3.5">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+            <ShieldQuestion className="w-5 h-5 text-amber-600" />
+          </div>
+          <span className="text-sm font-black text-amber-800 dark:text-amber-300 tracking-tight">
+            {t("verifyPendingCount").replace("%{count}", String(pendingAttempts.length))}
+          </span>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {pendingAttempts.map((attempt) => {
             const name = `${attempt.matched_first_name ?? ""} ${attempt.matched_last_name ?? ""}`.trim();
             const expanded = expandedId === attempt.id;
             return (
               <div
                 key={attempt.id}
-                className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-hidden"
+                className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
               >
                 <button
                   type="button"
                   onClick={() => setExpandedId(expanded ? null : attempt.id)}
-                  className="w-full flex items-center justify-between gap-2 p-3.5 text-left"
+                  className="w-full flex items-center justify-between gap-3 p-4 text-left"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <ClaimantAvatar url={attempt.matched_avatar_url} name={name} className="w-8 h-8 text-xs" />
-                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <ClaimantAvatar url={attempt.matched_avatar_url} name={name} className="w-11 h-11 text-sm shadow-sm" />
+                    <span className="text-sm font-black text-zinc-900 dark:text-zinc-100 truncate">
                       {name || t("verifyUnknownClaimant")}
                     </span>
                   </div>
-                  <HelpCircle className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                      expanded ? "bg-zinc-900 dark:bg-white" : "bg-zinc-100 dark:bg-zinc-800",
+                    )}
+                  >
+                    <HelpCircle
+                      className={cn("w-4 h-4", expanded ? "text-white dark:text-zinc-900" : "text-zinc-400")}
+                    />
+                  </div>
                 </button>
                 {expanded && (
-                  <div className="px-3.5 pb-3.5 space-y-2 border-t border-zinc-100 dark:border-zinc-800 pt-2.5">
+                  <div className="px-4 pb-4 space-y-2.5 border-t border-zinc-100 dark:border-zinc-800 pt-3.5">
                     {attempt.answers.map((a) => (
-                      <div key={a.question_id} className="text-xs">
-                        <p className="font-bold text-zinc-500">{a.question_text}</p>
-                        <p className="font-black text-zinc-900 dark:text-zinc-100">
+                      <div key={a.question_id} className="bg-zinc-50 dark:bg-zinc-800/50 rounded-xl p-3">
+                        <p className="text-[11px] font-bold text-zinc-400 mb-0.5">{a.question_text}</p>
+                        <p className="text-sm font-black text-zinc-900 dark:text-zinc-100">
                           {a.answer_type === "yesno" ? (a.given_answer === "yes" ? t("verifyYes") : t("verifyNo")) : a.given_answer}
                         </p>
                       </div>
@@ -202,9 +216,9 @@ export function VerificationGate({
                     {attempt.claimant_phone && (
                       <a
                         href={`tel:${attempt.claimant_phone}`}
-                        className="flex items-center justify-center gap-2 h-10 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-xs mt-1"
+                        className="flex items-center justify-center gap-2 h-12 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-sm shadow-md hover:shadow-lg active:scale-[0.98] transition-all mt-1"
                       >
-                        <Phone className="w-3.5 h-3.5" /> {t("call")}
+                        <Phone className="w-4 h-4" /> {t("call")}
                       </a>
                     )}
                   </div>
