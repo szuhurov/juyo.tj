@@ -8,11 +8,22 @@ import { toast } from "sonner";
 
 const POLL_MS = 20_000;
 
+export interface VerificationAnswer {
+  question_id: string;
+  question_text: string;
+  answer_type: string;
+  given_answer: string;
+}
+
 export interface PendingVerification {
   attemptId: string;
   itemId: string;
   itemTitle: string;
+  answers: VerificationAnswer[];
+  status: "pending_review" | "passed" | "rejected";
   createdAt: string;
+  claimantPhone: string | null;
+  matchedName: string | null;
 }
 
 export function usePendingVerifications() {
@@ -20,7 +31,8 @@ export function usePendingVerifications() {
   const { t } = useLanguage();
   const [items, setItems] = useState<PendingVerification[]>([]);
   const [loading, setLoading] = useState(true);
-  const seenIds = useRef<Set<string> | null>(null);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const seenPendingIds = useRef<Set<string> | null>(null);
 
   const fetchPending = useCallback(async () => {
     if (!userId) {
@@ -31,27 +43,34 @@ export function usePendingVerifications() {
     const token = await getToken({ template: "supabase" });
     if (!token) return;
     const supabase = createClerkSupabaseClient(token);
-    const { data } = await supabase
-      .from("item_verification_attempts")
-      .select("id, item_id, created_at, items(title)")
-      .eq("status", "pending_review")
-      .order("created_at", { ascending: false });
+    // get_my_verification_attempts — ҳама эълонҳои корбар якҷоя, ҳам
+    // pending_review, ҳам аллакай баррасишуда (таърих), то рӯйхат баъд аз
+    // тасдиқ/рад нест нашавад.
+    const { data } = await supabase.rpc("get_my_verification_attempts", { p_limit: 50 });
 
     const rows: PendingVerification[] = (data ?? []).map((row: any) => ({
       attemptId: row.id,
       itemId: row.item_id,
-      itemTitle: row.items?.title ?? "",
+      itemTitle: row.item_title ?? "",
+      answers: row.answers ?? [],
+      status: row.status,
       createdAt: row.created_at,
+      claimantPhone: row.claimant_phone,
+      matchedName: row.matched_user_id
+        ? `${row.matched_first_name ?? ""} ${row.matched_last_name ?? ""}`.trim() || row.matched_user_id
+        : null,
     }));
 
-    // Пас аз бори аввал, ҳар savol-и nav-ро бо toast огоҳ мекунем.
-    if (seenIds.current) {
-      const fresh = rows.filter((r) => !seenIds.current!.has(r.attemptId));
+    // Пас аз бори аввал, ҳар savol-и nav-ро бо toast огоҳ мекунем (танҳо
+    // барои pending — таърихи аллакай баррасишуда набояд боз toast диҳад).
+    const pendingNow = rows.filter((r) => r.status === "pending_review");
+    if (seenPendingIds.current) {
+      const fresh = pendingNow.filter((r) => !seenPendingIds.current!.has(r.attemptId));
       for (const r of fresh) {
         toast.info(t("verifyNewAttemptToast").replace("%{title}", r.itemTitle));
       }
     }
-    seenIds.current = new Set(rows.map((r) => r.attemptId));
+    seenPendingIds.current = new Set(pendingNow.map((r) => r.attemptId));
 
     setItems(rows);
     setLoading(false);
@@ -64,5 +83,36 @@ export function usePendingVerifications() {
     return () => clearInterval(interval);
   }, [userId, fetchPending]);
 
-  return { items, count: items.length, loading, refetch: fetchPending };
+  // Тасдиқ/рад мустақим аз рӯйхат — сатр аз он ҷо нест намешавад, танҳо
+  // статусаш иваз мешавад (то дар "таърих" боқӣ монад).
+  const reviewAttempt = useCallback(
+    async (attemptId: string, approve: boolean) => {
+      setReviewingId(attemptId);
+      try {
+        const token = await getToken({ template: "supabase" });
+        if (!token) return;
+        const supabase = createClerkSupabaseClient(token);
+        const { error } = await supabase.rpc("review_verification_attempt", {
+          p_attempt_id: attemptId,
+          p_approve: approve,
+        });
+        if (error) throw error;
+        setItems((prev) =>
+          prev.map((item) =>
+            item.attemptId === attemptId ? { ...item, status: approve ? "passed" : "rejected" } : item,
+          ),
+        );
+        toast.success(approve ? t("verifyApprove") : t("verifyReject"));
+      } catch (err: any) {
+        toast.error(err.message || t("error"));
+      } finally {
+        setReviewingId(null);
+      }
+    },
+    [getToken, t],
+  );
+
+  const count = items.filter((item) => item.status === "pending_review").length;
+
+  return { items, count, loading, reviewAttempt, reviewingId, refetch: fetchPending };
 }
