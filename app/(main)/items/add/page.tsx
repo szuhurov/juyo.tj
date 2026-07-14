@@ -181,11 +181,10 @@ function AddItemForm() {
   }, [userId, getToken]);
 
 
-  // Акси мушаххасро барои ҳуҷҷат будан месанҷад; агар майдони махфӣ ёфт
-  // шавад, тирезаи тасдиқ/таҳрирро кушода, натиҷаи ниҳоии (mozaica-шуда ё
-  // аслӣ) файлро бармегардонад. Агар корбар аз тирезаи тасдиқ баромада
-  // равад (cancel), null бармегардонад — он акс аслан илова намешавад.
-  const runPrivacyCheck = async (file: File): Promise<File | null> => {
+  // Танҳо санҷиши AI (даъвати шабака) — координатаҳоро мебарорад, ягон
+  // диалог намекушояд. Ин қисм барои ҳамаи аксҳо ПАРАЛЕЛ иҷро мешавад, то
+  // илова кардани якчанд акс якбора N×вақт нагирад.
+  const scanFileForPrivacy = async (file: File) => {
     try {
       let supabaseClient;
       if (userId) {
@@ -194,16 +193,13 @@ function AddItemForm() {
       } else {
         supabaseClient = anonSupabase;
       }
-      const result = await scanImageForPrivacy(supabaseClient, file);
-      if (!result.is_document || result.regions.length === 0) return file;
-      return await new Promise<File | null>((resolve) => {
-        setPrivacyReview({ file, regions: result.regions, resolve });
-      });
+      return await scanImageForPrivacy(supabaseClient, file);
     } catch (err) {
-      // Агар худи санҷиш ноком шавад (масалан хатогии шабака), акси аслиро
-      // мегузорем — ин feature набояд равандии умумии нашри эълонро банд кунад.
+      // Агар худи санҷиш ноком шавад (масалан хатогии шабака), ҳамчун
+      // "ҳуҷҷат нест" ҳисоб мекунем — ин feature набояд равандии умумии
+      // нашри эълонро банд кунад.
       console.error("Privacy scan error:", err);
-      return file;
+      return { is_document: false, document_type: null, regions: [] as PrivacyRegion[] };
     }
   };
 
@@ -215,10 +211,23 @@ function AddItemForm() {
 
     setPrivacyScanning(true);
     try {
+      // 1. Санҷиши AI — ҳамаи аксҳо ПАРАЛЕЛ (на паси ҳам).
+      const scanResults = await Promise.all(files.map(scanFileForPrivacy));
+
+      // 2. Тирезаи тасдиқ/таҳрир — танҳо барои аксҳое, ки ҳуҷҷат бо
+      // майдони махфӣ доранд, як-як (диалог якто аст, паси ҳам мекушояд).
       const processed: File[] = [];
-      for (const file of files) {
-        const result = await runPrivacyCheck(file);
-        if (result) processed.push(result);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const result = scanResults[i];
+        if (!result.is_document || result.regions.length === 0) {
+          processed.push(file);
+          continue;
+        }
+        const finalFile = await new Promise<File | null>((resolve) => {
+          setPrivacyReview({ file, regions: result.regions, resolve });
+        });
+        if (finalFile) processed.push(finalFile);
       }
       if (processed.length === 0) return;
 

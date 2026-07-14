@@ -65,7 +65,9 @@ Deno.serve(async (req) => {
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "gpt-5.5",
-        reasoning_effort: "medium",
+        // Ин вазифа танҳо ошкоркунии визуалӣ + rectangle аст (на тавлиди
+        // матни мураккаб), пас "low" барои суръати бештар кофист.
+        reasoning_effort: "low",
         messages: [
           { role: "system", content: PRIVACY_SCAN_PROMPT },
           {

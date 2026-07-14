@@ -518,19 +518,15 @@ function ProfileContent() {
   /**
    * Функсия барои коркарди суратҳо дар Қуттии бехатарӣ
    */
-  // Акси мушаххасро барои ҳуҷҷат будан месанҷад — ниг. items/add/page.tsx
-  const runPrivacyCheck = async (file: File): Promise<File | null> => {
+  // Танҳо санҷиши AI (даъвати шабака), бе диалог — ниг. items/add/page.tsx
+  const scanFileForPrivacy = async (file: File) => {
     try {
       const token = await getToken({ template: "supabase" });
       const supabaseClient = createClerkSupabaseClient(token!);
-      const result = await scanImageForPrivacy(supabaseClient, file);
-      if (!result.is_document || result.regions.length === 0) return file;
-      return await new Promise<File | null>((resolve) => {
-        setPrivacyReview({ file, regions: result.regions, resolve });
-      });
+      return await scanImageForPrivacy(supabaseClient, file);
     } catch (err) {
       console.error("Privacy scan error:", err);
-      return file;
+      return { is_document: false, document_type: null, regions: [] as PrivacyRegion[] };
     }
   };
 
@@ -542,10 +538,21 @@ function ProfileContent() {
     }
     setPrivacyScanning(true);
     try {
+      // Санҷиши AI — ҳамаи аксҳо параллел
+      const scanResults = await Promise.all(files.map(scanFileForPrivacy));
+
       const processed: File[] = [];
-      for (const file of files) {
-        const result = await runPrivacyCheck(file);
-        if (result) processed.push(result);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const result = scanResults[i];
+        if (!result.is_document || result.regions.length === 0) {
+          processed.push(file);
+          continue;
+        }
+        const finalFile = await new Promise<File | null>((resolve) => {
+          setPrivacyReview({ file, regions: result.regions, resolve });
+        });
+        if (finalFile) processed.push(finalFile);
       }
       if (processed.length === 0) return;
 
