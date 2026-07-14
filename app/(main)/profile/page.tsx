@@ -139,6 +139,8 @@ function ProfileContent() {
   const [emailCodeInput, setEmailCodeInput] = useState("");
   const [pendingEmailAddress, setPendingEmailAddress] = useState<any>(null);
   const [emailSubmitting, setEmailSubmitting] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSubmitting, setResendSubmitting] = useState(false);
 
   const resetEmailModal = () => {
     setShowEmailChangeModal(false);
@@ -146,6 +148,29 @@ function ProfileContent() {
     setNewEmailInput("");
     setEmailCodeInput("");
     setPendingEmailAddress(null);
+    setResendCooldown(0);
+  };
+
+  // Ҳисоб аз 59 сония то иҷозати аз нав фиристодани рамз.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleResendCode = async () => {
+    if (!pendingEmailAddress || resendCooldown > 0 || resendSubmitting) return;
+    setResendSubmitting(true);
+    try {
+      await pendingEmailAddress.prepareVerification({ strategy: "email_code" });
+      setResendCooldown(59);
+      toast.success(t("codeResent"));
+    } catch (err: any) {
+      console.error("Resend code error:", err);
+      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
+    } finally {
+      setResendSubmitting(false);
+    }
   };
 
   const handleStartEmailChange = async () => {
@@ -170,6 +195,7 @@ function ProfileContent() {
       await emailAddress.prepareVerification({ strategy: "email_code" });
       setPendingEmailAddress(emailAddress);
       setEmailStep("verify");
+      setResendCooldown(59);
     } catch (err: any) {
       if (isReverificationCancelledError(err)) return;
       console.error("Clerk error:", err);
@@ -2968,6 +2994,23 @@ function ProfileContent() {
               <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-2xl border border-amber-100 dark:border-amber-900/40 font-bold text-xs leading-relaxed flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{t("checkSpamFolderHint")}</span>
+              </div>
+              <div className="text-center">
+                {resendCooldown > 0 ? (
+                  <span className="text-[11px] font-bold text-zinc-400">
+                    {t("resendCodeIn", { seconds: resendCooldown })}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    disabled={resendSubmitting}
+                    className="text-[11px] font-black text-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                  >
+                    {resendSubmitting && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {t("resendCodeAction")}
+                  </button>
+                )}
               </div>
               <Button
                 onClick={handleVerifyEmailChange}
