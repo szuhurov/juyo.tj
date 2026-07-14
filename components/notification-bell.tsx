@@ -2,16 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import {
-  Bell,
-  BellRing,
-  ShieldQuestion,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Phone,
-  Loader2,
-} from "lucide-react";
+import { Bell, BellRing, ShieldQuestion, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,33 +15,16 @@ import {
   type PendingVerification,
 } from "@/lib/hooks/use-pending-verifications";
 import { useWebPush } from "@/lib/hooks/use-web-push";
-import { cn } from "@/lib/utils";
 
-function StatusBadge({ status, t }: { status: PendingVerification["status"]; t: (key: string) => string }) {
-  if (status === "passed") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 text-[9px] font-black shrink-0">
-        <CheckCircle2 className="w-3 h-3" /> {t("verifyStatusPassed")}
-      </span>
-    );
-  }
-  if (status === "rejected") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 px-2 py-0.5 text-[9px] font-black shrink-0">
-        <XCircle className="w-3 h-3" /> {t("verifyStatusRejected")}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 text-[9px] font-black shrink-0">
-      <Clock className="w-3 h-3" /> {t("verifyStatusPending")}
-    </span>
-  );
+function StatusIcon({ status }: { status: PendingVerification["status"] }) {
+  if (status === "passed") return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />;
+  if (status === "rejected") return <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />;
+  return <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
 }
 
 export function NotificationBell() {
   const { t } = useLanguage();
-  const { items, count, reviewAttempt, reviewingId } = usePendingVerifications();
+  const { items, count } = usePendingVerifications();
   const { status, subscribe } = useWebPush();
 
   // Агар иҷозат аллакай дода шуда бошад (масалан аз сессияи қаблӣ), бидуни
@@ -78,17 +52,10 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-80 sm:w-96 rounded-2xl p-2 shadow-xl border-zinc-200/50 dark:border-zinc-800/50"
+        className="w-72 rounded-2xl p-2 shadow-xl border-zinc-200/50 dark:border-zinc-800/50"
       >
-        <div className="px-2 py-1.5 flex items-center justify-between">
-          <span className="text-[10px] font-black tracking-widest text-zinc-400">
-            {t("verifyNotifTitle")}
-          </span>
-          {count > 0 && (
-            <span className="text-[9px] font-black text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-full">
-              {count}
-            </span>
-          )}
+        <div className="px-2 py-1.5 text-[10px] font-black tracking-widest text-zinc-400">
+          {t("verifyNotifTitle")}
         </div>
         {status === "default" && (
           <button
@@ -107,92 +74,26 @@ export function NotificationBell() {
             {t("verifyNotifEmpty")}
           </div>
         ) : (
-          <div className="space-y-1.5 max-h-96 overflow-y-auto pr-0.5">
+          <div className="space-y-1 max-h-80 overflow-y-auto">
             {items.map((item) => (
-              <div
+              <Link
                 key={item.attemptId}
-                className={cn(
-                  "rounded-xl border p-3 space-y-2 transition-colors",
-                  item.status === "pending_review"
-                    ? "border-amber-100 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/10"
-                    : "border-zinc-100 dark:border-zinc-800",
-                )}
+                href={`/items/${item.itemId}`}
+                className="flex items-start gap-3 rounded-xl p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <Link
-                    href={`/items/${item.itemId}`}
-                    className="text-xs font-black text-zinc-800 dark:text-zinc-200 truncate hover:underline"
-                  >
+                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
+                  <ShieldQuestion className="w-4 h-4 text-amber-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
                     {item.itemTitle}
-                  </Link>
-                  <StatusBadge status={item.status} t={t} />
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-medium">
+                    {t("verifyNotifLine")}
+                  </p>
                 </div>
-
-                {item.matchedName && (
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                    <ShieldQuestion className="w-3 h-3 shrink-0" />
-                    <span className="truncate">
-                      {t("verifyMatchedAccount").replace("%{name}", item.matchedName)}
-                    </span>
-                  </div>
-                )}
-
-                {item.answers.length > 0 && (
-                  <div className="space-y-1">
-                    {item.answers.map((a) => (
-                      <div key={a.question_id} className="text-[11px]">
-                        <p className="font-bold text-zinc-400 truncate">{a.question_text}</p>
-                        <p className="font-black text-zinc-700 dark:text-zinc-300 truncate">
-                          {a.answer_type === "yesno"
-                            ? a.given_answer === "yes"
-                              ? t("verifyYes")
-                              : t("verifyNo")
-                            : a.given_answer}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-1">
-                  {item.claimantPhone && (
-                    <a
-                      href={`tel:${item.claimantPhone}`}
-                      title={t("call")}
-                      className="h-8 w-8 flex items-center justify-center rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shrink-0 transition-transform active:scale-95"
-                    >
-                      <Phone className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                  {item.status === "pending_review" && (
-                    <>
-                      <Button
-                        size="sm"
-                        disabled={reviewingId === item.attemptId}
-                        onClick={() => reviewAttempt(item.attemptId, true)}
-                        className="flex-1 h-8 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black"
-                      >
-                        {reviewingId === item.attemptId ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t("verifyApprove")}
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={reviewingId === item.attemptId}
-                        onClick={() => reviewAttempt(item.attemptId, false)}
-                        className="flex-1 h-8 rounded-lg border-red-200 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 text-[10px] font-black"
-                      >
-                        <XCircle className="w-3.5 h-3.5 mr-1" /> {t("verifyReject")}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
+                <StatusIcon status={item.status} />
+              </Link>
             ))}
           </div>
         )}
