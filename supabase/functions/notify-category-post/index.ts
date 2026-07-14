@@ -27,9 +27,11 @@ async function sendWebPush(token: string, payload: object): Promise<{ ok: boolea
   return result;
 }
 
-// Вақте ки эълони нав тасдиқ (approved) мешавад, ба ҳамаи корбароне, ки
-// худашон дар ҳамон категория эълон доранд (ба ғайр аз муаллифи ин эълони
-// нав), push мефиристад. Аз trigger_notify_category_post() (ниг.
+// Вақте ки эълони нав тасдиқ (approved) мешавад, ба корбароне push
+// мефиристад, ки дар ҳамон категория эълони НАМУДИ БАРЪАКС доранд (агар
+// эълони нав "гумшуда" бошад — ба соҳибони "ёфтшуда" дар ҳамон категория,
+// ва баръакс) — на ба ҳар кӣ дар ҳамон категория эълон дорад новобаста аз
+// намуд. Аз trigger_notify_category_post() (ниг.
 // supabase/migrations/20260715000000_notify_category_and_qr_scan.sql)
 // даъват мешавад.
 Deno.serve(async (req) => {
@@ -45,7 +47,7 @@ Deno.serve(async (req) => {
 
     const { data: item } = await supabase
       .from("items")
-      .select("id, title, category, user_id")
+      .select("id, title, category, type, user_id")
       .eq("id", item_id)
       .single();
 
@@ -62,10 +64,15 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    // Намуди баръакс: эълони "гумшуда" ба соҳибони "ёфтшуда" мерасад ва
+    // баръакс — на ба ҳар кӣ дар ҳамон категория эълон дорад.
+    const oppositeType = item.type === "lost" ? "found" : "lost";
+
     const { data: peers } = await supabase
       .from("items")
       .select("user_id")
       .eq("category", item.category)
+      .eq("type", oppositeType)
       .eq("moderation_status", "approved")
       .neq("user_id", item.user_id);
 
