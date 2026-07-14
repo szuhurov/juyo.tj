@@ -135,11 +135,15 @@ export const ItemService = {
     const client = supabaseClient || supabase;
 
     // Query 1: item + images (FK-и мустақим мавҷуд аст, эмбед кор мекунад)
+    // Эълони нест-шуда (status = 'deleted') ҳатто барои соҳиби худаш низ
+    // "ёфт нашуд" бошад — RLS танҳо соҳибиро месанҷад, on статуси
+    // нест-шударо намедонад, бинобар ин филтр ҳамин ҷо лозим аст.
     const { data: item, error } = await client
       .from("items")
       .select("*, images:item_images(image_url)")
       .eq("id", id)
-      .single();
+      .or("status.is.null,status.neq.deleted")
+      .maybeSingle();
 
     if (error) throw error;
     if (!item) return null;
