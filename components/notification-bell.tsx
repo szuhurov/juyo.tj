@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Bell, BellRing, ShieldQuestion, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Bell, BellRing, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -81,15 +81,23 @@ export function NotificationBell() {
                 href={`/items/${item.itemId}`}
                 className="flex items-start gap-3 rounded-xl p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-950/40 flex items-center justify-center shrink-0">
-                  <ShieldQuestion className="w-4 h-4 text-amber-600" />
-                </div>
+                {item.claimantAvatar ? (
+                  <img
+                    src={item.claimantAvatar}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-100 dark:border-zinc-800"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-black text-zinc-400 shrink-0">
+                    {(item.claimantName || "?").charAt(0)}
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                    {item.itemTitle}
+                    {item.claimantName || t("verifyUnknownClaimant")}
                   </p>
-                  <p className="text-[10px] text-zinc-400 font-medium">
-                    {t("verifyNotifLine")}
+                  <p className="text-[10px] text-zinc-400 font-medium truncate">
+                    {item.itemTitle}
                   </p>
                 </div>
                 <StatusIcon status={item.status} />

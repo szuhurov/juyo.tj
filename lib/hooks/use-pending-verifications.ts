@@ -14,6 +14,8 @@ export interface PendingVerification {
   itemTitle: string;
   status: "pending_review" | "passed" | "rejected";
   createdAt: string;
+  claimantName: string | null;
+  claimantAvatar: string | null;
 }
 
 export function usePendingVerifications() {
@@ -44,6 +46,8 @@ export function usePendingVerifications() {
       itemTitle: row.item_title ?? "",
       status: row.status,
       createdAt: row.created_at,
+      claimantName: `${row.matched_first_name ?? ""} ${row.matched_last_name ?? ""}`.trim() || null,
+      claimantAvatar: row.matched_avatar_url ?? null,
     }));
 
     // Пас аз бори аввал, ҳар savol-и nav-ро бо toast огоҳ мекунем (танҳо
