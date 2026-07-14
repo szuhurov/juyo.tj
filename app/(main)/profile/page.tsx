@@ -5,7 +5,8 @@
  */ "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
-import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
+import { useUser, SignOutButton, useAuth, useReverification } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
+import { isReverificationCancelledError } from "@clerk/nextjs/errors"; // Барои ошкор кардани бекоркунии тасдиқи иловагӣ
 import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
 import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо хизматрасониҳои эълонҳо ва категорияҳо
 import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
@@ -108,6 +109,18 @@ function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
+  // Ин амалҳо аз тарафи сервери Clerk "ҳассос" ҳисобида мешаванд — reverification
+  // талаботи Clerk аст, на чизе, ки мо метавонем аз фронтенд хомӯш кунем.
+  // useReverification танҳо ба он бо як модали хушрӯй ҷавоб медиҳад.
+  const deleteAccountWithReverification = useReverification(() => user!.delete());
+  const createEmailWithReverification = useReverification((email: string) => user!.createEmailAddress({ email }));
+  const setPrimaryEmailWithReverification = useReverification((emailAddressId: string) =>
+    user!.update({ primaryEmailAddressId: emailAddressId }),
+  );
+  const destroyEmailWithReverification = useReverification((email: any) => email.destroy());
+  const updateNameWithReverification = useReverification((names: { firstName: string; lastName: string }) =>
+    user!.update(names),
+  );
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -146,11 +159,12 @@ function ProfileContent() {
     if (!user || !newEmailInput) return;
     setEmailSubmitting(true);
     try {
-      const emailAddress = await user.createEmailAddress({ email: newEmailInput });
+      const emailAddress = await createEmailWithReverification(newEmailInput);
       await emailAddress.prepareVerification({ strategy: "email_code" });
       setPendingEmailAddress(emailAddress);
       setEmailStep("verify");
     } catch (err: any) {
+      if (isReverificationCancelledError(err)) return;
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
@@ -163,14 +177,28 @@ function ProfileContent() {
     try {
       const oldEmail = user.primaryEmailAddress;
       await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
-      await user.update({ primaryEmailAddressId: pendingEmailAddress.id });
+      await setPrimaryEmailWithReverification(pendingEmailAddress.id);
+
+      // Почтаи куҳнаро алоҳида нест мекунем — агар ин марҳила ноком шавад
+      // (масалан reverification-и дуюм лозим шавад), тағйири асосӣ (почтаи
+      // нав фаъол шуд) бояд бе он ҳам муваффақ ҳисоб шавад, танҳо огоҳии
+      // алоҳида нишон медиҳем, то корбар донад чаро почтаи куҳна мондааст.
       if (oldEmail && oldEmail.id !== pendingEmailAddress.id) {
-        await oldEmail.destroy();
+        try {
+          await destroyEmailWithReverification(oldEmail);
+        } catch (destroyErr: any) {
+          if (!isReverificationCancelledError(destroyErr)) {
+            console.error("Old email destroy error:", destroyErr);
+            toast.error(t("oldEmailNotRemoved"));
+          }
+        }
       }
+
       await user.reload();
       toast.success(t("emailChangeSuccess"));
       resetEmailModal();
     } catch (err: any) {
+      if (isReverificationCancelledError(err)) return;
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
@@ -181,10 +209,19 @@ function ProfileContent() {
     if (!user) return;
     setDeletingAccount(true);
     try {
-      await user.delete();
+      // Аввал маълумоти Supabase-ро мустақим пок мекунем (то ба webhook-и
+      // эҳтимол ноком такя накунем), баъд худи ҳисоби Clerk-ро.
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      if (!res.ok) throw new Error("Failed to clean up account data");
+
+      await deleteAccountWithReverification();
       toast.success(t("deleteAccountSuccess"));
       router.push("/");
     } catch (err: any) {
+      if (isReverificationCancelledError(err)) {
+        setDeletingAccount(false);
+        return;
+      }
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
       setDeletingAccount(false);
     }
@@ -1689,11 +1726,7 @@ function ProfileContent() {
 
                       setSafetySubmitting(true);
                       try {
-                        try {
-                          await user?.update({ firstName, lastName });
-                        } catch (clerkErr) {
-                          console.error("Clerk Update Error:", clerkErr);
-                        }
+                        await updateNameWithReverification({ firstName, lastName });
 
                         const token = await getToken({ template: "supabase" });
                         if (!token)
@@ -1715,8 +1748,10 @@ function ProfileContent() {
 
                         toast.success(t("profileUpdated"));
                       } catch (err: any) {
-                        console.error("Profile Update Error:", err);
-                        toast.error(err.message || t("error"));
+                        if (!isReverificationCancelledError(err)) {
+                          console.error("Profile Update Error:", err);
+                          toast.error(err.errors?.[0]?.message || err.message || t("error"));
+                        }
                       } finally {
                         setSafetySubmitting(false);
                       }
@@ -2945,6 +2980,10 @@ function ProfileContent() {
                   maxLength={6}
                   required
                 />
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-2xl border border-amber-100 dark:border-amber-900/40 font-bold text-xs leading-relaxed flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{t("checkSpamFolderHint")}</span>
               </div>
               <Button
                 onClick={handleVerifyEmailChange}

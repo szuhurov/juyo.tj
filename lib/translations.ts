@@ -50,6 +50,10 @@ export const translations: Record<string, any> = {
     changeEmailDesc:
       "Почтаи электронии нав ворид кунед — рамзи тасдиқ ба он фиристода мешавад.",
     changeEmailVerifyDesc: "Рамзеро, ки ба почтаи нав фиристодем, ворид кунед.",
+    checkSpamFolderHint:
+      "Агар рамзро дар почтаи асосӣ набинед, ҳатман папкаи Spam/Junk-ро тафтиш кунед — баъзан хатҳо ба он ҷо мераванд.",
+    oldEmailNotRemoved:
+      "Почтаи нав фаъол шуд, аммо почтаи куҳна пурра нест нашуд — лутфан боз кӯшиш кунед ё бо дастгирӣ тамос гиред.",
     sendCode: "Фиристодани рамз",
     emailChangeSuccess: "Почтаи электронӣ бо муваффақият иваз шуд",
     editProfile: "Таҳрири профил",
@@ -764,6 +768,10 @@ export const translations: Record<string, any> = {
     changeEmailDesc:
       "Введите новый email — на него будет отправлен код подтверждения.",
     changeEmailVerifyDesc: "Введите код, который мы отправили на новый email.",
+    checkSpamFolderHint:
+      "Если не видите код во входящих, обязательно проверьте папку Spam/Junk — иногда письма попадают туда.",
+    oldEmailNotRemoved:
+      "Новый email активирован, но старый email не был полностью удалён — попробуйте ещё раз или свяжитесь с поддержкой.",
     sendCode: "Отправить код",
     emailChangeSuccess: "Email успешно изменён",
     editProfile: "Редактировать профиль",
@@ -1474,6 +1482,10 @@ export const translations: Record<string, any> = {
     changeEmailDesc:
       "Enter your new email — a verification code will be sent to it.",
     changeEmailVerifyDesc: "Enter the code we sent to your new email.",
+    checkSpamFolderHint:
+      "If you don't see the code in your inbox, be sure to check your Spam/Junk folder — sometimes it ends up there.",
+    oldEmailNotRemoved:
+      "Your new email is active, but the old email couldn't be fully removed — please try again or contact support.",
     sendCode: "Send code",
     emailChangeSuccess: "Your email has been changed successfully",
     editProfile: "Edit Profile",
