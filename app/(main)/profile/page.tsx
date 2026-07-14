@@ -5,8 +5,7 @@
  */ "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
-import { useUser, SignOutButton, useAuth, useReverification } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
-import { isReverificationCancelledError } from "@clerk/nextjs/errors"; // Барои ошкор кардани бекоркунии тасдиқи иловагӣ
+import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
 import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
 import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо хизматрасониҳои эълонҳо ва категорияҳо
 import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
@@ -109,14 +108,6 @@ function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
-  // Нест кардани ҳисоб ва тағйири почта амалҳои ҳассосанд — Clerk метавонад
-  // тасдиқи иловагӣ (парол/2FA-и охирин) талаб кунад пеш аз иҷозат додан.
-  const deleteAccountWithReverification = useReverification(() => user!.delete());
-  const createEmailWithReverification = useReverification((email: string) => user!.createEmailAddress({ email }));
-  const setPrimaryEmailWithReverification = useReverification((emailAddressId: string) =>
-    user!.update({ primaryEmailAddressId: emailAddressId }),
-  );
-  const destroyEmailWithReverification = useReverification((email: any) => email.destroy());
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -155,12 +146,11 @@ function ProfileContent() {
     if (!user || !newEmailInput) return;
     setEmailSubmitting(true);
     try {
-      const emailAddress = await createEmailWithReverification(newEmailInput);
+      const emailAddress = await user.createEmailAddress({ email: newEmailInput });
       await emailAddress.prepareVerification({ strategy: "email_code" });
       setPendingEmailAddress(emailAddress);
       setEmailStep("verify");
     } catch (err: any) {
-      if (isReverificationCancelledError(err)) return;
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
@@ -173,15 +163,14 @@ function ProfileContent() {
     try {
       const oldEmail = user.primaryEmailAddress;
       await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
-      await setPrimaryEmailWithReverification(pendingEmailAddress.id);
+      await user.update({ primaryEmailAddressId: pendingEmailAddress.id });
       if (oldEmail && oldEmail.id !== pendingEmailAddress.id) {
-        await destroyEmailWithReverification(oldEmail);
+        await oldEmail.destroy();
       }
       await user.reload();
       toast.success(t("emailChangeSuccess"));
       resetEmailModal();
     } catch (err: any) {
-      if (isReverificationCancelledError(err)) return;
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
@@ -192,14 +181,10 @@ function ProfileContent() {
     if (!user) return;
     setDeletingAccount(true);
     try {
-      await deleteAccountWithReverification();
+      await user.delete();
       toast.success(t("deleteAccountSuccess"));
       router.push("/");
     } catch (err: any) {
-      if (isReverificationCancelledError(err)) {
-        setDeletingAccount(false);
-        return;
-      }
       toast.error(err.errors?.[0]?.message || err.message || t("error"));
       setDeletingAccount(false);
     }
