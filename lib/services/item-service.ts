@@ -80,47 +80,22 @@ export const ItemService = {
 
     const client = supabaseClient || supabase;
 
-    let query = client
-      .from("items")
-      .select(
-        "id, user_id, title, description, category, type, date, reward, created_at, is_resolved, moderation_status, images:item_images(image_url)",
-        { count: "exact" },
-      )
-      .or("status.is.null,status.neq.deleted")
-      .order("created_at", { ascending: false });
+    const s = search
+      ? search.trim().slice(0, 200).replace(/[%_\\]/g, "\\$&")
+      : undefined;
 
-    // Пагинация (боркунии қисм-қисм)
-    const from = page * pageSize;
-    const to = from + pageSize - 1;
-    query = query.range(from, to);
-
-    if (user_id) {
-      query = query.eq("user_id", user_id);
-    } else {
-      query = query
-        .eq("moderation_status", "approved")
-        .or("is_resolved.eq.false,is_resolved.is.null");
-    }
-
-    // Филтр аз рӯи категория
-    if (category && category !== "All") {
-      query = query.eq("category", category);
-    }
-
-    // Филтр аз рӯи намуд (lost/found)
-    if (type) {
-      query = query.eq("type", type);
-    }
-
-    if (search) {
-      const s = search
-        .trim()
-        .slice(0, 200)
-        .replace(/[%_\\]/g, "\\$&");
-      query = query.or(`title.ilike.%${s}%,description.ilike.%${s}%`);
-    }
-
-    const { data, error } = await query;
+    // search_items — RPC-и PostgreSQL, ки ҳангоми ҷустуҷӯ натиҷаҳоро аввал
+    // аз рӯи мувофиқат (сарлавҳаи айнан баробар > аз он оғоз мешавад >
+    // дар бар мегирад > фақат тавсиф), баъд аз рӯи сана sort мекунад —
+    // на танҳо аз рӯи сана, чун пештара (ниг. supabase/migrations/20260714000000_search_items_rpc.sql).
+    const { data, error } = await client.rpc("search_items", {
+      p_search: s || null,
+      p_category: category && category !== "All" ? category : null,
+      p_type: type || null,
+      p_user_id: user_id || null,
+      p_limit: pageSize,
+      p_offset: page * pageSize,
+    });
     if (error) throw error;
     return data as Item[];
   },
