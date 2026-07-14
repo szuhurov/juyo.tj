@@ -53,6 +53,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "item not found" }), { status: 404 });
     }
 
+    // Аксаи якуми эълон — барои намоиши калон (Pinterest-монанд) дар push.
+    const { data: itemImage } = await supabase
+      .from("item_images")
+      .select("image_url")
+      .eq("item_id", item.id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
     const { data: peers } = await supabase
       .from("items")
       .select("user_id")
@@ -77,6 +86,7 @@ Deno.serve(async (req) => {
     const title = "JUYO";
     const body = `Эълони нав дар категорияи шумо: "${item.title}"`;
     const data = { type: "category_post", item_id: item.id };
+    const image = itemImage?.image_url;
 
     let sent = 0;
     const staleTokenIds: string[] = [];
@@ -98,7 +108,7 @@ Deno.serve(async (req) => {
               sent++;
             }
           } else if (row.platform === "web") {
-            const result = await sendWebPush(row.token, { title, body, data });
+            const result = await sendWebPush(row.token, { title, body, data, image });
             if (result.ok) {
               sent++;
             } else if (result.statusCode === 404 || result.statusCode === 410) {

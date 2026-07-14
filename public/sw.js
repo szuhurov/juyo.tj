@@ -1,5 +1,5 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v11";
+const CACHE_NAME = "juyo-v12";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -120,6 +120,9 @@ self.addEventListener("push", (event) => {
       body: data.body,
       icon: "/icon-192.png",
       badge: "/badge-96.png",
+      // Аксаи калон (Pinterest-монанд) — агар фиристода шуда бошад
+      // (масалан барои эълони нав дар категория).
+      ...(data.image ? { image: data.image } : {}),
       data: data.data ?? {},
     })
   );
