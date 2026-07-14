@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
 
-    const title = "JUYO.TJ";
+    const title = "JUYO";
     const body = `Касе ба саволҳои "${item.title}" ҷавоб дод!`;
     const data = { type: "verification_attempt", item_id };
 

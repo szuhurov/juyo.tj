@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
 
-    const title = "JUYO.TJ";
+    const title = "JUYO";
     const body = `Эълони нав дар категорияи шумо: "${item.title}"`;
     const data = { type: "category_post", item_id: item.id };
 
