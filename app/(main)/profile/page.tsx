@@ -119,9 +119,6 @@ function ProfileContent() {
   );
   const destroyEmailWithReverification = useReverification((email: any) => email.destroy());
   const destroyExternalAccountWithReverification = useReverification((account: any) => account.destroy());
-  const updateNameWithReverification = useReverification((names: { firstName: string; lastName: string }) =>
-    user!.update(names),
-  );
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1750,7 +1747,7 @@ function ProfileContent() {
 
                       setSafetySubmitting(true);
                       try {
-                        await updateNameWithReverification({ firstName, lastName });
+                        await user!.update({ firstName, lastName });
 
                         const token = await getToken({ template: "supabase" });
                         if (!token)
