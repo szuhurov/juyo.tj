@@ -57,6 +57,9 @@ export const translations: Record<string, any> = {
     resendCodeIn: "Аз нав фиристодан пас аз %{seconds} сония",
     resendCodeAction: "Кодро нагирифтед? Аз нав фиристодан",
     codeResent: "Рамзи нав фиристода шуд",
+    changePasswordDesc:
+      "Бо мақсади бехатарӣ рамзро танҳо аз саҳифаи воридшавӣ иваз карда мешавад. Аввал аз ҳисоби худ бароед, баъд ҳангоми ворид шудан ба тугмаи «Рамзро фаромӯш кардед?» зер кунед.",
+    signOutToChangePassword: "Баромадан аз ҳисоб",
     sendCode: "Фиристодани рамз",
     emailChangeSuccess: "Почтаи электронӣ бо муваффақият иваз шуд",
     editProfile: "Таҳрири профил",
@@ -778,6 +781,9 @@ export const translations: Record<string, any> = {
     resendCodeIn: "Отправить снова через %{seconds} сек",
     resendCodeAction: "Не получили код? Отправить снова",
     codeResent: "Новый код отправлен",
+    changePasswordDesc:
+      "В целях безопасности пароль можно сменить только со страницы входа. Сначала выйдите из аккаунта, затем при входе нажмите «Забыли пароль?».",
+    signOutToChangePassword: "Выйти из аккаунта",
     sendCode: "Отправить код",
     emailChangeSuccess: "Email успешно изменён",
     editProfile: "Редактировать профиль",
@@ -1495,6 +1501,9 @@ export const translations: Record<string, any> = {
     resendCodeIn: "Resend code in %{seconds}s",
     resendCodeAction: "Didn't get the code? Resend",
     codeResent: "A new code was sent",
+    changePasswordDesc:
+      "For security reasons, your password can only be changed from the sign-in page. First sign out of your account, then click \"Forgot password?\" when signing in.",
+    signOutToChangePassword: "Sign out of your account",
     sendCode: "Send code",
     emailChangeSuccess: "Your email has been changed successfully",
     editProfile: "Edit Profile",

@@ -61,6 +61,8 @@ import {
   CheckCircle2,
   Calendar,
   Eye,
+  KeyRound,
+  MousePointerClick,
 } from "lucide-react";
 // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
@@ -132,6 +134,7 @@ function ProfileContent() {
   const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
   const [emailStep, setEmailStep] = useState<"input" | "verify">("input");
@@ -1881,6 +1884,30 @@ function ProfileContent() {
                 </div>
               </section>
 
+              {/* Бахши Рамз (Password) */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <KeyRound className="w-4 h-4 text-zinc-400" />
+                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
+                    {t("clerk.signInPasswordLabel")}
+                  </h4>
+                </div>
+                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
+                    {t("changePasswordDesc")}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowChangePasswordModal(true)}
+                    className="h-10 rounded-xl font-black text-[9px] tracking-widest gap-1.5 shrink-0"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    {t("changePassword")}
+                  </Button>
+                </div>
+              </section>
+
               {/* Минтақаи хатарнок (Danger Zone) */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -2915,6 +2942,72 @@ function ProfileContent() {
               {t("cancel")}
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Modal */}
+      <Dialog open={showChangePasswordModal} onOpenChange={setShowChangePasswordModal}>
+        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+          <DialogHeader className="space-y-4 text-center">
+            <div className="w-16 h-16 bg-violet-50 dark:bg-violet-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <KeyRound className="w-8 h-8 text-violet-500" />
+            </div>
+            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+              {t("changePassword")}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+              {t("changePasswordDesc")}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Мисоли аксӣ — саҳифаи воридшавӣ бо ишора ба "Рамзро фаромӯш кардед?" */}
+          <div className="mt-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 p-4 space-y-2.5">
+            <div className="text-center space-y-0.5 mb-2">
+              <p className="font-black text-[11px] text-zinc-900 dark:text-white">
+                {t("clerk.signInTitle")}
+              </p>
+              <p className="text-[8px] font-bold text-zinc-400">
+                {t("clerk.signInSubtitle")}
+              </p>
+            </div>
+            <div className="h-7 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700" />
+            <div className="flex items-center gap-2 py-0.5">
+              <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+              <span className="text-[8px] font-bold text-zinc-300">{t("clerk.dividerText")}</span>
+              <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[8px] font-bold text-zinc-400 ml-1">{t("clerk.emailLabel")}</span>
+              <div className="h-7 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between ml-1">
+                <span className="text-[8px] font-bold text-zinc-400">{t("clerk.signInPasswordLabel")}</span>
+                <span className="relative text-[8px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md ring-2 ring-emerald-400">
+                  {t("clerk.forgotPasswordLabel")}
+                  <MousePointerClick className="w-3.5 h-3.5 absolute -bottom-3.5 -right-2.5 text-emerald-500 rotate-[-8deg]" />
+                </span>
+              </div>
+              <div className="h-7 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700" />
+            </div>
+            <div className="h-8 rounded-lg bg-zinc-900 dark:bg-white mt-1" />
+          </div>
+
+          <div className="mt-8">
+            <SignOutButton>
+              <Button className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-95 gap-2">
+                <LogOut className="w-4 h-4" />
+                {t("signOutToChangePassword")}
+              </Button>
+            </SignOutButton>
+          </div>
+          <Button
+            variant="ghost"
+            onClick={() => setShowChangePasswordModal(false)}
+            className="w-full h-11 rounded-xl font-black tracking-widest text-[10px] text-zinc-500 mt-2"
+          >
+            {t("cancel")}
+          </Button>
         </DialogContent>
       </Dialog>
 
