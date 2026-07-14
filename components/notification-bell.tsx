@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Bell, BellRing, CheckCircle2, XCircle, Clock, Tag } from "lucide-react";
+import { Bell, BellRing, CheckCircle2, XCircle, Clock, Tag, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -99,6 +99,13 @@ export function NotificationBell() {
             })}
           </div>
         )}
+        <Link
+          href="/notifications"
+          className="mt-1 flex items-center justify-center gap-1 rounded-xl p-2.5 text-[10px] font-black tracking-widest text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+        >
+          {t("notifSeeAll")}
+          <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
       </DropdownMenuContent>
     </DropdownMenu>
   );

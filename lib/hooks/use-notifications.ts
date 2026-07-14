@@ -39,7 +39,10 @@ function isUnseenCandidate(item: NotificationItem): boolean {
   return item.kind === "category_post" || item.status === "pending_review";
 }
 
-export function useNotifications() {
+export function useNotifications(
+  options: { verifyLimit?: number; categoryLimit?: number } = {},
+) {
+  const { verifyLimit = 50, categoryLimit = 20 } = options;
   const { userId, getToken } = useAuth();
   const { t } = useLanguage();
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -61,10 +64,10 @@ export function useNotifications() {
       // get_my_verification_attempts — ҳама pending_review + таърихи
       // баррасишуда. Тасдиқ/рад аз ин ҷо иҷро намешавад — он танҳо дар
       // саҳифаи худи эълон (VerificationGate) ҷой дорад.
-      supabase.rpc("get_my_verification_attempts", { p_limit: 50 }),
+      supabase.rpc("get_my_verification_attempts", { p_limit: verifyLimit }),
       // get_my_category_notifications — эълонҳои нави дигар корбарон дар
       // ҳамон категорияҳое, ки худи корбар низ эълон дорад.
-      supabase.rpc("get_my_category_notifications", { p_limit: 20 }),
+      supabase.rpc("get_my_category_notifications", { p_limit: categoryLimit }),
     ]);
 
     const verifRows: NotificationItem[] = (verifData ?? []).map((row: any) => ({
@@ -108,7 +111,7 @@ export function useNotifications() {
 
     setItems(rows);
     setLoading(false);
-  }, [userId, getToken, t]);
+  }, [userId, getToken, t, verifyLimit, categoryLimit]);
 
   useEffect(() => {
     fetchAll();
