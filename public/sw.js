@@ -1,10 +1,11 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v10";
+const CACHE_NAME = "juyo-v11";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
   "/icon-192.png",
   "/icon-512.png",
+  "/badge-96.png",
   "/manifest.json",
   "/flags/flag-tj.jpg",
   "/flags/flag-ru.webp",
@@ -118,7 +119,7 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      badge: "/badge-96.png",
       data: data.data ?? {},
     })
   );
