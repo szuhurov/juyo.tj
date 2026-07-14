@@ -432,12 +432,12 @@ export function Header() {
                           </span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => router.push("/profile?tab=guide")}
+                          onClick={() => router.push("/profile?tab=info")}
                           className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
                         >
                           <Settings className="mr-3 h-4 w-4 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
                           <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                            {t("aboutApp") || "Оид ба барнома"}
+                            {t("personalInfo")}
                           </span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2" />
