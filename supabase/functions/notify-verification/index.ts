@@ -1,11 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import webpush from "https://esm.sh/web-push@3.6.7?target=deno";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:support@juyo.tj";
+const SITE_URL = Deno.env.get("SITE_URL") ?? "https://juyo.tj";
+const PUSH_INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +11,20 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+// Web push (VAPID/aes128gcm) такя ба crypto.createECDH-и Node дорад, ки
+// дар Deno's node:crypto polyfill татбиқ нашудааст ("Not implemented:
+// crypto.ECDH") — бинобар ин рамзгузорӣ ва фиристодани воқеӣ на аз ин ҷо,
+// балки аз /api/push/send-и Vercel (runtime-и воқеии Node) иҷро мешавад.
+async function sendWebPush(token: string, payload: object): Promise<{ ok: boolean; statusCode?: number }> {
+  const subscription = JSON.parse(token);
+  const res = await fetch(`${SITE_URL}/api/push/send`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-internal-secret": PUSH_INTERNAL_SECRET ?? "" },
+    body: JSON.stringify({ subscription, payload }),
+  });
+  const result = await res.json().catch(() => ({ ok: false }));
+  if (!result.ok) console.error("web push relay failed:", result.message);
+  return result;
 }
 
 Deno.serve(async (req) => {
@@ -79,19 +89,15 @@ Deno.serve(async (req) => {
             } else {
               sent++;
             }
-          } else if (row.platform === "web" && VAPID_PRIVATE_KEY) {
-            const subscription = JSON.parse(row.token);
-            await webpush.sendNotification(
-              subscription,
-              JSON.stringify({ title, body, data }),
-            );
-            sent++;
+          } else if (row.platform === "web") {
+            const result = await sendWebPush(row.token, { title, body, data });
+            if (result.ok) {
+              sent++;
+            } else if (result.statusCode === 404 || result.statusCode === 410) {
+              staleTokenIds.push(row.token);
+            }
           }
         } catch (err: any) {
-          const statusCode = err?.statusCode;
-          if (statusCode === 404 || statusCode === 410) {
-            staleTokenIds.push(row.token);
-          }
           console.error("push send failed:", row.platform, err?.message || err);
         }
       }),
