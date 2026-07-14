@@ -11,6 +11,7 @@ export interface Profile {
   first_name: string;
   last_name: string;
   avatar_url: string;
+  email?: string;
   phone?: string;
   secondary_phone?: string;
   secondary_phone_type?: string;

@@ -118,6 +118,7 @@ function ProfileContent() {
     user!.update({ primaryEmailAddressId: emailAddressId }),
   );
   const destroyEmailWithReverification = useReverification((email: any) => email.destroy());
+  const destroyExternalAccountWithReverification = useReverification((account: any) => account.destroy());
   const updateNameWithReverification = useReverification((names: { firstName: string; lastName: string }) =>
     user!.update(names),
   );
@@ -176,15 +177,21 @@ function ProfileContent() {
     setEmailSubmitting(true);
     try {
       const oldEmail = user.primaryEmailAddress;
+      const newEmailValue = pendingEmailAddress.emailAddress;
       await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
       await setPrimaryEmailWithReverification(pendingEmailAddress.id);
 
-      // Почтаи куҳнаро алоҳида нест мекунем — агар ин марҳила ноком шавад
-      // (масалан reverification-и дуюм лозим шавад), тағйири асосӣ (почтаи
-      // нав фаъол шуд) бояд бе он ҳам муваффақ ҳисоб шавад, танҳо огоҳии
-      // алоҳида нишон медиҳем, то корбар донад чаро почтаи куҳна мондааст.
+      // Почтаи куҳнаро пурра озод мекунем — то он барои ҳисоби нави
+      // ҷудогона дар juyo истифода шавад. Агар ба ҳисоби беруна (Google)
+      // пайваст бошад, аввал худи пайвастро (external account) канда
+      // мепартоем, баъд почтаро нест мекунем. Агар ин марҳила бо сабаби
+      // дигар ноком шавад, огоҳӣ медиҳем, то корбар донад чаро мондааст.
       if (oldEmail && oldEmail.id !== pendingEmailAddress.id) {
         try {
+          const linkedAccounts = user.externalAccounts.filter((acc) => acc.emailAddress === oldEmail.emailAddress);
+          for (const account of linkedAccounts) {
+            await destroyExternalAccountWithReverification(account);
+          }
           await destroyEmailWithReverification(oldEmail);
         } catch (destroyErr: any) {
           if (!isReverificationCancelledError(destroyErr)) {
@@ -192,6 +199,17 @@ function ProfileContent() {
             toast.error(t("oldEmailNotRemoved"));
           }
         }
+      }
+
+      // Почтаи навро дар Supabase-ҳам нависем — на танҳо ба webhook такя кунем.
+      try {
+        const token = await getToken({ template: "supabase" });
+        if (token) {
+          const supabase = createClerkSupabaseClient(token);
+          await ProfileService.updateProfile(supabase, userId!, { email: newEmailValue });
+        }
+      } catch (syncErr) {
+        console.error("Supabase email sync error:", syncErr);
       }
 
       await user.reload();
