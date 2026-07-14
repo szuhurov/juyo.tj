@@ -15,6 +15,7 @@ import {
   supabase as anonSupabase,
 } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
+import { useWebPush } from "@/lib/hooks/use-web-push";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,6 +63,7 @@ function AddItemForm() {
   const isSafetyMode = searchParams.get("target") === "safety";
   const { userId, getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { status: pushStatus, subscribe: subscribeToPush } = useWebPush();
 
   // Refs for inputs
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -253,6 +255,14 @@ function AddItemForm() {
 
   const onFinalSubmit = async () => {
     setShowSafetyModal(false);
+
+    // Пурсиши иҷозати огоҳиномаро ҳамин ҷо оғоз мекунем (на баъд аз upload/insert) —
+    // то браузер онро ҳамчун идомаи бевоситаи клики корбар шиносад (баъзе браузерҳо
+    // permission prompt-ро пас аз чанд await рад мекунанд). Fire-and-forget аст,
+    // нашри эълонро интизор намемонад.
+    if (pushStatus === "default") {
+      subscribeToPush().catch(() => {});
+    }
 
     // 1. САНҶИШИ ЯГОНАИ БЕХАТАРӢ — акс (ниҳоӣ) + матн (ниҳоӣ) якҷоя, як бор,
     // дар ҳамин ҷо, пеш аз нашр. Ин ягона нуқтаи AI moderation дар тамоми

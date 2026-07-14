@@ -7,6 +7,7 @@
 
 import { useEffect, useState } from "react"; // Хукҳои React
 import { useUser, useAuth, useClerk } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар ва хуруҷ
+import { useWebPush } from "@/lib/hooks/use-web-push"; // Барои пурсидани иҷозати огоҳиномаи push
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 import { ProfileService } from "@/lib/services/profile-service"; // Барои кор бо профили корбар
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
@@ -24,6 +25,7 @@ export function MandatoryPhoneModal() {
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
   const { signOut } = useClerk(); // Функсияи хуруҷ аз Clerk
+  const { status: pushStatus, subscribe: subscribeToPush } = useWebPush();
   const { t, locale, setLocale } = useLanguage();
   
   const [showModal, setShowModal] = useState(false);
@@ -73,6 +75,12 @@ export function MandatoryPhoneModal() {
     if (!acceptedTerms) {
       toast.error(t('terms.error') || "Лутфан шартҳоро қабул кунед");
       return;
+    }
+
+    // Ҳамин ҷо (дар лаҳзаи клики корбар ба "Захира кардан") пурсиши иҷозати
+    // огоҳиномаро оғоз мекунем — fire-and-forget, ба сабти маълумот таъсир намерасонад.
+    if (pushStatus === "default") {
+      subscribeToPush().catch(() => {});
     }
 
     const formData = new FormData(e.currentTarget);
