@@ -112,7 +112,8 @@ STRICT RULES:
 1. ALLOWED (is_safe: true):
    - DOCUMENTS: Passports, ID cards, Student IDs, Bank cards are 100% ALLOWED.
    - ANIMALS & ELECTRONICS: 100% ALLOWED.
-2. PROHIBITED: Only 18+, extreme violence, or illegal weapons.
+   - A hand or body part visibly holding/wearing the lost/found item is fine.
+2. PROHIBITED: 18+, extreme violence, illegal weapons, or a selfie/full-body/portrait photo where a PERSON (not the item) is the main subject.
 Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null"}`;
 
     // SUGGEST-ONLY PROMPT — pure vision auto-fill, no moderation verdict at all.
@@ -159,8 +160,8 @@ TEXT TITLE: {{FINAL_TITLE}}
 TEXT DESCRIPTION: {{FINAL_DESCRIPTION}}
 
 IMAGE RULES:
-1. ALLOWED (is_safe: true): DOCUMENTS (passports, ID cards, licenses, bank cards), animals, electronics, everyday items.
-2. PROHIBITED: Nudity, extreme violence/gore, illegal weapons, narcotics.
+1. ALLOWED (is_safe: true): DOCUMENTS (passports, ID cards, licenses, bank cards), animals, electronics, everyday items. A hand or body part visibly holding/wearing the lost/found item is fine.
+2. PROHIBITED: Nudity, extreme violence/gore, illegal weapons, narcotics. Also PROHIBITED: a selfie or full-body/portrait photo where a PERSON (not the item) is the main subject of the photo.
 
 TEXT RULES:
 1. PROHIBITED: profanity/harassment, illegal trade (drugs/weapons/tracked goods), scams/fraud, hate speech.
