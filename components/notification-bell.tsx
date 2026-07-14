@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Bell, BellRing, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Bell, BellRing, CheckCircle2, XCircle, Clock, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,22 +10,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/lib/language-context";
-import {
-  usePendingVerifications,
-  type PendingVerification,
-} from "@/lib/hooks/use-pending-verifications";
+import { useNotifications, type NotificationItem } from "@/lib/hooks/use-notifications";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 import { ClaimantAvatar } from "@/components/claimant-avatar";
 
-function StatusIcon({ status }: { status: PendingVerification["status"] }) {
-  if (status === "passed") return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />;
-  if (status === "rejected") return <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />;
+function KindIcon({ item }: { item: NotificationItem }) {
+  if (item.kind === "category_post") return <Tag className="w-3.5 h-3.5 text-blue-500 shrink-0" />;
+  if (item.status === "passed") return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />;
+  if (item.status === "rejected") return <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />;
   return <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />;
 }
 
 export function NotificationBell() {
   const { t } = useLanguage();
-  const { items, count, markAllSeen } = usePendingVerifications();
+  const { items, count, markAllSeen } = useNotifications();
   const { status, subscribe } = useWebPush();
 
   // Агар иҷозат аллакай дода шуда бошад (масалан аз сессияи қаблӣ), бидуни
@@ -76,24 +74,29 @@ export function NotificationBell() {
           </div>
         ) : (
           <div className="space-y-1 max-h-80 overflow-y-auto">
-            {items.map((item) => (
-              <Link
-                key={item.attemptId}
-                href={`/items/${item.itemId}`}
-                className="flex items-start gap-3 rounded-xl p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <ClaimantAvatar url={item.claimantAvatar} name={item.claimantName} className="w-8 h-8 text-xs" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                    {item.claimantName || t("verifyUnknownClaimant")}
-                  </p>
-                  <p className="text-[10px] text-zinc-400 font-medium truncate">
-                    {item.itemTitle}
-                  </p>
-                </div>
-                <StatusIcon status={item.status} />
-              </Link>
-            ))}
+            {items.map((item) => {
+              const name = item.kind === "verification" ? item.claimantName : item.posterName;
+              const avatar = item.kind === "verification" ? item.claimantAvatar : item.posterAvatar;
+              const subtitle = item.kind === "verification" ? item.itemTitle : t("categoryPostNotifLine");
+              return (
+                <Link
+                  key={item.id}
+                  href={`/items/${item.itemId}`}
+                  className="flex items-start gap-3 rounded-xl p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <ClaimantAvatar url={avatar ?? null} name={name ?? null} className="w-8 h-8 text-xs" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                      {item.kind === "verification"
+                        ? name || t("verifyUnknownClaimant")
+                        : item.itemTitle}
+                    </p>
+                    <p className="text-[10px] text-zinc-400 font-medium truncate">{subtitle}</p>
+                  </div>
+                  <KindIcon item={item} />
+                </Link>
+              );
+            })}
           </div>
         )}
       </DropdownMenuContent>
