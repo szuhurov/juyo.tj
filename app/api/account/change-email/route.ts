@@ -11,6 +11,27 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
  * ҳисобҳои бе parol (масалан танҳо бо Google) низ бе "Cannot verify your
  * account" кор мекунанд.
  */
+
+/**
+ * Backend SDK-и Clerk дар ExternalAccount.id ба ҷои ID-и воқеии ҳисоби
+ * беруна (eac_...) ID-и identification (idn_...)-ро бармегардонад — хатои
+ * маълуми худи SDK (github.com/clerk/javascript/issues/7936). Аз ин сабаб
+ * deleteUserExternalAccount бо он ID ҳамеша 404 медод, пайваст воқеан
+ * канда намешуд ва баъд нест кардани почтаи куҳна низ ноком мешуд (зеро
+ * он то ҳол ба ҳисоби беруна пайваст буд). Барои гирифтани eac_... воқеӣ,
+ * маълумоти хомро мустақим аз REST API мехонем.
+ */
+async function getRawExternalAccounts(
+  userId: string,
+): Promise<Array<{ external_account_id: string; email_address: string }>> {
+  const res = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
+    headers: { Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}` },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.external_accounts ?? [];
+}
+
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) {
@@ -36,18 +57,19 @@ export async function POST(req: NextRequest) {
     await client.users.updateUser(userId, { primaryEmailAddressID: newEmailId });
 
     if (oldEmail && oldEmail.id !== newEmail.id) {
-      const linkedAccounts = clerkUser.externalAccounts.filter((acc) => acc.emailAddress === oldEmail.emailAddress);
+      const rawExternalAccounts = await getRawExternalAccounts(userId);
+      const linkedAccounts = rawExternalAccounts.filter((acc) => acc.email_address === oldEmail.emailAddress);
       for (const account of linkedAccounts) {
         try {
-          await client.users.deleteUserExternalAccount({ userId, externalAccountId: account.id });
+          await client.users.deleteUserExternalAccount({ userId, externalAccountId: account.external_account_id });
         } catch (unlinkErr: any) {
-          console.error("deleteUserExternalAccount:", unlinkErr.message);
+          console.error("deleteUserExternalAccount:", unlinkErr?.errors ?? unlinkErr.message);
         }
       }
       try {
         await client.emailAddresses.deleteEmailAddress(oldEmail.id);
       } catch (destroyErr: any) {
-        console.error("deleteEmailAddress:", destroyErr.message);
+        console.error("deleteEmailAddress:", destroyErr?.errors ?? destroyErr.message);
       }
     }
 
