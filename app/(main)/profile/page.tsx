@@ -5,8 +5,7 @@
  */ "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
-import { useUser, SignOutButton, useAuth, useReverification } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
-import { isReverificationCancelledError } from "@clerk/nextjs/errors"; // Барои ошкор кардани бекоркунии тасдиқи иловагӣ
+import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
 import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
 import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо хизматрасониҳои эълонҳо ва категорияҳо
 import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
@@ -111,11 +110,6 @@ function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
-  // Сохтани почтаи нав (createEmailAddress) баъзан reverification мепурсад;
-  // боқии амалҳои ҳассос (нест кардани account, асосӣ кардани почтаи нав,
-  // тоза кардани почтаи куҳна) акнун аз сервер (Backend API) иҷро мешаванд —
-  // ниг. /api/account/delete ва /api/account/change-email.
-  const createEmailWithReverification = useReverification((email: string) => user!.createEmailAddress({ email }));
   const { t, locale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -180,29 +174,29 @@ function ProfileContent() {
     if (!user || !newEmailInput) return;
     setEmailSubmitting(true);
     try {
-      let emailAddress;
-      try {
-        emailAddress = await createEmailWithReverification(newEmailInput);
-      } catch (createErr: any) {
-        if (isReverificationCancelledError(createErr)) throw createErr;
-        // Агар кӯшиши қаблӣ нотамом монда бошад (масалан модал тасодуфан
-        // пӯшида шуда буд), ин почта аллакай ба ҳисоб илова шудааст —
-        // бояд ҳамонро истифода барем, на аз нав созем (вагарна "аллакай
-        // гирифта шудааст" мегӯяд).
-        const existing = user.emailAddresses.find(
-          (e) => e.emailAddress.toLowerCase() === newEmailInput.trim().toLowerCase(),
-        );
-        if (!existing) throw createErr;
-        emailAddress = existing;
-      }
+      // Сохтани почтаи нав аз сервер (Backend API) — то бо ҳисобҳои бе
+      // parol (масалан бо Google) ё ҳангоми дубора илова кардани почтае,
+      // ки қаблан аз ин ҳисоб нест шуда буд, ба "Cannot verify your
+      // account" дучор нашавем.
+      const res = await fetch("/api/account/start-email-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: newEmailInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to start email change");
+
+      await user.reload();
+      const emailAddress = user.emailAddresses.find((e) => e.id === data.emailAddressId);
+      if (!emailAddress) throw new Error("Email address not found after creation");
+
       await emailAddress.prepareVerification({ strategy: "email_code" });
       setPendingEmailAddress(emailAddress);
       setEmailStep("verify");
       setResendCooldown(59);
     } catch (err: any) {
-      if (isReverificationCancelledError(err)) return;
-      console.error("Clerk error:", err);
-      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
+      console.error("Start email change error:", err);
+      toast.error(err.message || t("error"));
     } finally {
       setEmailSubmitting(false);
     }
@@ -231,7 +225,6 @@ function ProfileContent() {
       toast.success(t("emailChangeSuccess"));
       resetEmailModal();
     } catch (err: any) {
-      if (isReverificationCancelledError(err)) return;
       console.error("Clerk error:", err);
       toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
     } finally {
