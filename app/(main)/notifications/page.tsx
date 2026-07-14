@@ -1,7 +1,9 @@
 /**
  * Саҳифаи пурраи огоҳиномаҳо — рӯйхати умумии санҷиши моликият ва эълонҳои
- * категория, бо филтрҳо, ҷудо аз менюи хурди занг (ки танҳо чанд охиринро
- * нишон медиҳад).
+ * категория, бо филтрҳо (бо рақами ҳар филтр). Ҳар сатр на ба саҳифаи
+ * эълон мегузарад, балки дар ҳамин ҷо кушода мешавад (аксаи эълон +
+ * пайванди "Дидани эълон"). Сатрҳои нодидашуда рангашон фарқ мекунад;
+ * кушодани сатр ранги ҳамон сатрро ба ҳолати одӣ мегузаронад.
  */
 "use client";
 
@@ -11,9 +13,10 @@ import { format } from "date-fns";
 import { useLanguage } from "@/lib/language-context";
 import { useNotifications, type NotificationItem } from "@/lib/hooks/use-notifications";
 import { ClaimantAvatar } from "@/components/claimant-avatar";
-import { Bell, CheckCircle2, XCircle, Clock, Tag } from "lucide-react";
+import { Bell, BellRing, CheckCircle2, XCircle, Clock, Tag, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useWebPush } from "@/lib/hooks/use-web-push";
 
 type TypeFilter = "all" | "verification" | "category_post";
 type StatusFilter = "all" | "pending_review" | "passed" | "rejected";
@@ -27,9 +30,17 @@ function KindIcon({ item }: { item: NotificationItem }) {
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
-  const { items, loading } = useNotifications({ verifyLimit: 200, categoryLimit: 100 });
+  const { items, loading, markOpened, isOpened } = useNotifications({
+    verifyLimit: 200,
+    categoryLimit: 100,
+  });
+  const { status, subscribe } = useWebPush();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const verificationItems = useMemo(() => items.filter((i) => i.kind === "verification"), [items]);
+  const categoryItems = useMemo(() => items.filter((i) => i.kind === "category_post"), [items]);
 
   const filtered = useMemo(() => {
     return items.filter((item) => {
@@ -39,18 +50,35 @@ export default function NotificationsPage() {
     });
   }, [items, typeFilter, statusFilter]);
 
-  const typeFilters: { id: TypeFilter; label: string }[] = [
-    { id: "all", label: t("notifFilterAll") },
-    { id: "verification", label: t("notifFilterVerification") },
-    { id: "category_post", label: t("notifFilterCategoryPost") },
+  const typeFilters: { id: TypeFilter; label: string; count: number }[] = [
+    { id: "all", label: t("notifFilterAll"), count: items.length },
+    { id: "verification", label: t("notifFilterVerification"), count: verificationItems.length },
+    { id: "category_post", label: t("notifFilterCategoryPost"), count: categoryItems.length },
   ];
 
-  const statusFilters: { id: StatusFilter; label: string }[] = [
-    { id: "all", label: t("notifFilterAll") },
-    { id: "pending_review", label: t("verifyStatusPending") },
-    { id: "passed", label: t("verifyStatusPassed") },
-    { id: "rejected", label: t("verifyStatusRejected") },
+  const statusFilters: { id: StatusFilter; label: string; count: number }[] = [
+    { id: "all", label: t("notifFilterAll"), count: verificationItems.length },
+    {
+      id: "pending_review",
+      label: t("verifyStatusPending"),
+      count: verificationItems.filter((i) => i.status === "pending_review").length,
+    },
+    {
+      id: "passed",
+      label: t("verifyStatusPassed"),
+      count: verificationItems.filter((i) => i.status === "passed").length,
+    },
+    {
+      id: "rejected",
+      label: t("verifyStatusRejected"),
+      count: verificationItems.filter((i) => i.status === "rejected").length,
+    },
   ];
+
+  const toggleExpand = (item: NotificationItem) => {
+    markOpened(item.id);
+    setExpandedId((prev) => (prev === item.id ? null : item.id));
+  };
 
   return (
     <div className="max-w-2xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
@@ -62,6 +90,19 @@ export default function NotificationsPage() {
           {t("notifPageTitle")}
         </h1>
       </div>
+
+      {status === "default" && (
+        <button
+          type="button"
+          onClick={() => subscribe()}
+          className="w-full flex items-center gap-3 rounded-2xl p-4 mb-5 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-950/40 transition-colors text-left"
+        >
+          <BellRing className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+            {t("verifyEnablePush")}
+          </span>
+        </button>
+      )}
 
       {/* Филтрҳо */}
       <div className="space-y-3 mb-6">
@@ -75,13 +116,23 @@ export default function NotificationsPage() {
                 if (f.id !== "verification") setStatusFilter("all");
               }}
               className={cn(
-                "shrink-0 px-4 py-2 rounded-xl text-[11px] font-black tracking-wide transition-all",
+                "shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-[11px] font-black tracking-wide transition-all",
                 typeFilter === f.id
                   ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
                   : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
               )}
             >
               {f.label}
+              <span
+                className={cn(
+                  "rounded-full px-1.5 text-[10px]",
+                  typeFilter === f.id
+                    ? "bg-white/20 dark:bg-zinc-900/20"
+                    : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500",
+                )}
+              >
+                {f.count}
+              </span>
             </button>
           ))}
         </div>
@@ -93,13 +144,14 @@ export default function NotificationsPage() {
                 type="button"
                 onClick={() => setStatusFilter(f.id)}
                 className={cn(
-                  "shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
+                  "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all border",
                   statusFilter === f.id
                     ? "border-zinc-900 dark:border-white text-zinc-900 dark:text-white"
                     : "border-zinc-200 dark:border-zinc-800 text-zinc-400",
                 )}
               >
                 {f.label}
+                <span className="text-zinc-400">{f.count}</span>
               </button>
             ))}
           </div>
@@ -121,24 +173,55 @@ export default function NotificationsPage() {
             const name = item.kind === "verification" ? item.claimantName : item.posterName;
             const avatar = item.kind === "verification" ? item.claimantAvatar : item.posterAvatar;
             const subtitle = item.kind === "verification" ? item.itemTitle : t("categoryPostNotifLine");
+            const expanded = expandedId === item.id;
+            const unread = !isOpened(item.id);
             return (
-              <Link
+              <div
                 key={item.id}
-                href={`/items/${item.itemId}`}
-                className="flex items-center gap-3 rounded-2xl border border-zinc-100 dark:border-zinc-900 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors"
+                className={cn(
+                  "rounded-2xl border overflow-hidden transition-colors",
+                  unread
+                    ? "bg-blue-50/60 dark:bg-blue-950/10 border-blue-100 dark:border-blue-900/30"
+                    : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800",
+                )}
               >
-                <ClaimantAvatar url={avatar ?? null} name={name ?? null} className="w-11 h-11 text-sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                    {item.kind === "verification" ? name || t("verifyUnknownClaimant") : item.itemTitle}
-                  </p>
-                  <p className="text-xs text-zinc-400 font-medium truncate">{subtitle}</p>
-                  <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-bold mt-0.5">
-                    {format(new Date(item.createdAt), "dd.MM.yyyy HH:mm")}
-                  </p>
-                </div>
-                <KindIcon item={item} />
-              </Link>
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(item)}
+                  className="w-full flex items-center gap-3 p-4 text-left"
+                >
+                  <ClaimantAvatar url={avatar ?? null} name={name ?? null} className="w-11 h-11 text-sm" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                      {item.kind === "verification" ? name || t("verifyUnknownClaimant") : item.itemTitle}
+                    </p>
+                    <p className="text-xs text-zinc-400 font-medium truncate">{subtitle}</p>
+                    <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-bold mt-0.5">
+                      {format(new Date(item.createdAt), "dd.MM.yyyy HH:mm")}
+                    </p>
+                  </div>
+                  {unread && <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />}
+                  <KindIcon item={item} />
+                </button>
+                {expanded && (
+                  <div className="px-4 pb-4 border-t border-zinc-100 dark:border-zinc-800 pt-3.5">
+                    {item.itemImageUrl && (
+                      <img
+                        src={item.itemImageUrl}
+                        alt=""
+                        className="w-full h-40 object-cover rounded-xl mb-3"
+                      />
+                    )}
+                    <Link
+                      href={`/items/${item.itemId}`}
+                      className="flex items-center justify-center gap-2 h-11 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-xs shadow-sm hover:shadow-md active:scale-[0.98] transition-all"
+                    >
+                      {item.itemTitle}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

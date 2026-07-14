@@ -8,12 +8,14 @@ import { toast } from "sonner";
 
 const POLL_MS = 20_000;
 const SEEN_STORAGE_KEY = "juyo_seen_notification_ids";
+const OPENED_STORAGE_KEY = "juyo_opened_notification_ids";
 
 export interface NotificationItem {
   id: string;
   kind: "verification" | "category_post";
   itemId: string;
   itemTitle: string;
+  itemImageUrl: string | null;
   createdAt: string;
   // Танҳо барои kind === "verification"
   status?: "pending_review" | "passed" | "rejected";
@@ -24,10 +26,10 @@ export interface NotificationItem {
   posterAvatar?: string | null;
 }
 
-function loadSeenIds(): Set<string> {
+function loadIds(key: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    return new Set(JSON.parse(localStorage.getItem(SEEN_STORAGE_KEY) || "[]"));
+    return new Set(JSON.parse(localStorage.getItem(key) || "[]"));
   } catch {
     return new Set();
   }
@@ -47,7 +49,10 @@ export function useNotifications(
   const { t } = useLanguage();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [seenIds, setSeenIds] = useState<Set<string>>(() => loadSeenIds());
+  // seenIds — назорати рақами badge-и занг (якбора, ҳангоми click ба занг).
+  const [seenIds, setSeenIds] = useState<Set<string>>(() => loadIds(SEEN_STORAGE_KEY));
+  // openedIds — назорати ранги ҳар сатр дар рӯйхат (алоҳида, ҳангоми кушодани ҳамон сатр).
+  const [openedIds, setOpenedIds] = useState<Set<string>>(() => loadIds(OPENED_STORAGE_KEY));
   const seenNotifiedIds = useRef<Set<string> | null>(null);
 
   const fetchAll = useCallback(async () => {
@@ -75,6 +80,7 @@ export function useNotifications(
       kind: "verification" as const,
       itemId: row.item_id,
       itemTitle: row.item_title ?? "",
+      itemImageUrl: row.item_image_url ?? null,
       createdAt: row.created_at,
       status: row.status,
       claimantName: `${row.matched_first_name ?? ""} ${row.matched_last_name ?? ""}`.trim() || null,
@@ -86,6 +92,7 @@ export function useNotifications(
       kind: "category_post" as const,
       itemId: row.item_id,
       itemTitle: row.item_title ?? "",
+      itemImageUrl: row.item_image_url ?? null,
       createdAt: row.created_at,
       posterName: `${row.poster_first_name ?? ""} ${row.poster_last_name ?? ""}`.trim() || null,
       posterAvatar: row.poster_avatar_url ?? null,
@@ -120,8 +127,9 @@ export function useNotifications(
     return () => clearInterval(interval);
   }, [userId, fetchAll]);
 
-  // Вақте ки корбар менюи зангро мекушояд, ҳамаи огоҳиномаҳои ҳозираро
-  // "дида шуд" мегузорем — badge то дархости воқеан нав пайдо нашуда, боз намепайдояд.
+  // Вақте ки корбар ба занг click мекунад, ҳамаи огоҳиномаҳои ҳозираро
+  // "дида шуд" мегузорем — рақами badge то дархости воқеан нав пайдо
+  // нашуда, боз намепайдояд.
   const markAllSeen = useCallback(() => {
     setSeenIds((prev) => {
       const next = new Set(prev);
@@ -135,7 +143,22 @@ export function useNotifications(
     });
   }, [items]);
 
-  const count = items.filter((item) => isUnseenCandidate(item) && !seenIds.has(item.id)).length;
+  // Вақте ки як сатри мушаххас дар рӯйхат кушода мешавад — танҳо ранги
+  // ҲАМОН сатр ба ҳолати одӣ мегузарад (аз badge-и умумӣ ҷудо).
+  const markOpened = useCallback((id: string) => {
+    setOpenedIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(OPENED_STORAGE_KEY, JSON.stringify([...next]));
+      }
+      return next;
+    });
+  }, []);
 
-  return { items, count, loading, refetch: fetchAll, markAllSeen };
+  const count = items.filter((item) => isUnseenCandidate(item) && !seenIds.has(item.id)).length;
+  const isOpened = useCallback((id: string) => openedIds.has(id), [openedIds]);
+
+  return { items, count, loading, refetch: fetchAll, markAllSeen, markOpened, isOpened };
 }
