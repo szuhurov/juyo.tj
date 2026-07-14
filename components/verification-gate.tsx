@@ -12,7 +12,7 @@ import { useAuth } from "@clerk/nextjs";
 import { supabase as anonSupabase, createClerkSupabaseClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Phone, ShieldQuestion, Loader2, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Phone, ShieldQuestion, Loader2, CheckCircle2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { getTemplatesForCategory } from "@/lib/verification-questions";
 
@@ -75,7 +75,7 @@ export function VerificationGate({
 
   // Owner-review state
   const [pendingAttempts, setPendingAttempts] = useState<Attempt[] | null>(null);
-  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -147,26 +147,6 @@ export function VerificationGate({
     }
   };
 
-  const handleReview = async (attemptId: string, approve: boolean) => {
-    setReviewingId(attemptId);
-    try {
-      const token = await getToken({ template: "supabase" });
-      if (!token) return;
-      const supabase = createClerkSupabaseClient(token);
-      const { error } = await supabase.rpc("review_verification_attempt", {
-        p_attempt_id: attemptId,
-        p_approve: approve,
-      });
-      if (error) throw error;
-      setPendingAttempts((prev) => (prev ?? []).filter((a) => a.id !== attemptId));
-      toast.success(approve ? t("verifyApprove") : t("verifyReject"));
-    } catch (e: any) {
-      toast.error(e.message || t("error"));
-    } finally {
-      setReviewingId(null);
-    }
-  };
-
   if (loading) {
     return (
       <Button size="lg" disabled className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-200 text-zinc-400">
@@ -175,63 +155,73 @@ export function VerificationGate({
     );
   }
 
-  // Owner: show a pending-review card above the normal action buttons (item-details-client renders Resolved separately).
+  // Owner: рӯйхати маъмулии хурд — аввал танҳо ном/насаб, click ба иконаи
+  // "?" ҷавобҳо ва тугмаи зангро мекушояд. Ягон тасдиқ/рад нест — соҳиб
+  // худаш интихоб мекунад, ки бо кӣ занг занад.
   if (isOwner) {
     if (!pendingAttempts || pendingAttempts.length === 0) return null;
     return (
-      <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-black text-xs uppercase tracking-wider">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-black text-xs uppercase tracking-wider">
           <ShieldQuestion className="w-4 h-4" />
           {t("verifyPendingCount").replace("%{count}", String(pendingAttempts.length))}
         </div>
-        {pendingAttempts.map((attempt) => (
-          <div key={attempt.id} className="bg-white dark:bg-zinc-900 rounded-xl p-4 space-y-2 border border-zinc-100 dark:border-zinc-800">
-            {attempt.claimant_phone && (
-              <div className="text-xs pb-2 mb-1 border-b border-zinc-100 dark:border-zinc-800">
-                <p className="font-bold text-zinc-500">{t("verifyClaimantPhoneLabel")}</p>
-                <a href={`tel:${attempt.claimant_phone}`} className="font-black text-zinc-900 dark:text-zinc-100">
-                  {attempt.claimant_phone}
-                </a>
-                {attempt.matched_user_id && (
-                  <p className="mt-1 flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-bold">
-                    <ShieldQuestion className="w-3.5 h-3.5 shrink-0" />
-                    {t("verifyMatchedAccount").replace(
-                      "%{name}",
-                      `${attempt.matched_first_name ?? ""} ${attempt.matched_last_name ?? ""}`.trim() || attempt.matched_user_id,
+        <div className="space-y-2">
+          {pendingAttempts.map((attempt) => {
+            const name = `${attempt.matched_first_name ?? ""} ${attempt.matched_last_name ?? ""}`.trim();
+            const expanded = expandedId === attempt.id;
+            return (
+              <div
+                key={attempt.id}
+                className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-hidden"
+              >
+                <button
+                  type="button"
+                  onClick={() => setExpandedId(expanded ? null : attempt.id)}
+                  className="w-full flex items-center justify-between gap-2 p-3.5 text-left"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {attempt.matched_avatar_url ? (
+                      <img
+                        src={attempt.matched_avatar_url}
+                        alt=""
+                        className="w-8 h-8 rounded-full object-cover shrink-0 border border-zinc-100 dark:border-zinc-800"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-black text-zinc-400 shrink-0">
+                        {(name || "?").charAt(0)}
+                      </div>
                     )}
-                  </p>
+                    <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                      {name || t("verifyUnknownClaimant")}
+                    </span>
+                  </div>
+                  <HelpCircle className="w-4 h-4 text-zinc-400 shrink-0" />
+                </button>
+                {expanded && (
+                  <div className="px-3.5 pb-3.5 space-y-2 border-t border-zinc-100 dark:border-zinc-800 pt-2.5">
+                    {attempt.answers.map((a) => (
+                      <div key={a.question_id} className="text-xs">
+                        <p className="font-bold text-zinc-500">{a.question_text}</p>
+                        <p className="font-black text-zinc-900 dark:text-zinc-100">
+                          {a.answer_type === "yesno" ? (a.given_answer === "yes" ? t("verifyYes") : t("verifyNo")) : a.given_answer}
+                        </p>
+                      </div>
+                    ))}
+                    {attempt.claimant_phone && (
+                      <a
+                        href={`tel:${attempt.claimant_phone}`}
+                        className="flex items-center justify-center gap-2 h-10 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-black text-xs mt-1"
+                      >
+                        <Phone className="w-3.5 h-3.5" /> {t("call")}
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-            {attempt.answers.map((a) => (
-              <div key={a.question_id} className="text-xs">
-                <p className="font-bold text-zinc-500">{a.question_text}</p>
-                <p className="font-black text-zinc-900 dark:text-zinc-100">
-                  {a.answer_type === "yesno" ? (a.given_answer === "yes" ? t("verifyYes") : t("verifyNo")) : a.given_answer}
-                </p>
-              </div>
-            ))}
-            <div className="flex gap-2 pt-2">
-              <Button
-                size="sm"
-                disabled={reviewingId === attempt.id}
-                onClick={() => handleReview(attempt.id, true)}
-                className="flex-1 h-9 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-wider"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> {t("verifyApprove")}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={reviewingId === attempt.id}
-                onClick={() => handleReview(attempt.id, false)}
-                className="flex-1 h-9 rounded-lg border-red-200 text-red-600 hover:bg-red-50 font-black text-[10px] uppercase tracking-wider"
-              >
-                <XCircle className="w-3.5 h-3.5 mr-1" /> {t("verifyReject")}
-              </Button>
-            </div>
-          </div>
-        ))}
+            );
+          })}
+        </div>
       </div>
     );
   }
@@ -329,8 +319,8 @@ export function VerificationGate({
 
   if (status === "pending_review") {
     return (
-      <div className="h-14 md:h-16 w-full rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center gap-2 text-amber-700 font-bold text-sm px-4 text-center">
-        <Clock className="w-5 h-5 shrink-0" /> {t("verifyPendingReview")}
+      <div className="h-14 md:h-16 w-full rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 flex items-center justify-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm px-4 text-center">
+        <CheckCircle2 className="w-5 h-5 shrink-0" /> {t("verifyPendingReview")}
       </div>
     );
   }
