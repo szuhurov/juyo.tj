@@ -558,7 +558,7 @@ export default function ItemDetailsClient({
                   </Button>
                 </>
               ) : item?.type === "found" ? (
-                <VerificationGate itemId={item!.id} isOwner={false} phoneNumber={item?.phone_number} />
+                <VerificationGate itemId={item!.id} isOwner={false} phoneNumber={item?.phone_number} category={item?.category} />
               ) : (
                 <Button
                   size="lg"

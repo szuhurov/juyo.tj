@@ -12,15 +12,9 @@ import { useAuth } from "@clerk/nextjs";
 import { supabase as anonSupabase, createClerkSupabaseClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { Phone, ShieldQuestion, Loader2, CheckCircle2, XCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { getTemplatesForCategory } from "@/lib/verification-questions";
 
 interface Question {
   id: string;
@@ -56,22 +50,28 @@ export function VerificationGate({
   itemId,
   isOwner,
   phoneNumber,
+  category,
 }: {
   itemId: string;
   isOwner: boolean;
   phoneNumber?: string | null;
+  category?: string | null;
 }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { userId, getToken } = useAuth();
 
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<"none" | "pending_review" | "passed" | "rejected">("none");
   const [phone, setPhone] = useState<string | null>(null);
-  const [showCallConfirm, setShowCallConfirm] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [claimantPhone, setClaimantPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Ҳолати саволҳои умумии по-default (вақте ки финдер худаш савол
+  // насохтааст) — пеш аз намоиши тугмаи "Занг задан" як бор пурсида мешавад.
+  const [defaultAnswers, setDefaultAnswers] = useState<Record<string, string>>({});
+  const [defaultAnswered, setDefaultAnswered] = useState(false);
 
   // Owner-review state
   const [pendingAttempts, setPendingAttempts] = useState<Attempt[] | null>(null);
@@ -236,47 +236,84 @@ export function VerificationGate({
     );
   }
 
-  // Claimant, no questions configured — warn that the finder may still ask
-  // their own questions verbally, and require confirmation before calling.
+  // Претендент, финдер ҳеҷ саволе насохтааст — як бор саволҳои умумии
+  // категория (by default) пурсида мешавад, баъд тугмаи "Занг задан" пайдо
+  // мешавад. Ин ҷавобҳо ба сервер фиристода намешаванд ва аз ҷониби соҳиб
+  // баррасӣ карда намешаванд (ҳамон рӯҳияи "бе саволи финдер = дастрасии
+  // фаврӣ", танҳо бо каме монеаи бештар нисбат ба як тасдиқи оддӣ).
   if (!questions || questions.length === 0) {
-    return (
-      <>
-        <Button
-          size="lg"
-          onClick={() => setShowCallConfirm(true)}
-          className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg"
-        >
-          <Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t("call")}
-        </Button>
-        <Dialog open={showCallConfirm} onOpenChange={setShowCallConfirm}>
-          <DialogContent className="sm:max-w-md rounded-[2rem]">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-black tracking-tight">
-                {t("verifyNoQuestionsCallTitle")}
-              </DialogTitle>
-              <DialogDescription className="text-sm font-medium leading-relaxed pt-2">
-                {t("verifyNoQuestionsCallDesc")}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex gap-2.5 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowCallConfirm(false)}
-                className="flex-1 h-12 rounded-xl font-bold text-xs"
-              >
-                {t("verifyNo")}
-              </Button>
-              <Button
-                asChild
-                onClick={() => setShowCallConfirm(false)}
-                className="flex-1 h-12 rounded-xl font-black text-xs bg-zinc-900 hover:bg-zinc-800 text-white"
-              >
-                <a href={`tel:${phoneNumber}`}>{t("verifyYes")}</a>
-              </Button>
+    const defaultQuestions = getTemplatesForCategory(category || "Other").slice(0, 2);
+
+    if (!defaultAnswered) {
+      return (
+        <div className="space-y-4 bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 rounded-2xl p-5">
+          <div className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300 font-black text-xs uppercase tracking-wider">
+            <ShieldQuestion className="w-4 h-4" />
+            {t("verifyAnswerQuestions")}
+          </div>
+          <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            {t("verifyDefaultQuestionsHint")}
+          </p>
+
+          {defaultQuestions.map((q) => (
+            <div key={q.id} className="space-y-1.5">
+              <p className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                {q.text[locale as keyof typeof q.text] ?? q.text.tg}
+              </p>
+              {q.type === "yesno" ? (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDefaultAnswers((prev) => ({ ...prev, [q.id]: "yes" }))}
+                    className={`flex-1 h-10 rounded-lg text-xs font-black border-2 ${defaultAnswers[q.id] === "yes" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-200 text-zinc-500"}`}
+                  >
+                    {t("verifyYes")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDefaultAnswers((prev) => ({ ...prev, [q.id]: "no" }))}
+                    className={`flex-1 h-10 rounded-lg text-xs font-black border-2 ${defaultAnswers[q.id] === "no" ? "border-red-500 bg-red-50 text-red-700" : "border-zinc-200 text-zinc-500"}`}
+                  >
+                    {t("verifyNo")}
+                  </button>
+                </div>
+              ) : (
+                <Input
+                  value={defaultAnswers[q.id] || ""}
+                  onChange={(e) => setDefaultAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                  placeholder={t("verifyAnswerPlaceholder")}
+                  className="rounded-lg h-10 text-xs font-bold"
+                />
+              )}
             </div>
-          </DialogContent>
-        </Dialog>
-      </>
+          ))}
+
+          <Button
+            onClick={() => {
+              if (defaultQuestions.some((q) => !defaultAnswers[q.id]?.trim())) {
+                toast.error(t("verifyFillAllAnswers"));
+                return;
+              }
+              setDefaultAnswered(true);
+            }}
+            className="w-full h-12 rounded-xl font-black text-xs bg-zinc-900 hover:bg-zinc-800 text-white"
+          >
+            {t("continue")}
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <Button
+        size="lg"
+        className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg"
+        asChild
+      >
+        <a href={`tel:${phoneNumber}`}>
+          <Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t("call")}
+        </a>
+      </Button>
     );
   }
 
