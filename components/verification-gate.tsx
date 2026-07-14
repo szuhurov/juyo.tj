@@ -122,7 +122,7 @@ export function VerificationGate({
       toast.error(t("verifyFillAllAnswers"));
       return;
     }
-    if (claimantPhone.trim().length < 9) {
+    if (!claimantPhone.trim()) {
       toast.error(t("verifyPhoneRequired"));
       return;
     }

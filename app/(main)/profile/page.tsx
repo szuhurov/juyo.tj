@@ -160,7 +160,21 @@ function ProfileContent() {
     if (!user || !newEmailInput) return;
     setEmailSubmitting(true);
     try {
-      const emailAddress = await createEmailWithReverification(newEmailInput);
+      let emailAddress;
+      try {
+        emailAddress = await createEmailWithReverification(newEmailInput);
+      } catch (createErr: any) {
+        if (isReverificationCancelledError(createErr)) throw createErr;
+        // Агар кӯшиши қаблӣ нотамом монда бошад (масалан модал тасодуфан
+        // пӯшида шуда буд), ин почта аллакай ба ҳисоб илова шудааст —
+        // бояд ҳамонро истифода барем, на аз нав созем (вагарна "аллакай
+        // гирифта шудааст" мегӯяд).
+        const existing = user.emailAddresses.find(
+          (e) => e.emailAddress.toLowerCase() === newEmailInput.trim().toLowerCase(),
+        );
+        if (!existing) throw createErr;
+        emailAddress = existing;
+      }
       await emailAddress.prepareVerification({ strategy: "email_code" });
       setPendingEmailAddress(emailAddress);
       setEmailStep("verify");
@@ -972,16 +986,6 @@ function ProfileContent() {
       (formData.get("secondary_phone") as string) || ""
     ).trim();
 
-    if (needsPhone && phone.length < 9) {
-      toast.error(t("phoneMinLength"));
-      return;
-    }
-
-    if (needsSecondary && secondary_phone.length < 9) {
-      toast.error(t("phoneMinLength"));
-      return;
-    }
-
     if (needsPhone && needsSecondary && phone === secondary_phone) {
       toast.error(t("phonesMustBeDifferent"));
       return;
@@ -1731,11 +1735,6 @@ function ProfileContent() {
                       const secondaryPhone = (
                         (formData.get("secondaryPhone") as string) || ""
                       ).trim();
-
-                      if (phone.length < 9 || secondaryPhone.length < 9) {
-                        toast.error(t("phoneMinLength"));
-                        return;
-                      }
 
                       if (phone === secondaryPhone) {
                         toast.error(t("phonesMustBeDifferent"));
@@ -2935,7 +2934,12 @@ function ProfileContent() {
       <Dialog
         open={showEmailChangeModal}
         onOpenChange={(open) =>
+          // Дар зинаи ворид кардани рамз, click-и тасодуфӣ ба берун модалро
+          // напӯшонад — почта аллакай сохта/тасдиқшуда аст, гум кардани
+          // ин ҳолат боиси "почта аллакай гирифта шудааст" мешавад ҳангоми
+          // такрор. Танҳо тугмаи "Бекор кардан" метавонад пӯшад.
           !emailSubmitting &&
+          emailStep !== "verify" &&
           (open ? setShowEmailChangeModal(true) : resetEmailModal())
         }
       >

@@ -77,11 +77,6 @@ export function MandatoryPhoneModal() {
 
     const formData = new FormData(e.currentTarget);
     const phone = (formData.get('phone') as string).trim();
-    
-    if (phone.length < 9) {
-      toast.error(t('phoneMinLength'));
-      return;
-    }
 
     setLoading(true);
     try {
