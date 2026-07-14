@@ -1713,33 +1713,24 @@ function ProfileContent() {
 
                       setSafetySubmitting(true);
                       try {
-                        await user!.update({ firstName, lastName });
-
-                        const token = await getToken({ template: "supabase" });
-                        if (!token)
-                          throw new Error("Authentication token not found");
-
-                        const supabase = createClerkSupabaseClient(token);
-                        const updated = await ProfileService.updateProfile(
-                          supabase,
-                          userId!,
-                          {
-                            first_name: firstName,
-                            last_name: lastName,
-                            phone,
-                            secondary_phone: secondaryPhone,
-                            avatar_url: user?.imageUrl || "",
-                          },
-                        );
+                        // Ном/насаб ва рақамҳоро аз сервер (Backend API)
+                        // иваз мекунем — то бо ҳисобҳои бе parol (масалан
+                        // бо Google) ба хатогии "first_name is not a
+                        // valid parameter" ё reverification дучор нашавем.
+                        const res = await fetch("/api/account/update-profile", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ firstName, lastName, phone, secondaryPhone }),
+                        });
+                        if (!res.ok) throw new Error("Failed to update profile");
+                        const { profile: updated } = await res.json();
                         setProfile(updated);
+                        await user?.reload();
 
                         toast.success(t("profileUpdated"));
                       } catch (err: any) {
-                        if (!isReverificationCancelledError(err)) {
-                          console.error("Profile Update Error:", err);
-                          console.error("Clerk error:", err);
-      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
-                        }
+                        console.error("Profile Update Error:", err);
+                        toast.error(t("error"));
                       } finally {
                         setSafetySubmitting(false);
                       }
