@@ -1542,7 +1542,7 @@ function ProfileContent() {
                 <h4 className="text-2xl font-black tracking-tight px-4">
                   {t("guide.solutionTitle")}
                 </h4>
-                <div className="bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-4">
+                <div className="bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-4">
                   <p className="text-zinc-600 dark:text-zinc-400 font-bold">
                     {t("guide.solutionDesc1")}
                     <span className="text-emerald-600">
@@ -1559,7 +1559,7 @@ function ProfileContent() {
 
               {/* How it works */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-8 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 space-y-4">
+                <div className="p-8 rounded-[2.5rem] bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
                   <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
                     <PackageSearch className="w-6 h-6 text-emerald-600" />
                   </div>
@@ -1573,7 +1573,7 @@ function ProfileContent() {
                   </ol>
                 </div>
 
-                <div className="p-8 rounded-[2.5rem] bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 space-y-4">
+                <div className="p-8 rounded-[2.5rem] bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
                   <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
                     <Search className="w-6 h-6 text-red-600" />
                   </div>
@@ -1642,7 +1642,7 @@ function ProfileContent() {
 
               {/* Goal */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-                <div className="p-8 rounded-[2.5rem] bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
+                <div className="p-8 rounded-[2.5rem] bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
                   <h5 className="font-black text-sm tracking-wider text-amber-600">
                     {t("guide.safetyBoxGoalTitle")}
                   </h5>
