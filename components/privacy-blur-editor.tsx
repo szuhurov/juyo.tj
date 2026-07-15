@@ -688,7 +688,7 @@ export function PrivacyBlurEditor({
             className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 touch-none flex items-center justify-center"
             style={{
               height: ready && dispSize.h ? `${dispSize.h}px` : undefined,
-              maxHeight: "55vh",
+              maxHeight: "55dvh",
               cursor: "crosshair",
             }}
             onPointerDown={handleWrapPointerDown}

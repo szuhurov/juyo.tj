@@ -392,21 +392,27 @@ function AddItemForm() {
         }
       }
 
-      // Санҷиши AI аллакай тамом шуд — он чи минбаъд меояд (боркунӣ, сабти
-      // база) кори оддист, на AI. "idle" (спиннери одӣ) истифода мешавад,
-      // на "checking" — то анимацияи "AI мегардад" бардурӯғ такрор нашавад.
-      setModerationStatus("idle");
-      setPublishingMessage(t("ai_steps.publishing") || "Эълон нашр карда истодааст...");
     } catch (err: any) {
       setModerationStatus("failed");
       setModerationError(err.message);
       return;
     }
 
-    // 2. НАШРИ ЭЪЛОН
-    setLoading(true);
+    // 2. НАШРИ ЭЪЛОН — санҷиши AI ва тасдиқҳои корбар аллакай тамом
+    // шуданд. Барои эълони ҷамъиятӣ (на Сандуқчаи Ман) фавран экрани
+    // муваффақиятро нишон медиҳем — боркунии аксҳо ва сабти воқеӣ дар
+    // база дар паси парда идома меёбанд, то корбар мунтазир намонад. Агар
+    // дар паси парда хатогӣ рӯй диҳад, огоҳии toast мебарояд (экран ба
+    // ҳолати "ноком" бознамегардад, зеро корбар аллакай "муваффақият"-ро дидааст).
+    if (!isSafetyMode) {
+      setPostSuccessRedirect("/profile?tab=posts");
+      setModerationStatus("passed");
+    } else {
+      setModerationStatus("idle");
+      setPublishingMessage(t("ai_steps.publishing") || "Эълон нашр карда истодааст...");
+    }
 
-    try {
+    const publishWork = async () => {
       let token = await getToken({ template: "supabase" });
       if (!token) throw new Error("Authentication token missing");
 
@@ -564,18 +570,27 @@ function AddItemForm() {
       fetch(
         `https://www.google.com/ping?sitemap=https://juyo.tj/sitemap.xml`,
       ).catch(() => {});
-      // Эълон бомуваффақият нашр шуд — экрани ниҳоӣ бо тугма нишон дода
-      // мешавад (гузариш ба профил танҳо баъд аз пахши он).
-      setPostSuccessRedirect("/profile?tab=posts");
-      setModerationStatus("passed");
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || t("error"));
-      setModerationStatus("failed");
-      setModerationError(error.message || t("error"));
-    } finally {
-      setLoading(false);
-      setPublishingMessage(null);
+    };
+
+    if (isSafetyMode) {
+      // Сандуқчаи Ман экрани "муваффақият"-и алоҳида надорад — пас чун
+      // пештара мунтазир мемонем, то гузариш дуруст рӯй диҳад.
+      try {
+        await publishWork();
+      } catch (error: any) {
+        console.error(error);
+        toast.error(error.message || t("error"));
+        setModerationStatus("failed");
+        setModerationError(error.message || t("error"));
+      } finally {
+        setLoading(false);
+        setPublishingMessage(null);
+      }
+    } else {
+      publishWork().catch((error: any) => {
+        console.error(error);
+        toast.error(error.message || t("error"));
+      });
     }
   };
 

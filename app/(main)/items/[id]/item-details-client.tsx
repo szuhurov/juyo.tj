@@ -10,6 +10,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Calendar,
   Phone,
@@ -407,19 +408,12 @@ export default function ItemDetailsClient({
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
-                    {item.profiles?.avatar_url ? (
-                      <Image
-                        src={item.profiles.avatar_url}
-                        alt="User"
-                        width={48}
-                        height={48}
-                        className="object-cover"
-                      />
-                    ) : (
+                  <Avatar className="w-12 h-12 border border-zinc-200 shadow-sm">
+                    <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
+                    <AvatarFallback className="bg-zinc-50 dark:bg-zinc-900">
                       <User className="w-6 h-6 text-zinc-400" />
-                    )}
-                  </div>
+                    </AvatarFallback>
+                  </Avatar>
                   <div className="flex flex-col">
                     <p className="font-black text-sm leading-tight">
                       {item.profiles?.first_name || t("user")}
