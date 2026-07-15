@@ -66,10 +66,10 @@ function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
 }
 
-// Намунагирии хеле кам (3-6 ҳуҷра) + upscale-и ҳамвор — намуди "хира"/
-// frosted медиҳад (на қуттии сиёҳи қатъӣ), вале аз минтақа ҳамагӣ
-// якчанд ранги миёна мемонад, пас ҳеҷ шакли ҳарф/рақам зинда наметавонад
-// монад — аз ҷиҳати амният баробари пахши пурра аст, вале зеботар.
+// Мозаикаи возеҳ бо блокҳои қатъӣ (канораш тез, на хира) — ҳамон намуде,
+// ки бо қалам аввал месохтем. Блокҳо калонтар аз кӯшиши аввал (то 7 ҳуҷра
+// дар паҳлӯи кӯтоҳтар) — то ҳеҷ шакли ҳарф/рақам зинда намонад, вале намуди
+// "пиксели калон"-и возеҳ (на пахши сиёҳ, на хираи ҳамвор) нигоҳ дошта шавад.
 function redactRect(
   source: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
@@ -84,10 +84,10 @@ function redactRect(
   const ch = Math.min(source.height - cy, Math.round(h));
   if (cw <= 0 || ch <= 0) return;
 
-  const shortCells = 3;
-  const isWide = cw >= ch;
-  const smallW = isWide ? Math.min(6, Math.max(2, Math.round((cw / ch) * shortCells))) : shortCells;
-  const smallH = isWide ? shortCells : Math.min(6, Math.max(2, Math.round((ch / cw) * shortCells)));
+  const shortCells = 7;
+  const blockSize = Math.max(8, Math.round(Math.min(cw, ch) / shortCells));
+  const smallW = Math.max(1, Math.ceil(cw / blockSize));
+  const smallH = Math.max(1, Math.ceil(ch / blockSize));
 
   const tmp = document.createElement("canvas");
   tmp.width = smallW;
@@ -96,9 +96,9 @@ function redactRect(
   if (!tmpCtx) return;
   tmpCtx.drawImage(source, cx, cy, cw, ch, 0, 0, smallW, smallH);
 
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
+  ctx.imageSmoothingEnabled = false;
   ctx.drawImage(tmp, 0, 0, smallW, smallH, cx, cy, cw, ch);
+  ctx.imageSmoothingEnabled = true;
 }
 
 export function PrivacyBlurEditor({
