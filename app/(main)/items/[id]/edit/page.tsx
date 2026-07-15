@@ -29,7 +29,7 @@ import { Loader2, Plus, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react";
 import Image from "next/image"; // Барои суратҳо
 import Link from "next/link"; // Барои гузаштан ба саҳифаҳо
 import { compressImage } from "@/lib/image-utils";
-import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
+import { PrivacyBlurEditor, type PrivacyRegion } from "@/components/privacy-blur-editor";
 
 import {
   Tooltip,
@@ -65,6 +65,7 @@ export default function EditItemPage({
   // Муҳаррири ҳимояи махфият — ниг. items/add/page.tsx
   const [privacyReview, setPrivacyReview] = useState<{
     file: File;
+    regions: PrivacyRegion[];
     resolve: (result: File | null) => void;
   } | null>(null);
 
@@ -237,18 +238,22 @@ export default function EditItemPage({
       if (error || (data && data.is_safe === false)) {
         setModerationStatus("failed");
         setModerationError(data?.reason || error?.message || t("error"));
-        return { isSafe: false, isDocument: false };
+        return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[] };
       }
 
       setModerationStatus("passed");
       setScanMessage(t("ai_steps.images_passed") || "Аксҳо қабул шуданд!");
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      return { isSafe: true, isDocument: !!data?.is_document };
+      return {
+        isSafe: true,
+        isDocument: !!data?.is_document,
+        privacyRegions: (data?.privacy_regions ?? []) as PrivacyRegion[],
+      };
     } catch (error: any) {
       console.error("AI Moderation Error:", error);
       setModerationStatus("failed");
       setModerationError(error.message);
-      return { isSafe: false, isDocument: false };
+      return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[] };
     }
   };
 
@@ -336,20 +341,20 @@ export default function EditItemPage({
       // МОДЕРАТСИЯИ МАҶБУРӢ
       if (hasNewImages) {
         // Агар акси нав бошад, AI Brain ҳардуро месанҷад (акс + матн)
-        const { isSafe, isDocument } = await runAIModeration(images, title, description);
+        const { isSafe, isDocument, privacyRegions } = await runAIModeration(images, title, description);
         if (!isSafe) {
           setSaving(false);
           return;
         }
-        // Ин натиҷаи ҳамин санҷиши боло аст (is_document) — на даъвати AI-и
-        // нав. Агар ҳуҷҷат бошад, корбар худаш бо қалам минтақаҳои махфиро
-        // дар ҳар акси нав мозаика мекунад, пеш аз боркунӣ.
+        // Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
+        // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, корбар минтақаҳои
+        // пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам иваз/илова кунад.
         if (isDocument) {
           setModerationStatus("idle");
           const blurred: File[] = [];
           for (const file of images) {
             const result = await new Promise<File | null>((resolve) => {
-              setPrivacyReview({ file, resolve });
+              setPrivacyReview({ file, regions: privacyRegions, resolve });
             });
             if (!result) {
               // Корбар баромад — сабтро бас мекунем, то акси бе мозаика нашр нашавад.
@@ -855,6 +860,7 @@ export default function EditItemPage({
         <PrivacyBlurEditor
           open
           file={privacyReview.file}
+          initialRegions={privacyReview.regions}
           onConfirm={(finalFile) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);

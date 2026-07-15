@@ -15,7 +15,7 @@ import {
   supabase as anonSupabase,
 } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
-import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
+import { PrivacyBlurEditor, type PrivacyRegion } from "@/components/privacy-blur-editor";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,11 +92,13 @@ function AddItemForm() {
   const [previews, setPreviews] = useState<string[]>([]);
 
   // Муҳаррири ҳимояи махфият — на даъвати AI-и алоҳида, балки ҳамон
-  // натиҷаи final_check-и аллакай-иҷрошуда (is_document) истифода мешавад.
-  // Агар ҳуҷҷат бошад, пас аз тасдиқи moderation, ин тиреза барои ҳар акс
-  // паси ҳам кушода мешавад — корбар худаш бо қалам минтақаҳоро мекашад.
+  // натиҷаи final_check-и аллакай-иҷрошуда (is_document + privacy_regions)
+  // истифода мешавад. Агар ҳуҷҷат бошад, пас аз тасдиқи moderation, ин
+  // тиреза барои ҳар акс паси ҳам кушода мешавад — бо минтақаҳои
+  // пешниҳодкардаи AI, ки корбар метавонад бо қалам иваз/илова кунад.
   const [privacyReview, setPrivacyReview] = useState<{
     file: File;
+    regions: PrivacyRegion[];
     resolve: (result: File | null) => void;
   } | null>(null);
 
@@ -328,15 +330,17 @@ function AddItemForm() {
       setScanMessage(t("ai_steps.text_passed") || "Қабул шуд!");
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document) — на даъвати
-      // AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар худаш бо қалам
-      // минтақаҳои махфиро дар ҳар акс мозаика мекунад.
+      // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
+      // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар
+      // минтақаҳои пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам
+      // иваз/илова кунад пеш аз тасдиқ.
       if (checkData?.is_document) {
         setModerationStatus("idle");
+        const suggestedRegions: PrivacyRegion[] = checkData.privacy_regions ?? [];
         const blurred: File[] = [];
         for (const file of images) {
           const result = await new Promise<File | null>((resolve) => {
-            setPrivacyReview({ file, resolve });
+            setPrivacyReview({ file, regions: suggestedRegions, resolve });
           });
           if (!result) {
             // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
@@ -1173,6 +1177,7 @@ function AddItemForm() {
         <PrivacyBlurEditor
           open
           file={privacyReview.file}
+          initialRegions={privacyReview.regions}
           onConfirm={(finalFile) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);

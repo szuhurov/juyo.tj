@@ -115,7 +115,8 @@ STRICT RULES:
    - A hand or body part visibly holding/wearing the lost/found item is fine.
 2. PROHIBITED: 18+, extreme violence, illegal weapons, or a selfie/full-body/portrait photo where a PERSON (not the item) is the main subject.
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly.
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false}`;
+IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a TIGHT bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Do NOT create a region for the person's photo, full name, or date of birth — those must stay visible. If is_document is false, or no such fields are visible, privacy_regions must be [].
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}]}`;
 
     // SUGGEST-ONLY PROMPT — pure vision auto-fill, no moderation verdict at all.
     // Used for the early "analyzing photo" step so it never blocks the user;
@@ -172,8 +173,9 @@ If the text is not already in {{LANG}}, still judge it, but write "reason" in {{
 If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", quoting the exact original text if it's a text violation.
 
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly — this is independent of is_safe.
+IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a TIGHT bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Do NOT create a region for the person's photo, full name, or date of birth — those must stay visible. If is_document is false, or no such fields are visible, privacy_regions must be [].
 
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false}`;
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}]}`;
 
     let promptToUse = MASTER_PROMPT;
     if (mode === 'moderation_only') promptToUse = MODERATION_PROMPT;
@@ -231,10 +233,33 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
     }
 
     // moderation_only and final_check are pure accept/reject decisions — no auto-fill payload,
-    // but DO include is_document so the client can offer the manual privacy-blur tool
-    // without a separate AI call (piggybacks on this moderation pass, zero extra latency).
+    // but DO include is_document + privacy_regions so the client can offer the privacy-blur
+    // tool pre-filled with AI suggestions, without a separate AI call (piggybacks on this
+    // moderation pass, zero extra latency). Regions are sanitized here so a malformed model
+    // response can't crash the client's canvas math.
     if (mode === 'moderation_only' || mode === 'final_check') {
-      return new Response(JSON.stringify({ is_safe: true, is_document: !!result.is_document }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const privacyRegions = Array.isArray(result.privacy_regions)
+        ? result.privacy_regions
+            .filter((r: any) =>
+              typeof r?.x === "number" && typeof r?.y === "number" &&
+              typeof r?.width === "number" && typeof r?.height === "number",
+            )
+            .map((r: any) => {
+              const x = Math.max(0, Math.min(1, r.x));
+              const y = Math.max(0, Math.min(1, r.y));
+              return {
+                label: typeof r.label === "string" ? r.label : "sensitive",
+                x,
+                y,
+                width: Math.max(0, Math.min(1 - x, r.width)),
+                height: Math.max(0, Math.min(1 - y, r.height)),
+              };
+            })
+        : [];
+      return new Response(
+        JSON.stringify({ is_safe: true, is_document: !!result.is_document, privacy_regions: privacyRegions }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
     }
 
     return new Response(JSON.stringify({

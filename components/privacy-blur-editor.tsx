@@ -1,13 +1,13 @@
 /**
  * Муҳаррири ҳимояи махфият — вақте ки AI moderation (final_check/
  * moderation_only дар ai-brain) муайян кард, ки акс ҳуҷҷат аст
- * (is_document), ин тиреза кушода мешавад. Ягон AI дигар минтақаро
- * ошкор НАМЕКУНАД (ин ҳамон даъвати AI-и аллакай-иҷрошударо истифода
- * мебарад — на даъвати нави алоҳида, то суръат гум нашавад). Корбар
- * худаш бо "қалам" (кашидан бо муш/ангушт) болои рақамҳо/MRZ/QR
- * мекашад, он ҷо pixelate (мозаика, на blur-и оддӣ — зеро blur баъзан
- * баргардонида мешавад, pixelation не) мешавад. Пас аз кашидан,
- * минтақаро метавон андоза/ҳаракат дод ё нест кард.
+ * (is_document), ин тиреза кушода мешавад. Ягон даъвати AI-и АЛОҲИДА
+ * барои ин кор намешавад — ҳамон санҷиши moderation-е, ки аллакай
+ * иҷро шудааст, минтақаҳои пешниҳодшударо низ медиҳад (privacy_regions),
+ * то суръат гум нашавад. Корбар метавонад ин минтақаҳоро қабул кунад
+ * ё бо "қалам" (кашидан бо муш/ангушт) худаш илова/андоза/ҳаракат/нест
+ * кунад. Ҳама минтақа pixelate (мозаика, на blur-и оддӣ — зеро blur
+ * баъзан баргардонида мешавад, pixelation не) мешавад.
  */
 "use client";
 
@@ -23,6 +23,14 @@ import { Button } from "@/components/ui/button";
 import { Undo2, Redo2, ZoomIn, ZoomOut, Trash2, ShieldCheck, X } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
+
+export interface PrivacyRegion {
+  label?: string;
+  x: number; // 0-1
+  y: number; // 0-1
+  width: number; // 0-1
+  height: number; // 0-1
+}
 
 interface EditableRegion {
   id: string;
@@ -90,11 +98,16 @@ function pixelateRect(
 export function PrivacyBlurEditor({
   open,
   file,
+  initialRegions,
   onConfirm,
   onCancel,
 }: {
   open: boolean;
   file: File | null;
+  /** Минтақаҳои пешниҳодкардаи ҳамон санҷиши moderation-е, ки аллакай
+   * иҷро шудааст (privacy_regions) — корбар метавонад қабул кунад ё
+   * бо қалам худаш иваз/илова/нест кунад. */
+  initialRegions?: PrivacyRegion[];
   onConfirm: (finalFile: File) => void;
   /** Пахши "×"/Escape/click-и берун — акси ҳозира аз рӯйхат нест карда мешавад
    * (акси бе тасдиқ ҳаргиз ба upload намеравад). */
@@ -113,8 +126,8 @@ export function PrivacyBlurEditor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Боркунии акс дар canvas-и корӣ (андозаи маҳдуд барои суръат) — canvas
-  // ҳамеша аз НАВ бо минтақаҳои ХОЛӢ сар мешавад, чунки AI координата намедиҳад.
+  // Боркунии акс дар canvas-и корӣ (андозаи маҳдуд барои суръат) — минтақаҳо
+  // бо пешниҳоди AI (агар бошад) сар мешаванд, вале пурра қобили таҳриранд.
   useEffect(() => {
     if (!file || !open) {
       setReady(false);
@@ -138,8 +151,15 @@ export function PrivacyBlurEditor({
       bctx?.drawImage(img, 0, 0, w, h);
       baseRef.current = base;
 
-      setRegions([]);
-      setHistory([[]]);
+      const initial: EditableRegion[] = (initialRegions ?? []).map((r, i) => ({
+        id: `ai-${i}-${Date.now()}`,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+      }));
+      setRegions(initial);
+      setHistory([initial]);
       setHistoryIndex(0);
       setZoom(1);
       setSelectedId(null);

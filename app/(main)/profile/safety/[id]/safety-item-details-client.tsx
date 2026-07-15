@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { useSafetyItemDetails } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
-import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
+import { PrivacyBlurEditor, type PrivacyRegion } from "@/components/privacy-blur-editor";
 
 export default function SafetyItemDetailsClient({ id }: { id: string }) {
   const { t, locale } = useLanguage();
@@ -55,6 +55,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
   // Муҳаррири ҳимояи махфият — ниг. items/add/page.tsx
   const [privacyReview, setPrivacyReview] = useState<{
     file: File;
+    regions: PrivacyRegion[];
     resolve: (result: File | null) => void;
   } | null>(null);
 
@@ -223,17 +224,19 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
         }
         setScanMessage(t('ai_steps.images_passed'));
 
-        // Ин натиҷаи ҳамин санҷиши боло аст (is_document) — на даъвати AI-и
-        // нав. Агар ҳуҷҷат бошад, корбар худаш бо қалам минтақаҳои махфиро
-        // дар ҳар акс мозаика мекунад, пеш аз он ки ба лентаи умумӣ нашр шавад.
+        // Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
+        // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, корбар минтақаҳои
+        // пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам иваз/илова
+        // кунад, пеш аз он ки ба лентаи умумӣ нашр шавад.
         if (aiResponse?.is_document) {
           setModerationStatus('idle');
+          const suggestedRegions: PrivacyRegion[] = aiResponse.privacy_regions ?? [];
           const oldUrls = item.images || [];
           const newUrls: string[] = [];
           for (const file of imageFiles) {
             if (!file) continue;
             const result = await new Promise<File | null>((resolve) => {
-              setPrivacyReview({ file, resolve });
+              setPrivacyReview({ file, regions: suggestedRegions, resolve });
             });
             if (!result) {
               // Корбар баромад — нашрро бас мекунем, то акси бе мозаика нашр нашавад.
@@ -564,6 +567,7 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
         <PrivacyBlurEditor
           open
           file={privacyReview.file}
+          initialRegions={privacyReview.regions}
           onConfirm={(finalFile) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
