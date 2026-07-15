@@ -563,9 +563,11 @@ export function Header() {
         </div>
       </header>
 
-      {/* Backdrop барои lang dropdown — танҳо дар mobile (sm:hidden) */}
+      {/* Backdrop барои lang dropdown — танҳо дар mobile (sm:hidden). z-45:
+          болотар аз филтрҳои саҳифаи асосӣ (z-40, вагарна онҳо аз болои
+          ин backdrop равшан мемонанд), вале поёнтар аз худи dropdown (z-50). */}
       {langDropdownOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 sm:hidden" />
+        <div className="fixed inset-0 z-[45] bg-black/50 sm:hidden" />
       )}
 
       <VisualSearchModal

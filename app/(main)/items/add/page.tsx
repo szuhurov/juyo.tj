@@ -32,6 +32,7 @@ import {
   ArrowLeft,
   ShieldAlert,
   ShieldQuestion,
+  Info,
   CheckCircle2,
   Search,
   Camera,
@@ -930,41 +931,24 @@ function AddItemForm() {
 
           {/* Step 4: Details (Auto-filled) */}
           {step === 4 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-12 animate-in fade-in slide-in-from-right-4 duration-500 w-full items-start">
-              <div className="space-y-2">
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
-                    {t("titleLabel")}
-                  </Label>
-                  <Input
-                    placeholder={t("titleLabel")}
-                    className="rounded-xl h-12 bg-white border-zinc-200 text-sm font-bold focus-visible:border-emerald-500 shadow-none ring-2 ring-emerald-500/10"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        title: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
-                    {t("description")}
-                  </Label>
-                  <Textarea
-                    placeholder={t("description")}
-                    className="rounded-xl min-h-[100px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none ring-2 ring-emerald-500/10"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+                  {t("titleLabel")}
+                </Label>
+                <Input
+                  placeholder={t("titleLabel")}
+                  className="rounded-xl h-12 bg-white border-zinc-200 text-sm font-bold focus-visible:border-emerald-500 shadow-none ring-2 ring-emerald-500/10"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      title: e.target.value,
+                    }))
+                  }
+                />
               </div>
+
               <div className="space-y-2">
                 <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
                   {t("categoryLabel")}
@@ -1003,6 +987,23 @@ function AddItemForm() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+                  {t("description")}
+                </Label>
+                <Textarea
+                  placeholder={t("description")}
+                  className="rounded-xl min-h-[100px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none ring-2 ring-emerald-500/10"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
               </div>
             </div>
           )}
@@ -1065,11 +1066,9 @@ function AddItemForm() {
           {/* Step 6: Verification questions — танҳо барои "Ёфтшуда" */}
           {step === 6 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
-              <div className="text-center space-y-2">
-                <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mx-auto shadow-sm">
-                  <ShieldQuestion className="w-7 h-7 text-emerald-600" />
-                </div>
-                <p className="text-[11px] text-zinc-500 font-medium leading-relaxed px-4">
+              <div className="flex items-start gap-2 px-4">
+                <Info className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-zinc-500 font-medium leading-relaxed text-left">
                   {t("verifyQuestionsDesc")}
                 </p>
               </div>
