@@ -12,7 +12,7 @@ import { useAuth } from "@clerk/nextjs";
 import { supabase as anonSupabase, createClerkSupabaseClient } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Phone, ShieldQuestion, Loader2, CheckCircle2, HelpCircle } from "lucide-react";
+import { Phone, ShieldQuestion, Loader2, CheckCircle2, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { getTemplatesForCategory } from "@/lib/verification-questions";
 import { ClaimantAvatar } from "@/components/claimant-avatar";
@@ -164,14 +164,9 @@ export function VerificationGate({
     if (!pendingAttempts || pendingAttempts.length === 0) return null;
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-2xl px-4 py-3.5">
-          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
-            <ShieldQuestion className="w-5 h-5 text-amber-600" />
-          </div>
-          <span className="text-sm font-black text-amber-800 dark:text-amber-300 tracking-tight">
-            {t("verifyPendingCount").replace("%{count}", String(pendingAttempts.length))}
-          </span>
-        </div>
+        <p className="text-xs font-bold text-zinc-400 px-1">
+          {t("verifyMessagesCount").replace("%{count}", String(pendingAttempts.length))}
+        </p>
         <div className="space-y-3">
           {pendingAttempts.map((attempt) => {
             const name = `${attempt.matched_first_name ?? ""} ${attempt.matched_last_name ?? ""}`.trim();
@@ -192,16 +187,12 @@ export function VerificationGate({
                       {name || t("verifyUnknownClaimant")}
                     </span>
                   </div>
-                  <div
+                  <ChevronDown
                     className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                      expanded ? "bg-zinc-900 dark:bg-white" : "bg-zinc-100 dark:bg-zinc-800",
+                      "w-4 h-4 text-zinc-400 shrink-0 transition-transform",
+                      expanded && "rotate-180",
                     )}
-                  >
-                    <HelpCircle
-                      className={cn("w-4 h-4", expanded ? "text-white dark:text-zinc-900" : "text-zinc-400")}
-                    />
-                  </div>
+                  />
                 </button>
                 {expanded && (
                   <div className="px-4 pb-4 space-y-2.5 border-t border-zinc-100 dark:border-zinc-800 pt-3.5">

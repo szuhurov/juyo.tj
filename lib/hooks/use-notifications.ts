@@ -160,5 +160,29 @@ export function useNotifications(
   const count = items.filter((item) => isUnseenCandidate(item) && !seenIds.has(item.id)).length;
   const isOpened = useCallback((id: string) => openedIds.has(id), [openedIds]);
 
-  return { items, count, loading, refetch: fetchAll, markAllSeen, markOpened, isOpened };
+  // Нест кардани як огоҳинома аз рӯйхати корбар — dismiss_notification RPC
+  // ҳамзамон дар dismissed_notifications (то дигар барнагардад) ва
+  // deleted_notifications_archive (барои admin) сабт мекунад.
+  const dismissNotification = useCallback(
+    async (item: NotificationItem) => {
+      const token = await getToken({ template: "supabase" });
+      if (!token) return;
+      const supabase = createClerkSupabaseClient(token);
+      const refId = item.id.includes(":") ? item.id.split(":")[1] : item.id;
+      const { error } = await supabase.rpc("dismiss_notification", {
+        p_kind: item.kind,
+        p_ref_id: refId,
+        p_item_id: item.itemId,
+        p_item_title: item.itemTitle,
+        p_related_name: item.kind === "verification" ? item.claimantName ?? null : item.posterName ?? null,
+        p_related_avatar: item.kind === "verification" ? item.claimantAvatar ?? null : item.posterAvatar ?? null,
+        p_status: item.kind === "verification" ? item.status ?? null : null,
+      });
+      if (error) throw error;
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    },
+    [getToken],
+  );
+
+  return { items, count, loading, refetch: fetchAll, markAllSeen, markOpened, isOpened, dismissNotification };
 }

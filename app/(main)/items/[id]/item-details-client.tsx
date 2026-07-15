@@ -341,7 +341,7 @@ export default function ItemDetailsClient({
                       src={img.image_url}
                       alt={item?.title || "JUYO Item"}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                       priority={index === 0}
                       quality={90}
                     />
@@ -403,11 +403,11 @@ export default function ItemDetailsClient({
             </div>
           </div>
 
-          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
+          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
             <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
+                  <div className="w-12 h-12 rounded-full bg-zinc-50 dark:bg-zinc-900 flex items-center justify-center overflow-hidden border border-zinc-200 shadow-sm">
                     {item.profiles?.avatar_url ? (
                       <Image
                         src={item.profiles.avatar_url}
@@ -433,7 +433,7 @@ export default function ItemDetailsClient({
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Skeleton className="w-12 h-12 rounded-2xl" />
+                  <Skeleton className="w-12 h-12 rounded-full" />
                   <div className="space-y-1.5">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-3 w-16" />
@@ -460,11 +460,11 @@ export default function ItemDetailsClient({
             </Badge>
 
             {item?.type === "lost" && item.reward && (
-              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 rounded-2xl p-5 mb-8 shadow-sm">
-                <p className="text-emerald-600 font-black text-[10px] mb-1">
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 rounded-xl p-3 mb-8 shadow-sm">
+                <p className="text-emerald-600 font-black text-[9px] mb-0.5">
                   {t("reward_gives_viewer")}
                 </p>
-                <p className="text-3xl font-black text-emerald-900 dark:text-emerald-100">
+                <p className="text-xl font-black text-emerald-900 dark:text-emerald-100">
                   {item.reward} TJS
                 </p>
               </div>
@@ -479,13 +479,13 @@ export default function ItemDetailsClient({
               </p>
             </div>
 
-            <div className="flex flex-row items-center gap-2.5 mb-10 overflow-x-auto no-scrollbar pb-1">
+            <div className="flex flex-row items-center gap-2 mb-10">
               {isLoaded && isOwner && (
                 <>
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm"
+                    className="flex-1 h-12 md:h-16 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm"
                     asChild
                   >
                     <Link href={`/items/${id}/edit`}>
@@ -495,7 +495,7 @@ export default function ItemDetailsClient({
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-amber-50 dark:bg-amber-900/10 text-amber-600 border border-amber-100/50 shadow-sm"
+                    className="flex-1 h-12 md:h-16 rounded-lg bg-amber-50 dark:bg-amber-900/10 text-amber-600 border border-amber-100/50 shadow-sm"
                     onClick={() => setShowArchiveConfirm(true)}
                     disabled={isActionLoading}
                   >
@@ -504,7 +504,7 @@ export default function ItemDetailsClient({
                   <Button
                     variant="secondary"
                     size="icon"
-                    className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm"
+                    className="flex-1 h-12 md:h-16 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isActionLoading}
                   >
@@ -515,7 +515,7 @@ export default function ItemDetailsClient({
               <Button
                 variant="secondary"
                 size="icon"
-                className="h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl bg-blue-50 dark:bg-blue-900/10 text-blue-600 border border-blue-100/50 shadow-sm"
+                className="flex-1 h-12 md:h-16 rounded-lg bg-blue-50 dark:bg-blue-900/10 text-blue-600 border border-blue-100/50 shadow-sm"
                 onClick={handleShare}
               >
                 <Share2 className="w-5 h-5 md:w-7 md:h-7" />
@@ -524,7 +524,7 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 className={cn(
-                  "h-12 w-12 shrink-0 md:h-16 md:w-16 rounded-xl transition-all border shadow-sm",
+                  "flex-1 h-12 md:h-16 rounded-lg transition-all border shadow-sm",
                   isSaved
                     ? "bg-emerald-50 text-emerald-600 border-emerald-100"
                     : "bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100",
@@ -547,15 +547,21 @@ export default function ItemDetailsClient({
                   {item?.type === "found" && (
                     <VerificationGate itemId={item.id} isOwner />
                   )}
-                  <Button
-                    size="lg"
-                    className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
-                    onClick={() => setShowResolvedConfirm(true)}
-                    disabled={isActionLoading}
-                  >
-                    <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" />{" "}
-                    {t("resolved")}
-                  </Button>
+                  {/* Дар mobile ин тугма ҳамеша дар боло аз navbar собит мемонад,
+                      то ҳангоми scroll ё дигар ҳолат нест нашавад. */}
+                  <div className="fixed bottom-[92px] left-4 right-4 z-40 md:static md:bottom-auto md:left-auto md:right-auto md:z-auto">
+                    <Button
+                      size="lg"
+                      className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                      onClick={() => setShowResolvedConfirm(true)}
+                      disabled={isActionLoading}
+                    >
+                      <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" />{" "}
+                      {t("resolved")}?
+                    </Button>
+                  </div>
+                  {/* Барои он ки мазмуни поёнӣ дар mobile аз тугмаи собит пинҳон нашавад */}
+                  <div className="h-20 md:hidden" />
                 </>
               ) : item?.type === "found" ? (
                 <VerificationGate itemId={item!.id} isOwner={false} phoneNumber={item?.phone_number} category={item?.category} />
@@ -637,9 +643,12 @@ export default function ItemDetailsClient({
           <DialogContent className="rounded-3xl border-none shadow-2xl">
             <DialogHeader>
               <DialogTitle className="text-emerald-600 font-black">
-                {t("resolved")}
+                {t("resolved")}?
               </DialogTitle>
             </DialogHeader>
+            <DialogDescription className="text-zinc-500 font-medium">
+              {t("resolvedConfirmDesc")}
+            </DialogDescription>
             <DialogFooter className="flex gap-3">
               <Button
                 variant="outline"

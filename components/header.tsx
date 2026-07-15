@@ -207,7 +207,7 @@ export function Header() {
                 }
               }}
             >
-              <span className="text-base sm:text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100">
+              <span className="hidden sm:inline text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100">
                 JUYO
               </span>
             </Link>
@@ -298,8 +298,7 @@ export function Header() {
 
           {/* Қисми рост: Интихоби забон ва аутентификатсия */}
           <div className="flex items-center gap-1.5 flex-initial sm:flex-1 justify-end shrink-0">
-            {mounted && userId && <NotificationBell />}
-            {/* Интихоби забон */}
+            {/* Интихоби забон — дар тарафи рости ҷустуҷӯ, пеш аз зангула */}
             <DropdownMenu onOpenChange={(open) => setLangDropdownOpen(open)}>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -330,6 +329,8 @@ export function Header() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {mounted && userId && <NotificationBell />}
 
             {/* User Button / Login (Танҳо барои Desktop) */}
             <div className="hidden sm:flex items-center space-x-2">

@@ -116,6 +116,9 @@ export const AdminService = {
   getDeletedItemEntry(id: string) {
     return adminFetch(`/api/admin/posts/deleted-archive/${id}`);
   },
+  getDeletedNotificationsArchive() {
+    return adminFetch(`/api/admin/notifications/deleted-archive`);
+  },
 
   sendNotification(payload: { title: string; body: string; target: NotifyTarget }) {
     return adminFetch("/api/admin/notify", {

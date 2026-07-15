@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Package, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Users, Package, Bell, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const NAV_ITEMS = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
   { href: "/admin/users", label: "Корбарон", icon: Users },
   { href: "/admin/posts", label: "Эълонҳо", icon: Package },
+  { href: "/admin/notifications", label: "Огоҳиномаҳо", icon: Bell },
 ];
 
 function isActive(pathname: string, href: string) {
