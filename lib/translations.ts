@@ -483,7 +483,7 @@ export const translations: Record<string, any> = {
       checking_custom_text: "AI матни нави шуморо месанҷад...",
       text_passed: "Матн қабул шуд!",
       text_moderation_failed: "Матни шумо аз санҷиш нагузашт.",
-      publishing: "Эълон нашр карда истодааст...",
+      publishing: "Эълон нашр карда шуда истодааст...",
     },
     // AI Moderation Codes
     ai_mod_codes: {

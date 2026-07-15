@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
     const moderationStatus = searchParams.get("moderation_status");
     const resolved = searchParams.get("resolved");
     const status = searchParams.get("status") ?? "active";
+    const filterUserId = searchParams.get("user_id");
     const page = Math.max(0, Number(searchParams.get("page") ?? 0));
     const pageSize = Math.min(100, Math.max(1, Number(searchParams.get("pageSize") ?? 20)));
 
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
     if (moderationStatus) query = query.eq("moderation_status", moderationStatus);
     if (resolved === "true") query = query.eq("is_resolved", true);
     else if (resolved === "false") query = query.eq("is_resolved", false);
+    if (filterUserId) query = query.eq("user_id", filterUserId);
 
     if (search) {
       const s = search.slice(0, 100).replace(/[%_\\]/g, "\\$&");

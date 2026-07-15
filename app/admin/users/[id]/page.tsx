@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import { useAdminUser } from "@/lib/hooks/use-admin-users";
 import { UserDetailHeader } from "@/components/admin/users/user-detail-header";
 import { UserEditForm } from "@/components/admin/users/user-edit-form";
-import { UserItemsList } from "@/components/admin/users/user-items-list";
+import { UserPostsPanel } from "@/components/admin/users/user-posts-panel";
 import { UserSavedItems } from "@/components/admin/users/user-saved-items";
 import { UserSafetyBox } from "@/components/admin/users/user-safety-box";
 import { UserVerificationClaims } from "@/components/admin/users/user-verification-claims";
@@ -70,7 +70,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
         ))}
       </div>
 
-      {tab === "items" && <UserItemsList items={items} />}
+      {tab === "items" && <UserPostsPanel userId={id} />}
       {tab === "saved" && <UserSavedItems savedItems={savedItems} />}
       {tab === "safety" && <UserSafetyBox items={safetyBoxItems} />}
       {tab === "claims" && (

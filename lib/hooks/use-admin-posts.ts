@@ -91,6 +91,7 @@ export function usePermanentlyDeletePost() {
 
 export interface DeletedItemSnapshot {
   id: string;
+  user_id: string;
   title: string;
   category: string;
   type: "lost" | "found";
@@ -108,10 +109,10 @@ export interface DeletedItemEntry {
   deleted_at: string;
 }
 
-export function useDeletedItemsArchive() {
+export function useDeletedItemsArchive(userId?: string) {
   return useQuery({
-    queryKey: ["admin", "posts", "deleted-archive"],
-    queryFn: () => AdminService.getDeletedItemsArchive() as Promise<{ entries: DeletedItemEntry[] }>,
+    queryKey: userId ? ["admin", "posts", "deleted-archive", "user", userId] : ["admin", "posts", "deleted-archive"],
+    queryFn: () => AdminService.getDeletedItemsArchive(userId) as Promise<{ entries: DeletedItemEntry[] }>,
     staleTime: 30_000,
   });
 }

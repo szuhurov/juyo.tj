@@ -547,21 +547,15 @@ export default function ItemDetailsClient({
                   {item?.type === "found" && (
                     <VerificationGate itemId={item.id} isOwner />
                   )}
-                  {/* Дар mobile ин тугма ҳамеша дар боло аз navbar собит мемонад,
-                      то ҳангоми scroll ё дигар ҳолат нест нашавад. */}
-                  <div className="fixed bottom-[92px] left-4 right-4 z-40 md:static md:bottom-auto md:left-auto md:right-auto md:z-auto">
-                    <Button
-                      size="lg"
-                      className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
-                      onClick={() => setShowResolvedConfirm(true)}
-                      disabled={isActionLoading}
-                    >
-                      <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" />{" "}
-                      {t("resolved")}?
-                    </Button>
-                  </div>
-                  {/* Барои он ки мазмуни поёнӣ дар mobile аз тугмаи собит пинҳон нашавад */}
-                  <div className="h-20 md:hidden" />
+                  <Button
+                    size="lg"
+                    className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                    onClick={() => setShowResolvedConfirm(true)}
+                    disabled={isActionLoading}
+                  >
+                    <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" />{" "}
+                    {t("resolved")}?
+                  </Button>
                 </>
               ) : item?.type === "found" ? (
                 <VerificationGate itemId={item!.id} isOwner={false} phoneNumber={item?.phone_number} category={item?.category} />

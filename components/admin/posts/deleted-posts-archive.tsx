@@ -18,10 +18,15 @@ interface CombinedRow {
   kind: "trash" | "purged";
 }
 
-export function DeletedPostsArchive() {
+export function DeletedPostsArchive({ userId }: { userId?: string } = {}) {
   const router = useRouter();
-  const { data: trashData, isLoading: trashLoading } = useAdminPosts({ status: "deleted", page: 0, pageSize: 200 });
-  const { data: archiveData, isLoading: archiveLoading } = useDeletedItemsArchive();
+  const { data: trashData, isLoading: trashLoading } = useAdminPosts({
+    status: "deleted",
+    user_id: userId,
+    page: 0,
+    pageSize: 200,
+  });
+  const { data: archiveData, isLoading: archiveLoading } = useDeletedItemsArchive(userId);
 
   if (trashLoading || archiveLoading) {
     return <p className="py-16 text-center text-sm font-bold text-zinc-400">Боркунӣ...</p>;

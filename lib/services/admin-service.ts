@@ -43,6 +43,7 @@ export interface AdminPostFilters {
   moderation_status?: "pending" | "approved" | "rejected";
   resolved?: "true" | "false" | "all";
   status?: "active" | "deleted" | "all";
+  user_id?: string;
   page?: number;
   pageSize?: number;
 }
@@ -110,8 +111,8 @@ export const AdminService = {
   permanentlyDeletePost(id: string) {
     return adminFetch(`/api/admin/posts/${id}/permanent-delete`, { method: "POST" });
   },
-  getDeletedItemsArchive() {
-    return adminFetch(`/api/admin/posts/deleted-archive`);
+  getDeletedItemsArchive(userId?: string) {
+    return adminFetch(`/api/admin/posts/deleted-archive${userId ? `?user_id=${userId}` : ""}`);
   },
   getDeletedItemEntry(id: string) {
     return adminFetch(`/api/admin/posts/deleted-archive/${id}`);
