@@ -43,6 +43,7 @@ export interface AdminUserDetail {
     answers: { question_id: string; question_text: string; answer_type: string; given_answer: string }[];
     claimant_phone: string | null;
     items: { title: string } | null;
+    is_deleted: boolean;
   }[];
   receivedClaims: {
     id: string;
@@ -54,6 +55,7 @@ export interface AdminUserDetail {
     claimant_token: string;
     items: { title: string; user_id: string } | null;
     claimantProfile: { first_name: string | null; last_name: string | null; avatar_url: string | null } | null;
+    is_deleted: boolean;
   }[];
   savedItems: {
     item_id: string;

@@ -16,20 +16,8 @@ export function DashboardCategoryChart({ data }: { data: { category: string; cou
   const total = data.reduce((sum, d) => sum + d.count, 0);
 
   return (
-    <div className="flex items-center gap-4">
-      <div className="w-[110px] h-[110px] shrink-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={data} dataKey="count" nameKey="category" innerRadius={32} outerRadius={52} paddingAngle={2}>
-              {data.map((entry, i) => (
-                <Cell key={entry.category} fill={COLORS[i % COLORS.length]} stroke="white" strokeWidth={2} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontSize: 12, fontWeight: 600, boxShadow: "0 8px 24px -8px rgba(24,24,27,0.25)" }} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="flex-1 min-w-0 space-y-1.5">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="w-full sm:flex-1 sm:min-w-0 space-y-1.5 order-1">
         {data.map((entry, i) => {
           const pct = total > 0 ? Math.round((entry.count / total) * 100) : 0;
           return (
@@ -40,6 +28,18 @@ export function DashboardCategoryChart({ data }: { data: { category: string; cou
             </div>
           );
         })}
+      </div>
+      <div className="w-[110px] h-[110px] shrink-0 mx-auto sm:mx-0 order-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={data} dataKey="count" nameKey="category" innerRadius={32} outerRadius={52} paddingAngle={2}>
+              {data.map((entry, i) => (
+                <Cell key={entry.category} fill={COLORS[i % COLORS.length]} stroke="white" strokeWidth={2} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={{ borderRadius: 12, border: "none", fontSize: 12, fontWeight: 600, boxShadow: "0 8px 24px -8px rgba(24,24,27,0.25)" }} />
+          </PieChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

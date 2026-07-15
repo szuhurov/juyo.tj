@@ -43,7 +43,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     { key: "items", label: `Эълонҳои корбар (${items.length})` },
     { key: "saved", label: `Захирашуда (${savedItems.length})` },
     { key: "safety", label: `Сандуқча (${safetyBoxItems.length})` },
-    { key: "claims", label: `Дархостҳои тасдиқ (${claimsCount})` },
+    { key: "claims", label: `Огоҳиномаҳо (${claimsCount})` },
     { key: "qr", label: "QR" },
   ];
 

@@ -30,6 +30,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       { data: savedItems },
       { data: safetyBoxItems },
       { data: receivedClaims },
+      { data: dismissed },
     ] = await Promise.all([
       supabaseAdmin.from("profiles").select("*").eq("id", id).maybeSingle(),
       supabaseAdmin
@@ -58,6 +59,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         .select("id, item_id, status, created_at, answers, claimant_phone, claimant_token, items!inner(title, user_id)")
         .eq("items.user_id", id)
         .order("created_at", { ascending: false }),
+      // Огоҳиномаҳое, ки худи корбар (ҳамчун соҳиби эълон ё довталаб) аз
+      // рӯйхати худ "нест" кардааст — sabtи асосии item_verification_attempts
+      // ҳаргиз пок намешавад, танҳо аз назари корбар пинҳон мешавад.
+      supabaseAdmin
+        .from("dismissed_notifications")
+        .select("ref_id")
+        .eq("user_id", id)
+        .eq("kind", "verification"),
     ]);
 
     if (profileError) throw profileError;
@@ -73,15 +82,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       claimantProfiles = Object.fromEntries((profs ?? []).map((p) => [p.id, p]));
     }
 
+    const dismissedIds = new Set((dismissed ?? []).map((d: any) => d.ref_id));
+
     const receivedClaimsEnriched = (receivedClaims ?? []).map((a: any) => ({
       ...a,
       claimantProfile: claimantProfiles[a.claimant_token] ?? null,
+      is_deleted: dismissedIds.has(a.id),
+    }));
+    const attemptsEnriched = (attempts ?? []).map((a: any) => ({
+      ...a,
+      is_deleted: dismissedIds.has(a.id),
     }));
 
     return NextResponse.json({
       profile,
       items: items ?? [],
-      verificationAttempts: attempts ?? [],
+      verificationAttempts: attemptsEnriched,
       receivedClaims: receivedClaimsEnriched,
       savedItems: savedItems ?? [],
       safetyBoxItems: safetyBoxItems ?? [],
