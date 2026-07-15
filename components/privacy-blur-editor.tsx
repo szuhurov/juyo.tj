@@ -60,14 +60,20 @@ interface DragState {
 const MAX_WORKING_WIDTH = 1400;
 const MIN_SIZE = 0.03; // Ҳадди ақали минтақа — то каши хеле хурд/тасодуфӣ намонад
 const PEN_PADDING = 0.02; // Изофаи атрофи роҳи қалам, то мукаммал пӯшад
+const AI_REGION_PADDING = 0.02; // Изофаи атрофи ҳар минтақаи пешниҳодкардаи AI
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
 }
 
-function pixelateRect(
-  source: HTMLCanvasElement,
+// Пахши сиёҳи пурра — на pixelation. Pixelation бо блокҳои хурд то ҳол
+// шакли рақамҳоро нигоҳ медошт (баъзан хонда мешуд, махсусан дар канори
+// минтақа ё агар матн калон бошад). Пахши як-ранга ҳеҷ маълумоти аслии
+// пикселро намемонад — 100% хонданашаванда, новобаста аз андозаи матн.
+function redactRect(
   ctx: CanvasRenderingContext2D,
+  canvasWidth: number,
+  canvasHeight: number,
   x: number,
   y: number,
   w: number,
@@ -75,24 +81,12 @@ function pixelateRect(
 ) {
   const cx = Math.max(0, Math.round(x));
   const cy = Math.max(0, Math.round(y));
-  const cw = Math.min(source.width - cx, Math.round(w));
-  const ch = Math.min(source.height - cy, Math.round(h));
+  const cw = Math.min(canvasWidth - cx, Math.round(w));
+  const ch = Math.min(canvasHeight - cy, Math.round(h));
   if (cw <= 0 || ch <= 0) return;
 
-  const blockSize = Math.max(6, Math.round(Math.min(cw, ch) / 10));
-  const smallW = Math.max(1, Math.ceil(cw / blockSize));
-  const smallH = Math.max(1, Math.ceil(ch / blockSize));
-
-  const tmp = document.createElement("canvas");
-  tmp.width = smallW;
-  tmp.height = smallH;
-  const tmpCtx = tmp.getContext("2d");
-  if (!tmpCtx) return;
-  tmpCtx.drawImage(source, cx, cy, cw, ch, 0, 0, smallW, smallH);
-
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(tmp, 0, 0, smallW, smallH, cx, cy, cw, ch);
-  ctx.imageSmoothingEnabled = true;
+  ctx.fillStyle = "#0a0a0a";
+  ctx.fillRect(cx, cy, cw, ch);
 }
 
 export function PrivacyBlurEditor({
@@ -151,13 +145,16 @@ export function PrivacyBlurEditor({
       bctx?.drawImage(img, 0, 0, w, h);
       baseRef.current = base;
 
-      const initial: EditableRegion[] = (initialRegions ?? []).map((r, i) => ({
-        id: `ai-${i}-${Date.now()}`,
-        x: r.x,
-        y: r.y,
-        width: r.width,
-        height: r.height,
-      }));
+      // Минтақаҳои пешниҳодкардаи AI бо изофаи хурд бор мешаванд — координатаи
+      // AI баъзан каме нодуруст аст (масалан дар MRZ-и поён), пас изофа
+      // кӯмак мекунад, ки матн пурра пӯшида шавад, на канораш кушода монад.
+      const initial: EditableRegion[] = (initialRegions ?? []).map((r, i) => {
+        const x = Math.max(0, r.x - AI_REGION_PADDING);
+        const y = Math.max(0, r.y - AI_REGION_PADDING);
+        const width = Math.min(1 - x, r.width + AI_REGION_PADDING * 2);
+        const height = Math.min(1 - y, r.height + AI_REGION_PADDING * 2);
+        return { id: `ai-${i}-${Date.now()}`, x, y, width, height };
+      });
       setRegions(initial);
       setHistory([initial]);
       setHistoryIndex(0);
@@ -172,7 +169,7 @@ export function PrivacyBlurEditor({
     };
   }, [file, open]);
 
-  // Рендери canvas: акси асосӣ + pixelation-и ҳар минтақа
+  // Рендери canvas: акси асосӣ + пахши сиёҳи ҳар минтақа
   const render = useCallback(() => {
     const base = baseRef.current;
     const canvas = canvasRef.current;
@@ -183,9 +180,10 @@ export function PrivacyBlurEditor({
     if (!ctx) return;
     ctx.drawImage(base, 0, 0);
     for (const r of regions) {
-      pixelateRect(
-        base,
+      redactRect(
         ctx,
+        base.width,
+        base.height,
         r.x * base.width,
         r.y * base.height,
         r.width * base.width,
