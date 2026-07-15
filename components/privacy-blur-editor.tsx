@@ -66,14 +66,13 @@ function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
 }
 
-// Пахши сиёҳи пурра — на pixelation. Pixelation бо блокҳои хурд то ҳол
-// шакли рақамҳоро нигоҳ медошт (баъзан хонда мешуд, махсусан дар канори
-// минтақа ё агар матн калон бошад). Пахши як-ранга ҳеҷ маълумоти аслии
-// пикселро намемонад — 100% хонданашаванда, новобаста аз андозаи матн.
+// Намунагирии хеле кам (3-6 ҳуҷра) + upscale-и ҳамвор — намуди "хира"/
+// frosted медиҳад (на қуттии сиёҳи қатъӣ), вале аз минтақа ҳамагӣ
+// якчанд ранги миёна мемонад, пас ҳеҷ шакли ҳарф/рақам зинда наметавонад
+// монад — аз ҷиҳати амният баробари пахши пурра аст, вале зеботар.
 function redactRect(
+  source: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
-  canvasWidth: number,
-  canvasHeight: number,
   x: number,
   y: number,
   w: number,
@@ -81,12 +80,25 @@ function redactRect(
 ) {
   const cx = Math.max(0, Math.round(x));
   const cy = Math.max(0, Math.round(y));
-  const cw = Math.min(canvasWidth - cx, Math.round(w));
-  const ch = Math.min(canvasHeight - cy, Math.round(h));
+  const cw = Math.min(source.width - cx, Math.round(w));
+  const ch = Math.min(source.height - cy, Math.round(h));
   if (cw <= 0 || ch <= 0) return;
 
-  ctx.fillStyle = "#0a0a0a";
-  ctx.fillRect(cx, cy, cw, ch);
+  const shortCells = 3;
+  const isWide = cw >= ch;
+  const smallW = isWide ? Math.min(6, Math.max(2, Math.round((cw / ch) * shortCells))) : shortCells;
+  const smallH = isWide ? shortCells : Math.min(6, Math.max(2, Math.round((ch / cw) * shortCells)));
+
+  const tmp = document.createElement("canvas");
+  tmp.width = smallW;
+  tmp.height = smallH;
+  const tmpCtx = tmp.getContext("2d");
+  if (!tmpCtx) return;
+  tmpCtx.drawImage(source, cx, cy, cw, ch, 0, 0, smallW, smallH);
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(tmp, 0, 0, smallW, smallH, cx, cy, cw, ch);
 }
 
 export function PrivacyBlurEditor({
@@ -169,7 +181,7 @@ export function PrivacyBlurEditor({
     };
   }, [file, open]);
 
-  // Рендери canvas: акси асосӣ + пахши сиёҳи ҳар минтақа
+  // Рендери canvas: акси асосӣ + пахши хираи ҳар минтақа
   const render = useCallback(() => {
     const base = baseRef.current;
     const canvas = canvasRef.current;
@@ -181,9 +193,8 @@ export function PrivacyBlurEditor({
     ctx.drawImage(base, 0, 0);
     for (const r of regions) {
       redactRect(
+        base,
         ctx,
-        base.width,
-        base.height,
         r.x * base.width,
         r.y * base.height,
         r.width * base.width,
