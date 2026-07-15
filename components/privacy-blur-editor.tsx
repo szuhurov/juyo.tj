@@ -652,7 +652,7 @@ export function PrivacyBlurEditor({
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-2xl rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl gap-0"
+        className="sm:max-w-2xl rounded-[2rem] p-0 overflow-x-hidden overflow-y-auto border-none shadow-2xl gap-0"
       >
         <DialogHeader className="p-6 pb-4 space-y-2">
           <div className="flex items-start gap-3">
