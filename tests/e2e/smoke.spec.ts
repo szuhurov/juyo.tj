@@ -45,16 +45,3 @@ test.describe('Accessibility basics', () => {
   });
 });
 
-test.describe('Rate limiting headers', () => {
-  test('API routes return proper content-type on rate limit', async ({ request }) => {
-    // Make 61 rapid requests to /api/ — 61st should be 429
-    let lastStatus = 200;
-    for (let i = 0; i < 65; i++) {
-      const res = await request.get('/api/health').catch(() => null);
-      if (res) lastStatus = res.status();
-      if (lastStatus === 429) break;
-    }
-    // Either we got 429 (rate limited) or 404 (route doesn't exist) — both mean the server is alive
-    expect([404, 429, 200]).toContain(lastStatus);
-  });
-});

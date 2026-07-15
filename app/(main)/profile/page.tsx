@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select"; // Рӯйхати интихобшаванда
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Гурӯҳи интихобкунандаҳо
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
+import { PrivacyBlurEditor, type PrivacyRegion } from "@/components/privacy-blur-editor"; // Муҳаррири ҳимояи махфият
 import {
   User,
   Bookmark,
@@ -386,6 +387,13 @@ function ProfileContent() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // Муҳаррири ҳимояи махфият — ниг. items/add/page.tsx
+  const [privacyReview, setPrivacyReview] = useState<{
+    files: File[];
+    regions: PrivacyRegion[];
+    resolve: (result: File[] | null) => void;
+  } | null>(null);
+
   // Animation Logic for AI Moderation
   useEffect(() => {
     let interval: any;
@@ -689,6 +697,8 @@ function ProfileContent() {
     setModerationError(null);
     setElapsedSeconds(0);
 
+    let finalSafetyItem = safetyItem;
+
     try {
       const supabaseToken = await getToken({ template: "supabase" });
       const supabase = createClerkSupabaseClient(supabaseToken!);
@@ -730,8 +740,9 @@ function ProfileContent() {
         );
         const formDataAI = new FormData();
 
+        let imageFiles: (File | null)[] = [];
         if (safetyItem.images && safetyItem.images.length > 0) {
-          const imageFiles = await Promise.all(
+          imageFiles = await Promise.all(
             safetyItem.images.map(async (url: string, index: number) => {
               try {
                 const response = await fetch(url);
@@ -751,6 +762,8 @@ function ProfileContent() {
 
         formDataAI.append("lang", locale);
         formDataAI.append("type", safetyItem.type || "lost");
+        formDataAI.append("title", safetyItem.item_name || "");
+        formDataAI.append("description", safetyItem.description || "");
         formDataAI.append("mode", "moderation_only");
 
         const { data: aiResponse, error: aiError } =
@@ -766,12 +779,67 @@ function ProfileContent() {
           return;
         }
         setScanMessage(t("ai_steps.images_passed") || "Аксҳо қабул шуданд!");
+
+        // Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
+        // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, корбар минтақаҳои
+        // пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам иваз/илова
+        // кунад, пеш аз он ки ба лентаи умумӣ нашр шавад.
+        if (aiResponse?.is_document) {
+          setModerationStatus("idle");
+          const suggestedRegions: PrivacyRegion[] = aiResponse.privacy_regions ?? [];
+          const oldUrls: string[] = safetyItem.images || [];
+          const validFiles = imageFiles.filter((f): f is File => !!f);
+          const blurred = await new Promise<File[] | null>((resolve) => {
+            setPrivacyReview({ files: validFiles, regions: suggestedRegions, resolve });
+          });
+          if (!blurred) {
+            // Корбар аз тирезаи блур баромад — нашрро бас мекунем.
+            return;
+          }
+          const newUrls: string[] = [];
+          for (const result of blurred) {
+            const ext = result.name.split(".").pop() || "jpg";
+            const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+            const { error: uploadError } = await supabase.storage
+              .from("items")
+              .upload(fileName, result);
+            if (uploadError) throw uploadError;
+            const {
+              data: { publicUrl },
+            } = supabase.storage.from("items").getPublicUrl(fileName);
+            newUrls.push(publicUrl);
+          }
+          const oldPaths = oldUrls
+            .map((urlStr: string) => {
+              try {
+                const u = new URL(urlStr);
+                const parts = u.pathname.split("/public/items/");
+                return parts.length > 1 ? parts[1] : null;
+              } catch {
+                const parts = urlStr.split("/public/items/");
+                return parts.length > 1 ? parts[1].split("?")[0] : null;
+              }
+            })
+            .filter(Boolean) as string[];
+          if (oldPaths.length > 0) {
+            await supabase.storage.from("items").remove(oldPaths);
+          }
+          // Рақами ҳуҷҷат/шиноснома аз матн нест карда шуд, ном/насаб бетағйир;
+          // категория маҷбуран "Ҳуҷҷатҳо" мешавад.
+          finalSafetyItem = {
+            ...safetyItem,
+            images: newUrls,
+            item_name: aiResponse.redacted_title || safetyItem.item_name,
+            description: aiResponse.redacted_description || safetyItem.description,
+            category: "Documents",
+          };
+        }
       }
 
       // 3. Агар ҳама санҷишҳо гузаштанд, нашр мекунем
       const item = await ItemService.publishFromSafetyBox(
         supabase,
-        safetyItem,
+        finalSafetyItem,
         userId!,
         "approved",
       );
@@ -1399,12 +1467,9 @@ function ProfileContent() {
                         <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
                           <Button
                             className="w-full h-12 sm:h-12 rounded-xl font-black tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
-                            onClick={() => {
-                              setActivePicker(null);
-                              handleDownloadQR();
-                            }}
+                            onClick={() => setActivePicker(null)}
                           >
-                            {t("download")}
+                            {t("done")}
                           </Button>
                         </div>
                       </div>
@@ -1526,7 +1591,7 @@ function ProfileContent() {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-200 space-y-10 px-2">
               {/* Mission */}
               <section className="space-y-6">
-                <div className="bg-zinc-900 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                <div className="bg-zinc-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full -mr-16 -mt-16" />
                   <h4 className="text-2xl font-black tracking-tight mb-4 relative z-10">
                     {t("guide.problemTitle")}
@@ -1542,7 +1607,7 @@ function ProfileContent() {
                 <h4 className="text-2xl font-black tracking-tight px-4">
                   {t("guide.solutionTitle")}
                 </h4>
-                <div className="bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 p-8 rounded-[2.5rem] space-y-4">
+                <div className="bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 p-8 rounded-3xl space-y-4">
                   <p className="text-zinc-600 dark:text-zinc-400 font-bold">
                     {t("guide.solutionDesc1")}
                     <span className="text-emerald-600">
@@ -1559,7 +1624,7 @@ function ProfileContent() {
 
               {/* How it works */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-8 rounded-[2.5rem] bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
+                <div className="p-8 rounded-3xl bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
                   <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
                     <PackageSearch className="w-6 h-6 text-emerald-600" />
                   </div>
@@ -1573,7 +1638,7 @@ function ProfileContent() {
                   </ol>
                 </div>
 
-                <div className="p-8 rounded-[2.5rem] bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
+                <div className="p-8 rounded-3xl bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
                   <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
                     <Search className="w-6 h-6 text-red-600" />
                   </div>
@@ -1590,7 +1655,7 @@ function ProfileContent() {
 
               {/* QR System */}
               <section className="space-y-6">
-                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-8 rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full -mr-32 -mt-32" />
                   <h4 className="text-2xl font-black tracking-tight mb-4 relative z-10">
                     {t("guide.qrSystemTitle")}
@@ -1642,7 +1707,7 @@ function ProfileContent() {
 
               {/* Goal */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-12">
-                <div className="p-8 rounded-[2.5rem] bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
+                <div className="p-8 rounded-3xl bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 space-y-4">
                   <h5 className="font-black text-sm tracking-wider text-amber-600">
                     {t("guide.safetyBoxGoalTitle")}
                   </h5>
@@ -1650,7 +1715,7 @@ function ProfileContent() {
                     {t("guide.safetyBoxGoalDesc")}
                   </p>
                 </div>
-                <div className="p-8 rounded-[2.5rem] bg-zinc-900 text-white space-y-4 shadow-xl">
+                <div className="p-8 rounded-3xl bg-zinc-900 text-white space-y-4 shadow-xl">
                   <h5 className="font-black text-sm tracking-wider text-emerald-400">
                     {t("guide.mainGoalTitle")}
                   </h5>
@@ -2538,12 +2603,12 @@ function ProfileContent() {
           !open && setConfirmDialog((prev) => ({ ...prev, open: false }))
         }
       >
-        <DialogContent className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl">
-          <DialogHeader className="space-y-3">
-            <DialogTitle className="text-2xl font-black tracking-tight">
+        <DialogContent className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-lg font-black tracking-tight leading-snug">
               {confirmDialog.title}
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
+            <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
               {confirmDialog.description}
             </DialogDescription>
           </DialogHeader>
@@ -3251,6 +3316,24 @@ function ProfileContent() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {privacyReview && (
+        <PrivacyBlurEditor
+          open
+          files={privacyReview.files}
+          initialRegions={privacyReview.regions}
+          onConfirm={(finalFiles) => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(finalFiles);
+          }}
+          onCancel={() => {
+            const resolve = privacyReview.resolve;
+            setPrivacyReview(null);
+            resolve(null);
+          }}
+        />
+      )}
     </TooltipProvider>
   );
 }

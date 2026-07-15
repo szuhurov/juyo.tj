@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       .eq("category", item.category)
       .eq("type", oppositeType)
       .eq("moderation_status", "approved")
+      .or("status.is.null,status.neq.deleted")
       .neq("user_id", item.user_id);
 
     const recipientIds = [...new Set((peers ?? []).map((p) => p.user_id).filter(Boolean))];

@@ -64,9 +64,9 @@ export default function EditItemPage({
 
   // Муҳаррири ҳимояи махфият — ниг. items/add/page.tsx
   const [privacyReview, setPrivacyReview] = useState<{
-    file: File;
+    files: File[];
     regions: PrivacyRegion[];
-    resolve: (result: File | null) => void;
+    resolve: (result: File[] | null) => void;
   } | null>(null);
 
   // Стейтҳои модерация (AI Moderation States)
@@ -238,7 +238,7 @@ export default function EditItemPage({
       if (error || (data && data.is_safe === false)) {
         setModerationStatus("failed");
         setModerationError(data?.reason || error?.message || t("error"));
-        return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[] };
+        return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[], redactedTitle: currentTitle, redactedDescription: currentDesc };
       }
 
       setModerationStatus("passed");
@@ -248,12 +248,14 @@ export default function EditItemPage({
         isSafe: true,
         isDocument: !!data?.is_document,
         privacyRegions: (data?.privacy_regions ?? []) as PrivacyRegion[],
+        redactedTitle: (data?.redacted_title as string) || currentTitle,
+        redactedDescription: (data?.redacted_description as string) || currentDesc,
       };
     } catch (error: any) {
       console.error("AI Moderation Error:", error);
       setModerationStatus("failed");
       setModerationError(error.message);
-      return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[] };
+      return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[], redactedTitle: currentTitle, redactedDescription: currentDesc };
     }
   };
 
@@ -337,11 +339,14 @@ export default function EditItemPage({
       let supabase = createClerkSupabaseClient(token);
 
       let finalImages = images;
+      let finalTitle = title;
+      let finalDescription = description;
+      let finalCategory = category;
 
       // МОДЕРАТСИЯИ МАҶБУРӢ
       if (hasNewImages) {
         // Агар акси нав бошад, AI Brain ҳардуро месанҷад (акс + матн)
-        const { isSafe, isDocument, privacyRegions } = await runAIModeration(images, title, description);
+        const { isSafe, isDocument, privacyRegions, redactedTitle, redactedDescription } = await runAIModeration(images, title, description);
         if (!isSafe) {
           setSaving(false);
           return;
@@ -350,18 +355,19 @@ export default function EditItemPage({
         // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, корбар минтақаҳои
         // пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам иваз/илова кунад.
         if (isDocument) {
+          // Рақами ҳуҷҷат/шиноснома аз матн нест карда шуд, ном/насаб бетағйир.
+          finalTitle = redactedTitle;
+          finalDescription = redactedDescription;
+          finalCategory = "Documents";
+
           setModerationStatus("idle");
-          const blurred: File[] = [];
-          for (const file of images) {
-            const result = await new Promise<File | null>((resolve) => {
-              setPrivacyReview({ file, regions: privacyRegions, resolve });
-            });
-            if (!result) {
-              // Корбар баромад — сабтро бас мекунем, то акси бе мозаика нашр нашавад.
-              setSaving(false);
-              return;
-            }
-            blurred.push(result);
+          const blurred = await new Promise<File[] | null>((resolve) => {
+            setPrivacyReview({ files: images, regions: privacyRegions, resolve });
+          });
+          if (!blurred) {
+            // Корбар баромад — сабтро бас мекунем, то акси бе мозаика нашр нашавад.
+            setSaving(false);
+            return;
           }
           finalImages = blurred;
           setImages(blurred);
@@ -416,9 +422,9 @@ export default function EditItemPage({
 
       // 2. Нав кардани маълумоти эълон дар база (Update query)
       const updateData: any = {
-        title,
-        description,
-        category,
+        title: finalTitle,
+        description: finalDescription,
+        category: finalCategory,
         type,
         phone_number: phone,
         reward: reward ? `${reward}` : null,
@@ -481,7 +487,7 @@ export default function EditItemPage({
             item_id: id,
             ...(firstImageUrl
               ? { image_url: firstImageUrl }
-              : { text: `${title} ${description}` }),
+              : { text: `${finalTitle} ${finalDescription}` }),
           },
         })
         .catch((err) =>
@@ -859,12 +865,12 @@ export default function EditItemPage({
       {privacyReview && (
         <PrivacyBlurEditor
           open
-          file={privacyReview.file}
+          files={privacyReview.files}
           initialRegions={privacyReview.regions}
-          onConfirm={(finalFile) => {
+          onConfirm={(finalFiles) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
-            resolve(finalFile);
+            resolve(finalFiles);
           }}
           onCancel={() => {
             const resolve = privacyReview.resolve;

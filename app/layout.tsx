@@ -15,7 +15,6 @@ import { ClerkLocalizationProvider } from "@/components/clerk-localization-provi
 import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
 import Script from "next/script";
 
 // Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣa
@@ -204,7 +203,6 @@ export default async function RootLayout({
               <Analytics />
               <SpeedInsights />
               <Toaster position="top-center" richColors />
-              <PWAInstallPrompt />
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>

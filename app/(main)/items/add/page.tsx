@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { ItemService, CATEGORIES } from "@/lib/services/item-service";
-import { getTemplatesForCategory, type QuestionTemplate, type QuestionType } from "@/lib/verification-questions";
+import { getTemplatesForCategory, VERIFICATION_TEMPLATES, type QuestionTemplate, type QuestionType } from "@/lib/verification-questions";
 import { ProfileService } from "@/lib/services/profile-service";
 import {
   createClerkSupabaseClient,
@@ -72,10 +72,6 @@ function AddItemForm() {
 
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
-  // Тартиби воқеии қадамҳо аз рӯи навигатсия — қадами 3 (санҷиши AI)
-  // охирин аст, на сеюм (ниг. nextStep/onFinalSubmit поён).
-  const stepOrder = [1, 2, 4, 5, 3];
-  const stepIndex = stepOrder.indexOf(step);
   const [loading, setLoading] = useState(false);
 
   // Маълумоти эълон (Consolidated State for better stability)
@@ -88,6 +84,13 @@ function AddItemForm() {
     reward: "",
   });
 
+  // Тартиби воқеии қадамҳо аз рӯи навигатсия — қадами 3 (санҷиши AI)
+  // охирин аст, на сеюм (ниг. nextStep/onFinalSubmit поён). Қадами 6
+  // (саволҳои санҷиши моликият) танҳо барои "Ёфтшуда" вуҷуд дорад.
+  const stepOrder =
+    formData.type === "found" ? [1, 2, 4, 5, 6, 3] : [1, 2, 4, 5, 3];
+  const stepIndex = stepOrder.indexOf(step);
+
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
@@ -97,16 +100,21 @@ function AddItemForm() {
   // тиреза барои ҳар акс паси ҳам кушода мешавад — бо минтақаҳои
   // пешниҳодкардаи AI, ки корбар метавонад бо қалам иваз/илова кунад.
   const [privacyReview, setPrivacyReview] = useState<{
-    file: File;
+    files: File[];
     regions: PrivacyRegion[];
-    resolve: (result: File | null) => void;
+    resolve: (result: File[] | null) => void;
   } | null>(null);
 
   // Саволҳои санҷиши моликият — танҳо барои эълонҳои "Ёфтшуда" (ихтиёрӣ).
+  // Ҳамаи ҷавобҳо бо матн (input) ҳастанд — на ҳа/не, то тахмин осон набошад.
+  // Корбар метавонад якчанд саволи худро илова кунад.
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
-  const [customQuestionText, setCustomQuestionText] = useState("");
-  const [customQuestionType, setCustomQuestionType] = useState<QuestionType>("yesno");
-  const [showSafetyModal, setShowSafetyModal] = useState(false);
+  const [customQuestions, setCustomQuestions] = useState<string[]>([]);
+  const [customQuestionInput, setCustomQuestionInput] = useState("");
+  // Огоҳии бехатарӣ БАЪД аз блур (агар ҳуҷҷат бошад), вале ПЕШ аз худи
+  // нашри воқеӣ нишон дода мешавад — нашр танҳо пас аз "Фаҳмидам" оғоз мешавад.
+  const [safetyAck, setSafetyAck] = useState<{ resolve: (proceed: boolean) => void } | null>(null);
+  const [postSuccessRedirect, setPostSuccessRedirect] = useState("/profile?tab=posts");
   const [showNoQuestionsConfirm, setShowNoQuestionsConfirm] = useState(false);
   const [showPhotoChoice, setShowPhotoChoice] = useState(false);
   const [moderationStatus, setModerationStatus] = useState<
@@ -115,6 +123,10 @@ function AddItemForm() {
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [showSearchChoice, setShowSearchChoice] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
+  // Паёми "нашр карда истодааст" (боркунӣ, сабти база) — ҷудо аз
+  // scanMessage/checking, зеро он ба AI рабте надорад ва не бояд анимацияи
+  // "AI мегардад"-ро бардурӯғ такрор кунад.
+  const [publishingMessage, setPublishingMessage] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -243,15 +255,17 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      if (
-        formData.type === "found" &&
-        selectedQuestionIds.length === 0 &&
-        !customQuestionText.trim()
-      ) {
+      if (formData.type === "found") {
+        setStep(6); // Саволҳои санҷиши моликият — қадами ҷудогона
+        return;
+      }
+      onFinalSubmit();
+    } else if (step === 6) {
+      if (selectedQuestionIds.length === 0 && customQuestions.length === 0) {
         setShowNoQuestionsConfirm(true);
         return;
       }
-      setShowSafetyModal(true);
+      onFinalSubmit();
     }
   };
 
@@ -269,8 +283,11 @@ function AddItemForm() {
   };
 
   const onFinalSubmit = async () => {
-    setShowSafetyModal(false);
     let finalImages: File[] = images;
+    let finalTitle = formData.title;
+    let finalDescription = formData.description;
+    let finalCategory = formData.category;
+    let requiresIdProof = false;
 
     // Пурсиши иҷозати огоҳиномаро ҳамин ҷо оғоз мекунем (на баъд аз upload/insert) —
     // то браузер онро ҳамчун идомаи бевоситаи клики корбар шиносад (баъзе браузерҳо
@@ -326,33 +343,56 @@ function AddItemForm() {
         return;
       }
 
-      setModerationStatus("passed");
-      setScanMessage(t("ai_steps.text_passed") || "Қабул шуд!");
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
       // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар
       // минтақаҳои пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам
-      // иваз/илова кунад пеш аз тасдиқ.
+      // иваз/илова кунад пеш аз тасдиқ. Экрани "муваффақият" танҳо БАЪД аз
+      // тамом шудани ҳамаи блурҳо нишон дода мешавад — на пеш аз он.
       if (checkData?.is_document) {
+        // Матни ниҳоӣ — рақами ҳуҷҷат/шиноснома аз матн нест карда шуд (AI),
+        // ном/насаб бетағйир мемонад. Категория маҷбуран "Ҳуҷҷатҳо" мешавад,
+        // новобаста аз он ки корбар кадом категорияро интихоб карда буд.
+        finalTitle = checkData.redacted_title || formData.title;
+        finalDescription = checkData.redacted_description || formData.description;
+        finalCategory = "Documents";
+        requiresIdProof = !!checkData.document_needs_id_proof;
+
         setModerationStatus("idle");
         const suggestedRegions: PrivacyRegion[] = checkData.privacy_regions ?? [];
-        const blurred: File[] = [];
-        for (const file of images) {
-          const result = await new Promise<File | null>((resolve) => {
-            setPrivacyReview({ file, regions: suggestedRegions, resolve });
-          });
-          if (!result) {
-            // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
-            // ҳуҷҷати бе мозаика ҳаргиз нашр нашавад.
-            setStep(4);
-            return;
-          }
-          blurred.push(result);
+        const blurred = await new Promise<File[] | null>((resolve) => {
+          setPrivacyReview({ files: images, regions: suggestedRegions, resolve });
+        });
+        if (!blurred) {
+          // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
+          // ҳуҷҷати бе мозаика ҳаргиз нашр нашавад.
+          setStep(4);
+          return;
         }
         setImages(blurred);
         finalImages = blurred;
       }
+
+      // 1.6 Барои эълони ҷамъиятии "Гумшуда" (на Сандуқчаи Ман, на "Ёфтшуда")
+      // пеш аз худи нашр маслиҳати бехатариро нишон медиҳем — нашр танҳо
+      // пас аз "Фаҳмидам" оғоз мешавад. Барои "Ёфтшуда" ин лозим нест, зеро
+      // қадами 6 (саволҳои санҷиш) аллакай ҳамон маслиҳатро (пурсидани
+      // саволи дақиқ пеш аз баргардонидан) пӯшонидааст.
+      if (!isSafetyMode && formData.type !== "found") {
+        setModerationStatus("idle");
+        const proceed = await new Promise<boolean>((resolve) => {
+          setSafetyAck({ resolve });
+        });
+        if (!proceed) {
+          setStep(4);
+          return;
+        }
+      }
+
+      // Санҷиши AI аллакай тамом шуд — он чи минбаъд меояд (боркунӣ, сабти
+      // база) кори оддист, на AI. "idle" (спиннери одӣ) истифода мешавад,
+      // на "checking" — то анимацияи "AI мегардад" бардурӯғ такрор нашавад.
+      setModerationStatus("idle");
+      setPublishingMessage(t("ai_steps.publishing") || "Эълон нашр карда истодааст...");
     } catch (err: any) {
       setModerationStatus("failed");
       setModerationError(err.message);
@@ -392,9 +432,9 @@ function AddItemForm() {
 
         const safetyData = {
           user_id: userId,
-          item_name: formData.title,
-          description: formData.description,
-          category: formData.category,
+          item_name: finalTitle,
+          description: finalDescription,
+          category: finalCategory,
           type: formData.type,
           phone_number: formData.phone,
           reward:
@@ -420,9 +460,9 @@ function AddItemForm() {
 
       const itemData = {
         user_id: userId,
-        title: formData.title,
-        description: formData.description,
-        category: formData.category,
+        title: finalTitle,
+        description: finalDescription,
+        category: finalCategory,
         type: formData.type,
         phone_number: formData.phone,
         reward:
@@ -489,13 +529,24 @@ function AddItemForm() {
       // Саволҳои санҷиши моликият — танҳо барои "Ёфтшуда".
       if (formData.type === "found") {
         const questionRows: { item_id: string; question_text: string; answer_type: QuestionType; sort_order: number }[] = [];
+        // Категорияи АСЛӢ (на finalCategory), зеро selectedQuestionIds аз
+        // рӯи саволҳои ҳамон категорияи аслӣ интихоб шуда буданд.
         const templates = getTemplatesForCategory(formData.category);
         selectedQuestionIds.forEach((id, i) => {
           const tpl = templates.find((q) => q.id === id);
           if (tpl) questionRows.push({ item_id: item.id, question_text: tpl.text[locale], answer_type: tpl.type, sort_order: i });
         });
-        if (customQuestionText.trim()) {
-          questionRows.push({ item_id: item.id, question_text: customQuestionText.trim(), answer_type: customQuestionType, sort_order: questionRows.length });
+        customQuestions.forEach((q) => {
+          questionRows.push({ item_id: item.id, question_text: q, answer_type: "input", sort_order: questionRows.length });
+        });
+        // AI муайян кард, ки ин ҳуҷҷат худи шиноснома/шаҳодатнома нест —
+        // барои исботи моликият даъвогар бояд шиноснома/шаҳодатномаи худро
+        // нишон диҳад. Агар ин савол аллакай интихоб нашуда бошад, илова мекунем.
+        if (requiresIdProof) {
+          const idProofTpl = VERIFICATION_TEMPLATES.Documents.find((q) => q.id === "doc_id_proof");
+          if (idProofTpl && !questionRows.some((q) => q.question_text === idProofTpl.text[locale])) {
+            questionRows.push({ item_id: item.id, question_text: idProofTpl.text[locale], answer_type: idProofTpl.type, sort_order: questionRows.length });
+          }
         }
         if (questionRows.length > 0) {
           const { error: qError } = await supabase.from("item_verification_questions").insert(questionRows);
@@ -509,12 +560,18 @@ function AddItemForm() {
       fetch(
         `https://www.google.com/ping?sitemap=https://juyo.tj/sitemap.xml`,
       ).catch(() => {});
-      router.push("/profile?tab=posts");
+      // Эълон бомуваффақият нашр шуд — экрани ниҳоӣ бо тугма нишон дода
+      // мешавад (гузариш ба профил танҳо баъд аз пахши он).
+      setPostSuccessRedirect("/profile?tab=posts");
+      setModerationStatus("passed");
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || t("error"));
+      setModerationStatus("failed");
+      setModerationError(error.message || t("error"));
     } finally {
       setLoading(false);
+      setPublishingMessage(null);
     }
   };
 
@@ -613,7 +670,7 @@ function AddItemForm() {
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
-                      className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-blue-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                      className="flex flex-col gap-2 h-32 rounded-[1.2rem] border-none bg-blue-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                       onClick={() => {
                         setShowPhotoChoice(false);
                         setShowCameraCapture(true);
@@ -628,7 +685,7 @@ function AddItemForm() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-orange-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                      className="flex flex-col gap-2 h-32 rounded-[1.2rem] border-none bg-orange-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                       onClick={() => {
                         setShowPhotoChoice(false);
                         galleryInputRef.current?.click();
@@ -828,13 +885,53 @@ function AddItemForm() {
                   </div>
                 </div>
               )}
+
+              {/* Passed State UI — то дар фосилаи байни қабули AI ва
+                  нашри ниҳоӣ (боркунии аксҳо, сабти база) экран холӣ/сафед
+                  нанамояд. */}
+              {moderationStatus === "passed" && (
+                <div className="space-y-6 animate-in zoom-in duration-300 max-w-sm mx-auto w-full">
+                  <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-black tracking-tight text-emerald-600">
+                      {t("success")}
+                    </h2>
+                    <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm tracking-tight">
+                      {t("imageModeration.submitted")}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => router.push(postSuccessRedirect)}
+                    className="w-full h-14 rounded-2xl font-black tracking-widest text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                  >
+                    {t("done")}
+                  </Button>
+                </div>
+              )}
+
+              {/* Idle — вақте ки корбар дар тирезаи блур аст (privacyReview
+                  боз аст) ё AI натиҷаро аллакай пеш аз боркунии ниҳоӣ дод. */}
+              {moderationStatus === "idle" && (
+                <div className="space-y-4 animate-in fade-in duration-300">
+                  <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
+                    <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+                  </div>
+                  {publishingMessage && (
+                    <p className="text-emerald-600 font-black text-[10px] sm:text-xs tracking-[0.2em] text-center">
+                      {publishingMessage}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {/* Step 4: Details (Auto-filled) */}
           {step === 4 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 animate-in fade-in slide-in-from-right-4 duration-500 w-full items-start">
-              <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-12 animate-in fade-in slide-in-from-right-4 duration-500 w-full items-start">
+              <div className="space-y-2">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
                     {t("titleLabel")}
@@ -857,7 +954,7 @@ function AddItemForm() {
                   </Label>
                   <Textarea
                     placeholder={t("description")}
-                    className="rounded-xl min-h-[140px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none ring-2 ring-emerald-500/10"
+                    className="rounded-xl min-h-[100px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none ring-2 ring-emerald-500/10"
                     value={formData.description}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -868,45 +965,43 @@ function AddItemForm() {
                   />
                 </div>
               </div>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
-                    {t("categoryLabel")}
-                  </Label>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            category: cat.name,
-                          }))
-                        }
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+                  {t("categoryLabel")}
+                </Label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          category: cat.name,
+                        }))
+                      }
+                      className={cn(
+                        "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all active:scale-95 text-center",
+                        formData.category === cat.name
+                          ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm"
+                          : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600",
+                      )}
+                    >
+                      <div
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border-2 transition-all active:scale-95 text-left",
+                          "w-6 h-6 rounded-md flex items-center justify-center text-sm shrink-0",
                           formData.category === cat.name
-                            ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm"
-                            : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600",
+                            ? "bg-emerald-100"
+                            : "bg-zinc-50",
                         )}
                       >
-                        <div
-                          className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0",
-                            formData.category === cat.name
-                              ? "bg-emerald-100"
-                              : "bg-zinc-50",
-                          )}
-                        >
-                          {cat.icon}
-                        </div>
-                        <span className="text-[10px] font-black tracking-tight leading-tight">
-                          {t(`categories.${cat.id}`)}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+                        {cat.icon}
+                      </div>
+                      <span className="text-[8px] font-black tracking-tight leading-tight">
+                        {t(`categories.${cat.id}`)}
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -964,99 +1059,118 @@ function AddItemForm() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
 
-              {formData.type === "found" && (
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-black tracking-tight text-zinc-800">
-                      {t("verifyQuestionsTitle")}
-                    </h3>
-                    <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
-                      {t("verifyQuestionsDesc")}
-                    </p>
-                  </div>
+          {/* Step 6: Verification questions — танҳо барои "Ёфтшуда" */}
+          {step === 6 && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center mx-auto shadow-sm">
+                  <ShieldQuestion className="w-7 h-7 text-emerald-600" />
+                </div>
+                <p className="text-[11px] text-zinc-500 font-medium leading-relaxed px-4">
+                  {t("verifyQuestionsDesc")}
+                </p>
+              </div>
 
-                  <div className="grid grid-cols-1 gap-2">
-                    {getTemplatesForCategory(formData.category).map((q) => {
-                      const active = selectedQuestionIds.includes(q.id);
-                      return (
+              <div className="space-y-3 bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 rounded-[1.5rem] p-4">
+                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-0.5">
+                  {t("verifyCustomQuestion")}
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={t("verifyCustomQuestionPlaceholder")}
+                    className="rounded-xl h-12 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-sm font-bold flex-1"
+                    value={customQuestionInput}
+                    onChange={(e) => setCustomQuestionInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && customQuestionInput.trim()) {
+                        e.preventDefault();
+                        setCustomQuestions((prev) => [...prev, customQuestionInput.trim()]);
+                        setCustomQuestionInput("");
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    className="h-12 w-12 rounded-xl font-black shrink-0 bg-emerald-500 hover:bg-emerald-600 shadow-sm"
+                    disabled={!customQuestionInput.trim()}
+                    onClick={() => {
+                      setCustomQuestions((prev) => [...prev, customQuestionInput.trim()]);
+                      setCustomQuestionInput("");
+                    }}
+                  >
+                    <Plus className="w-5 h-5" />
+                  </Button>
+                </div>
+                {customQuestions.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    {customQuestions.map((q, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center gap-2.5 p-3 rounded-xl bg-white dark:bg-zinc-950 border border-emerald-200 dark:border-emerald-900/40 shadow-sm"
+                      >
+                        <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        </div>
+                        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 flex-1 leading-snug">
+                          {q}
+                        </span>
                         <button
-                          key={q.id}
                           type="button"
                           onClick={() =>
-                            setSelectedQuestionIds((prev) =>
-                              active ? prev.filter((id) => id !== q.id) : [...prev, q.id],
-                            )
+                            setCustomQuestions((prev) => prev.filter((_, idx) => idx !== i))
                           }
+                          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2.5">
+                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-0.5">
+                  {t("verifyTemplateLabel")}
+                </Label>
+                <div className="grid grid-cols-1 gap-2">
+                  {getTemplatesForCategory(formData.category).map((q) => {
+                    const active = selectedQuestionIds.includes(q.id);
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() =>
+                          setSelectedQuestionIds((prev) =>
+                            active ? prev.filter((id) => id !== q.id) : [...prev, q.id],
+                          )
+                        }
+                        className={cn(
+                          "flex items-center gap-3.5 p-4 rounded-2xl border-2 text-left transition-all active:scale-[0.99]",
+                          active
+                            ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10 shadow-sm"
+                            : "border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-200 dark:hover:border-zinc-700",
+                        )}
+                      >
+                        <div
                           className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all",
-                            active
-                              ? "border-emerald-500 bg-emerald-50/40"
-                              : "border-zinc-100 bg-white hover:border-zinc-200",
+                            "w-6 h-6 rounded-md border-2 shrink-0 flex items-center justify-center transition-all",
+                            active ? "bg-emerald-500 border-emerald-500" : "border-zinc-300 dark:border-zinc-700",
                           )}
                         >
-                          <div
-                            className={cn(
-                              "w-5 h-5 rounded-md border-2 shrink-0 flex items-center justify-center",
-                              active ? "bg-emerald-500 border-emerald-500" : "border-zinc-300",
-                            )}
-                          >
-                            {active && <CheckCircle2 className="w-4 h-4 text-white" />}
-                          </div>
-                          <span className="text-xs font-bold text-zinc-700">{q.text[locale]}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="space-y-2 pt-1">
-                    <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
-                      {t("verifyCustomQuestion")}
-                    </Label>
-                    <Input
-                      placeholder={t("verifyCustomQuestionPlaceholder")}
-                      className="rounded-xl h-12 bg-white border-zinc-200 text-sm font-bold"
-                      value={customQuestionText}
-                      onChange={(e) => setCustomQuestionText(e.target.value)}
-                    />
-                    <p className="text-[10px] text-zinc-400 font-medium leading-relaxed px-0.5">
-                      {t("verifyCustomQuestionHint")}
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setCustomQuestionType("yesno")}
-                        className={cn(
-                          "flex-1 h-9 rounded-lg text-[10px] font-black tracking-wider border-2",
-                          customQuestionType === "yesno"
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                            : "border-zinc-100 text-zinc-400",
-                        )}
-                      >
-                        {t("verifyTypeYesNo")}
+                          {active && <CheckCircle2 className="w-4 h-4 text-white" />}
+                        </div>
+                        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 leading-snug">
+                          {q.text[locale]}
+                        </span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setCustomQuestionType("input")}
-                        className={cn(
-                          "flex-1 h-9 rounded-lg text-[10px] font-black tracking-wider border-2",
-                          customQuestionType === "input"
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                            : "border-zinc-100 text-zinc-400",
-                        )}
-                      >
-                        {t("verifyTypeInput")}
-                      </button>
-                    </div>
-                  </div>
-
-                  {selectedQuestionIds.length === 0 && !customQuestionText.trim() && (
-                    <p className="text-[11px] text-amber-600 font-bold bg-amber-50 border border-amber-100 rounded-xl p-3">
-                      {t("verifyNoQuestionsWarning")}
-                    </p>
-                  )}
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </CardContent>
@@ -1075,7 +1189,10 @@ function AddItemForm() {
                 {t("back")}
               </Button>
             )}
-            {(step === 1 || step === 2 || step === 4) && (
+            {(step === 1 ||
+              step === 2 ||
+              step === 4 ||
+              (step === 5 && formData.type === "found")) && (
               <Button
                 size="lg"
                 onClick={nextStep}
@@ -1084,11 +1201,9 @@ function AddItemForm() {
                 {t("next")}
               </Button>
             )}
-            {step === 5 && (
+            {((step === 5 && formData.type !== "found") || step === 6) && (
               <Button
-                onClick={() =>
-                  isSafetyMode ? onFinalSubmit() : setShowSafetyModal(true)
-                }
+                onClick={nextStep}
                 disabled={loading}
                 className="flex-[1.5] rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black tracking-widest text-[10px] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all"
               >
@@ -1105,30 +1220,43 @@ function AddItemForm() {
         </div>
       </Card>
 
-      {/* Safety Confirmation Modal */}
-      <Dialog open={showSafetyModal} onOpenChange={setShowSafetyModal}>
+      {/* Safety Advice Modal — баъд аз блур (агар ҳуҷҷат бошад), пеш аз худи нашр */}
+      <Dialog
+        open={!!safetyAck}
+        onOpenChange={(v) => {
+          if (!v && safetyAck) {
+            const resolve = safetyAck.resolve;
+            setSafetyAck(null);
+            resolve(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
-          <div className="p-10 space-y-6 text-center">
-            <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-2 bg-red-50 animate-in zoom-in duration-500">
-              <ShieldAlert className="w-10 h-10 text-red-500" />
+          <div className="p-7 space-y-5 text-center">
+            <div className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center mx-auto bg-red-50 animate-in zoom-in duration-500">
+              <ShieldAlert className="w-8 h-8 text-red-500" />
             </div>
-            <div className="space-y-3">
-              <DialogTitle className="text-2xl font-black tracking-tight">
+            <div className="space-y-2">
+              <DialogTitle className="text-lg font-black tracking-tight leading-snug">
                 {formData.type === "found"
                   ? t("safetyPostModal.foundTitle")
                   : t("safetyPostModal.lostTitle")}
               </DialogTitle>
-              <p className="text-zinc-500 font-bold text-sm leading-relaxed">
+              <p className="text-zinc-500 font-bold text-[13px] leading-relaxed">
                 {formData.type === "found"
                   ? t("safetyPostModal.foundDesc")
                   : t("safetyPostModal.lostDesc")}
               </p>
             </div>
           </div>
-          <div className="px-10 pb-10">
+          <div className="px-7 pb-7">
             <Button
-              onClick={onFinalSubmit}
-              className="w-full h-16 rounded-[1.5rem] font-black tracking-widest text-xs text-white bg-emerald-500 hover:bg-emerald-600 shadow-xl"
+              onClick={() => {
+                const resolve = safetyAck?.resolve;
+                setSafetyAck(null);
+                resolve?.(true);
+              }}
+              className="w-full h-14 rounded-2xl font-black tracking-widest text-xs text-white bg-emerald-500 hover:bg-emerald-600 shadow-xl"
             >
               {t("safetyPostModal.confirmBtn")}
             </Button>
@@ -1138,34 +1266,34 @@ function AddItemForm() {
 
       {/* No-Questions Confirmation Modal (finder) */}
       <Dialog open={showNoQuestionsConfirm} onOpenChange={setShowNoQuestionsConfirm}>
-        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
-          <div className="p-10 space-y-6 text-center">
-            <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-2 bg-amber-50 animate-in zoom-in duration-500">
-              <ShieldQuestion className="w-10 h-10 text-amber-500" />
+        <DialogContent className="sm:max-w-md rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl">
+          <div className="p-7 space-y-5 text-center">
+            <div className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center mx-auto bg-amber-50 animate-in zoom-in duration-500">
+              <ShieldQuestion className="w-8 h-8 text-amber-500" />
             </div>
-            <div className="space-y-3">
-              <DialogTitle className="text-2xl font-black tracking-tight">
+            <div className="space-y-2">
+              <DialogTitle className="text-lg font-black tracking-tight leading-snug">
                 {t("verifyFinderConfirmTitle")}
               </DialogTitle>
-              <p className="text-zinc-500 font-bold text-sm leading-relaxed">
+              <p className="text-zinc-500 font-bold text-[13px] leading-relaxed">
                 {t("verifyFinderConfirmDesc")}
               </p>
             </div>
           </div>
-          <div className="px-10 pb-10 space-y-2.5">
+          <div className="px-7 pb-7 space-y-2.5">
             <Button
               onClick={() => {
                 setShowNoQuestionsConfirm(false);
-                setShowSafetyModal(true);
+                onFinalSubmit();
               }}
-              className="w-full h-16 rounded-[1.5rem] font-black tracking-widest text-xs text-white bg-emerald-500 hover:bg-emerald-600 shadow-xl"
+              className="w-full h-14 rounded-2xl font-black tracking-widest text-xs text-white bg-emerald-500 hover:bg-emerald-600 shadow-xl"
             >
               {t("verifyFinderConfirmYes")}
             </Button>
             <Button
               variant="outline"
               onClick={() => setShowNoQuestionsConfirm(false)}
-              className="w-full h-12 rounded-[1.2rem] font-bold text-xs"
+              className="w-full h-11 rounded-xl font-bold text-xs"
             >
               {t("verifyFinderConfirmNo")}
             </Button>
@@ -1176,12 +1304,12 @@ function AddItemForm() {
       {privacyReview && (
         <PrivacyBlurEditor
           open
-          file={privacyReview.file}
+          files={privacyReview.files}
           initialRegions={privacyReview.regions}
-          onConfirm={(finalFile) => {
+          onConfirm={(finalFiles) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
-            resolve(finalFile);
+            resolve(finalFiles);
           }}
           onCancel={() => {
             const resolve = privacyReview.resolve;

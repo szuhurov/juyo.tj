@@ -7,8 +7,10 @@ import { useLanguage } from "@/lib/language-context";
 import { toast } from "sonner";
 
 const POLL_MS = 20_000;
+const TOAST_REMIND_MS = 60 * 60 * 1000; // Такрори ёдоварии toast, агар корбар ҳанӯз надида бошад
 const SEEN_STORAGE_KEY = "juyo_seen_notification_ids";
 const OPENED_STORAGE_KEY = "juyo_opened_notification_ids";
+const TOAST_SHOWN_STORAGE_KEY = "juyo_toast_last_shown";
 
 export interface NotificationItem {
   id: string;
@@ -35,6 +37,23 @@ function loadIds(key: string): Set<string> {
   }
 }
 
+// Вақти охирини нишон додани toast барои ҳар ID — дар localStorage, то
+// ҳангоми reload/remount-и компонент гум нашавад (ана ҳамин боис буд, ки
+// toast ҳар 20 сония такрор мешуд).
+function loadToastTimestamps(): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(TOAST_SHOWN_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function saveToastTimestamps(map: Record<string, number>) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOAST_SHOWN_STORAGE_KEY, JSON.stringify(map));
+}
+
 // Огоҳиномае, ки то ҳанӯз "дида нашуда" ҳисоб мешавад — pending_review-и
 // санҷиш ё ҳар эълони нави категория (QR scan қасдан ин ҷо нест, танҳо push аст).
 function isUnseenCandidate(item: NotificationItem): boolean {
@@ -53,7 +72,10 @@ export function useNotifications(
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadIds(SEEN_STORAGE_KEY));
   // openedIds — назорати ранги ҳар сатр дар рӯйхат (алоҳида, ҳангоми кушодани ҳамон сатр).
   const [openedIds, setOpenedIds] = useState<Set<string>>(() => loadIds(OPENED_STORAGE_KEY));
-  const seenNotifiedIds = useRef<Set<string> | null>(null);
+  // Вақти охирини нишондодашудаи toast барои ҳар ID (localStorage-based, на
+  // useRef) — то ҳангоми remount-и компонент (масалан гузариш байни
+  // саҳифаҳо) toast-и якхела ҳар 20 сония такрор нашавад.
+  const toastShownAt = useRef<Record<string, number>>(loadToastTimestamps());
 
   const fetchAll = useCallback(async () => {
     if (!userId) {
@@ -102,23 +124,30 @@ export function useNotifications(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
 
-    // Пас аз бори аввал, ҳар чизи нав-ро бо toast огоҳ мекунем.
+    // Toast барои ҳар ID танҳо якбор фавран мебарояд, баъд on то 1 соат
+    // такрор намешавад — ва агар корбар аллакай онро дида бошад (seenIds),
+    // дигар ҳаргиз такрор намешавад, танҳо огоҳиномаҳои воқеан НАВ мебароянд.
     const candidates = rows.filter(isUnseenCandidate);
-    if (seenNotifiedIds.current) {
-      const fresh = candidates.filter((r) => !seenNotifiedIds.current!.has(r.id));
-      for (const r of fresh) {
-        toast.info(
-          r.kind === "verification"
-            ? t("verifyNewAttemptToast").replace("%{title}", r.itemTitle)
-            : t("categoryPostToast").replace("%{title}", r.itemTitle),
-        );
-      }
+    const now = Date.now();
+    const timestamps = toastShownAt.current;
+    let timestampsChanged = false;
+    for (const r of candidates) {
+      if (seenIds.has(r.id)) continue;
+      const lastShown = timestamps[r.id];
+      if (lastShown && now - lastShown < TOAST_REMIND_MS) continue;
+      toast.info(
+        r.kind === "verification"
+          ? t("verifyNewAttemptToast").replace("%{title}", r.itemTitle)
+          : t("categoryPostToast").replace("%{title}", r.itemTitle),
+      );
+      timestamps[r.id] = now;
+      timestampsChanged = true;
     }
-    seenNotifiedIds.current = new Set(candidates.map((r) => r.id));
+    if (timestampsChanged) saveToastTimestamps(timestamps);
 
     setItems(rows);
     setLoading(false);
-  }, [userId, getToken, t, verifyLimit, categoryLimit]);
+  }, [userId, getToken, t, verifyLimit, categoryLimit, seenIds]);
 
   useEffect(() => {
     fetchAll();

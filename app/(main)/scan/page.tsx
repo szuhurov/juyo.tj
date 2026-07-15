@@ -259,16 +259,16 @@ export default function ScanPage() {
       )}
 
       <Dialog open={showUnknownQr} onOpenChange={setShowUnknownQr}>
-        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-8 border-none shadow-2xl bg-white outline-none">
+        <DialogContent className="sm:max-w-md rounded-[1.75rem] p-6 border-none shadow-2xl bg-white outline-none">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
-          <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <QrCode className="w-8 h-8 text-red-500" />
+          <DialogHeader className="space-y-3 text-center">
+            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-1">
+              <QrCode className="w-7 h-7 text-red-500" />
             </div>
-            <DialogTitle className="text-2xl font-black tracking-tight text-zinc-900">
+            <DialogTitle className="text-lg font-black tracking-tight text-zinc-900 leading-snug">
               {t('unknownQrTitle')}
             </DialogTitle>
-            <DialogDescription className="text-zinc-600 font-bold text-base leading-relaxed">
+            <DialogDescription className="text-zinc-600 font-bold text-sm leading-relaxed">
               {t('unknownQrDesc')}
             </DialogDescription>
           </DialogHeader>

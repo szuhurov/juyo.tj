@@ -296,17 +296,17 @@ export function ItemCard({
         onOpenChange={(open) => !isActionLoading && setShowDeleteConfirm(open)}
       >
         <DialogContent
-          className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl"
+          className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader className="space-y-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-red-50 dark:bg-red-900/20 text-red-600">
-              <Trash2 className="w-6 h-6" />
+          <DialogHeader className="space-y-2.5">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
+              <Trash2 className="w-5 h-5" />
             </div>
-            <DialogTitle className="text-2xl font-black tracking-tight">
+            <DialogTitle className="text-lg font-black tracking-tight leading-snug">
               {t("deleteConfirmTitle") || t("delete")}
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
+            <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
               {t("deleteConfirm")}
             </DialogDescription>
           </DialogHeader>
@@ -351,17 +351,17 @@ export function ItemCard({
         onOpenChange={(open) => !isActionLoading && setShowArchiveConfirm(open)}
       >
         <DialogContent
-          className="sm:max-w-md rounded-3xl p-8 gap-6 border-none shadow-2xl"
+          className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader className="space-y-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600">
-              <Archive className="w-6 h-6" />
+          <DialogHeader className="space-y-2.5">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600">
+              <Archive className="w-5 h-5" />
             </div>
-            <DialogTitle className="text-2xl font-black tracking-tight text-amber-600">
+            <DialogTitle className="text-lg font-black tracking-tight text-amber-600 leading-snug">
               {t("moveToSafe")}
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-sm leading-relaxed">
+            <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
               {t("moveToSafeDesc")}
             </DialogDescription>
           </DialogHeader>

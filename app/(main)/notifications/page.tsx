@@ -28,7 +28,6 @@ import {
 import { Button } from "@/components/ui/button";
 
 type TypeFilter = "all" | "verification" | "category_post";
-type StatusFilter = "all" | "pending_review" | "passed" | "rejected";
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
@@ -38,7 +37,6 @@ export default function NotificationsPage() {
   });
   const { status, subscribe } = useWebPush();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NotificationItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -62,34 +60,14 @@ export default function NotificationsPage() {
   const filtered = useMemo(() => {
     return items.filter((item) => {
       if (typeFilter !== "all" && item.kind !== typeFilter) return false;
-      if (typeFilter === "verification" && statusFilter !== "all" && item.status !== statusFilter) return false;
       return true;
     });
-  }, [items, typeFilter, statusFilter]);
+  }, [items, typeFilter]);
 
   const typeFilters: { id: TypeFilter; label: string; count: number }[] = [
     { id: "all", label: t("notifFilterAll"), count: items.length },
     { id: "verification", label: t("notifFilterVerification"), count: verificationItems.length },
     { id: "category_post", label: t("notifFilterCategoryPost"), count: categoryItems.length },
-  ];
-
-  const statusFilters: { id: StatusFilter; label: string; count: number }[] = [
-    { id: "all", label: t("notifFilterAll"), count: verificationItems.length },
-    {
-      id: "pending_review",
-      label: t("verifyStatusPending"),
-      count: verificationItems.filter((i) => i.status === "pending_review").length,
-    },
-    {
-      id: "passed",
-      label: t("verifyStatusPassed"),
-      count: verificationItems.filter((i) => i.status === "passed").length,
-    },
-    {
-      id: "rejected",
-      label: t("verifyStatusRejected"),
-      count: verificationItems.filter((i) => i.status === "rejected").length,
-    },
   ];
 
   const toggleExpand = (item: NotificationItem) => {
@@ -122,16 +100,13 @@ export default function NotificationsPage() {
       )}
 
       {/* Филтрҳо */}
-      <div className="space-y-3 mb-6">
+      <div className="mb-6">
         <div className="flex gap-2 overflow-x-auto pb-1">
           {typeFilters.map((f) => (
             <button
               key={f.id}
               type="button"
-              onClick={() => {
-                setTypeFilter(f.id);
-                if (f.id !== "verification") setStatusFilter("all");
-              }}
+              onClick={() => setTypeFilter(f.id)}
               className={cn(
                 "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide transition-all",
                 typeFilter === f.id
@@ -153,26 +128,6 @@ export default function NotificationsPage() {
             </button>
           ))}
         </div>
-        {typeFilter === "verification" && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {statusFilters.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setStatusFilter(f.id)}
-                className={cn(
-                  "shrink-0 flex items-center gap-1 px-2 py-1 rounded-md text-[9px] font-bold transition-all border",
-                  statusFilter === f.id
-                    ? "border-zinc-900 dark:border-white text-zinc-900 dark:text-white"
-                    : "border-zinc-200 dark:border-zinc-800 text-zinc-400",
-                )}
-              >
-                {f.label}
-                <span className="text-zinc-400">{f.count}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Рӯйхат */}

@@ -54,9 +54,9 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
 
   // Муҳаррири ҳимояи махфият — ниг. items/add/page.tsx
   const [privacyReview, setPrivacyReview] = useState<{
-    file: File;
+    files: File[];
     regions: PrivacyRegion[];
-    resolve: (result: File | null) => void;
+    resolve: (result: File[] | null) => void;
   } | null>(null);
 
   useEffect(() => {
@@ -211,6 +211,8 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
 
         formDataAI.append('lang', locale);
         formDataAI.append('type', item.type || 'lost');
+        formDataAI.append('title', item.item_name || '');
+        formDataAI.append('description', item.description || '');
         formDataAI.append('mode', 'moderation_only');
 
         const { data: aiResponse, error: aiError } = await supabase.functions.invoke('ai-brain', {
@@ -232,16 +234,16 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
           setModerationStatus('idle');
           const suggestedRegions: PrivacyRegion[] = aiResponse.privacy_regions ?? [];
           const oldUrls = item.images || [];
+          const validFiles = imageFiles.filter((f): f is File => !!f);
+          const blurred = await new Promise<File[] | null>((resolve) => {
+            setPrivacyReview({ files: validFiles, regions: suggestedRegions, resolve });
+          });
+          if (!blurred) {
+            // Корбар баромад — нашрро бас мекунем, то акси бе мозаика нашр нашавад.
+            return;
+          }
           const newUrls: string[] = [];
-          for (const file of imageFiles) {
-            if (!file) continue;
-            const result = await new Promise<File | null>((resolve) => {
-              setPrivacyReview({ file, regions: suggestedRegions, resolve });
-            });
-            if (!result) {
-              // Корбар баромад — нашрро бас мекунем, то акси бе мозаика нашр нашавад.
-              return;
-            }
+          for (const result of blurred) {
             const ext = result.name.split('.').pop() || 'jpg';
             const fileName = `safety-${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
             const { error: uploadError } = await supabase.storage.from('items').upload(fileName, result);
@@ -264,7 +266,15 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
           if (oldPaths.length > 0) {
             await supabase.storage.from('items').remove(oldPaths);
           }
-          finalItem = { ...item, images: newUrls };
+          // Рақами ҳуҷҷат/шиноснома аз матн нест карда шуд, ном/насаб бетағйир;
+          // категория маҷбуран "Ҳуҷҷатҳо" мешавад.
+          finalItem = {
+            ...item,
+            images: newUrls,
+            item_name: aiResponse.redacted_title || item.item_name,
+            description: aiResponse.redacted_description || item.description,
+            category: "Documents",
+          };
         }
       }
 
@@ -566,12 +576,12 @@ export default function SafetyItemDetailsClient({ id }: { id: string }) {
       {privacyReview && (
         <PrivacyBlurEditor
           open
-          file={privacyReview.file}
+          files={privacyReview.files}
           initialRegions={privacyReview.regions}
-          onConfirm={(finalFile) => {
+          onConfirm={(finalFiles) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
-            resolve(finalFile);
+            resolve(finalFiles);
           }}
           onCancel={() => {
             const resolve = privacyReview.resolve;

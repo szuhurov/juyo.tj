@@ -105,9 +105,19 @@ Deno.serve(async (req) => {
       } 
     }));
 
+    // Shared instructions for is_document text handling — reused by both
+    // MODERATION_PROMPT and FINAL_CHECK_PROMPT so text privacy behaves
+    // identically regardless of which flow (add/edit/safety-box) triggered it.
+    const DOCUMENT_TEXT_RULES = `IF is_document IS TRUE, ALSO check TEXT TITLE and TEXT DESCRIPTION above for any raw document/passport/ID/license/card number or series number written out as text. If found, return redacted_title and redacted_description with ONLY that exact number sequence removed (delete it and naturally clean up any leftover stray punctuation/spacing) — do NOT remove or alter the person's name/surname (names must always stay, exactly like in the image), and do NOT change anything else in the text. If nothing needs to be removed, redacted_title/redacted_description must equal the original text unchanged.
+ALSO DETERMINE, when is_document is true: is the document ITSELF a full passport or a birth certificate? If the document is something else that serves as identity-adjacent proof (e.g. driver's license, student ID, work ID/badge, military ID, insurance card, diploma) rather than the passport/birth certificate itself, set document_needs_id_proof to true — the finder should also ask the claimant to show their passport/birth certificate as extra proof of identity. If the document IS itself a passport or birth certificate, or is_document is false, set document_needs_id_proof to false.`;
+
     // FAST MODERATION PROMPT
     const MODERATION_PROMPT = `You are a moderator for a LOST & FOUND app.
 IDENTITY DOCUMENTS (Passports, ID cards, Licenses) are the MOST IMPORTANT items and are 100% SAFE and ALLOWED.
+
+TEXT TITLE: {{FINAL_TITLE}}
+TEXT DESCRIPTION: {{FINAL_DESCRIPTION}}
+
 STRICT RULES:
 1. ALLOWED (is_safe: true):
    - DOCUMENTS: Passports, ID cards, Student IDs, Bank cards are 100% ALLOWED.
@@ -115,8 +125,11 @@ STRICT RULES:
    - A hand or body part visibly holding/wearing the lost/found item is fine.
 2. PROHIBITED: 18+, extreme violence, illegal weapons, or a selfie/full-body/portrait photo where a PERSON (not the item) is the main subject.
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly.
-IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Err on the side of a SLIGHTLY LARGER box that fully covers the field with margin on all sides — an oversized box is fine, but a box that clips or misses part of the text is not acceptable. This is especially important for the MRZ, which spans the full width near the bottom edge and is easy to under-cover. Do NOT create a region for the person's photo, full name, or date of birth — those must stay visible. If is_document is false, or no such fields are visible, privacy_regions must be [].
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}]}`;
+IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Each box must be a SMALL, TIGHT box around ONLY that one specific number/code field — never a large region that sweeps across nearby text too. A small margin around the field is fine, but do not enlarge the box beyond what is needed to fully cover that field's text.
+
+CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable. If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
+${DOCUMENT_TEXT_RULES}
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "document_needs_id_proof": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
 
     // SUGGEST-ONLY PROMPT — pure vision auto-fill, no moderation verdict at all.
     // Used for the early "analyzing photo" step so it never blocks the user;
@@ -173,13 +186,19 @@ If the text is not already in {{LANG}}, still judge it, but write "reason" in {{
 If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", quoting the exact original text if it's a text violation.
 
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly — this is independent of is_safe.
-IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Err on the side of a SLIGHTLY LARGER box that fully covers the field with margin on all sides — an oversized box is fine, but a box that clips or misses part of the text is not acceptable. This is especially important for the MRZ, which spans the full width near the bottom edge and is easy to under-cover. Do NOT create a region for the person's photo, full name, or date of birth — those must stay visible. If is_document is false, or no such fields are visible, privacy_regions must be [].
+IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Each box must be a SMALL, TIGHT box around ONLY that one specific number/code field — never a large region that sweeps across nearby text too. A small margin around the field is fine, but do not enlarge the box beyond what is needed to fully cover that field's text.
 
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}]}`;
+CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable. If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
+${DOCUMENT_TEXT_RULES}
+
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "document_needs_id_proof": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
 
     let promptToUse = MASTER_PROMPT;
-    if (mode === 'moderation_only') promptToUse = MODERATION_PROMPT;
-    else if (mode === 'suggest') promptToUse = SUGGEST_PROMPT;
+    if (mode === 'moderation_only') {
+      promptToUse = MODERATION_PROMPT
+        .replace(/{{FINAL_TITLE}}/g, String(formData.get('title') || ''))
+        .replace(/{{FINAL_DESCRIPTION}}/g, String(formData.get('description') || ''));
+    } else if (mode === 'suggest') promptToUse = SUGGEST_PROMPT;
     else if (mode === 'final_check') {
       promptToUse = FINAL_CHECK_PROMPT
         .replace(/{{FINAL_TITLE}}/g, String(formData.get('title') || ''))
@@ -256,8 +275,16 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
               };
             })
         : [];
+      const isDocument = !!result.is_document;
       return new Response(
-        JSON.stringify({ is_safe: true, is_document: !!result.is_document, privacy_regions: privacyRegions }),
+        JSON.stringify({
+          is_safe: true,
+          is_document: isDocument,
+          document_needs_id_proof: isDocument && !!result.document_needs_id_proof,
+          privacy_regions: privacyRegions,
+          redacted_title: typeof result.redacted_title === "string" ? result.redacted_title : String(formData.get('title') || ''),
+          redacted_description: typeof result.redacted_description === "string" ? result.redacted_description : String(formData.get('description') || ''),
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }

@@ -8,6 +8,10 @@
  * ё бо "қалам" (кашидан бо муш/ангушт) худаш илова/андоза/ҳаракат/нест
  * кунад. Ҳама минтақа pixelate (мозаика, на blur-и оддӣ — зеро blur
  * баъзан баргардонида мешавад, pixelation не) мешавад.
+ *
+ * Якчанд акс якҷоя: ҳама аксҳо дар ҳамин ЯК тиреза бо тугмаҳои чап/рост
+ * тафтиш мешаванд (на як-як дар тирезаҳои алоҳида) — то корбар озодона
+ * байни аксҳо гузарад ва ба акси қаблӣ баргардад, пеш аз тасдиқи ниҳоӣ.
  */
 "use client";
 
@@ -20,7 +24,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, ZoomIn, ZoomOut, Trash2, ShieldCheck, X } from "lucide-react";
+import { Undo2, Redo2, X, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
@@ -38,9 +42,21 @@ interface EditableRegion {
   y: number; // 0-1
   width: number; // 0-1
   height: number; // 0-1
+  rotation: number; // дараҷа, 0-360 — танҳо барои минтақаҳои "user"
+  /** "ai" — пешниҳоди AI, қулфшуда (корбар тағйир дода наметавонад).
+   *  "user" — бо қалам кашидашуда, пурра қобили таҳрир ва гардиш. */
+  origin: "ai" | "user";
 }
 
-type DragKind = "new" | "move" | "resize";
+interface ImageSlot {
+  file: File;
+  base: HTMLCanvasElement | null;
+  regions: EditableRegion[];
+  history: EditableRegion[][];
+  historyIndex: number;
+}
+
+type DragKind = "new" | "move" | "resize" | "rotate";
 type Corner = "nw" | "ne" | "sw" | "se";
 
 interface DragState {
@@ -61,9 +77,83 @@ const MAX_WORKING_WIDTH = 1400;
 const MIN_SIZE = 0.03; // Ҳадди ақали минтақа — то каши хеле хурд/тасодуфӣ намонад
 const PEN_PADDING = 0.02; // Изофаи атрофи роҳи қалам, то мукаммал пӯшад
 const AI_REGION_PADDING = 0.02; // Изофаи атрофи ҳар минтақаи пешниҳодкардаи AI
+const AI_REGION_MAX_AREA = 0.25; // Ҳадди ақсои масоҳати як минтақаи AI (аз масоҳати умумии акс) — агар AI хато карда, минтақаи аз ҳад калон дода бошад (масалан қариб тамоми ҳуҷҷат), ба ин андоза кам мешавад.
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
+}
+
+function initialRegionsFor(suggested: PrivacyRegion[] | undefined): EditableRegion[] {
+  return (suggested ?? []).map((r, i) => {
+    let x = Math.max(0, r.x - AI_REGION_PADDING);
+    let y = Math.max(0, r.y - AI_REGION_PADDING);
+    let width = Math.min(1 - x, r.width + AI_REGION_PADDING * 2);
+    let height = Math.min(1 - y, r.height + AI_REGION_PADDING * 2);
+
+    // Агар AI минтақаи хеле калон пешниҳод кунад (масалан аз хатои
+    // рамзкушоӣ), онро ба маркази худаш нигоҳ дошта, то ҳадди ақсои
+    // масоҳат хурд мекунем — то ҳеҷ гоҳ тамоми ҳуҷҷат пӯшида нашавад.
+    if (width * height > AI_REGION_MAX_AREA) {
+      const scale = Math.sqrt(AI_REGION_MAX_AREA / (width * height));
+      const cx = x + width / 2;
+      const cy = y + height / 2;
+      width *= scale;
+      height *= scale;
+      x = clamp01(cx - width / 2);
+      y = clamp01(cy - height / 2);
+    }
+
+    return { id: `ai-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`, x, y, width, height, rotation: 0, origin: "ai" as const };
+  });
+}
+
+// Ҳисоби "contain"-fit — акс бояд пурра дар доираи фазои корӣ ҷой шавад,
+// на аз паҳно бурида шавад (агар дароз бошад), на аз баландӣ (агар паҳн
+// бошад). Ҳамеша аз рӯи андозаи ВОҚЕИИ ҳозираи контейнер ҳисоб мешавад
+// (на андозаи тахминӣ дар лаҳзаи боркунии акс — то ҳангоми анимацияи
+// кушодани тиреза акс бурида/берун аз тиреза набарояд).
+function fitContain(naturalW: number, naturalH: number, availW: number, availH: number) {
+  if (!naturalW || !naturalH || !availW || !availH) return { w: 0, h: 0 };
+  let dispW = availW;
+  let dispH = (dispW * naturalH) / naturalW;
+  if (dispH > availH) {
+    dispH = availH;
+    dispW = (dispH * naturalW) / naturalH;
+  }
+  return { w: dispW, h: dispH };
+}
+
+// Боркунӣ ва рамзкушоии як акс дар canvas-и корӣ (андозаи маҳдуд барои
+// суръат) — минтақаҳо бо пешниҳоди AI (агар бошад) сар мешаванд.
+function decodeSlot(file: File, suggested: PrivacyRegion[] | undefined): Promise<ImageSlot> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+      if (w > MAX_WORKING_WIDTH) {
+        h = Math.round((h * MAX_WORKING_WIDTH) / w);
+        w = MAX_WORKING_WIDTH;
+      }
+      const base = document.createElement("canvas");
+      base.width = w;
+      base.height = h;
+      const bctx = base.getContext("2d");
+      bctx?.drawImage(img, 0, 0, w, h);
+
+      const initial = initialRegionsFor(suggested);
+      URL.revokeObjectURL(url);
+      resolve({
+        file,
+        base,
+        regions: initial,
+        history: [initial],
+        historyIndex: 0,
+      });
+    };
+    img.src = url;
+  });
 }
 
 // Мозаикаи возеҳ бо блокҳои қатъӣ (канораш тез, на хира) — ҳамон намуде,
@@ -77,6 +167,7 @@ function redactRect(
   y: number,
   w: number,
   h: number,
+  rotationDeg = 0,
 ) {
   const cx = Math.max(0, Math.round(x));
   const cy = Math.max(0, Math.round(y));
@@ -97,93 +188,145 @@ function redactRect(
   tmpCtx.drawImage(source, cx, cy, cw, ch, 0, 0, smallW, smallH);
 
   ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(tmp, 0, 0, smallW, smallH, cx, cy, cw, ch);
+  if (!rotationDeg) {
+    ctx.drawImage(tmp, 0, 0, smallW, smallH, cx, cy, cw, ch);
+  } else {
+    // Минтақаи гардонидашуда — мозаикаро дар атрофи маркази ХУДИ
+    // росткунҷа мегардонем, то бо намоиши CSS-и overlay мувофиқ ояд.
+    ctx.save();
+    ctx.translate(cx + cw / 2, cy + ch / 2);
+    ctx.rotate((rotationDeg * Math.PI) / 180);
+    ctx.drawImage(tmp, 0, 0, smallW, smallH, -cw / 2, -ch / 2, cw, ch);
+    ctx.restore();
+  }
   ctx.imageSmoothingEnabled = true;
 }
 
 export function PrivacyBlurEditor({
   open,
-  file,
+  files,
   initialRegions,
   onConfirm,
   onCancel,
 }: {
   open: boolean;
-  file: File | null;
+  files: File[];
   /** Минтақаҳои пешниҳодкардаи ҳамон санҷиши moderation-е, ки аллакай
-   * иҷро шудааст (privacy_regions) — корбар метавонад қабул кунад ё
-   * бо қалам худаш иваз/илова/нест кунад. */
+   * иҷро шудааст (privacy_regions) — ба ҳар акс якхела татбиқ мешавад.
+   * Корбар метавонад қабул кунад ё бо қалам худаш иваз/илова/нест кунад. */
   initialRegions?: PrivacyRegion[];
-  onConfirm: (finalFile: File) => void;
-  /** Пахши "×"/Escape/click-и берун — акси ҳозира аз рӯйхат нест карда мешавад
+  onConfirm: (finalFiles: File[]) => void;
+  /** Пахши "×"/Escape/click-и берун — ҳамаи аксҳо бе тасдиқ мемонанд
    * (акси бе тасдиқ ҳаргиз ба upload намеравад). */
   onCancel: () => void;
 }) {
   const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const baseRef = useRef<HTMLCanvasElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const wasOpenRef = useRef(false);
 
-  const [regions, setRegions] = useState<EditableRegion[]>([]);
-  const [history, setHistory] = useState<EditableRegion[][]>([[]]);
-  const [historyIndex, setHistoryIndex] = useState(0);
-  const [zoom, setZoom] = useState(1);
+  const [slots, setSlots] = useState<ImageSlot[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Боркунии акс дар canvas-и корӣ (андозаи маҳдуд барои суръат) — минтақаҳо
-  // бо пешниҳоди AI (агар бошад) сар мешаванд, вале пурра қобили таҳриранд.
+  const current = slots[currentIndex] as ImageSlot | undefined;
+  const regions = current?.regions ?? [];
+  const history = current?.history ?? [[]];
+  const historyIndex = current?.historyIndex ?? 0;
+
+  // Андозаи ВОҚЕИИ ҳозираи контейнер (px) — бо ResizeObserver пайгирӣ
+  // мешавад, на як бор дар лаҳзаи боркунии акс ҳисоб карда мешавад. Ин
+  // муҳим аст, зеро дар лаҳзаи кушодани тиреза (ҳангоми анимацияи
+  // zoom-in-95) андозаи воқеии он ҳанӯз муқаррар нашуда буд — бо тахмини
+  // қаблӣ (масалан 800px) акс метавонист аз тиреза калонтар ҳисоб шавад
+  // ва бурида/берун аз он намоён гардад.
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  // Агар андозагирӣ ҳанӯз нарасида бошад (масалан фрейми аввали кушодани
+  // portal-и Dialog), ба ҷои 0 (= акси нонамоён) андозаи мулоими эҳтиётӣ
+  // мегирем — ResizeObserver баъдтар онро бо андозаи воқеӣ иваз мекунад.
+  const dispSize = current?.base
+    ? fitContain(
+        current.base.width,
+        current.base.height,
+        containerSize.w || 480,
+        containerSize.h || (typeof window !== "undefined" ? window.innerHeight * 0.55 : 480),
+      )
+    : { w: 0, h: 0 };
+
   useEffect(() => {
-    if (!file || !open) {
-      setReady(false);
-      return;
-    }
-    let cancelled = false;
-    const img = new window.Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      if (cancelled) return;
-      let w = img.naturalWidth;
-      let h = img.naturalHeight;
-      if (w > MAX_WORKING_WIDTH) {
-        h = Math.round((h * MAX_WORKING_WIDTH) / w);
-        w = MAX_WORKING_WIDTH;
+    const el = wrapRef.current;
+    if (!el || !open) return;
+    const update = () => {
+      if (el.clientWidth > 0 && el.clientHeight > 0) {
+        setContainerSize({ w: el.clientWidth, h: el.clientHeight });
       }
-      const base = document.createElement("canvas");
-      base.width = w;
-      base.height = h;
-      const bctx = base.getContext("2d");
-      bctx?.drawImage(img, 0, 0, w, h);
-      baseRef.current = base;
-
-      // Минтақаҳои пешниҳодкардаи AI бо изофаи хурд бор мешаванд — координатаи
-      // AI баъзан каме нодуруст аст (масалан дар MRZ-и поён), пас изофа
-      // кӯмак мекунад, ки матн пурра пӯшида шавад, на канораш кушода монад.
-      const initial: EditableRegion[] = (initialRegions ?? []).map((r, i) => {
-        const x = Math.max(0, r.x - AI_REGION_PADDING);
-        const y = Math.max(0, r.y - AI_REGION_PADDING);
-        const width = Math.min(1 - x, r.width + AI_REGION_PADDING * 2);
-        const height = Math.min(1 - y, r.height + AI_REGION_PADDING * 2);
-        return { id: `ai-${i}-${Date.now()}`, x, y, width, height };
-      });
-      setRegions(initial);
-      setHistory([initial]);
-      setHistoryIndex(0);
-      setZoom(1);
-      setSelectedId(null);
-      setReady(true);
-      URL.revokeObjectURL(url);
     };
-    img.src = url;
+    update();
+    // Андозагирии дуюм як фрейм баъд — агар аввалин (синхронӣ) ҳанӯз пеш аз
+    // тайёр шудани layout-и portal-и Dialog иҷро шуда бошад.
+    const raf = requestAnimationFrame(update);
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
     return () => {
-      cancelled = true;
+      cancelAnimationFrame(raf);
+      ro.disconnect();
     };
-  }, [file, open]);
+  }, [open]);
 
-  // Рендери canvas: акси асосӣ + пахши хираи ҳар минтақа
+  // Боркунӣ ва рамзкушоии ҲАМАИ аксҳо якбора, вақте ки тиреза кушода
+  // мешавад (на ба таъхир, барои ҳар акс алоҳида) — то тасдиқи ниҳоӣ
+  // ҳамеша ҳамаи аксҳоро дошта бошад, новобаста аз он ки корбар воқеан
+  // ба ҳар яки онҳо гузаштааст ё не.
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      if (files.length === 0) return;
+      setReady(false);
+      setCurrentIndex(0);
+      setSelectedId(null);
+      Promise.all(files.map((file) => decodeSlot(file, initialRegions))).then((newSlots) => {
+        setSlots(newSlots);
+        setReady(true);
+      });
+    } else if (!open) {
+      wasOpenRef.current = false;
+    }
+  }, [open, files, initialRegions]);
+
+  // touch-action CSS-и танҳо баъзан кор мекунад (алалхусус Safari-и iOS) —
+  // бо гӯш кардани мустақими "touchmove" (passive:false) кафолат медиҳем,
+  // ки браузер ҳаргиз тамоми САҲИФАРО (сарлавҳа, тугмаҳо, ҳама чиз) pinch-
+  // zoom накунад — на танҳо дохили худи акс, зеро ангуштони корбар метавонанд
+  // берун аз он ҳам расанд (масалан ба матн ё тугма) ва браузер тамоми
+  // тирезаро калон кунад. Гӯш дар сатҳи document, то ин ҳолатро дар ҲАР
+  // ҷои тиреза дошта бошад, на танҳо дар канвас.
+  useEffect(() => {
+    if (!open) return;
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
+    };
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => document.removeEventListener("touchmove", onTouchMove);
+  }, [open]);
+
+  // Ҳамон масъала дар desktop: pinch дар trackpad ё Ctrl+ғилдирак ҳамчун
+  // "wheel" бо ctrlKey=true меояд — браузер онро zoom-и тамоми саҳифа
+  // мешуморад. Агар ин рӯй диҳад берун аз худи акс (масалан болои матн ё
+  // тугма), боз ҳам пешгирӣ мекунем.
+  useEffect(() => {
+    if (!open) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) e.preventDefault();
+    };
+    document.addEventListener("wheel", onWheel, { passive: false });
+    return () => document.removeEventListener("wheel", onWheel);
+  }, [open]);
+
+  // Рендери canvas: акси асосии ҲОЗИРА + пахши хираи ҳар минтақаи он
   const render = useCallback(() => {
-    const base = baseRef.current;
+    const base = current?.base;
     const canvas = canvasRef.current;
     if (!base || !canvas) return;
     canvas.width = base.width;
@@ -199,32 +342,58 @@ export function PrivacyBlurEditor({
         r.y * base.height,
         r.width * base.width,
         r.height * base.height,
+        r.rotation,
       );
     }
-  }, [regions]);
+  }, [current, regions]);
 
   useEffect(() => {
     render();
   }, [render]);
 
+  const updateRegions = (updater: EditableRegion[] | ((prev: EditableRegion[]) => EditableRegion[])) => {
+    setSlots((prev) =>
+      prev.map((s, i) => {
+        if (i !== currentIndex) return s;
+        const next = typeof updater === "function" ? (updater as (p: EditableRegion[]) => EditableRegion[])(s.regions) : updater;
+        return { ...s, regions: next };
+      }),
+    );
+  };
+
   const pushHistory = (next: EditableRegion[]) => {
-    const trimmed = history.slice(0, historyIndex + 1);
-    const newHistory = [...trimmed, next];
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-    setRegions(next);
+    setSlots((prev) =>
+      prev.map((s, i) => {
+        if (i !== currentIndex) return s;
+        const trimmed = s.history.slice(0, s.historyIndex + 1);
+        const newHistory = [...trimmed, next];
+        return { ...s, regions: next, history: newHistory, historyIndex: newHistory.length - 1 };
+      }),
+    );
   };
 
   const undo = () => {
     if (historyIndex <= 0) return;
-    setHistoryIndex((i) => i - 1);
-    setRegions(history[historyIndex - 1]);
+    setSlots((prev) =>
+      prev.map((s, i) =>
+        i === currentIndex ? { ...s, historyIndex: s.historyIndex - 1, regions: s.history[s.historyIndex - 1] } : s,
+      ),
+    );
     setSelectedId(null);
   };
   const redo = () => {
     if (historyIndex >= history.length - 1) return;
-    setHistoryIndex((i) => i + 1);
-    setRegions(history[historyIndex + 1]);
+    setSlots((prev) =>
+      prev.map((s, i) =>
+        i === currentIndex ? { ...s, historyIndex: s.historyIndex + 1, regions: s.history[s.historyIndex + 1] } : s,
+      ),
+    );
+    setSelectedId(null);
+  };
+
+  const goToIndex = (i: number) => {
+    if (i < 0 || i >= slots.length) return;
+    setCurrentIndex(i);
     setSelectedId(null);
   };
 
@@ -245,7 +414,8 @@ export function PrivacyBlurEditor({
 
     if (role === "handle" && regionId) {
       const region = regions.find((r) => r.id === regionId);
-      if (!region) return;
+      // AI-и минтақаҳо қулфшуда — корбар онҳоро тағйир дода наметавонад.
+      if (!region || region.origin !== "user") return;
       setSelectedId(regionId);
       dragRef.current = {
         kind: "resize",
@@ -257,9 +427,22 @@ export function PrivacyBlurEditor({
       };
       return;
     }
+    if (role === "rotate" && regionId) {
+      const region = regions.find((r) => r.id === regionId);
+      if (!region || region.origin !== "user") return;
+      setSelectedId(regionId);
+      dragRef.current = {
+        kind: "rotate",
+        regionId,
+        startPointerX: pos.x,
+        startPointerY: pos.y,
+        startRegion: region,
+      };
+      return;
+    }
     if (role === "body" && regionId) {
       const region = regions.find((r) => r.id === regionId);
-      if (!region) return;
+      if (!region || region.origin !== "user") return;
       setSelectedId(regionId);
       dragRef.current = {
         kind: "move",
@@ -272,10 +455,19 @@ export function PrivacyBlurEditor({
     }
 
     // Каши холӣ — ин ҳамеша "қалам"-и нав аст (addMode лозим нест,
-    // кашидан худи амали пешфарз аст).
+    // кашидан худи амали пешфарз аст). Танҳо минтақаи корбар қобили таҳрир
+    // ва гардиш аст — минтақаи AI ҳамеша қулф мемонад.
     const id = `region-new-${Date.now()}`;
-    const newRegion: EditableRegion = { id, x: pos.x, y: pos.y, width: 0, height: 0 };
-    setRegions((prev) => [...prev, newRegion]);
+    const newRegion: EditableRegion = {
+      id,
+      x: pos.x,
+      y: pos.y,
+      width: 0,
+      height: 0,
+      rotation: 0,
+      origin: "user",
+    };
+    updateRegions((prev) => [...prev, newRegion]);
     setSelectedId(id);
     dragRef.current = {
       kind: "new",
@@ -306,15 +498,29 @@ export function PrivacyBlurEditor({
       const y = Math.max(0, drag.pathMinY - PEN_PADDING);
       const width = Math.min(1 - x, drag.pathMaxX - drag.pathMinX + PEN_PADDING * 2);
       const height = Math.min(1 - y, drag.pathMaxY - drag.pathMinY + PEN_PADDING * 2);
-      setRegions((prev) =>
-        prev.map((r) => (r.id === drag.regionId ? { ...r, x, y, width, height } : r)),
-      );
+      updateRegions((prev) => prev.map((r) => (r.id === drag.regionId ? { ...r, x, y, width, height } : r)));
+      return;
+    }
+
+    if (drag.kind === "rotate") {
+      // Кунҷро дар фазои воқеии пиксел ҳисоб мекунем (на 0-1 нормалӣ), то
+      // агар акс мураббаъ набошад, гардиш каҷ нашавад.
+      const base = current?.base;
+      const aspectW = base?.width ?? 1;
+      const aspectH = base?.height ?? 1;
+      const centerX = drag.startRegion.x + drag.startRegion.width / 2;
+      const centerY = drag.startRegion.y + drag.startRegion.height / 2;
+      const dxPx = (pos.x - centerX) * aspectW;
+      const dyPx = (pos.y - centerY) * aspectH;
+      let angleDeg = (Math.atan2(dyPx, dxPx) * 180) / Math.PI + 90;
+      angleDeg = ((angleDeg % 360) + 360) % 360;
+      updateRegions((prev) => prev.map((r) => (r.id === drag.regionId ? { ...r, rotation: angleDeg } : r)));
       return;
     }
 
     const dx = pos.x - drag.startPointerX;
     const dy = pos.y - drag.startPointerY;
-    setRegions((prev) =>
+    updateRegions((prev) =>
       prev.map((r) => {
         if (r.id !== drag.regionId) return r;
         if (drag.kind === "move") {
@@ -357,30 +563,34 @@ export function PrivacyBlurEditor({
     );
   };
 
-  const handleWrapPointerUp = () => {
+  const handleWrapPointerUp = (e: React.PointerEvent) => {
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag) return;
 
-    setRegions((prev) => {
-      // Каши хеле хурд (пахши тасодуфӣ бе кашидан) — ба ҳадди ақал мерасонем,
-      // на бекор мекунем, то як tap-и оддӣ низ доғи дидашавандаи блур диҳад.
-      const cleaned = prev.map((r) => {
-        if (r.id !== drag.regionId) return r;
-        if (r.width >= MIN_SIZE && r.height >= MIN_SIZE) return r;
-        const cx = r.x + r.width / 2;
-        const cy = r.y + r.height / 2;
-        return {
-          ...r,
-          x: clamp01(cx - MIN_SIZE / 2),
-          y: clamp01(cy - MIN_SIZE / 2),
-          width: MIN_SIZE,
-          height: MIN_SIZE,
-        };
-      });
-      pushHistory(cleaned);
-      return cleaned;
-    });
+    setSlots((prev) =>
+      prev.map((s, i) => {
+        if (i !== currentIndex) return s;
+        // Каши хеле хурд (пахши тасодуфӣ бе кашидан) — ба ҳадди ақал мерасонем,
+        // на бекор мекунем, то як tap-и оддӣ низ доғи дидашавандаи блур диҳад.
+        const cleaned = s.regions.map((r) => {
+          if (r.id !== drag.regionId) return r;
+          if (r.width >= MIN_SIZE && r.height >= MIN_SIZE) return r;
+          const cx = r.x + r.width / 2;
+          const cy = r.y + r.height / 2;
+          return {
+            ...r,
+            x: clamp01(cx - MIN_SIZE / 2),
+            y: clamp01(cy - MIN_SIZE / 2),
+            width: MIN_SIZE,
+            height: MIN_SIZE,
+          };
+        });
+        const trimmed = s.history.slice(0, s.historyIndex + 1);
+        const newHistory = [...trimmed, cleaned];
+        return { ...s, regions: cleaned, history: newHistory, historyIndex: newHistory.length - 1 };
+      }),
+    );
   };
 
   const deleteSelected = () => {
@@ -390,81 +600,160 @@ export function PrivacyBlurEditor({
     pushHistory(next);
   };
 
-  const handleConfirm = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !file) return;
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) return;
-        const finalFile = new File([blob], file.name, {
-          type: "image/jpeg",
-          lastModified: Date.now(),
-        });
-        onConfirm(finalFile);
-      },
-      "image/jpeg",
-      0.92,
-    );
+  // Ҳар акси кориро (бо мозаикаҳояш) ба File-и ниҳоӣ табдил медиҳад.
+  const exportSlot = (slot: ImageSlot): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = slot.base!.width;
+      canvas.height = slot.base!.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx || !slot.base) return reject(new Error("Canvas context missing"));
+      ctx.drawImage(slot.base, 0, 0);
+      for (const r of slot.regions) {
+        redactRect(
+          slot.base,
+          ctx,
+          r.x * slot.base.width,
+          r.y * slot.base.height,
+          r.width * slot.base.width,
+          r.height * slot.base.height,
+          r.rotation,
+        );
+      }
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("toBlob failed"));
+          resolve(new File([blob], slot.file.name, { type: "image/jpeg", lastModified: Date.now() }));
+        },
+        "image/jpeg",
+        0.92,
+      );
+    });
+  };
+
+  const finalizeAll = async () => {
+    if (!ready || slots.length === 0) return;
+    const finalFiles = await Promise.all(slots.map(exportSlot));
+    onConfirm(finalFiles);
+  };
+
+  // Дар акси охирин — тасдиқи ниҳоӣ (ҳамаи аксҳо якҷоя). Дар акси
+  // ғайри-охирин — танҳо ба акси навбатӣ мегузарад.
+  const isLastSlot = currentIndex >= slots.length - 1;
+  const handleFooterButton = () => {
+    if (isLastSlot) {
+      finalizeAll();
+    } else {
+      goToIndex(currentIndex + 1);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
-      <DialogContent className="sm:max-w-2xl rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl gap-0">
+      <DialogContent
+        showCloseButton={false}
+        className="sm:max-w-2xl rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl gap-0"
+      >
         <DialogHeader className="p-6 pb-4 space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <DialogTitle className="text-lg font-black tracking-tight">
-                {t("privacyReviewTitle")}
-              </DialogTitle>
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-lg font-black tracking-tight">
+                  {t("privacyReviewTitle")}
+                </DialogTitle>
+                {slots.length > 1 && (
+                  <span className="shrink-0 text-[10px] font-black tracking-widest text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full px-2 py-0.5">
+                    {currentIndex + 1}/{slots.length}
+                  </span>
+                )}
+              </div>
               <p className="text-xs font-bold text-zinc-400 mt-0.5">
                 {t("privacyReviewDesc")}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="shrink-0 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none"
+            >
+              <X className="w-4 h-4" />
+              <span className="sr-only">Close</span>
+            </button>
           </div>
         </DialogHeader>
 
         <div className="px-6">
           <div
             ref={wrapRef}
-            className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 touch-none"
-            style={{ maxHeight: "55vh", overflow: zoom > 1 ? "auto" : "hidden", cursor: "crosshair" }}
+            className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 touch-none flex items-center justify-center"
+            style={{
+              height: ready && dispSize.h ? `${dispSize.h}px` : undefined,
+              maxHeight: "55vh",
+              cursor: "crosshair",
+            }}
             onPointerDown={handleWrapPointerDown}
             onPointerMove={handleWrapPointerMove}
             onPointerUp={handleWrapPointerUp}
             onPointerCancel={handleWrapPointerUp}
           >
-            <div style={{ width: `${zoom * 100}%`, position: "relative" }}>
-              {!ready ? (
-                <div className="w-full aspect-square animate-pulse bg-zinc-200 dark:bg-zinc-800" />
-              ) : (
-                <>
-                  <canvas ref={canvasRef} style={{ width: "100%", height: "auto", display: "block" }} />
-                  {regions.map((r) => {
-                    const selected = r.id === selectedId;
-                    return (
-                      <div key={r.id}>
-                        <div
-                          data-role="body"
-                          data-region-id={r.id}
-                          className={cn(
-                            "absolute border-2 cursor-move",
-                            selected
-                              ? "border-emerald-500 bg-emerald-500/10"
-                              : "border-white/80 hover:border-emerald-400",
-                          )}
-                          style={{
-                            left: `${r.x * 100}%`,
-                            top: `${r.y * 100}%`,
-                            width: `${r.width * 100}%`,
-                            height: `${r.height * 100}%`,
-                          }}
-                        />
-                        {selected && (
-                          <>
-                            {(["nw", "ne", "sw", "se"] as Corner[]).map((corner) => (
+            {!ready ? (
+              <div className="w-full aspect-square animate-pulse bg-zinc-200 dark:bg-zinc-800" />
+            ) : (
+              <div
+                style={{
+                  width: `${dispSize.w}px`,
+                  height: `${dispSize.h}px`,
+                  position: "relative",
+                }}
+              >
+                <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
+                {regions.map((r) => {
+                  const selected = r.id === selectedId;
+                  const locked = r.origin === "ai";
+                  return (
+                    <div key={r.id}>
+                      <div
+                        data-role={locked ? undefined : "body"}
+                        data-region-id={locked ? undefined : r.id}
+                        className={cn(
+                          "absolute border-2",
+                          locked
+                            ? "border-dashed border-emerald-400/70 pointer-events-none"
+                            : cn(
+                                "cursor-move",
+                                selected
+                                  ? "border-emerald-500 bg-emerald-500/10"
+                                  : "border-white/80 hover:border-emerald-400",
+                              ),
+                        )}
+                        style={{
+                          left: `${r.x * 100}%`,
+                          top: `${r.y * 100}%`,
+                          width: `${r.width * 100}%`,
+                          height: `${r.height * 100}%`,
+                          transform: r.rotation ? `rotate(${r.rotation}deg)` : undefined,
+                        }}
+                      >
+                        {!locked && selected && (
+                          <div
+                            data-role="rotate"
+                            data-region-id={r.id}
+                            className="absolute w-5 h-5 rounded-full bg-white border-2 border-blue-500 shadow-md flex items-center justify-center"
+                            style={{
+                              left: "50%",
+                              top: "-26px",
+                              transform: "translateX(-50%)",
+                              cursor: "alias",
+                            }}
+                          >
+                            <RotateCw className="w-3 h-3 text-blue-500 pointer-events-none" />
+                          </div>
+                        )}
+                      </div>
+                      {!locked && selected && (
+                        <>
+                          {r.rotation === 0 &&
+                            (["nw", "ne", "sw", "se"] as Corner[]).map((corner) => (
                               <div
                                 key={corner}
                                 data-role="handle"
@@ -482,46 +771,77 @@ export function PrivacyBlurEditor({
                                 }}
                               />
                             ))}
-                            <button
-                              type="button"
-                              onClick={deleteSelected}
-                              className="absolute w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md"
-                              style={{
-                                left: `${(r.x + r.width) * 100}%`,
-                                top: `${r.y * 100}%`,
-                                transform: "translate(-30%, -70%)",
-                              }}
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </>
-              )}
-            </div>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onClick={deleteSelected}
+                            className="absolute w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md"
+                            style={{
+                              left: `${(r.x + r.width) * 100}%`,
+                              top: `${r.y * 100}%`,
+                              transform: "translate(-30%, -70%)",
+                            }}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Гузариш байни аксҳо — танҳо агар зиёда аз як акс бошад */}
+            {ready && slots.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => goToIndex(currentIndex - 1)}
+                  disabled={currentIndex === 0}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center shadow-md disabled:opacity-30 touch-manipulation"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={() => goToIndex(currentIndex + 1)}
+                  disabled={currentIndex === slots.length - 1}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center shadow-md disabled:opacity-30 touch-manipulation"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
           </div>
 
+          {/* Нуқтаҳои акс — гузариши мустақим ба ҳар акс */}
+          {ready && slots.length > 1 && (
+            <div className="flex items-center justify-center gap-1.5 mt-2.5">
+              {slots.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goToIndex(i)}
+                  className={cn(
+                    "h-1.5 rounded-full transition-all touch-manipulation",
+                    i === currentIndex ? "w-5 bg-emerald-500" : "w-1.5 bg-zinc-300 dark:bg-zinc-700",
+                  )}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Toolbar */}
-          <div className="flex items-center justify-between gap-2 mt-3 flex-wrap">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 rounded-xl"
-              onClick={deleteSelected}
-              disabled={!selectedId}
-            >
-              <Trash2 className="w-4 h-4 text-red-500" />
-            </Button>
+          <div className="flex items-center justify-end gap-2 mt-3 flex-wrap">
             <div className="flex items-center gap-1.5">
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-xl"
+                className="h-9 w-9 rounded-xl touch-manipulation"
                 onClick={undo}
                 disabled={historyIndex <= 0}
               >
@@ -531,31 +851,11 @@ export function PrivacyBlurEditor({
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-xl"
+                className="h-9 w-9 rounded-xl touch-manipulation"
                 onClick={redo}
                 disabled={historyIndex >= history.length - 1}
               >
                 <Redo2 className="w-4 h-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-xl"
-                onClick={() => setZoom((z) => Math.max(1, +(z - 0.5).toFixed(1)))}
-                disabled={zoom <= 1}
-              >
-                <ZoomOut className="w-4 h-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 rounded-xl"
-                onClick={() => setZoom((z) => Math.min(3, +(z + 0.5).toFixed(1)))}
-                disabled={zoom >= 3}
-              >
-                <ZoomIn className="w-4 h-4" />
               </Button>
             </div>
           </div>
@@ -564,12 +864,11 @@ export function PrivacyBlurEditor({
         <DialogFooter className="p-6 pt-4">
           <Button
             type="button"
-            onClick={handleConfirm}
+            onClick={handleFooterButton}
             disabled={!ready}
             className="w-full h-12 rounded-xl font-black tracking-widest text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
           >
-            <ShieldCheck className="w-4 h-4 mr-2" />
-            {t("privacyConfirmBtn")}
+            {isLastSlot ? t("privacyConfirmBtn") : t("next")}
           </Button>
         </DialogFooter>
       </DialogContent>
