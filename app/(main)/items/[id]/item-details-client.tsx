@@ -5,7 +5,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Item, ItemService } from "@/lib/services/item-service";
-import { VerificationGate } from "@/components/verification-gate";
 import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -537,32 +536,29 @@ export default function ItemDetailsClient({
 
             <div className="mt-auto flex flex-col gap-3">
               {isLoaded && isOwner ? (
-                <>
-                  {item?.type === "found" && (
-                    <VerificationGate itemId={item.id} isOwner />
-                  )}
-                  <Button
-                    size="lg"
-                    className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
-                    onClick={() => setShowResolvedConfirm(true)}
-                    disabled={isActionLoading}
-                  >
-                    <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" />{" "}
-                    {t("resolved")}?
-                  </Button>
-                </>
-              ) : item?.type === "found" ? (
-                <VerificationGate itemId={item!.id} isOwner={false} phoneNumber={item?.phone_number} category={item?.category} />
-              ) : (
+                <Button
+                  size="lg"
+                  className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                  onClick={() => setShowResolvedConfirm(true)}
+                  disabled={isActionLoading}
+                >
+                  <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" />{" "}
+                  {t("resolved")}?
+                </Button>
+              ) : item?.phone_number ? (
                 <Button
                   size="lg"
                   className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg"
                   asChild
                 >
-                  <a href={`tel:${item?.phone_number}`}>
+                  <a href={`tel:${item.phone_number}`}>
                     <Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t("call")}
                   </a>
                 </Button>
+              ) : (
+                <div className="h-14 md:h-16 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 text-zinc-400 font-bold text-sm text-center px-4">
+                  <Phone className="w-5 h-5 shrink-0" /> {t("phoneNotAvailable")}
+                </div>
               )}
             </div>
           </div>

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (clerkErr?.status !== 404) throw clerkErr;
     }
 
-    const [{ data: items }, { data: savedItems }, { data: safetyBoxItems }, { data: verificationAttempts }] = await Promise.all([
+    const [{ data: items }, { data: savedItems }, { data: safetyBoxItems }] = await Promise.all([
       supabaseAdmin.from("items").select(ITEM_FIELDS).eq("user_id", id),
       supabaseAdmin
         .from("saved_items")
@@ -65,10 +65,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .from("safety_box")
         .select("id, item_name, description, category, type, reward, images, date, created_at")
         .eq("user_id", id),
-      supabaseAdmin
-        .from("item_verification_attempts")
-        .select("id, item_id, status, created_at, answers, items(title)")
-        .eq("claimant_token", id),
     ]);
 
     const snapshot = {
@@ -76,7 +72,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       items: items ?? [],
       savedItems: savedItems ?? [],
       safetyBoxItems: safetyBoxItems ?? [],
-      verificationAttempts: verificationAttempts ?? [],
     };
 
     await supabaseAdmin.from("deleted_accounts_archive").insert([

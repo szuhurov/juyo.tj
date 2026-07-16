@@ -108,8 +108,7 @@ Deno.serve(async (req) => {
     // Shared instructions for is_document text handling — reused by both
     // MODERATION_PROMPT and FINAL_CHECK_PROMPT so text privacy behaves
     // identically regardless of which flow (add/edit/safety-box) triggered it.
-    const DOCUMENT_TEXT_RULES = `IF is_document IS TRUE, ALSO check TEXT TITLE and TEXT DESCRIPTION above for any raw document/passport/ID/license/card number or series number written out as text. If found, return redacted_title and redacted_description with ONLY that exact number sequence removed (delete it and naturally clean up any leftover stray punctuation/spacing) — do NOT remove or alter the person's name/surname (names must always stay, exactly like in the image), and do NOT change anything else in the text. If nothing needs to be removed, redacted_title/redacted_description must equal the original text unchanged.
-ALSO DETERMINE, when is_document is true: is the document ITSELF a full passport or a birth certificate? If the document is something else that serves as identity-adjacent proof (e.g. driver's license, student ID, work ID/badge, military ID, insurance card, diploma) rather than the passport/birth certificate itself, set document_needs_id_proof to true — the finder should also ask the claimant to show their passport/birth certificate as extra proof of identity. If the document IS itself a passport or birth certificate, or is_document is false, set document_needs_id_proof to false.`;
+    const DOCUMENT_TEXT_RULES = `IF is_document IS TRUE, ALSO check TEXT TITLE and TEXT DESCRIPTION above for any raw document/passport/ID/license/card number or series number written out as text. If found, return redacted_title and redacted_description with ONLY that exact number sequence removed (delete it and naturally clean up any leftover stray punctuation/spacing) — do NOT remove or alter the person's name/surname (names must always stay, exactly like in the image), and do NOT change anything else in the text. If nothing needs to be removed, redacted_title/redacted_description must equal the original text unchanged.`;
 
     // FAST MODERATION PROMPT
     const MODERATION_PROMPT = `You are a moderator for a LOST & FOUND app.
@@ -129,7 +128,7 @@ IF is_document IS TRUE, also locate every field that is a unique identifier that
 
 CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable. If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
 ${DOCUMENT_TEXT_RULES}
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "document_needs_id_proof": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
 
     // SUGGEST-ONLY PROMPT — pure vision auto-fill, no moderation verdict at all.
     // Used for the early "analyzing photo" step so it never blocks the user;
@@ -191,7 +190,7 @@ IF is_document IS TRUE, also locate every field that is a unique identifier that
 CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable. If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
 ${DOCUMENT_TEXT_RULES}
 
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "document_needs_id_proof": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
 
     let promptToUse = MASTER_PROMPT;
     if (mode === 'moderation_only') {
@@ -280,7 +279,6 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
         JSON.stringify({
           is_safe: true,
           is_document: isDocument,
-          document_needs_id_proof: isDocument && !!result.document_needs_id_proof,
           privacy_regions: privacyRegions,
           redacted_title: typeof result.redacted_title === "string" ? result.redacted_title : String(formData.get('title') || ''),
           redacted_description: typeof result.redacted_description === "string" ? result.redacted_description : String(formData.get('description') || ''),

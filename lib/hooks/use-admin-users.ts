@@ -35,28 +35,6 @@ export interface AdminUserDetail {
     created_at: string;
     images: { image_url: string }[];
   }[];
-  verificationAttempts: {
-    id: string;
-    item_id: string;
-    status: string;
-    created_at: string;
-    answers: { question_id: string; question_text: string; answer_type: string; given_answer: string }[];
-    claimant_phone: string | null;
-    items: { title: string } | null;
-    is_deleted: boolean;
-  }[];
-  receivedClaims: {
-    id: string;
-    item_id: string;
-    status: string;
-    created_at: string;
-    answers: { question_id: string; question_text: string; answer_type: string; given_answer: string }[];
-    claimant_phone: string | null;
-    claimant_token: string;
-    items: { title: string; user_id: string } | null;
-    claimantProfile: { first_name: string | null; last_name: string | null; avatar_url: string | null } | null;
-    is_deleted: boolean;
-  }[];
   savedItems: {
     item_id: string;
     created_at: string;
@@ -164,7 +142,6 @@ export interface DeletedAccountSnapshot {
   items: AdminUserDetail["items"];
   savedItems: AdminUserDetail["savedItems"];
   safetyBoxItems: AdminUserDetail["safetyBoxItems"];
-  verificationAttempts: AdminUserDetail["verificationAttempts"];
 }
 
 export interface DeletedAccountEntry {
@@ -187,7 +164,6 @@ export function normalizeDeletedAccountSnapshot(entry: DeletedAccountEntry): Del
     items: [],
     savedItems: [],
     safetyBoxItems: [],
-    verificationAttempts: [],
   };
 }
 

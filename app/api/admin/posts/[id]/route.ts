@@ -34,13 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (error) throw error;
     if (!item) return NextResponse.json({ error: "Эълон ёфт нашуд" }, { status: 404 });
 
-    const { data: verificationAttempts } = await supabaseAdmin
-      .from("item_verification_attempts")
-      .select("id, claimant_token, answers, status, created_at, reviewed_at")
-      .eq("item_id", id)
-      .order("created_at", { ascending: false });
-
-    return NextResponse.json({ item, verificationAttempts: verificationAttempts ?? [] });
+    return NextResponse.json({ item });
   } catch (err: any) {
     console.error("GET /api/admin/posts/[id]:", err.message);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

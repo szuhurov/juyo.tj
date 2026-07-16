@@ -13,7 +13,14 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "somon:import": "tsx --env-file=.env.local scripts/somon-import/run-once.ts",
+    "somon:import:dry": "tsx --env-file=.env.local scripts/somon-import/run-once.ts --dry-run",
+    "somon:scheduler": "tsx --env-file=.env.local scripts/somon-import/scheduler.ts",
+    "telegram:login": "tsx --env-file=.env.local scripts/telegram-import/login.ts",
+    "telegram:import": "tsx --env-file=.env.local scripts/telegram-import/run-once.ts",
+    "telegram:import:dry": "tsx --env-file=.env.local scripts/telegram-import/run-once.ts --dry-run",
+    "telegram:scheduler": "tsx --env-file=.env.local scripts/telegram-import/scheduler.ts"
   },
   "package_info": {
     "dependencies_explanation": {
@@ -60,10 +67,12 @@
     "html-to-image": "^1.11.13",
     "html5-qrcode": "^2.3.8",
     "i18n-js": "^4.5.3",
+    "input": "^1.0.1",
     "lucide-react": "^1.7.0",
     "next": "16.2.2",
     "next-themes": "^0.4.6",
     "nextjs-toploader": "^3.9.17",
+    "openai": "^6.47.0",
     "qr-code-styling": "^1.9.2",
     "qrcode.react": "^4.2.0",
     "react": "19.2.4",
@@ -75,6 +84,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
+    "telegram": "^2.26.22",
     "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },
@@ -85,17 +95,21 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^6.0.2",
     "@vitest/ui": "^4.1.8",
+    "cheerio": "^1.2.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "jsdom": "^29.1.1",
+    "node-cron": "^4.6.0",
     "pg": "^8.22.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.1",
     "typescript": "^5",
     "vitest": "^4.1.8"
   }

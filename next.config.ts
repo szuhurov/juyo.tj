@@ -17,6 +17,8 @@ const remotePatterns: RemotePattern[] = [
     port: "",
     pathname: "/**",
   },
+  // Аксҳои эълонҳои воридшуда аз somon.tj (ниг. scripts/somon-import/).
+  { protocol: "https", hostname: "files.somon.tj", port: "", pathname: "/**" },
 ];
 
 if (supabaseHostname) {

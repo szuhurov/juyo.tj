@@ -25,14 +25,6 @@ export interface AdminPostDetail {
     views: number;
     profiles: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null; phone: string | null } | null;
   };
-  verificationAttempts: {
-    id: string;
-    claimant_token: string;
-    answers: { question_text: string; given_answer: string }[];
-    status: string;
-    created_at: string;
-    reviewed_at: string | null;
-  }[];
 }
 
 export function useAdminPosts(filters: AdminPostFilters) {

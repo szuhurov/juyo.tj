@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-type Tab = "items" | "saved" | "safety" | "claims";
+type Tab = "items" | "saved" | "safety";
 
 export default function DeletedAccountDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -30,14 +30,13 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
   }
 
   const snapshot = normalizeDeletedAccountSnapshot(data.entry);
-  const { profile, items, savedItems, safetyBoxItems, verificationAttempts } = snapshot;
+  const { profile, items, savedItems, safetyBoxItems } = snapshot;
   const name = `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || "Беном";
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "items", label: `Эълонҳо (${items.length})` },
     { key: "saved", label: `Захирашуда (${savedItems.length})` },
     { key: "safety", label: `Сандуқча (${safetyBoxItems.length})` },
-    { key: "claims", label: `Дархостҳои тасдиқ (${verificationAttempts.length})` },
   ];
 
   return (
@@ -140,37 +139,6 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
         />
       )}
 
-      {tab === "claims" && (
-        <div className="space-y-2">
-          {verificationAttempts.length === 0 ? (
-            <p className="py-16 text-center text-sm font-bold text-zinc-400">Ягон дархост набуд</p>
-          ) : (
-            verificationAttempts.map((attempt) => (
-              <div key={attempt.id} className="rounded-xl border border-zinc-100 p-3">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-bold text-zinc-800 truncate">{attempt.items?.title ?? "Эълон"}</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] font-medium text-zinc-400">
-                      {format(new Date(attempt.created_at), "d MMM yyyy, HH:mm")}
-                    </span>
-                    <StatusPill status={attempt.status} />
-                  </div>
-                </div>
-                {attempt.answers?.length > 0 && (
-                  <div className="mt-2 space-y-1 border-t border-zinc-100 pt-2">
-                    {attempt.answers.map((a) => (
-                      <p key={a.question_id} className="text-xs text-zinc-600">
-                        <span className="font-bold text-zinc-500">{a.question_text}:</span>{" "}
-                        <span className="font-medium">{a.given_answer}</span>
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      )}
     </div>
   );
 }

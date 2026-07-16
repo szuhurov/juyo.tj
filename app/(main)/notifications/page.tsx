@@ -1,13 +1,12 @@
 /**
- * Саҳифаи пурраи огоҳиномаҳо — рӯйхати умумии санҷиши моликият ва эълонҳои
- * категория, бо филтрҳо (бо рақами ҳар филтр). Ҳар сатр на ба саҳифаи
- * эълон мегузарад, балки дар ҳамин ҷо кушода мешавад (аксаи эълон +
- * пайванди "Дидани эълон"). Сатрҳои нодидашуда рангашон фарқ мекунад;
- * кушодани сатр ранги ҳамон сатрро ба ҳолати одӣ мегузаронад.
+ * Саҳифаи пурраи огоҳиномаҳо — эълонҳои нав дар категорияҳои корбар.
+ * Ҳар сатр на ба саҳифаи эълон мегузарад, балки дар ҳамин ҷо кушода
+ * мешавад (аксаи эълон + пайванди "Дидани эълон"). Сатрҳои нодидашуда
+ * рангашон фарқ мекунад; кушодани сатр ранги ҳамон сатрро ба ҳолати одӣ мегузаронад.
  */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -27,16 +26,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-type TypeFilter = "all" | "verification" | "category_post";
-
 export default function NotificationsPage() {
   const { t } = useLanguage();
   const { items, loading, markOpened, isOpened, dismissNotification } = useNotifications({
-    verifyLimit: 200,
     categoryLimit: 100,
   });
   const { status, subscribe } = useWebPush();
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<NotificationItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -53,22 +48,6 @@ export default function NotificationsPage() {
       setDeleting(false);
     }
   };
-
-  const verificationItems = useMemo(() => items.filter((i) => i.kind === "verification"), [items]);
-  const categoryItems = useMemo(() => items.filter((i) => i.kind === "category_post"), [items]);
-
-  const filtered = useMemo(() => {
-    return items.filter((item) => {
-      if (typeFilter !== "all" && item.kind !== typeFilter) return false;
-      return true;
-    });
-  }, [items, typeFilter]);
-
-  const typeFilters: { id: TypeFilter; label: string; count: number }[] = [
-    { id: "all", label: t("notifFilterAll"), count: items.length },
-    { id: "verification", label: t("notifFilterVerification"), count: verificationItems.length },
-    { id: "category_post", label: t("notifFilterCategoryPost"), count: categoryItems.length },
-  ];
 
   const toggleExpand = (item: NotificationItem) => {
     markOpened(item.id);
@@ -99,37 +78,6 @@ export default function NotificationsPage() {
         </button>
       )}
 
-      {/* Филтрҳо */}
-      <div className="mb-6">
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {typeFilters.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setTypeFilter(f.id)}
-              className={cn(
-                "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide transition-all",
-                typeFilter === f.id
-                  ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900"
-                  : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
-              )}
-            >
-              {f.label}
-              <span
-                className={cn(
-                  "rounded-full px-1.5 text-[9px]",
-                  typeFilter === f.id
-                    ? "bg-white/20 dark:bg-zinc-900/20"
-                    : "bg-zinc-200 dark:bg-zinc-800 text-zinc-500",
-                )}
-              >
-                {f.count}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Рӯйхат */}
       {loading ? (
         <div className="space-y-2">
@@ -137,17 +85,11 @@ export default function NotificationsPage() {
             <Skeleton key={i} className="h-20 w-full rounded-2xl" />
           ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="py-20 text-center text-sm font-medium text-zinc-400">{t("verifyNotifEmpty")}</div>
+      ) : items.length === 0 ? (
+        <div className="py-20 text-center text-sm font-medium text-zinc-400">{t("notifEmpty")}</div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((item) => {
-            // Ном/акс ҳамеша ба ҳамдигар мутобиқ — даъвогар барои санҷиш,
-            // муаллиф барои эълони категория. Сарлавҳа = ҳамон шахс, зерсарлавҳа
-            // = унвони эълон (то avatar ва матн ҳаргиз номувофиқ нашаванд).
-            const name = item.kind === "verification" ? item.claimantName : item.posterName;
-            const avatar = item.kind === "verification" ? item.claimantAvatar : item.posterAvatar;
-            const subtitle = item.itemTitle;
+          {items.map((item) => {
             const expanded = expandedId === item.id;
             const unread = !isOpened(item.id);
             return (
@@ -165,12 +107,12 @@ export default function NotificationsPage() {
                   onClick={() => toggleExpand(item)}
                   className="w-full flex items-center gap-3 p-4 text-left"
                 >
-                  <ClaimantAvatar url={avatar ?? null} name={name ?? null} className="w-11 h-11 text-sm" />
+                  <ClaimantAvatar url={item.posterAvatar ?? null} name={item.posterName ?? null} className="w-11 h-11 text-sm" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                      {name || t("verifyUnknownClaimant")}
+                      {item.posterName || t("user")}
                     </p>
-                    <p className="text-xs text-zinc-400 font-medium truncate">{subtitle}</p>
+                    <p className="text-xs text-zinc-400 font-medium truncate">{item.itemTitle}</p>
                     <p className="text-[10px] text-zinc-300 dark:text-zinc-600 font-bold mt-0.5">
                       {format(new Date(item.createdAt), "dd.MM.yyyy HH:mm")}
                     </p>

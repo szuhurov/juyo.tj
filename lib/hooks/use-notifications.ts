@@ -14,16 +14,11 @@ const TOAST_SHOWN_STORAGE_KEY = "juyo_toast_last_shown";
 
 export interface NotificationItem {
   id: string;
-  kind: "verification" | "category_post";
+  kind: "category_post";
   itemId: string;
   itemTitle: string;
   itemImageUrl: string | null;
   createdAt: string;
-  // Танҳо барои kind === "verification"
-  status?: "pending_review" | "passed" | "rejected";
-  claimantName?: string | null;
-  claimantAvatar?: string | null;
-  // Танҳо барои kind === "category_post"
   posterName?: string | null;
   posterAvatar?: string | null;
 }
@@ -54,16 +49,8 @@ function saveToastTimestamps(map: Record<string, number>) {
   localStorage.setItem(TOAST_SHOWN_STORAGE_KEY, JSON.stringify(map));
 }
 
-// Огоҳиномае, ки то ҳанӯз "дида нашуда" ҳисоб мешавад — pending_review-и
-// санҷиш ё ҳар эълони нави категория (QR scan қасдан ин ҷо нест, танҳо push аст).
-function isUnseenCandidate(item: NotificationItem): boolean {
-  return item.kind === "category_post" || item.status === "pending_review";
-}
-
-export function useNotifications(
-  options: { verifyLimit?: number; categoryLimit?: number } = {},
-) {
-  const { verifyLimit = 50, categoryLimit = 20 } = options;
+export function useNotifications(options: { categoryLimit?: number } = {}) {
+  const { categoryLimit = 20 } = options;
   const { userId, getToken } = useAuth();
   const { t } = useLanguage();
   const [items, setItems] = useState<NotificationItem[]>([]);
@@ -87,29 +74,11 @@ export function useNotifications(
     if (!token) return;
     const supabase = createClerkSupabaseClient(token);
 
-    const [{ data: verifData }, { data: catData }] = await Promise.all([
-      // get_my_verification_attempts — ҳама pending_review + таърихи
-      // баррасишуда. Тасдиқ/рад аз ин ҷо иҷро намешавад — он танҳо дар
-      // саҳифаи худи эълон (VerificationGate) ҷой дорад.
-      supabase.rpc("get_my_verification_attempts", { p_limit: verifyLimit }),
-      // get_my_category_notifications — эълонҳои нави дигар корбарон дар
-      // ҳамон категорияҳое, ки худи корбар низ эълон дорад.
-      supabase.rpc("get_my_category_notifications", { p_limit: categoryLimit }),
-    ]);
+    // get_my_category_notifications — эълонҳои нави дигар корбарон дар
+    // ҳамон категорияҳое, ки худи корбар низ эълон дорад.
+    const { data: catData } = await supabase.rpc("get_my_category_notifications", { p_limit: categoryLimit });
 
-    const verifRows: NotificationItem[] = (verifData ?? []).map((row: any) => ({
-      id: `verify:${row.id}`,
-      kind: "verification" as const,
-      itemId: row.item_id,
-      itemTitle: row.item_title ?? "",
-      itemImageUrl: row.item_image_url ?? null,
-      createdAt: row.created_at,
-      status: row.status,
-      claimantName: `${row.matched_first_name ?? ""} ${row.matched_last_name ?? ""}`.trim() || null,
-      claimantAvatar: row.matched_avatar_url ?? null,
-    }));
-
-    const catRows: NotificationItem[] = (catData ?? []).map((row: any) => ({
+    const rows: NotificationItem[] = (catData ?? []).map((row: any) => ({
       id: `category:${row.item_id}`,
       kind: "category_post" as const,
       itemId: row.item_id,
@@ -120,26 +89,17 @@ export function useNotifications(
       posterAvatar: row.poster_avatar_url ?? null,
     }));
 
-    const rows = [...verifRows, ...catRows].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-
     // Toast барои ҳар ID танҳо якбор фавран мебарояд, баъд on то 1 соат
     // такрор намешавад — ва агар корбар аллакай онро дида бошад (seenIds),
     // дигар ҳаргиз такрор намешавад, танҳо огоҳиномаҳои воқеан НАВ мебароянд.
-    const candidates = rows.filter(isUnseenCandidate);
     const now = Date.now();
     const timestamps = toastShownAt.current;
     let timestampsChanged = false;
-    for (const r of candidates) {
+    for (const r of rows) {
       if (seenIds.has(r.id)) continue;
       const lastShown = timestamps[r.id];
       if (lastShown && now - lastShown < TOAST_REMIND_MS) continue;
-      toast.info(
-        r.kind === "verification"
-          ? t("verifyNewAttemptToast").replace("%{title}", r.itemTitle)
-          : t("categoryPostToast").replace("%{title}", r.itemTitle),
-      );
+      toast.info(t("categoryPostToast").replace("%{title}", r.itemTitle));
       timestamps[r.id] = now;
       timestampsChanged = true;
     }
@@ -147,7 +107,7 @@ export function useNotifications(
 
     setItems(rows);
     setLoading(false);
-  }, [userId, getToken, t, verifyLimit, categoryLimit, seenIds]);
+  }, [userId, getToken, t, categoryLimit, seenIds]);
 
   useEffect(() => {
     fetchAll();
@@ -162,9 +122,7 @@ export function useNotifications(
   const markAllSeen = useCallback(() => {
     setSeenIds((prev) => {
       const next = new Set(prev);
-      for (const item of items) {
-        if (isUnseenCandidate(item)) next.add(item.id);
-      }
+      for (const item of items) next.add(item.id);
       if (typeof window !== "undefined") {
         localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify([...next]));
       }
@@ -186,7 +144,7 @@ export function useNotifications(
     });
   }, []);
 
-  const count = items.filter((item) => isUnseenCandidate(item) && !seenIds.has(item.id)).length;
+  const count = items.filter((item) => !seenIds.has(item.id)).length;
   const isOpened = useCallback((id: string) => openedIds.has(id), [openedIds]);
 
   // Нест кардани як огоҳинома аз рӯйхати корбар — dismiss_notification RPC
@@ -203,9 +161,9 @@ export function useNotifications(
         p_ref_id: refId,
         p_item_id: item.itemId,
         p_item_title: item.itemTitle,
-        p_related_name: item.kind === "verification" ? item.claimantName ?? null : item.posterName ?? null,
-        p_related_avatar: item.kind === "verification" ? item.claimantAvatar ?? null : item.posterAvatar ?? null,
-        p_status: item.kind === "verification" ? item.status ?? null : null,
+        p_related_name: item.posterName ?? null,
+        p_related_avatar: item.posterAvatar ?? null,
+        p_status: null,
       });
       if (error) throw error;
       setItems((prev) => prev.filter((i) => i.id !== item.id));
