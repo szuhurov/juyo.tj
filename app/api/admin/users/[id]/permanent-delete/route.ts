@@ -19,7 +19,7 @@ const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, 
 /**
  * Пурра нест кардани ҳисоб — фақат барои профилҳое, ки аллакай дар trash
  * ҳастанд (status='deleted'). Пеш аз нест кардан як snapshot-и пурра
- * (профил + эълонҳо + захирашуда + сандуқча + дархостҳои тасдиқ) захира
+ * (профил + эълонҳо + захирашуда + дархостҳои тасдиқ) захира
  * мешавад, то дар "Пурра нестшуда" click карда шавад ва маълумот дида шавад
  * — на танҳо профил, балки чи корҳое, ки корбар пеш аз нест шудан карда буд.
  * Аввал худи Clerk-ро нест мекунад, баъд тозакунии Supabase-ро (snapshot +
@@ -55,15 +55,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (clerkErr?.status !== 404) throw clerkErr;
     }
 
-    const [{ data: items }, { data: savedItems }, { data: safetyBoxItems }] = await Promise.all([
+    const [{ data: items }, { data: savedItems }] = await Promise.all([
       supabaseAdmin.from("items").select(ITEM_FIELDS).eq("user_id", id),
       supabaseAdmin
         .from("saved_items")
         .select(`item_id, created_at, items(${ITEM_FIELDS})`)
-        .eq("user_id", id),
-      supabaseAdmin
-        .from("safety_box")
-        .select("id, item_name, description, category, type, reward, images, date, created_at")
         .eq("user_id", id),
     ]);
 
@@ -71,7 +67,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       profile,
       items: items ?? [],
       savedItems: savedItems ?? [],
-      safetyBoxItems: safetyBoxItems ?? [],
     };
 
     await supabaseAdmin.from("deleted_accounts_archive").insert([

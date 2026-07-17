@@ -17,13 +17,14 @@ export interface AdminPostRow {
 }
 
 export interface AdminPostDetail {
-  item: AdminPostRow & {
+  item: Omit<AdminPostRow, "images"> & {
     description: string | null;
     reward: string | null;
     phone_number: string | null;
     moderation_result: string | null;
     views: number;
     profiles: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null; phone: string | null } | null;
+    images: { id: string; image_url: string }[];
   };
 }
 
@@ -52,6 +53,21 @@ export function useUpdateAdminPost(id: string) {
       queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.postDetail(id) });
       queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.posts() });
       queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.stats() });
+    },
+  });
+}
+
+export function useReplacePostImages(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (replacements: { imageId: string; oldUrl: string; file: File }[]) => {
+      for (const r of replacements) {
+        await AdminService.replacePostImage(id, r.imageId, r.oldUrl, r.file);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.postDetail(id) });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.posts() });
     },
   });
 }

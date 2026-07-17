@@ -106,8 +106,7 @@
 │  ├────────────────────────────────────────────────┤   │
 │  │  PostgreSQL Database:                         │   │
 │  │  ├─ profiles    ├─ items                      │   │
-│  │  ├─ item_images ├─ saved_items                │   │
-│  │  ├─ safety_box  └               │   │
+│  │  └─ item_images └─ saved_items                │   │
 │  │                                                 │   │
 │  │  Storage:                                      │   │
 │  │  └─ /items → Bucket for item images           │   │
@@ -294,15 +293,6 @@ juyo.tj/
 │  │ created_at                   │
 │  └──────────────────────────────┘
 │
-│  ┌──────────────────────────────┐
-│  │    SAFETY_BOX                │
-│  ├──────────────────────────────┤
-│  │ id (UUID) PK                 │
-│  │ user_id (FK) → PROFILES      │
-│  │ item_id (FK) → ITEMS         │
-│  │ created_at                   │
-│  └──────────────────────────────┘
-│
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -351,15 +341,6 @@ juyo.tj/
 ```
 
 #### 4️⃣ **SAVED_ITEMS** - Эълонҳои Хаҳи Шудаа
-
-```sql
-┌─ id        : UUID DEFAULT gen_random_uuid()
-├─ user_id  : TEXT NOT NULL (FK → PROFILES.id)
-├─ item_id  : UUID NOT NULL (FK → ITEMS.id)
-└─ created_at: TIMESTAMP DEFAULT NOW()
-```
-
-#### 5️⃣ **SAFETY_BOX** - Сандуқчаи Амниятӣ
 
 ```sql
 ┌─ id        : UUID DEFAULT gen_random_uuid()
@@ -539,7 +520,7 @@ User Clicks на Item Card
          ↓
    Display Item Details with Images ✅
    Show contact info (phone)
-   Allow Save/Safety Box actions
+   Allow Save actions
 ```
 
 ---

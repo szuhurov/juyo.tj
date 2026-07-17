@@ -16,6 +16,7 @@ export interface Profile {
   secondary_phone?: string;
   secondary_phone_type?: string;
   is_qr_active?: boolean;
+  is_verified?: boolean;
   accepted_terms?: boolean;
   accepted_at?: string;
   terms_version?: string;

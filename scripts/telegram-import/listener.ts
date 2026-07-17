@@ -31,12 +31,20 @@ function getClient(): Promise<TelegramClient> {
   return clientPromise;
 }
 
-export async function fetchChannelPosts(channel: string, limit: number, minId?: number): Promise<TelegramPost[]> {
+export async function fetchChannelPosts(
+  channel: string,
+  limit: number,
+  minId?: number,
+  maxId?: number,
+): Promise<TelegramPost[]> {
   const client = await getClient();
   const posts: TelegramPost[] = [];
 
   try {
-    const messages = await client.getMessages(channel, minId ? { limit, minId } : { limit });
+    // minId — паёмҳои НАВТАР аз ин ID (пайгирии инкременталӣ).
+    // maxId — паёмҳои КӮҲНАТАР аз ин ID (backfill-и таърихӣ ба қафо).
+    const params = minId ? { limit, minId } : maxId ? { limit, offsetId: maxId } : { limit };
+    const messages = await client.getMessages(channel, params);
     for (const msg of messages) {
       if (!msg.message && !msg.media) continue; // паёмҳои холӣ (масалан "join" service message) мегузарем
 

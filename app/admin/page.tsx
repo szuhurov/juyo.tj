@@ -7,6 +7,7 @@ import { useAdminStats, type StatsPeriod } from "@/lib/hooks/use-admin-stats";
 import { StatCard } from "@/components/admin/stat-card";
 import { DashboardLineChart } from "@/components/admin/dashboard-line-chart";
 import { DashboardCategoryChart } from "@/components/admin/dashboard-category-chart";
+import { AiModerationToggle } from "@/components/admin/ai-moderation-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
@@ -69,6 +70,8 @@ export default function AdminDashboardPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <AiModerationToggle />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard

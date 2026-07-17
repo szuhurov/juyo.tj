@@ -1,0 +1,27 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AdminService } from "@/lib/services/admin-service";
+import { ADMIN_KEYS } from "@/lib/hooks/admin-query-keys";
+
+export interface AppSettings {
+  id: boolean;
+  ai_moderation_enabled: boolean;
+  updated_at: string;
+}
+
+export function useAdminSettings() {
+  return useQuery({
+    queryKey: ADMIN_KEYS.settings(),
+    queryFn: () => AdminService.getSettings() as Promise<{ settings: AppSettings }>,
+    staleTime: 30_000,
+  });
+}
+
+export function useUpdateAdminSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (updates: { ai_moderation_enabled?: boolean }) => AdminService.updateSettings(updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.settings() });
+    },
+  });
+}

@@ -6,6 +6,7 @@ import { Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { StatusPill } from "@/components/admin/status-pill";
+import { VerifiedBadge } from "@/components/verified-badge";
 import type { AdminUserRow } from "@/lib/hooks/use-admin-users";
 
 const GRID_COLS = "70px minmax(140px,1.3fr) minmax(140px,1.3fr) minmax(110px,1fr) minmax(110px,0.9fr) minmax(90px,0.8fr) minmax(90px,0.8fr) 50px";
@@ -64,7 +65,10 @@ export function UserTable({ rows }: { rows: AdminUserRow[] }) {
                     {name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <p className="font-bold text-zinc-800 group-hover:text-white truncate min-w-0">{name}</p>
+                <p className="font-bold text-zinc-800 group-hover:text-white truncate min-w-0 flex items-center gap-1">
+                  <span className="truncate">{name}</span>
+                  {user.is_verified && <VerifiedBadge className="group-hover:stroke-blue-600" />}
+                </p>
               </div>
 
               <span className="text-zinc-500 group-hover:text-blue-100 font-medium truncate">

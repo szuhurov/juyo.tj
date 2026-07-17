@@ -23,7 +23,6 @@ import {
   Settings,
   Menu,
   LayoutGrid,
-  Briefcase,
   Bookmark,
   Camera,
   Image as ImageIcon,
@@ -56,6 +55,9 @@ import { CameraCaptureModal } from "./camera-capture-modal";
 import { useHomeState } from "@/lib/home-context";
 import type { Item } from "@/lib/services/item-service";
 import { NotificationBell } from "@/components/notification-bell";
+import { VerifiedBadge } from "@/components/verified-badge";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 export function Header() {
   const pathname = usePathname();
@@ -65,6 +67,22 @@ export function Header() {
   const { userId } = useAuth();
   const { user } = useUser();
   const { signOut } = useClerk();
+
+  // Барои нишони "тасдиқшуда" дар паҳлӯи номи худи корбар — public_profiles
+  // ба ҳама намоён аст, пас токен лозим нест.
+  const { data: ownProfile } = useQuery({
+    queryKey: ["own-profile-verified", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("public_profiles")
+        .select("is_verified")
+        .eq("id", userId!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { t, locale, setLocale } = useLanguage();
   const { setVisualSearchResults, setIsSearchTyping, triggerGoHome } =
@@ -413,8 +431,9 @@ export function Header() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col space-y-0.5 overflow-hidden">
-                          <p className="text-sm font-black truncate text-zinc-900 dark:text-zinc-100">
-                            {user?.fullName}
+                          <p className="text-sm font-black truncate text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                            <span className="truncate">{user?.fullName}</span>
+                            {ownProfile?.is_verified && <VerifiedBadge />}
                           </p>
                           <p className="text-[10px] text-zinc-500 truncate font-medium">
                             {user?.primaryEmailAddress?.emailAddress}
@@ -521,16 +540,6 @@ export function Header() {
                       <Bookmark className="mr-3 h-4 w-4 text-emerald-500" />
                       <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
                         {t("savedItems")}
-                      </span>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => router.push("/profile?tab=safety")}
-                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
-                    >
-                      <Briefcase className="mr-3 h-4 w-4 text-amber-500" />
-                      <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                        {t("mySafe")}
                       </span>
                     </DropdownMenuItem>
 

@@ -251,7 +251,7 @@ export function PrivacyBlurEditor({
         current.base.width,
         current.base.height,
         containerSize.w || 480,
-        containerSize.h || (typeof window !== "undefined" ? window.innerHeight * 0.55 : 480),
+        containerSize.h || 400,
       )
     : { w: 0, h: 0 };
 
@@ -652,9 +652,9 @@ export function PrivacyBlurEditor({
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-2xl rounded-[2rem] p-0 overflow-x-hidden overflow-y-auto border-none shadow-2xl gap-0"
+        className="sm:max-w-2xl rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl gap-0 flex flex-col max-h-[90dvh]"
       >
-        <DialogHeader className="p-6 pb-4 space-y-2">
+        <DialogHeader className="p-6 pb-4 space-y-2 shrink-0">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
@@ -682,13 +682,11 @@ export function PrivacyBlurEditor({
           </div>
         </DialogHeader>
 
-        <div className="px-6">
+        <div className="px-6 flex-1 min-h-0 flex flex-col overflow-y-auto">
           <div
             ref={wrapRef}
-            className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 touch-none flex items-center justify-center"
+            className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 touch-none flex items-center justify-center flex-1 min-h-[200px]"
             style={{
-              height: ready && dispSize.h ? `${dispSize.h}px` : undefined,
-              maxHeight: "55dvh",
               cursor: "crosshair",
             }}
             onPointerDown={handleWrapPointerDown}
@@ -861,7 +859,7 @@ export function PrivacyBlurEditor({
           </div>
         </div>
 
-        <DialogFooter className="p-6 pt-4">
+        <DialogFooter className="p-6 pt-4 shrink-0">
           <Button
             type="button"
             onClick={handleFooterButton}

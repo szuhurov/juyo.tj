@@ -45,15 +45,11 @@ export async function POST(req: NextRequest) {
       if (clerkErr?.status !== 404) throw clerkErr;
     }
 
-    const [{ data: items }, { data: savedItems }, { data: safetyBoxItems }] = await Promise.all([
+    const [{ data: items }, { data: savedItems }] = await Promise.all([
       supabaseAdmin.from("items").select(ITEM_FIELDS).eq("user_id", userId),
       supabaseAdmin
         .from("saved_items")
         .select(`item_id, created_at, items(${ITEM_FIELDS})`)
-        .eq("user_id", userId),
-      supabaseAdmin
-        .from("safety_box")
-        .select("id, item_name, description, category, type, reward, images, date, created_at")
         .eq("user_id", userId),
     ]);
 
@@ -61,7 +57,6 @@ export async function POST(req: NextRequest) {
       profile,
       items: items ?? [],
       savedItems: savedItems ?? [],
-      safetyBoxItems: safetyBoxItems ?? [],
     };
 
     await supabaseAdmin.from("deleted_accounts_archive").insert([

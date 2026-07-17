@@ -11,6 +11,8 @@ export interface ItemFilters {
   category?: string;
   type?: string | null;
   user_id?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   pageSize?: number;
 }
@@ -25,9 +27,6 @@ export const ITEM_KEYS = {
   userItems: (userId: string) => [...ITEM_KEYS.user(), userId] as const,
   saved: () => [...ITEM_KEYS.all, "saved"] as const,
   savedItems: (userId: string) => [...ITEM_KEYS.saved(), userId] as const,
-  safety: () => [...ITEM_KEYS.all, "safety"] as const,
-  safetyItems: (userId: string) => [...ITEM_KEYS.safety(), userId] as const,
-  safetyDetail: (id: string) => [...ITEM_KEYS.safety(), "detail", id] as const,
 };
 
 const PAGE_SIZE = 20;
@@ -149,35 +148,4 @@ export function useSavedItems(userId?: string, token?: string | null) {
 export function useIsItemSaved(itemId: string, userId?: string, token?: string | null) {
   const { data: savedItems = [] } = useSavedItems(userId, token);
   return (savedItems as Item[]).some((item) => item.id === itemId);
-}
-
-// Хук барои гирифтани ашёҳо аз сандуқчаи амниятӣ (Safety Box)
-export function useSafetyItems(userId?: string, token?: string | null) {
-  return useQuery({
-    queryKey: ITEM_KEYS.safetyItems(userId || ""),
-    queryFn: async () => {
-      if (!userId || !token) return [];
-      const { createClerkSupabaseClient } = await import("@/lib/supabase");
-      const supabase = createClerkSupabaseClient(token);
-      return ItemService.getSafetyBoxItems(supabase, userId);
-    },
-    enabled: !!userId && !!token,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-  });
-}
-
-// Хук барои гирифтани маълумоти муфассали як ашё аз Safety Box
-export function useSafetyItemDetails(id: string, token?: string | null) {
-  return useQuery({
-    queryKey: ITEM_KEYS.safetyDetail(id),
-    queryFn: async () => {
-      if (!token) return null;
-      const { createClerkSupabaseClient } = await import("@/lib/supabase");
-      const supabaseClient = createClerkSupabaseClient(token);
-      return ItemService.getSafetyItemDetails(id, supabaseClient);
-    },
-    enabled: !!id && !!token,
-    staleTime: 1000 * 60,
-  });
 }

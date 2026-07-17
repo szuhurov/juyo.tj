@@ -28,13 +28,6 @@ describe('ITEM_KEYS', () => {
     expect(key).toContain('user-xyz');
   });
 
-  it('savedItems and safetyItems have different key prefixes', async () => {
-    const { ITEM_KEYS } = await import('@/lib/hooks/use-items');
-    const savedKey = JSON.stringify(ITEM_KEYS.savedItems('u1'));
-    const safetyKey = JSON.stringify(ITEM_KEYS.safetyItems('u1'));
-    expect(savedKey).not.toBe(safetyKey);
-  });
-
   it('all keys are arrays (required by React Query)', async () => {
     const { ITEM_KEYS } = await import('@/lib/hooks/use-items');
     expect(Array.isArray(ITEM_KEYS.all)).toBe(true);
@@ -44,7 +37,6 @@ describe('ITEM_KEYS', () => {
     expect(Array.isArray(ITEM_KEYS.detail('x'))).toBe(true);
     expect(Array.isArray(ITEM_KEYS.userItems('u'))).toBe(true);
     expect(Array.isArray(ITEM_KEYS.savedItems('u'))).toBe(true);
-    expect(Array.isArray(ITEM_KEYS.safetyItems('u'))).toBe(true);
   });
 });
 

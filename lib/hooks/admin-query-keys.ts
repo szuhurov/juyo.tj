@@ -7,4 +7,5 @@ export const ADMIN_KEYS = {
   posts: () => [...ADMIN_KEYS.all, "posts"] as const,
   postsList: (filters: unknown) => [...ADMIN_KEYS.posts(), "list", { filters }] as const,
   postDetail: (id: string) => [...ADMIN_KEYS.posts(), "detail", id] as const,
+  settings: () => [...ADMIN_KEYS.all, "settings"] as const,
 };

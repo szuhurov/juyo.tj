@@ -44,6 +44,8 @@ export interface AdminPostFilters {
   resolved?: "true" | "false" | "all";
   status?: "active" | "deleted" | "all";
   user_id?: string;
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   pageSize?: number;
 }
@@ -122,6 +124,29 @@ export const AdminService = {
     return adminFetch("/api/admin/notify", {
       method: "POST",
       body: JSON.stringify(payload),
+    });
+  },
+
+  async replacePostImage(postId: string, imageId: string, oldImageUrl: string, file: File) {
+    const formData = new FormData();
+    formData.append("image_id", imageId);
+    formData.append("old_image_url", oldImageUrl);
+    formData.append("image", file);
+    const res = await fetch(`/api/admin/posts/${postId}/images`, { method: "PATCH", body: formData });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.error || `Хатогии дархост (${res.status})`);
+    }
+    return res.json();
+  },
+
+  getSettings() {
+    return adminFetch("/api/admin/settings");
+  },
+  updateSettings(updates: { ai_moderation_enabled?: boolean }) {
+    return adminFetch("/api/admin/settings", {
+      method: "PATCH",
+      body: JSON.stringify(updates),
     });
   },
 };

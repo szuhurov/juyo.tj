@@ -11,6 +11,7 @@ const ALLOWED_FIELDS = [
   "email",
   "is_qr_active",
   "status",
+  "is_verified",
 ] as const;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -27,7 +28,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       { data: items },
       { count: pushTokenCount },
       { data: savedItems },
-      { data: safetyBoxItems },
     ] = await Promise.all([
       supabaseAdmin.from("profiles").select("*").eq("id", id).maybeSingle(),
       supabaseAdmin
@@ -41,11 +41,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         .select("item_id, created_at, items(id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url))")
         .eq("user_id", id)
         .order("created_at", { ascending: false }),
-      supabaseAdmin
-        .from("safety_box")
-        .select("id, item_name, description, category, type, reward, images, date, created_at")
-        .eq("user_id", id)
-        .order("created_at", { ascending: false }),
     ]);
 
     if (profileError) throw profileError;
@@ -55,7 +50,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       profile,
       items: items ?? [],
       savedItems: savedItems ?? [],
-      safetyBoxItems: safetyBoxItems ?? [],
       pushTokenCount: pushTokenCount ?? 0,
     });
   } catch (err: any) {

@@ -6,7 +6,6 @@
 -- DROP TABLE IF EXISTS public.saved_items CASCADE;
 -- DROP TABLE IF EXISTS public.items CASCADE;
 -- DROP TABLE IF EXISTS public.profiles CASCADE;
--- DROP TABLE IF EXISTS public.safety_box CASCADE;
 
 -- 1. Создаем расширения
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -122,25 +121,6 @@ CREATE TABLE IF NOT EXISTS public.saved_items (
     PRIMARY KEY (user_id, item_id)
 );
 
--- 6. Таблица SAFETY_BOX
-CREATE TABLE IF NOT EXISTS public.safety_box (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id TEXT REFERENCES public.profiles(id) ON DELETE CASCADE,
-    item_name TEXT NOT NULL,
-    description TEXT,
-    category TEXT,
-    type item_type NOT NULL DEFAULT 'lost',
-    reward TEXT,
-    phone_number TEXT,
-    images TEXT[],
-    views INTEGER DEFAULT 0,
-    date DATE,
-    text_moderated BOOLEAN DEFAULT FALSE,
-    images_moderated BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- Индексы для скорости
 CREATE INDEX IF NOT EXISTS idx_items_user_id ON public.items(user_id);
 CREATE INDEX IF NOT EXISTS idx_items_status ON public.items(moderation_status);
@@ -164,10 +144,6 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER trg_items_updated_at
 BEFORE UPDATE ON public.items
-FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
-
-CREATE OR REPLACE TRIGGER trg_safety_box_updated_at
-BEFORE UPDATE ON public.safety_box
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 CREATE OR REPLACE TRIGGER trg_profiles_updated_at

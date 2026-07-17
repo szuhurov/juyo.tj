@@ -4,7 +4,7 @@
  */ "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { ItemService, CATEGORIES } from "@/lib/services/item-service";
@@ -58,8 +58,6 @@ import { CameraCaptureModal } from "@/components/camera-capture-modal";
 function AddItemForm() {
   const { t, locale } = useLanguage();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const isSafetyMode = searchParams.get("target") === "safety";
   const { userId, getToken } = useAuth();
   const queryClient = useQueryClient();
   const { status: pushStatus, subscribe: subscribeToPush } = useWebPush();
@@ -112,12 +110,23 @@ function AddItemForm() {
   const [moderationError, setModerationError] = useState<string | null>(null);
   const [showSearchChoice, setShowSearchChoice] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
-  // Паёми "нашр карда истодааст" (боркунӣ, сабти база) — ҷудо аз
-  // scanMessage/checking, зеро он ба AI рабте надорад ва не бояд анимацияи
-  // "AI мегардад"-ро бардурӯғ такрор кунад.
-  const [publishingMessage, setPublishingMessage] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  // Пешфарз true (то боркунии танзимот) — агар admin AI moderation-ро аз
+  // dashboard хомӯш карда бошад (масалан токени OpenAI тамом шуда бошад),
+  // эълонҳо бе санҷиши AI, бо moderation_status='pending' нашр мешаванд.
+  const [aiModerationEnabled, setAiModerationEnabled] = useState(true);
+
+  useEffect(() => {
+    anonSupabase
+      .from("app_settings")
+      .select("ai_moderation_enabled")
+      .eq("id", true)
+      .single()
+      .then(({ data }) => {
+        if (data) setAiModerationEnabled(data.ai_moderation_enabled);
+      });
+  }, []);
 
   useEffect(() => {
     if (moderationStatus !== "checking") {
@@ -266,6 +275,8 @@ function AddItemForm() {
     let finalTitle = formData.title;
     let finalDescription = formData.description;
     let finalCategory = formData.category;
+    let finalModerationStatus: "approved" | "pending" = "approved";
+    let finalModerationResult = "Approved by AI Brain";
 
     // Пурсиши иҷозати огоҳиномаро ҳамин ҷо оғоз мекунем (на баъд аз upload/insert) —
     // то браузер онро ҳамчун идомаи бевоситаи клики корбар шиносад (баъзе браузерҳо
@@ -278,112 +289,114 @@ function AddItemForm() {
       subscribeToPush().catch(() => {});
     }
 
-    // 1. САНҶИШИ ЯГОНАИ БЕХАТАРӢ — акс (ниҳоӣ) + матн (ниҳоӣ) якҷоя, як бор,
-    // дар ҳамин ҷо, пеш аз нашр. Ин ягона нуқтаи AI moderation дар тамоми
-    // раванди илова кардани эълон аст (mode=suggest дар қадами 3 ҳеҷ гоҳ
-    // рад намекунад — танҳо тавсиф медиҳад).
     setStep(3);
-    setModerationStatus("checking");
-    setScanMessage(
-      t("ai_steps.checking_custom_text") || "AI эълони шуморо месанҷад...",
-    );
 
-    try {
-      let supabaseClient;
-      if (userId) {
-        const token = await getToken({ template: "supabase" });
-        supabaseClient = createClerkSupabaseClient(token!);
-      } else {
-        supabaseClient = anonSupabase;
-      }
-
-      const finalCheckData = new FormData();
-      const compressedForCheck = await Promise.all(
-        images.map((img) => compressImage(img, 1024, 0.7)),
+    if (aiModerationEnabled) {
+      // 1. САНҶИШИ ЯГОНАИ БЕХАТАРӢ — акс (ниҳоӣ) + матн (ниҳоӣ) якҷоя, як бор,
+      // дар ҳамин ҷо, пеш аз нашр. Ин ягона нуқтаи AI moderation дар тамоми
+      // раванди илова кардани эълон аст (mode=suggest дар қадами 3 ҳеҷ гоҳ
+      // рад намекунад — танҳо тавсиф медиҳад).
+      setModerationStatus("checking");
+      setScanMessage(
+        t("ai_steps.checking_custom_text") || "AI эълони шуморо месанҷад...",
       );
-      compressedForCheck.forEach((img) => finalCheckData.append("image", img));
-      finalCheckData.append("title", formData.title);
-      finalCheckData.append("description", formData.description);
-      finalCheckData.append("lang", locale);
-      finalCheckData.append("type", formData.type || "lost");
-      finalCheckData.append("mode", "final_check");
 
-      const { data: checkData, error: checkError } =
-        await supabaseClient.functions.invoke("ai-brain", {
-          body: finalCheckData,
-        });
+      try {
+        let supabaseClient;
+        if (userId) {
+          const token = await getToken({ template: "supabase" });
+          supabaseClient = createClerkSupabaseClient(token!);
+        } else {
+          supabaseClient = anonSupabase;
+        }
 
-      if (checkError || (checkData && checkData.is_safe === false)) {
-        setModerationStatus("failed");
-        setModerationError(
-          checkData?.reason ||
-            checkError?.message ||
-            t("ai_steps.text_moderation_failed") ||
-            "Эълони шумо ба қоидаҳо мувофиқат намекунад.",
+        const finalCheckData = new FormData();
+        const compressedForCheck = await Promise.all(
+          images.map((img) => compressImage(img, 1024, 0.7)),
         );
+        compressedForCheck.forEach((img) => finalCheckData.append("image", img));
+        finalCheckData.append("title", formData.title);
+        finalCheckData.append("description", formData.description);
+        finalCheckData.append("lang", locale);
+        finalCheckData.append("type", formData.type || "lost");
+        finalCheckData.append("mode", "final_check");
+
+        const { data: checkData, error: checkError } =
+          await supabaseClient.functions.invoke("ai-brain", {
+            body: finalCheckData,
+          });
+
+        if (checkError || (checkData && checkData.is_safe === false)) {
+          setModerationStatus("failed");
+          setModerationError(
+            checkData?.reason ||
+              checkError?.message ||
+              t("ai_steps.text_moderation_failed") ||
+              "Эълони шумо ба қоидаҳо мувофиқат намекунад.",
+          );
+          return;
+        }
+
+        // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
+        // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар
+        // минтақаҳои пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам
+        // иваз/илова кунад пеш аз тасдиқ. Экрани "муваффақият" танҳо БАЪД аз
+        // тамом шудани ҳамаи блурҳо нишон дода мешавад — на пеш аз он.
+        if (checkData?.is_document) {
+          // Матни ниҳоӣ — рақами ҳуҷҷат/шиноснома аз матн нест карда шуд (AI),
+          // ном/насаб бетағйир мемонад. Категория маҷбуран "Ҳуҷҷатҳо" мешавад,
+          // новобаста аз он ки корбар кадом категорияро интихоб карда буд.
+          finalTitle = checkData.redacted_title || formData.title;
+          finalDescription = checkData.redacted_description || formData.description;
+          finalCategory = "Documents";
+
+          setModerationStatus("idle");
+          const suggestedRegions: PrivacyRegion[] = checkData.privacy_regions ?? [];
+          const blurred = await new Promise<File[] | null>((resolve) => {
+            setPrivacyReview({ files: images, regions: suggestedRegions, resolve });
+          });
+          if (!blurred) {
+            // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
+            // ҳуҷҷати бе мозаика ҳаргиз нашр нашавад.
+            setStep(4);
+            return;
+          }
+          setImages(blurred);
+          finalImages = blurred;
+        }
+      } catch (err: any) {
+        setModerationStatus("failed");
+        setModerationError(err.message);
         return;
       }
+    } else {
+      // AI moderation аз admin dashboard хомӯш карда шудааст (масалан
+      // токени OpenAI тамом шудааст) — бе санҷиш, эълон бо ҳолати "дар
+      // интизор" нашр мешавад: танҳо дар профили худи корбар намоён аст
+      // (search_items RPC чунин филтр мекунад), то admin дастӣ тафтиш кунад.
+      finalModerationStatus = "pending";
+      finalModerationResult = "AI moderation хомӯш буд — дар интизори тасдиқи дастии admin";
+    }
 
-      // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
-      // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар
-      // минтақаҳои пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам
-      // иваз/илова кунад пеш аз тасдиқ. Экрани "муваффақият" танҳо БАЪД аз
-      // тамом шудани ҳамаи блурҳо нишон дода мешавад — на пеш аз он.
-      if (checkData?.is_document) {
-        // Матни ниҳоӣ — рақами ҳуҷҷат/шиноснома аз матн нест карда шуд (AI),
-        // ном/насаб бетағйир мемонад. Категория маҷбуран "Ҳуҷҷатҳо" мешавад,
-        // новобаста аз он ки корбар кадом категорияро интихоб карда буд.
-        finalTitle = checkData.redacted_title || formData.title;
-        finalDescription = checkData.redacted_description || formData.description;
-        finalCategory = "Documents";
-
-        setModerationStatus("idle");
-        const suggestedRegions: PrivacyRegion[] = checkData.privacy_regions ?? [];
-        const blurred = await new Promise<File[] | null>((resolve) => {
-          setPrivacyReview({ files: images, regions: suggestedRegions, resolve });
-        });
-        if (!blurred) {
-          // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
-          // ҳуҷҷати бе мозаика ҳаргиз нашр нашавад.
-          setStep(4);
-          return;
-        }
-        setImages(blurred);
-        finalImages = blurred;
-      }
-
-      // 1.6 Барои эълони ҷамъиятӣ (на Сандуқчаи Ман) пеш аз худи нашр
-      // маслиҳати бехатариро нишон медиҳем — нашр танҳо пас аз "Фаҳмидам" оғоз мешавад.
-      if (!isSafetyMode) {
-        setModerationStatus("idle");
-        const proceed = await new Promise<boolean>((resolve) => {
-          setSafetyAck({ resolve });
-        });
-        if (!proceed) {
-          setStep(4);
-          return;
-        }
-      }
-
-    } catch (err: any) {
-      setModerationStatus("failed");
-      setModerationError(err.message);
+    // 1.6 Пеш аз худи нашр маслиҳати бехатариро нишон медиҳем — нашр
+    // танҳо пас аз "Фаҳмидам" оғоз мешавад.
+    setModerationStatus("idle");
+    const proceed = await new Promise<boolean>((resolve) => {
+      setSafetyAck({ resolve });
+    });
+    if (!proceed) {
+      setStep(4);
       return;
     }
 
     // 2. НАШРИ ЭЪЛОН — санҷиши AI ва тасдиқҳои корбар аллакай тамом
-    // шуданд. Барои эълони ҷамъиятӣ (на Сандуқчаи Ман) фавран экрани
-    // муваффақиятро нишон медиҳем — боркунии аксҳо ва сабти воқеӣ дар
-    // база дар паси парда идома меёбанд, то корбар мунтазир намонад. Агар
-    // дар паси парда хатогӣ рӯй диҳад, огоҳии toast мебарояд (экран ба
-    // ҳолати "ноком" бознамегардад, зеро корбар аллакай "муваффақият"-ро дидааст).
-    if (!isSafetyMode) {
-      setPostSuccessRedirect("/profile?tab=posts");
-      setModerationStatus("passed");
-    } else {
-      setModerationStatus("idle");
-      setPublishingMessage(t("ai_steps.publishing") || "Эълон нашр карда истодааст...");
-    }
+    // шуданд. Фавран экрани муваффақиятро нишон медиҳем — боркунии аксҳо
+    // ва сабти воқеӣ дар база дар паси парда идома меёбанд, то корбар
+    // мунтазир намонад. Агар дар паси парда хатогӣ рӯй диҳад, огоҳии toast
+    // мебарояд (экран ба ҳолати "ноком" бознамегардад, зеро корбар аллакай
+    // "муваффақият"-ро дидааст).
+    setPostSuccessRedirect("/profile?tab=posts");
+    setModerationStatus("passed");
 
     const publishWork = async () => {
       let token = await getToken({ template: "supabase" });
@@ -406,41 +419,6 @@ function AddItemForm() {
         imageUrls.push(publicUrl);
       }
 
-      if (isSafetyMode) {
-        // Sandukchai Man (Safety Box) — эълон ҷамъиятӣ намешавад, танҳо
-        // дар қуттии шахсии корбар нигоҳ дошта мешавад. Санҷиши AI аллакай
-        // дар боло (final_check) гузашт, пас онро аллакай moderated мегузорем,
-        // то ҳангоми"нашр"-и минбаъда аз ин қутти AI дубора кор накунад.
-        if (!userId) throw new Error("Authentication required");
-
-        const safetyData = {
-          user_id: userId,
-          item_name: finalTitle,
-          description: finalDescription,
-          category: finalCategory,
-          type: formData.type,
-          phone_number: formData.phone,
-          reward:
-            formData.type === "lost" && formData.reward
-              ? `${formData.reward}`
-              : null,
-          images: imageUrls,
-          date: new Date().toISOString().split("T")[0],
-          text_moderated: true,
-          images_moderated: true,
-        };
-
-        const { error: safetyError } = await supabase.from("safety_box").insert([safetyData]);
-        if (safetyError) throw safetyError;
-
-        toast.success(t("success"));
-        await queryClient.invalidateQueries({
-          queryKey: ITEM_KEYS.safetyItems(userId),
-        });
-        router.push("/profile?tab=safety");
-        return;
-      }
-
       const itemData = {
         user_id: userId,
         title: finalTitle,
@@ -454,8 +432,8 @@ function AddItemForm() {
             : null,
         date: new Date().toISOString().split("T")[0],
         is_resolved: false,
-        moderation_status: "approved",
-        moderation_result: "Approved by AI Brain",
+        moderation_status: finalModerationStatus,
+        moderation_result: finalModerationResult,
       };
 
       const { data: item, error: itemError } = await supabase
@@ -517,26 +495,10 @@ function AddItemForm() {
       ).catch(() => {});
     };
 
-    if (isSafetyMode) {
-      // Сандуқчаи Ман экрани "муваффақият"-и алоҳида надорад — пас чун
-      // пештара мунтазир мемонем, то гузариш дуруст рӯй диҳад.
-      try {
-        await publishWork();
-      } catch (error: any) {
-        console.error(error);
-        toast.error(error.message || t("error"));
-        setModerationStatus("failed");
-        setModerationError(error.message || t("error"));
-      } finally {
-        setLoading(false);
-        setPublishingMessage(null);
-      }
-    } else {
-      publishWork().catch((error: any) => {
-        console.error(error);
-        toast.error(error.message || t("error"));
-      });
-    }
+    publishWork().catch((error: any) => {
+      console.error(error);
+      toast.error(error.message || t("error"));
+    });
   };
 
   return (
@@ -882,11 +844,6 @@ function AddItemForm() {
                   <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
                     <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
                   </div>
-                  {publishingMessage && (
-                    <p className="text-emerald-600 font-black text-[10px] sm:text-xs tracking-[0.2em] text-center">
-                      {publishingMessage}
-                    </p>
-                  )}
                 </div>
               )}
             </div>
@@ -1059,8 +1016,6 @@ function AddItemForm() {
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
-                ) : isSafetyMode ? (
-                  t("saveItem")
                 ) : (
                   t("publishBtn")
                 )}

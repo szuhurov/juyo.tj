@@ -37,7 +37,7 @@ export async function generateMetadata() {
       template: "%s",
     },
     description:
-      "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
+      "Барнома барои эълон гузоштан ва ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон.",
     manifest: "/manifest.json",
     appleWebApp: {
       capable: true,
@@ -82,7 +82,7 @@ export async function generateMetadata() {
       siteName: "juyo",
       title: "juyo",
       description:
-        "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
+        "Барнома барои эълон гузоштан ва ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон.",
       images: [
         {
           url: "https://juyo.tj/juyo-logo.jpg",
@@ -96,7 +96,7 @@ export async function generateMetadata() {
       card: "summary_large_image",
       title: "juyo",
       description:
-        "Платформаи ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон. Эълон гузоред ва ашёи гумшудаатонро ёбед.",
+        "Барнома барои эълон гузоштан ва ёфтани ашёҳои гумшуда ва ёфтшуда дар Тоҷикистон.",
       images: ["https://juyo.tj/juyo-logo.jpg"],
     },
     icons: {

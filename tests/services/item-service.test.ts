@@ -51,8 +51,8 @@ const makeMockClient = (result?: { data: any; error: any }) => {
 // CATEGORIES
 // ─────────────────────────────────────────────
 describe('CATEGORIES', () => {
-  it('has exactly 6 categories', () => {
-    expect(CATEGORIES).toHaveLength(6);
+  it('has exactly 8 categories', () => {
+    expect(CATEGORIES).toHaveLength(8);
   });
 
   it('every category has id, name, and icon', () => {
@@ -68,7 +68,7 @@ describe('CATEGORIES', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('includes Electronics, Documents, Keys, Clothing, Pets, Other', () => {
+  it('includes Electronics, Documents, Keys, Clothing, Pets, Other, LicensePlate, Wallet', () => {
     const names = CATEGORIES.map(c => c.name);
     expect(names).toContain('Electronics');
     expect(names).toContain('Documents');
@@ -76,6 +76,8 @@ describe('CATEGORIES', () => {
     expect(names).toContain('Clothing');
     expect(names).toContain('Pets');
     expect(names).toContain('Other');
+    expect(names).toContain('LicensePlate');
+    expect(names).toContain('Wallet');
   });
 });
 
@@ -327,69 +329,5 @@ describe('ItemService.deleteItem', () => {
     const mock = makeMockClient({ data: null, error: new Error('DB error') });
 
     await expect(ItemService.deleteItem(mock, 'item-1')).rejects.toThrow();
-  });
-});
-
-// ─────────────────────────────────────────────
-// archiveToSafetyBox
-// ─────────────────────────────────────────────
-describe('ItemService.archiveToSafetyBox', () => {
-  const mockItem = {
-    id: 'item-1',
-    title: 'Калид',
-    description: 'Тавсиф',
-    category: 'Keys',
-    type: 'lost' as const,
-    reward: '50с',
-    phone_number: '992900000000',
-    images: [{ image_url: 'https://example.com/img.jpg' }],
-    views: 10,
-    date: '2024-01-01',
-    created_at: '2024-01-01T00:00:00Z',
-    user_id: 'user-1',
-    is_resolved: false,
-  };
-
-  it('inserts into safety_box with correct user_id and item_name', async () => {
-    const mock = makeMockClient({ data: null, error: null });
-
-    await ItemService.archiveToSafetyBox(mock, mockItem, 'user-1');
-
-    expect(mock._chain.insert).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ user_id: 'user-1', item_name: 'Калид' }),
-      ])
-    );
-  });
-
-  it('includes images array in safety_box insert', async () => {
-    const mock = makeMockClient({ data: null, error: null });
-
-    await ItemService.archiveToSafetyBox(mock, mockItem, 'user-1');
-
-    const insertArg = mock._chain.insert.mock.calls[0][0][0];
-    expect(insertArg.images).toContain('https://example.com/img.jpg');
-  });
-
-  it('deletes original item after archiving', async () => {
-    const mock = makeMockClient({ data: null, error: null });
-
-    await ItemService.archiveToSafetyBox(mock, mockItem, 'user-1');
-
-    const fromCalls: string[] = mock.from.mock.calls.map((c: any[]) => c[0]);
-    expect(fromCalls).toContain('safety_box');
-    expect(fromCalls).toContain('items');
-  });
-
-  it('handles item with no images gracefully', async () => {
-    const mock = makeMockClient({ data: null, error: null });
-    const itemNoImages = { ...mockItem, images: undefined };
-
-    await expect(
-      ItemService.archiveToSafetyBox(mock, itemNoImages, 'user-1')
-    ).resolves.not.toThrow();
-
-    const insertArg = mock._chain.insert.mock.calls[0][0][0];
-    expect(insertArg.images).toEqual([]);
   });
 });

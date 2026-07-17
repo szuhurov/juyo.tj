@@ -11,6 +11,7 @@ import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { useDeleteAdminPost, useUpdateAdminPost, usePermanentlyDeletePost } from "@/lib/hooks/use-admin-posts";
 import type { AdminPostDetail } from "@/lib/hooks/use-admin-posts";
+import { PostBlurButton } from "@/components/admin/posts/post-blur-button";
 
 export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
   const router = useRouter();
@@ -92,12 +93,15 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
       </div>
 
       {item.images.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto">
-          {item.images.map((img) => (
-            <div key={img.image_url} className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0">
-              <Image src={img.image_url} alt={item.title} width={96} height={96} className="object-cover w-full h-full" />
-            </div>
-          ))}
+        <div className="space-y-2">
+          <div className="flex gap-2 overflow-x-auto">
+            {item.images.map((img) => (
+              <div key={img.image_url} className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0">
+                <Image src={img.image_url} alt={item.title} width={96} height={96} className="object-cover w-full h-full" />
+              </div>
+            ))}
+          </div>
+          <PostBlurButton postId={item.id} images={item.images} />
         </div>
       )}
 

@@ -17,7 +17,6 @@ import {
   MapPin,
   Calendar,
   Pencil,
-  Archive,
   Trash2,
   Loader2,
   AlertTriangle,
@@ -66,14 +65,13 @@ export function ItemCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
 
   // Состояние барои фаъол будани ротатсияи суратҳо
   const [isHovered, setIsHovered] = useState(false);
 
   // Санҷиши соҳиби эълон
   const isOwner = !!userId && userId === item.user_id;
-  const exactDate = format(new Date(item.created_at), "dd.MM.yyyy");
+  const exactDate = format(new Date(item.date), "dd.MM.yyyy");
 
   // Агар сурат набошад, плейсхолдер мемонем
   const images =
@@ -86,34 +84,6 @@ export function ItemCard({
     e.preventDefault();
     e.stopPropagation();
     router.push(`/items/${item.id}/edit`);
-  };
-
-  // Кушодани тасдиқи архив (Safety Box)
-  const handleArchiveClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowArchiveConfirm(true);
-  };
-
-  // Функсияи тасдиқи архив (Запрос ба сервис)
-  const confirmArchive = async () => {
-    if (isActionLoading) return;
-
-    setIsActionLoading(true);
-    try {
-      const token = await getToken({ template: "supabase" });
-      if (!token || !userId) throw new Error("Not authenticated");
-      const supabase = createClerkSupabaseClient(token);
-      await ItemService.archiveToSafetyBox(supabase, item, userId);
-      toast.success(t("moveToSafeSuccess"));
-      setShowArchiveConfirm(false);
-      router.push("/profile?tab=safety");
-      window.dispatchEvent(new Event("items-updated"));
-    } catch (error) {
-      toast.error(t("error"));
-    } finally {
-      setIsActionLoading(false);
-    }
   };
 
   // Кушодани тасдиқи нест кардан
@@ -240,12 +210,6 @@ export function ItemCard({
                 <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               <button
-                onClick={handleArchiveClick}
-                className="p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-amber-600 transition-all shadow-md border border-white/10"
-              >
-                <Archive className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              </button>
-              <button
                 onClick={handleDelete}
                 className="p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-red-600 transition-all shadow-md border border-white/10"
               >
@@ -336,60 +300,6 @@ export function ItemCard({
                 e.preventDefault();
                 e.stopPropagation();
                 setShowDeleteConfirm(false);
-              }}
-              disabled={isActionLoading}
-            >
-              {t("cancel")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Модал барои тасдиқи ба архив мондан */}
-      <Dialog
-        open={showArchiveConfirm}
-        onOpenChange={(open) => !isActionLoading && setShowArchiveConfirm(open)}
-      >
-        <DialogContent
-          className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <DialogHeader className="space-y-2.5">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-amber-50 dark:bg-amber-900/20 text-amber-600">
-              <Archive className="w-5 h-5" />
-            </div>
-            <DialogTitle className="text-lg font-black tracking-tight text-amber-600 leading-snug">
-              {t("moveToSafe")}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
-              {t("moveToSafeDesc")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-row gap-3 sm:justify-start pt-2">
-            <Button
-              type="button"
-              className="flex-1 h-12 rounded-xl font-black tracking-widest text-[10px] bg-amber-600 hover:bg-amber-700 text-white"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                confirmArchive();
-              }}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                t("confirm")
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 h-12 rounded-xl font-black tracking-widest text-[10px] border-zinc-200"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowArchiveConfirm(false);
               }}
               disabled={isActionLoading}
             >

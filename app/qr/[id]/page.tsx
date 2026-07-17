@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { translations } from "@/lib/translations";
+import { VerifiedBadge } from "@/components/verified-badge";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -146,8 +147,9 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
             </div>
           </div>
 
-          <h1 className="text-3xl font-black tracking-tighter mb-2 dark:text-white">
+          <h1 className="text-3xl font-black tracking-tighter mb-2 dark:text-white flex items-center justify-center gap-2">
             {profile.first_name} {profile.last_name}
+            {profile.is_verified && <VerifiedBadge className="w-6 h-6" />}
           </h1>
 
           <div className="max-w-md mx-auto bg-zinc-50 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 mb-10 mt-6 relative">

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     let query = supabaseAdmin
       .from("profiles")
-      .select("id, first_name, last_name, avatar_url, phone, email, status, created_at, last_login_at, deleted_at", {
+      .select("id, first_name, last_name, avatar_url, phone, email, status, created_at, last_login_at, deleted_at, is_verified", {
         count: "exact",
       });
 

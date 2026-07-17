@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
     // Ҳарду роҳ якхела: snapshot дар deleted_accounts_archive, тоза кардани
     // файлҳои Storage (аксҳои эълонҳо + avatar) ва push_tokens (FK надоранд),
     // баъд DELETE-и худи profile — ки CASCADE FK ҳамаи items/item_images/
-    // saved_items/safety_box-ро низ пок мекунад.
+    // saved_items-ро низ пок мекунад.
     // Admin-и soft-delete ("Нест кардан"-и оддӣ, дар trash) Clerk-ро тамоман
     // ламс намекунад, пас ин ҷо ҳаргиз намерасад — фақат ҳангоми "Пурра нест
     // кардан" ё худи корбар.
@@ -103,10 +103,6 @@ Deno.serve(async (req) => {
           .from("saved_items")
           .select(`item_id, created_at, items(${ITEM_FIELDS})`)
           .eq("user_id", id)
-        const { data: safetyBoxItems } = await supabase
-          .from("safety_box")
-          .select("id, item_name, description, category, type, reward, images, date, created_at")
-          .eq("user_id", id)
 
         const itemIds = (items ?? []).map((i: any) => i.id)
 
@@ -116,7 +112,6 @@ Deno.serve(async (req) => {
             profile,
             items: items ?? [],
             savedItems: savedItems ?? [],
-            safetyBoxItems: safetyBoxItems ?? [],
           },
           items_count: itemIds.length,
         }])

@@ -10,8 +10,8 @@ import OpenAI from "openai";
 import { config } from "./config";
 import { logger } from "./logger";
 
-// Ҳамон 6 категорияи худи juyo.tj (ниг. lib/services/item-service.ts CATEGORIES) — то ҳеҷ харитасозии иловагӣ лозим набошад.
-export type TgCategory = "Electronics" | "Documents" | "Keys" | "Clothing" | "Pets" | "Other";
+// Ҳамон категорияҳои худи juyo.tj (ниг. lib/services/item-service.ts CATEGORIES) — то ҳеҷ харитасозии иловагӣ лозим набошад.
+export type TgCategory = "Electronics" | "Documents" | "Keys" | "Clothing" | "Pets" | "Other" | "LicensePlate" | "Wallet";
 export type TgStatus = "lost" | "found";
 
 export interface Classification {
@@ -27,11 +27,11 @@ const client = config.openaiApiKey ? new OpenAI({ apiKey: config.openaiApiKey })
 
 const SYSTEM_PROMPT = `Ту дастёри таснифи паёмҳои "гумшуда/ёфтшуда" аз каналҳои Telegram-и Тоҷикистон ҳастӣ (матн бо забони тоҷикӣ/русӣ омехта).
 Барои ҳар паём ТАНҲО як объекти JSON бармегардон, бе изоҳи иловагӣ, дар ин шакл:
-{"title":"...","category":"Electronics|Documents|Keys|Clothing|Pets|Other","status":"lost|found|null","city":"...|null","phone":"...|null","confidence":0.0-1.0}
+{"title":"...","category":"Electronics|Documents|Keys|Clothing|Pets|Other|LicensePlate|Wallet","status":"lost|found|null","city":"...|null","phone":"...|null","confidence":0.0-1.0}
 
 Қоидаҳо:
 - title: унвони хеле кӯтоҳ (2-4 калима, ҳамон забони паём). Агар дар матн номи шахс зикр шуда бошад (масалан барои шиноснома/ҳуҷҷат), номро ҳатман дар унвон гузор (масалан "Шиноснома Шарипов Аҳмад"). Агар ном набошад, танҳо навъи ашёро гузор (масалан "Ҳамёни сиёҳ", "Калиди мошин").
-- category: Electronics (телефон, ноутбук, ва ғ.), Documents (шиноснома, шаҳодатнома, корт, ва ғ.), Keys (калид), Clothing (либос, пойафзол, сумка), Pets (ҳайвонот), ё Other (ҳамаи дигар — ҳамён, пул, сумкаи бе тааллуқ ба либос, корт ва ғ.).
+- category: Electronics (телефон, ноутбук, ва ғ.), Documents (шиноснома, шаҳодатнома, корт, ва ғ.), Keys (калид), Clothing (либос, пойафзол, сумка), Pets (ҳайвонот), LicensePlate (танҳо рақами давлатии мошин/номер), Wallet (ҳамён, кошелёк — новобаста аз он ки чӣ дар дохилаш аст), ё Other (ҳамаи дигар).
 - status: "lost" агар паём дар бораи гум шудани чизе бошад, "found" агар дар бораи ёфтани чизи каси дигар бошад. Агар возеҳ набошад — null.
 - city: номи шаҳр/минтақа, агар дар матн зикр шуда бошад (масалан "Душанбе", "Хуҷанд"). Вагарна null.
 - phone: рақами телефон ТАНҲО агар дар матни ҲАМИН паём ОШКОРО навишта шуда бошад — ва ТАНҲО ҳамон рақаме, ки ба таври возеҳ ҳамчун рақами тамос барои ҲАМИН ашё(и мушаххаси ҳамин паём) зикр шудааст (масалан баъд аз "занг занед", "тел.", "рақами ма"). Агар матн якчанд рақам дошта бошад ва маълум набошад кадомаш рақами тамос аст, ё агар рақам ба чизи/шахси дигар (на ба ҳамин ашё) тааллуқ дошта бошад, phone-ро null гузор. Ҳаргиз рақам эҷод накун ва ҳаргиз аз паёми дигар қарз нагир.
@@ -60,7 +60,7 @@ export async function classifyPost(text: string): Promise<Classification> {
     const parsed = JSON.parse(raw);
     // GPT баъзан сатри "null" (на JSON null-и воқеӣ) бармегардонад — ҳарду шаклро якхела мегирем.
     const clean = (v: unknown): string | null => (typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null" ? v.trim() : null);
-    const CATEGORIES: TgCategory[] = ["Electronics", "Documents", "Keys", "Clothing", "Pets", "Other"];
+    const CATEGORIES: TgCategory[] = ["Electronics", "Documents", "Keys", "Clothing", "Pets", "Other", "LicensePlate", "Wallet"];
     const category = CATEGORIES.includes(parsed.category) ? (parsed.category as TgCategory) : "Other";
     return {
       title: clean(parsed.title) || text.slice(0, 60),

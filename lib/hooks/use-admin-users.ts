@@ -15,6 +15,7 @@ export interface AdminUserRow {
   deleted_at: string | null;
   itemsCount: number;
   resolvedCount: number;
+  is_verified?: boolean;
 }
 
 export interface AdminUserDetail {
@@ -24,6 +25,7 @@ export interface AdminUserDetail {
     qr_activation_count: number;
     qr_scan_count: number;
     accepted_terms: boolean;
+    is_verified: boolean;
   };
   items: {
     id: string;
@@ -48,17 +50,6 @@ export interface AdminUserDetail {
       created_at: string;
       images: { image_url: string }[];
     } | null;
-  }[];
-  safetyBoxItems: {
-    id: string;
-    item_name: string;
-    description: string | null;
-    category: string | null;
-    type: "lost" | "found";
-    reward: string | null;
-    images: string[] | null;
-    date: string | null;
-    created_at: string;
   }[];
   pushTokenCount: number;
 }
@@ -141,7 +132,6 @@ export interface DeletedAccountSnapshot {
   profile: DeletedAccountSnapshotProfile;
   items: AdminUserDetail["items"];
   savedItems: AdminUserDetail["savedItems"];
-  safetyBoxItems: AdminUserDetail["safetyBoxItems"];
 }
 
 export interface DeletedAccountEntry {
@@ -163,7 +153,6 @@ export function normalizeDeletedAccountSnapshot(entry: DeletedAccountEntry): Del
     profile: raw as DeletedAccountSnapshotProfile,
     items: [],
     savedItems: [],
-    safetyBoxItems: [],
   };
 }
 

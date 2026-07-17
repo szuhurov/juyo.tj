@@ -6,6 +6,8 @@ import { Loader2, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { useUpdateAdminUser } from "@/lib/hooks/use-admin-users";
 import type { AdminUserDetail } from "@/lib/hooks/use-admin-users";
 
@@ -16,6 +18,7 @@ export function UserEditForm({ profile }: { profile: AdminUserDetail["profile"] 
     phone: profile.phone ?? "",
     secondary_phone: profile.secondary_phone ?? "",
     email: profile.email ?? "",
+    is_verified: profile.is_verified ?? false,
   });
   const { mutate, isPending } = useUpdateAdminUser(profile.id);
 
@@ -60,6 +63,16 @@ export function UserEditForm({ profile }: { profile: AdminUserDetail["profile"] 
           <Input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </div>
       </div>
+
+      <label className="flex items-center gap-2.5 cursor-pointer w-fit">
+        <Checkbox
+          checked={form.is_verified}
+          onCheckedChange={(checked) => setForm({ ...form, is_verified: checked === true })}
+        />
+        <span className="text-sm font-bold text-zinc-700 flex items-center gap-1.5">
+          Ҳисоби тасдиқшуда <VerifiedBadge />
+        </span>
+      </label>
 
       <Button onClick={handleSave} disabled={isPending} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
         {isPending && <Loader2 className="w-4 h-4 animate-spin" />}

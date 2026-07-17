@@ -111,6 +111,33 @@ export function PostFilterBar({
               <SelectItem value="false">Ҳалнашуда</SelectItem>
             </SelectContent>
           </Select>
+
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date"
+              value={filters.dateFrom ?? ""}
+              max={filters.dateTo ?? undefined}
+              onChange={(e) => onChange({ ...filters, dateFrom: e.target.value || undefined, page: 0 })}
+              className="h-11 rounded-2xl border border-zinc-100 bg-zinc-50 px-3 text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            />
+            <span className="text-xs font-bold text-zinc-400">то</span>
+            <input
+              type="date"
+              value={filters.dateTo ?? ""}
+              min={filters.dateFrom ?? undefined}
+              onChange={(e) => onChange({ ...filters, dateTo: e.target.value || undefined, page: 0 })}
+              className="h-11 rounded-2xl border border-zinc-100 bg-zinc-50 px-3 text-sm font-medium text-zinc-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            />
+            {(filters.dateFrom || filters.dateTo) && (
+              <button
+                type="button"
+                onClick={() => onChange({ ...filters, dateFrom: undefined, dateTo: undefined, page: 0 })}
+                className="text-xs font-bold text-zinc-400 hover:text-zinc-600 px-1"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

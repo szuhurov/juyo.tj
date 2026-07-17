@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/admin/status-pill";
 import { DeleteConfirmDialog } from "@/components/admin/delete-confirm-dialog";
 import { SendNotificationDialog } from "@/components/admin/users/send-notification-dialog";
+import { VerifiedBadge } from "@/components/verified-badge";
 import {
   useDeleteAdminUser,
   useUpdateAdminUser,
@@ -99,6 +100,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-black text-zinc-900 tracking-tight">{name}</h1>
+            {profile.is_verified && <VerifiedBadge />}
             <StatusPill status={profile.status ?? "active"} />
           </div>
           <p className="text-xs font-medium text-zinc-400 mt-0.5">

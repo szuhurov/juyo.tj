@@ -9,7 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-type Tab = "items" | "saved" | "safety";
+type Tab = "items" | "saved";
 
 export default function DeletedAccountDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -30,13 +30,12 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
   }
 
   const snapshot = normalizeDeletedAccountSnapshot(data.entry);
-  const { profile, items, savedItems, safetyBoxItems } = snapshot;
+  const { profile, items, savedItems } = snapshot;
   const name = `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || "Беном";
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "items", label: `Эълонҳо (${items.length})` },
     { key: "saved", label: `Захирашуда (${savedItems.length})` },
-    { key: "safety", label: `Сандуқча (${safetyBoxItems.length})` },
   ];
 
   return (
@@ -122,20 +121,6 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
               date: s.created_at,
               right: <StatusPill status={s.items!.type} variant="dot" />,
             }))}
-        />
-      )}
-
-      {tab === "safety" && (
-        <ReadOnlyList
-          empty="Сандуқча холӣ буд"
-          rows={safetyBoxItems.map((box) => ({
-            key: box.id,
-            title: box.item_name,
-            subtitle: box.category ?? "—",
-            thumb: box.images?.[0],
-            date: box.created_at,
-            right: <StatusPill status={box.type} variant="dot" />,
-          }))}
         />
       )}
 

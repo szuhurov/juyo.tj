@@ -31,9 +31,6 @@ export const translations: Record<string, any> = {
     qrSafetyTitle: "QR Бехатарӣ",
     qrSafetyDesc:
       "Ҳар шахсе, ки сабти ном мекунад, QR-коди худро дорад ва метавонад пешакӣ ба ашёҳо часпонад, то ёбанда бе эълон гузоштан пас аз скан кардани QR-код ба шумо тамос гирад.",
-    safetyBoxLandingTitle: "Қуттии бехатарӣ",
-    safetyBoxLandingDesc:
-      "Ашёҳои муҳими худро пешакӣ ба қайд гиред. Агар онҳо гум шаванд, шумо метавонед танҳо бо як пахш эълонро дар сайт фаъол созед.",
     aiModerationTitle: "Модератсияи AI",
     aiModerationDesc:
       "Системаи мо аксҳо ва матнҳоро барои амнияти шумо месанҷад, то ки мундариҷаи номуносиб ва қаллобӣ пешгирӣ карда шавад.",
@@ -136,15 +133,6 @@ export const translations: Record<string, any> = {
     emailSent: "Коди тасдиқ фиристода шуд",
     emailChanged: "Email иваз шуд",
     incorrectCode: "Коди нодуруст",
-    mySafe: "Сандуқчаи ман",
-    registerNewItem: "Сабти ашёи нав",
-    saveItem: "Ашёро сабт кунед",
-    importantInfo: "Маълумоти муҳим",
-    importantInfoDesc:
-      "Ашёҳои қиматбаҳои худро (телефон, шиноснома, калид va ғайра) пешакӣ сабт кунед. Дар сурати гум шудан шумо метавонед фавран эълон гузоред ва соҳибмулкии худро исбот намоед.",
-    safetyBoxEmpty: "Сандуқча холӣ аст",
-    addFirstItem: "Ашёи аввалинро илова кунед",
-    publishConfirm: "Оё шумо мехоҳед ин ашёро дар лентаи умумӣ нашр кунед?",
     deleteConfirmTitle: "Нест кардан",
     publishItem: "Гузоштани эълон",
     rewardPrefix: "Мукофот:",
@@ -222,15 +210,11 @@ export const translations: Record<string, any> = {
     scanOwnerDesc: "Ин шахс мехоҳад ашёҳои гумшудаашро пайдо кунад.",
     deletePostConfirm:
       "Оё шумо мутмаин ҳастед, ки мехоҳед ин эълонро нест кунед?",
-    moveToSafe: "Ba сандуқча",
-    moveToSafeDesc:
-      "Эълон аз лента бардошта мешавад ва ба сандуқчаи шахсии шумо илова мегардад.",
     resolvedConfirm:
       "Оё шумо ашёро ёфтед ё ба соҳибаш баргардонидед? Эълон нест карда мешавад.",
     share: "Паҳн кардан",
     edit: "Таҳрир",
     publishSuccess: "Эълон бо муваффақият нашр шуд!",
-    moveToSafeSuccess: "Эълон ба сандуқчаи шахсӣ гузаронида шуд",
     itemResolvedSuccess: "Табрик! Мо шодем, ки ба шумо кумак кардем.",
     auth: {
       resetPassword: "Барқароркунӣ",
@@ -304,6 +288,11 @@ export const translations: Record<string, any> = {
     request_desc: "Ман ба кумак ниёз дорам",
     filterLost: "Гумшудаҳо",
     filterFound: "Ёфтшудаҳо",
+    filterByDate: "Филтр аз рӯи сана",
+    dateFrom: "Аз",
+    dateTo: "То",
+    applyFilter: "Татбиқ",
+    clearFilter: "Тоза кардан",
     reward: "Туҳфа",
     reward_gives: "Туҳфа медиҳам",
     reward_wants: "Туҳфа мехоҳам",
@@ -494,29 +483,11 @@ export const translations: Record<string, any> = {
     seoDesc:
       "роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар Тоҷикистон. Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки ашёи худро гум кардаанд, метавонанд эълон гузошта бо ҳамдигар иртибот пайдо кунанд. Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба ашёҳои арзишманд часпонда шавад, то дар ҳолати гум шудан, ёбандагон зуд тамос гирифта, онро баргардонанд.",
 
-    // Safety Box
-    safetyBoxTitle: "Сандуқчаи ман",
-    safetyBoxDesc: "Ашёҳои муҳимро инҷо нигоҳ доред",
-    addSafetyItemTitle: "Илова ба Сандуқча",
-    safetyItemNameLabel: "Номи ашё",
-    safetyItemNamePlaceholder: "Масалан: iPhone 13, Калидҳои хона...",
-    safetyItemDescLabel: "Тавсифи кӯтоҳ",
-    safetyItemDescPlaceholder: "Ранг, нишонаҳои махсус...",
-    safetyItemBanner:
-      "Ин ашё танҳо барои шумо намоён аст. Дар сурати гум шудан шумо метавонед онро фавран нашр кунед.",
-    publishFromSafe: "Интишор дар лента",
-    removeFromSafe: "Нест кардан аз сандуқ",
-    publishFromSafeConfirm:
-      "Оё шумо мехоҳед ин ашёро дар лентаи умумӣ нашр кунед?",
-    publishFromSafeSuccess:
-      "Эълони шумо нашр шуд ва пас аз тафтиш дар лента пайдо мешавад.",
     imageModeration: {
       submitted: "Акси шумо қабул шуд ва баъд аз санҷиш нашр мешавад",
       pending: "Дар ҳоли санҷиш",
       rejected: "Ин акс манъ карда шуд",
     },
-    removeFromSafeConfirm:
-      "Шумо мутмаин ҳастед, ки ин ашёро аз сандуқ нест мекунед?",
 
     // Public Profile
     ownerInfo: "Маълумоти соҳиб",
@@ -579,9 +550,6 @@ export const translations: Record<string, any> = {
       qrHowStep3:
         'Маълумоти тамос ва паёми шумо (масалан,"Мукофот кафолат дода мешавад") нишон дода мешавад.',
       qrAdvantage: "✅ Бартарӣ: Як код барои ҳамаи ашёҳо.",
-      safetyBoxGoalTitle: "📦 Қуттии бехатарӣ",
-      safetyBoxGoalDesc:
-        "Маълумоти ашёи қиматбаҳоро пешакӣ захира кунед. Агар ашё гум шавад — эълон бо як пахш нашр мешавад.",
       mainGoalTitle: "🚀 Мақсади асосӣ",
       mainGoalDesc:
         "Сохтани ҷомеаи дастгирикунанда, ки дар он ашёҳои гумшуда зудтар ба соҳибонашон баргарданд.",
@@ -624,12 +592,16 @@ export const translations: Record<string, any> = {
       "4": "Либос",
       "5": "Ҳайвонот",
       "6": "Дигар",
+      "7": "Рақами мошин",
+      "8": "Ҳамён",
       Electronics: "Электроника",
       Documents: "Ҳуҷҷатҳо",
       Keys: "Калидҳо",
       Clothing: "Либос",
       Pets: "Ҳайвонот",
       Other: "Дигар",
+      LicensePlate: "Рақами мошин",
+      Wallet: "Ҳамён",
     },
     clerk: {
       signInTitle: "Воридшавӣ",
@@ -736,9 +708,6 @@ export const translations: Record<string, any> = {
     qrSafetyTitle: "QR Безопасность",
     qrSafetyDesc:
       "У каждого зарегистрированного пользователя есть свой QR-код, который можно заранее наклеить на вещи, чтобы нашедший мог связаться с вами после сканирования кода, не создавая отдельного объявления.",
-    safetyBoxLandingTitle: "Сейф безопасности",
-    safetyBoxLandingDesc:
-      "Заранее регистрируйте свои важные вещи. В случае потери вы сможете активировать объявление на сайте всего одним нажатием.",
     aiModerationTitle: "AI Модерация",
     aiModerationDesc:
       "Наша система проверяет фотографии и тексты для вашей безопасности, чтобы предотвратить появление нежелательного контента и мошенничества.",
@@ -839,15 +808,6 @@ export const translations: Record<string, any> = {
     emailSent: "Код подтверждения отправлен",
     emailChanged: "Email изменен",
     incorrectCode: "Неверный код",
-    mySafe: "Мой Сейф",
-    registerNewItem: "Регистрация новой вещи",
-    saveItem: "Сохранить вещь",
-    importantInfo: "Важная информация",
-    importantInfoDesc:
-      "Заранее зарегистрируйте свои ценные вещи (телефон, паспорт, ключи и т.д.). В случае потери вы сможете мгновенно опубликовать объявление и доказать свое право собственности.",
-    safetyBoxEmpty: "Сейф пуст",
-    addFirstItem: "Добавьте первую вещь",
-    publishConfirm: "Вы хотите опубликовать этот предмет в общей ленте?",
     deleteConfirmTitle: "Удаление",
     publishItem: "Опубликовать объявление",
     rewardPrefix: "Вознаграждение",
@@ -943,15 +903,11 @@ export const translations: Record<string, any> = {
     contactOwner: "Связаться с владельцем",
     scanOwnerDesc: "Этот человек хочет найти свои утерянные вещи.",
     deletePostConfirm: "Вы уверены, что хотите удалить это объявление?",
-    moveToSafe: "В сейф",
-    moveToSafeDesc:
-      "Объявление будет скрыто из ленты и перемещено в ваш личный сейф.",
     resolvedConfirm:
       "Вы нашли вещь или вернули её владельцу? Объявление будет удалено.",
     share: "Поделиться",
     edit: "Редактировать",
     publishSuccess: "Объявление успешно опубликовано!",
-    moveToSafeSuccess: "Объявление перемещено в личный сейф",
     itemResolvedSuccess: "Поздравляем! Мы рады, что смогли вам помочь.",
     auth: {
       resetPassword: "Восстановление",
@@ -1023,6 +979,11 @@ export const translations: Record<string, any> = {
     request_desc: "Мне нужна помощь",
     filterLost: "Утерянные",
     filterFound: "Найденные",
+    filterByDate: "Фильтр по дате",
+    dateFrom: "От",
+    dateTo: "До",
+    applyFilter: "Применить",
+    clearFilter: "Очистить",
     reward: "Вознаграждение",
     reward_gives: "Дам вознаграждение",
     reward_wants: "Хочу вознаграждение",
@@ -1198,29 +1159,11 @@ export const translations: Record<string, any> = {
     seoDesc:
       "быстрый способ найти и вернуть потерянные вещи в Таджикистане. В этом приложении люди, нашедшие вещи, и люди, потерявшие свои вещи, могут размещать объявления и связываться друг с другом. Также есть возможность прикрепить личный QR-код к ценным вещам, чтобы в случае потери нашедшие могли быстро связаться и вернуть их.",
 
-    // Safety Box
-    safetyBoxTitle: "Мой Сейф",
-    safetyBoxDesc: "Храните важные вещи здесь",
-    addSafetyItemTitle: "Добавить в Сейф",
-    safetyItemNameLabel: "Название предмета",
-    safetyItemNamePlaceholder: "Напр: iPhone 13, Ключи от дома...",
-    safetyItemDescLabel: "Краткое описание",
-    safetyItemDescPlaceholder: "Цвет, особые приметы...",
-    safetyItemBanner:
-      "Этот предмет виден только вам. В случае утери вы сможете мгновенно опубликовать его.",
-    publishFromSafe: "Опубликовать в ленте",
-    removeFromSafe: "Удалить из сейфа",
-    publishFromSafeConfirm:
-      "Вы хотите опубликовать этот предмет в общей ленте?",
-    publishFromSafeSuccess:
-      "Объявление опубликовано и появится в ленте после проверки.",
     imageModeration: {
       submitted: "Ваше изображение отправлено на проверку",
       pending: "На проверке",
       rejected: "Изображение отклонено",
     },
-    removeFromSafeConfirm:
-      "Вы уверены, что хотите удалить этот предмет из сейфа?",
 
     // Public Profile
     ownerInfo: "Информация о владельце",
@@ -1280,9 +1223,6 @@ export const translations: Record<string, any> = {
       qrHowStep3:
         'Отображаются контактные данные и ваше сообщение (напр."Вознаграждение гарантируется").',
       qrAdvantage: "✅ Преимущество: Один код для всех вещей.",
-      safetyBoxGoalTitle: "📦 Safety Box",
-      safetyBoxGoalDesc:
-        "Сохраните информацию о ценных вещах заранее. Если вещь потеряется — объявление публикуется в 1 клик.",
       mainGoalTitle: "🚀 Главная цель",
       mainGoalDesc:
         "Создать сообщество взаимопомощи, где потерянные вещи возвращаются владельцам быстрее.",
@@ -1325,12 +1265,16 @@ export const translations: Record<string, any> = {
       "4": "Одежда",
       "5": "Животные",
       "6": "Другое",
+      "7": "Номер авто",
+      "8": "Кошелёк",
       Electronics: "Электроника",
       Documents: "Документы",
       Keys: "Ключи",
       Clothing: "Одежда",
       Pets: "Животные",
       Other: "Другое",
+      LicensePlate: "Номер авто",
+      Wallet: "Кошелёк",
     },
     clerk: {
       signInTitle: "Вход",
@@ -1436,9 +1380,6 @@ export const translations: Record<string, any> = {
     qrSafetyTitle: "QR Security",
     qrSafetyDesc:
       "Every registered user has their own QR code that can be attached to items in advance, allowing the finder to contact you after scanning the code without needing to post an announcement.",
-    safetyBoxLandingTitle: "Safety Box",
-    safetyBoxLandingDesc:
-      "Register your important items in advance. If they get lost, you can activate an announcement on the site with just one click.",
     aiModerationTitle: "AI Moderation",
     aiModerationDesc:
       "Our system scans photos and texts for your safety to prevent inappropriate content and fraud.",
@@ -1537,15 +1478,6 @@ export const translations: Record<string, any> = {
     emailSent: "Verification code sent",
     emailChanged: "Email changed",
     incorrectCode: "Incorrect code",
-    mySafe: "My Safety Box",
-    registerNewItem: "Register New Item",
-    saveItem: "Save Item",
-    importantInfo: "Important Information",
-    importantInfoDesc:
-      "Register your valuable items (phone, passport, keys, etc.) in advance. In case of loss, you can immediately publish an ad and prove your ownership.",
-    safetyBoxEmpty: "Safety Box is empty",
-    addFirstItem: "Add your first item",
-    publishConfirm: "Do you want to publish this item to the public feed?",
     deleteConfirmTitle: "Delete",
     publishItem: "Publish Post",
     rewardPrefix: "Reward:",
@@ -1622,15 +1554,11 @@ export const translations: Record<string, any> = {
     contactOwner: "Contact Owner",
     scanOwnerDesc: "This person wants to find their lost items.",
     deletePostConfirm: "Are you sure you want to delete this post?",
-    moveToSafe: "To Safety Box",
-    moveToSafeDesc:
-      "The post will be hidden from the feed and moved to your private safety box.",
     resolvedConfirm:
       "Did you find the item or return it to the owner? The post will be deleted.",
     share: "Share",
     edit: "Edit",
     publishSuccess: "Post published successfully!",
-    moveToSafeSuccess: "Post moved to private safety box",
     itemResolvedSuccess: "Congratulations! We are glad we could help.",
     auth: {
       resetPassword: "Reset",
@@ -1701,6 +1629,11 @@ export const translations: Record<string, any> = {
     request_desc: "I need help",
     filterLost: "Lost Items",
     filterFound: "Found Items",
+    filterByDate: "Filter by date",
+    dateFrom: "From",
+    dateTo: "To",
+    applyFilter: "Apply",
+    clearFilter: "Clear",
     reward: "Reward",
     reward_gives: "I give a reward",
     reward_wants: "I want a reward",
@@ -1869,28 +1802,11 @@ export const translations: Record<string, any> = {
     seoDesc:
       "a fast way to find and return lost items in Tajikistan. In this app, people who found items and people who lost their items can post announcements and connect with each other. There is also the possibility to attach a personal QR code to valuable items so that in case of loss, finders can quickly contact and return them.",
 
-    // Safety Box
-    safetyBoxTitle: "My Safety Box",
-    safetyBoxDesc: "Keep important items here",
-    addSafetyItemTitle: "Add to Safety Box",
-    safetyItemNameLabel: "Item Name",
-    safetyItemNamePlaceholder: "e.g. iPhone 13, House keys...",
-    safetyItemDescLabel: "Short Description",
-    safetyItemDescPlaceholder: "Color, special marks...",
-    safetyItemBanner:
-      "This item is only visible to you. In case of loss, you can immediately publish it.",
-    publishFromSafe: "Publish to Feed",
-    removeFromSafe: "Remove from Box",
-    publishFromSafeConfirm:
-      "Do you want to publish this item to the public feed?",
-    publishFromSafeSuccess: "Post published and will appear after review.",
     imageModeration: {
       submitted: "Your image has been submitted for review",
       pending: "Under review",
       rejected: "Image rejected",
     },
-    removeFromSafeConfirm:
-      "Are you sure you want to remove this item from the box?",
 
     // Public Profile
     ownerInfo: "Owner Information",
@@ -1950,9 +1866,6 @@ export const translations: Record<string, any> = {
       qrHowStep3:
         'Contact information and your message (e.g.,"Reward guaranteed") are displayed.',
       qrAdvantage: "✅ Advantage: One code for all items.",
-      safetyBoxGoalTitle: "📦 Safety Box",
-      safetyBoxGoalDesc:
-        "Save information about valuable items in advance. If an item is lost — the announcement is published in 1 click.",
       mainGoalTitle: "🚀 Main goal",
       mainGoalDesc:
         "Create a supportive community where lost items return to their owners faster.",
@@ -1995,12 +1908,16 @@ export const translations: Record<string, any> = {
       "4": "Clothing",
       "5": "Pets",
       "6": "Other",
+      "7": "License Plate",
+      "8": "Wallet",
       Electronics: "Electronics",
       Documents: "Documents",
       Keys: "Keys",
       Clothing: "Clothing",
       Pets: "Pets",
       Other: "Other",
+      LicensePlate: "License Plate",
+      Wallet: "Wallet",
     },
     clerk: {
       signInTitle: "Sign In",

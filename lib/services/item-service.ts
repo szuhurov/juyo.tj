@@ -24,22 +24,8 @@ export interface Item {
     last_name: string;
     avatar_url: string;
     secondary_phone?: string;
+    is_verified?: boolean;
   };
-}
-
-export interface SafetyItem {
-  id: string;
-  user_id: string;
-  item_name: string;
-  description?: string;
-  category?: string;
-  type: "lost" | "found";
-  reward?: string;
-  phone_number?: string;
-  images?: string[];
-  views?: number;
-  date?: string;
-  created_at: string;
 }
 
 // Категорияҳои асосии ашёҳо барои филтр ва ҷустуҷӯ
@@ -50,6 +36,8 @@ export const CATEGORIES = [
   { id: "4", name: "Clothing", icon: "👕" },
   { id: "5", name: "Pets", icon: "🐾" },
   { id: "6", name: "Other", icon: "📦" },
+  { id: "7", name: "LicensePlate", icon: "🚗" },
+  { id: "8", name: "Wallet", icon: "👛" },
 ];
 
 export const ItemService = {
@@ -64,6 +52,8 @@ export const ItemService = {
       category?: string;
       type?: string | null;
       user_id?: string;
+      dateFrom?: string;
+      dateTo?: string;
       page?: number;
       pageSize?: number;
     } = {},
@@ -74,6 +64,8 @@ export const ItemService = {
       category,
       type,
       user_id,
+      dateFrom,
+      dateTo,
       page = 0,
       pageSize = 20,
     } = filters;
@@ -95,6 +87,8 @@ export const ItemService = {
       p_user_id: user_id || null,
       p_limit: pageSize,
       p_offset: page * pageSize,
+      p_date_from: dateFrom || null,
+      p_date_to: dateTo || null,
     });
     if (error) throw error;
     return data as Item[];
@@ -151,7 +145,7 @@ export const ItemService = {
     // Query 2: profile аз VIEW ба таври алоҳида (барои пешгирии мушкили FK дар VIEW)
     const { data: profile } = await client
       .from("public_profiles")
-      .select("first_name, last_name, avatar_url")
+      .select("first_name, last_name, avatar_url, is_verified")
       .eq("id", item.user_id)
       .maybeSingle();
 
@@ -226,36 +220,8 @@ export const ItemService = {
   },
 
   /**
-   * Гирифтани ашёҳо аз"Сандуқчаи бехатарӣ"(Safety Box).
-   */
-  async getSafetyBoxItems(supabaseClient: SupabaseClient, userId: string) {
-    const { data, error } = await supabaseClient
-      .from("safety_box")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return data;
-  },
-
-  /**
-   * Гирифтани маълумоти муфассали як ашё аз"Сандуқчаи бехатарӣ".
-   */
-  async getSafetyItemDetails(id: string, supabaseClient: SupabaseClient) {
-    const { data, error } = await supabaseClient
-      .from("safety_box")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  /**
    * Нест кардани эълон (soft-delete): ашё аз база ва аксҳояш нест намешаванд,
-   * танҳо status='deleted' мешавад, то маълумоти вобаста (захирашуда, сандуқча,
+   * танҳо status='deleted' мешавад, то маълумоти вобаста (захирашуда,
    * дархостҳои тасдиқ, таърих) дуруст боқӣ монад ва админ тавонад баркунад.
    */
   async deleteItem(supabaseClient: SupabaseClient, id: string) {
@@ -268,95 +234,5 @@ export const ItemService = {
       console.error("Хатогӣ дар deleteItem:", error);
       throw error;
     }
-  },
-
-  /**
-   * Интиқоли эълон аз лентаи умумӣ ба"Сандуқчаи бехатарӣ"(Архив).
-   */
-  async archiveToSafetyBox(
-    supabaseClient: SupabaseClient,
-    item: Item,
-    userId: string,
-  ) {
-    const { error: insertError } = await supabaseClient
-      .from("safety_box")
-      .insert([
-        {
-          user_id: userId,
-          item_name: item.title,
-          description: item.description,
-          category: item.category,
-          type: item.type,
-          reward: item.reward,
-          phone_number: item.phone_number,
-          images: item.images?.map((img) => img.image_url) || [],
-          views: item.views || 0,
-          date: item.date,
-          text_moderated: true,
-          images_moderated: true,
-          created_at: item.created_at,
-        },
-      ]);
-
-    if (insertError) throw insertError;
-
-    // Нест кардан аз лентаи умумӣ
-    const { error: deleteError } = await supabaseClient
-      .from("items")
-      .delete()
-      .eq("id", item.id);
-    if (deleteError) throw deleteError;
-  },
-
-  /**
-   * Нашри эълон аз"Сандуқчаи бехатарӣ"ба лентаи умумӣ.
-   */
-  async publishFromSafetyBox(
-    supabaseClient: SupabaseClient,
-    safetyItem: SafetyItem,
-    userId: string,
-    status: "pending" | "approved" = "approved",
-  ) {
-    // 1. Сохтани эълони нав дар ҷадвали 'items'
-    const { data: item, error: itemError } = await supabaseClient
-      .from("items")
-      .insert([
-        {
-          user_id: userId,
-          title: safetyItem.item_name,
-          description: safetyItem.description,
-          category: safetyItem.category,
-          type: safetyItem.type || "lost",
-          date: new Date().toISOString().split("T")[0],
-          reward: safetyItem.reward,
-          phone_number: safetyItem.phone_number,
-          is_resolved: false,
-          views: 0,
-          created_at: new Date().toISOString(),
-          moderation_status: status,
-        },
-      ])
-      .select()
-      .single();
-
-    if (itemError) throw itemError;
-
-    // 2. Илова кардани аксҳо ба ҷадвали 'item_images'
-    if ((safetyItem.images?.length ?? 0) > 0) {
-      const imageRecords = safetyItem.images!.map((url: string) => ({
-        item_id: item.id,
-        image_url: url,
-      }));
-      await supabaseClient.from("item_images").insert(imageRecords);
-    }
-
-    // 3. Нест кардан аз "Сандуқчаи бехатарӣ"
-    const { error: deleteError } = await supabaseClient
-      .from("safety_box")
-      .delete()
-      .eq("id", safetyItem.id);
-    if (deleteError) throw deleteError;
-
-    return item;
   },
 };

@@ -73,6 +73,10 @@ async function publishToFeed(
 
 export interface ImportOptions {
   dryRun?: boolean;
+  /** "newer" (пешфарз) — паёмҳои нав аз охирин воридшуда. "older" — backfill ба қафо, аз кӯҳнатарин воридшуда. */
+  direction?: "newer" | "older";
+  /** Агар дода шавад, ба ҷои config.messagesPerChannel истифода мешавад. */
+  limit?: number;
 }
 
 export interface ImportResult {
@@ -82,26 +86,30 @@ export interface ImportResult {
 }
 
 export async function runImport(options: ImportOptions = {}): Promise<ImportResult> {
+  const direction = options.direction ?? "newer";
+  const limit = options.limit ?? config.messagesPerChannel;
   const result: ImportResult = { found: 0, imported: 0, failed: 0 };
   const supabase = getClient();
 
   try {
     for (const channel of config.channels) {
-      logger.info("Санҷиши канал", { channel });
+      logger.info("Санҷиши канал", { channel, direction, limit });
 
       const { data: lastRow } = await supabase
         .from("external_items")
         .select("telegram_message_id")
         .eq("source", SOURCE)
         .eq("source_channel", channel)
-        .order("telegram_message_id", { ascending: false })
+        .order("telegram_message_id", { ascending: direction === "older" })
         .limit(1)
         .maybeSingle();
-      const minId = lastRow?.telegram_message_id ?? undefined;
+      const boundaryId = lastRow?.telegram_message_id ?? undefined;
+      const minId = direction === "newer" ? boundaryId : undefined;
+      const maxId = direction === "older" ? boundaryId : undefined;
 
-      const posts = await fetchChannelPosts(channel, config.messagesPerChannel, minId);
+      const posts = await fetchChannelPosts(channel, limit, minId, maxId);
       result.found += posts.length;
-      logger.info("Паём ёфт шуд", { channel, count: posts.length, minId });
+      logger.info("Паём ёфт шуд", { channel, count: posts.length, minId, maxId });
 
       for (const post of posts) {
         try {

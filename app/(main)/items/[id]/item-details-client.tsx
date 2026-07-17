@@ -22,7 +22,6 @@ import {
   Share2,
   Bookmark,
   Pencil,
-  Archive,
   Trash2,
   CheckCircle2,
   ShieldAlert,
@@ -47,6 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { useItemDetails } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
+import { VerifiedBadge } from "@/components/verified-badge";
 
 export default function ItemDetailsClient({
   id,
@@ -70,7 +70,6 @@ export default function ItemDetailsClient({
   const viewIncremented = useRef(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
 
@@ -250,22 +249,6 @@ export default function ItemDetailsClient({
     }
   };
 
-  const handleArchive = async () => {
-    setIsActionLoading(true);
-    try {
-      const token = await getToken({ template: "supabase" });
-      const supabase = createClerkSupabaseClient(token!);
-      await ItemService.archiveToSafetyBox(supabase, item!, userId!);
-      toast.success(t("moveToSafeSuccess"));
-      router.push("/profile?tab=safety");
-    } catch (e) {
-      toast.error(t("error"));
-    } finally {
-      setIsActionLoading(false);
-      setShowArchiveConfirm(false);
-    }
-  };
-
   const handleResolved = async () => {
     setIsActionLoading(true);
     try {
@@ -414,8 +397,9 @@ export default function ItemDetailsClient({
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <p className="font-black text-sm leading-tight">
+                    <p className="font-black text-sm leading-tight flex items-center gap-1">
                       {item.profiles?.first_name || t("user")}
+                      {item.profiles?.is_verified && <VerifiedBadge />}
                     </p>
                     {item.profiles?.last_name && (
                       <p className="text-[10px] text-zinc-500 font-bold tracking-tight">
@@ -484,15 +468,6 @@ export default function ItemDetailsClient({
                     <Link href={`/items/${id}/edit`}>
                       <Pencil className="w-5 h-5 md:w-7 md:h-7" />
                     </Link>
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="icon"
-                    className="flex-1 h-12 md:h-16 rounded-lg bg-amber-50 dark:bg-amber-900/10 text-amber-600 border border-amber-100/50 shadow-sm"
-                    onClick={() => setShowArchiveConfirm(true)}
-                    disabled={isActionLoading}
-                  >
-                    <Archive className="w-5 h-5 md:w-7 md:h-7" />
                   </Button>
                   <Button
                     variant="secondary"
@@ -588,34 +563,6 @@ export default function ItemDetailsClient({
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 )}
                 {t("delete")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        <Dialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
-          <DialogContent className="rounded-3xl border-none shadow-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-amber-600 font-black">
-                {t("moveToSafe")}
-              </DialogTitle>
-            </DialogHeader>
-            <DialogFooter className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowArchiveConfirm(false)}
-                disabled={isActionLoading}
-              >
-                {t("cancel")}
-              </Button>
-              <Button
-                className="bg-amber-600"
-                onClick={handleArchive}
-                disabled={isActionLoading}
-              >
-                {isActionLoading && (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                )}
-                {t("moveToSafe")}
               </Button>
             </DialogFooter>
           </DialogContent>

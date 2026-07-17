@@ -4,7 +4,7 @@
  * ё ҷустуҷӯ кунанд, то чизҳои гумшуда ё ёфтшударо пайдо намоянд.
  */ "use client";
 
-import { useState, Suspense, useEffect, useMemo } from "react";
+import { useState, useRef, Suspense, useEffect, useMemo } from "react";
 import { ItemService, CATEGORIES } from "@/lib/services/item-service";
 import { ItemCard } from "@/components/item-card";
 import { useLanguage } from "@/lib/language-context";
@@ -23,6 +23,9 @@ import {
   Shirt,
   PawPrint,
   Package,
+  CalendarDays,
+  Car,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/nextjs";
@@ -35,6 +38,8 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   Clothing: Shirt,
   Pets: PawPrint,
   Other: Package,
+  LicensePlate: Car,
+  Wallet: Wallet,
 };
 
 function HomeContent() {
@@ -55,6 +60,12 @@ function HomeContent() {
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<"lost" | "found" | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<string | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
+  const datePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -79,8 +90,10 @@ function HomeContent() {
       category: category === "All" ? undefined : category,
       type: itemType || undefined,
       search: searchQuery,
+      dateFrom,
+      dateTo,
     }),
-    [category, itemType, searchQuery],
+    [category, itemType, searchQuery, dateFrom, dateTo],
   );
 
   const {
@@ -117,6 +130,8 @@ function HomeContent() {
     if (visualSearchResults) {
       setCategory("All");
       setItemType(null);
+      setDateFrom(undefined);
+      setDateTo(undefined);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [visualSearchResults]);
@@ -127,8 +142,42 @@ function HomeContent() {
     setVisualSearchResults(null);
     setCategory("All");
     setItemType(null);
+    setDateFrom(undefined);
+    setDateTo(undefined);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [goHomeSignal, setVisualSearchResults]);
+
+  // Пӯшидани попапи филтри сана ҳангоми клик берун аз он
+  useEffect(() => {
+    if (!showDatePicker) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDatePicker]);
+
+  const openDatePicker = () => {
+    setDraftFrom(dateFrom ?? "");
+    setDraftTo(dateTo ?? "");
+    setShowDatePicker((v) => !v);
+  };
+
+  const applyDateFilter = () => {
+    setDateFrom(draftFrom || undefined);
+    setDateTo(draftTo || undefined);
+    setShowDatePicker(false);
+  };
+
+  const clearDateFilter = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setDraftFrom("");
+    setDraftTo("");
+    setShowDatePicker(false);
+  };
 
   // Ҷамъоварии ҳамаи ашёҳо аз ҳамаи саҳифаҳо
   const allItems = useMemo(() => {
@@ -202,7 +251,7 @@ function HomeContent() {
 
             {/* Интихоби навъ: Гумшуда ё Ёфтшуда */}
             {!visualSearchResults && (
-              <div className="flex items-center self-end md:self-auto mb-0.5 md:mb-0">
+              <div className="flex items-center gap-1.5 self-end md:self-auto mb-0.5 md:mb-0">
                 <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                   <button
                     onClick={() => setItemType(null)}
@@ -237,6 +286,68 @@ function HomeContent() {
                   >
                     {t("filterFound")}
                   </button>
+                </div>
+
+                {/* Филтри бозаи сана (Аз/То) */}
+                <div className="relative" ref={datePickerRef}>
+                  <button
+                    type="button"
+                    onClick={openDatePicker}
+                    aria-label={t("filterByDate")}
+                    className={cn(
+                      "h-7 w-7 md:h-9 md:w-9 flex items-center justify-center rounded-lg border transition-all cursor-pointer shadow-sm",
+                      dateFrom || dateTo
+                        ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
+                        : "bg-zinc-100/60 dark:bg-zinc-900/60 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                    )}
+                  >
+                    <CalendarDays className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  </button>
+
+                  {showDatePicker && (
+                    <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg p-3 space-y-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                          {t("dateFrom")}
+                        </label>
+                        <input
+                          type="date"
+                          value={draftFrom}
+                          max={draftTo || undefined}
+                          onChange={(e) => setDraftFrom(e.target.value)}
+                          className="w-full h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                          {t("dateTo")}
+                        </label>
+                        <input
+                          type="date"
+                          value={draftTo}
+                          min={draftFrom || undefined}
+                          onChange={(e) => setDraftTo(e.target.value)}
+                          className="w-full h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          type="button"
+                          onClick={clearDateFilter}
+                          className="text-[11px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                        >
+                          {t("clearFilter")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={applyDateFilter}
+                          className="px-3 h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-[11px] font-bold cursor-pointer"
+                        >
+                          {t("applyFilter")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -81,12 +81,12 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md p-0 border-none bg-black overflow-hidden rounded-[1.5rem]">
+      <DialogContent className="fixed inset-0 top-0 left-0 translate-x-0 translate-y-0 w-screen h-dvh max-w-none max-h-none p-0 border-none bg-black overflow-hidden rounded-none">
         <DialogHeader className="sr-only">
           <DialogTitle>Camera</DialogTitle>
         </DialogHeader>
 
-        <div className="relative w-full aspect-square bg-zinc-950 flex items-center justify-center">
+        <div className="relative w-full h-full bg-zinc-950 flex items-center justify-center">
           {error ? (
             <div className="flex flex-col items-center gap-4 p-8 text-center">
               <Camera className="w-10 h-10 text-red-400" />
@@ -108,13 +108,17 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
 
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/50 flex items-center justify-center text-white"
+            className="absolute z-20 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white"
+            style={{ top: "max(0.75rem, env(safe-area-inset-top))", right: "max(0.75rem, env(safe-area-inset-right))" }}
           >
             <X className="w-5 h-5" />
           </button>
 
           {isReady && !error && (
-            <div className="absolute bottom-6 left-0 right-0 flex justify-center z-20">
+            <div
+              className="absolute left-0 right-0 flex justify-center z-20"
+              style={{ bottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+            >
               <button
                 onClick={handleCapture}
                 className="w-16 h-16 rounded-full bg-white border-4 border-emerald-500 active:scale-90 transition-transform"

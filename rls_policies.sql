@@ -8,7 +8,6 @@ ALTER TABLE public.profiles     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.items        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.item_images  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.saved_items  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.safety_box   ENABLE ROW LEVEL SECURITY;
 
 -- ── Ёрирасон: гирифтани user_id аз JWT (COALESCE barои Clerk) ────────────
 -- Clerk JWT метавонад user_id ё sub дошта бошад — ҳарду санҷида мешавад.
@@ -142,30 +141,13 @@ WITH CHECK (
 );
 
 -- ============================================================
--- SAVED_ITEMS & SAFETY_BOX
+-- SAVED_ITEMS
 -- ============================================================
 DROP POLICY IF EXISTS "saved_items_owner_manage"  ON public.saved_items;
 DROP POLICY IF EXISTS "Manage own saved items"    ON public.saved_items;
-DROP POLICY IF EXISTS "safety_box_owner_manage"   ON public.safety_box;
-DROP POLICY IF EXISTS "Manage own safety box"     ON public.safety_box;
 
 CREATE POLICY "saved_items_owner_manage"
 ON public.saved_items FOR ALL
-USING (
-  COALESCE(
-    current_setting('request.jwt.claims', true)::json->>'user_id',
-    current_setting('request.jwt.claims', true)::json->>'sub'
-  ) = user_id
-)
-WITH CHECK (
-  COALESCE(
-    current_setting('request.jwt.claims', true)::json->>'user_id',
-    current_setting('request.jwt.claims', true)::json->>'sub'
-  ) = user_id
-);
-
-CREATE POLICY "safety_box_owner_manage"
-ON public.safety_box FOR ALL
 USING (
   COALESCE(
     current_setting('request.jwt.claims', true)::json->>'user_id',
