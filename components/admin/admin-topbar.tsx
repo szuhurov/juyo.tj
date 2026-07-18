@@ -16,6 +16,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AdminNavLinks } from "@/components/admin/admin-sidebar";
 import { useAdminSearch } from "@/lib/admin-search-context";
+import { usePendingPostsCount } from "@/lib/hooks/use-admin-posts";
 import { cn } from "@/lib/utils";
 
 const SEARCH_PLACEHOLDERS: Record<string, string> = {
@@ -28,6 +29,7 @@ export function AdminTopbar() {
   const { signOut } = useClerk();
   const pathname = usePathname();
   const { query, setQuery } = useAdminSearch();
+  const { data: pendingCount = 0 } = usePendingPostsCount();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -46,10 +48,13 @@ export function AdminTopbar() {
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden shrink-0"
+        className="md:hidden shrink-0 relative"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="w-5 h-5" />
+        {pendingCount > 0 && (
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+        )}
       </Button>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

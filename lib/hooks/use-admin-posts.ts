@@ -28,6 +28,23 @@ export interface AdminPostDetail {
   };
 }
 
+// Шумораи эълонҳои "дар интизор" (pending) — барои badge-и сурх дар
+// admin sidebar. Пуллинг ҳар 30 сония, то admin бе refresh-и дастӣ низ
+// (масалан баъд аз push-и notify-pending-review) шумораи навро бинад.
+export function usePendingPostsCount() {
+  return useQuery({
+    queryKey: [...ADMIN_KEYS.posts(), "pending-count"],
+    queryFn: async () => {
+      const res = (await AdminService.getPosts({ moderation_status: "pending", status: "active", pageSize: 1 })) as {
+        total: number;
+      };
+      return res.total;
+    },
+    staleTime: 20_000,
+    refetchInterval: 30_000,
+  });
+}
+
 export function useAdminPosts(filters: AdminPostFilters) {
   return useQuery({
     queryKey: ADMIN_KEYS.postsList(filters),

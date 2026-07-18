@@ -25,7 +25,8 @@ export function UserTable({ rows }: { rows: AdminUserRow[] }) {
   };
 
   return (
-    <div className="rounded-xl border border-zinc-100 shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-zinc-100 shadow-sm overflow-x-auto">
+      <div className="min-w-[800px]">
       <div
         className="grid gap-5 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100"
         style={{ gridTemplateColumns: GRID_COLS }}
@@ -105,6 +106,7 @@ export function UserTable({ rows }: { rows: AdminUserRow[] }) {
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

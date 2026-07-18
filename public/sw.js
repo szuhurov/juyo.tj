@@ -128,7 +128,10 @@ self.addEventListener("push", (event) => {
       // кашидани notification shade) зиёд шавад. Кафолати 100% нест —
       // ин ниҳоят аз рӯи танзимоти ахамияти канали Android (ки худи
       // корбар дар Settings иваз карда метавонад) муайян мешавад.
-      vibrate: [200, 100, 200],
+      // Навъҳои алоҳидаи огоҳинома (масалан "санҷиши дастӣ лозим")
+      // метавонанд vibrate/tag-и худро фиристанд, то фарқ кунанд.
+      vibrate: data.vibrate ?? [200, 100, 200],
+      ...(data.tag ? { tag: data.tag } : {}),
       requireInteraction: true,
       data: data.data ?? {},
     })

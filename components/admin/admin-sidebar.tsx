@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, Package, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePendingPostsCount } from "@/lib/hooks/use-admin-posts";
 
 export const NAV_ITEMS = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
@@ -15,9 +16,20 @@ function isActive(pathname: string, href: string) {
   return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 }
 
+/** Badge-и сурхи шумора — барои эълонҳои "дар интизор", ки бе AI moderation омадаанд. */
+function PendingBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 /** Рӯйхати навигатсия бо матн — барои Sheet-и мобилӣ. */
 export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { data: pendingCount = 0 } = usePendingPostsCount();
 
   return (
     <nav className="flex-1 px-3 py-4 space-y-1">
@@ -37,6 +49,7 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
           >
             <Icon className="w-4 h-4 shrink-0" />
             {label}
+            {href === "/admin/posts" && <PendingBadge count={pendingCount} />}
           </Link>
         );
       })}
@@ -47,6 +60,7 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
 /** Sidebar-и сафед бо аксенти кабуд — матн ҳамеша торик/кабуд аст, на сафед. */
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { data: pendingCount = 0 } = usePendingPostsCount();
 
   return (
     <aside className="hidden md:flex md:w-64 shrink-0 flex-col bg-white border-r border-zinc-100">
@@ -70,6 +84,7 @@ export function AdminSidebar() {
             >
               <Icon className="w-[18px] h-[18px] shrink-0" />
               {label}
+              {href === "/admin/posts" && <PendingBadge count={pendingCount} />}
             </Link>
           );
         })}
