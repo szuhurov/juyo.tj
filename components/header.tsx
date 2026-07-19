@@ -306,7 +306,7 @@ export function Header() {
               )}
               <button
                 onClick={() => setShowPhotoChoice(true)}
-                className="hidden p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                 title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
               >
                 <Camera className="h-3.5 w-3.5" />
