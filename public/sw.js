@@ -85,7 +85,8 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request.clone())
         .then((response) => {
           if (response.ok) {
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, response.clone()));
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, responseToCache));
           }
           return response;
         })
@@ -100,7 +101,8 @@ self.addEventListener("fetch", (event) => {
       return fetch(event.request.clone())
         .then((response) => {
           if (response && response.status === 200) {
-            caches.open(CACHE_NAME).then((c) => c.put(event.request, response.clone()));
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((c) => c.put(event.request, responseToCache));
           }
           return response;
         })
