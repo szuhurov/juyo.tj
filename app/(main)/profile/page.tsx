@@ -77,7 +77,19 @@ import {
 // Ин компонент html-to-image ва react-colorful-ро истифода мебарад (вазнин)
 // ва танҳо дар tab-и QR лозим аст — на дар tab-ҳои "Эълонҳо"/"Захирашуда",
 // ки дефолт мебошанд.
-const QRCard = dynamic(() => import("@/components/qr-editor/qr-card").then((m) => m.QRCard));
+const QRCard = dynamic(
+  () => import("@/components/qr-editor/qr-card").then((m) => m.QRCard),
+  {
+    // Бе ин, ҳангоми боркунии аввалини chunk-и QRCard, React suspend
+    // мешавад ва азбаски ҷои худаш Suspense надорад, ба Suspense-и
+    // берунии ProfilePage (spinner-и калони сиёҳ, поён дар ин файл)
+    // мебарояд — тамоми саҳифа паси skeleton-и дуруст боз як бор бо
+    // spinner иваз мешуд.
+    loading: () => (
+      <Skeleton className="aspect-square w-[210px] h-[210px] rounded-2xl" />
+    ),
+  },
+);
 import type { DotType, CornerSquareType, CornerDotType } from "qr-code-styling"; // Навъҳои дурусти услуби QR (ба ҷои `any`)
 import { toPng } from "html-to-image"; // Барои табдил додани HTML ба сурати PNG
 import { HexColorPicker } from "react-colorful"; // Барои интихоби ранги QR-код
@@ -2245,8 +2257,15 @@ export default function ProfilePage() {
   return (
     <Suspense
       fallback={
-        <div className="container mx-auto px-4 py-20 flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-10 h-10 animate-spin text-zinc-900" />
+        <div className="space-y-8 pb-32 px-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
+            <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-[2rem]" />
+            <div className="space-y-5">
+              <Skeleton className="h-10 w-40 rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+            </div>
+          </div>
         </div>
       }
     >

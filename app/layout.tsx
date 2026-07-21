@@ -13,6 +13,7 @@ import { Analytics } from "@vercel/analytics/react"; // Барои ҷамъов�
 import { SpeedInsights } from "@vercel/speed-insights/next"; // Барои назорати суръати кори сайт
 import { ClerkLocalizationProvider } from "@/components/clerk-localization-provider";
 import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
+import { AdsenseScript } from "@/components/adsense-script";
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import Script from "next/script";
@@ -233,13 +234,7 @@ export default async function RootLayout({
             }}
           />
         )}
-        <Script
-          id="adsense"
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2002195129032167"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
+        <AdsenseScript />
       </body>
     </html>
   );
