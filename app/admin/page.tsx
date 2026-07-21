@@ -1,15 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { useUser } from "@clerk/nextjs";
 import { Users, Package, CheckCircle2, BellRing } from "lucide-react";
 import { useAdminStats, type StatsPeriod } from "@/lib/hooks/use-admin-stats";
 import { StatCard } from "@/components/admin/stat-card";
-import { DashboardLineChart } from "@/components/admin/dashboard-line-chart";
-import { DashboardCategoryChart } from "@/components/admin/dashboard-category-chart";
 import { AiModerationToggle } from "@/components/admin/ai-moderation-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+
+// recharts вазнин аст — chunk-и худро мегирад, ба ҷои он ки дар bundle-и
+// асосии admin ҳамроҳ шавад.
+const DashboardLineChart = dynamic(
+  () => import("@/components/admin/dashboard-line-chart").then((m) => m.DashboardLineChart),
+  { loading: () => <Skeleton className="h-64 rounded-2xl" /> },
+);
+const DashboardCategoryChart = dynamic(
+  () => import("@/components/admin/dashboard-category-chart").then((m) => m.DashboardCategoryChart),
+  { loading: () => <Skeleton className="h-64 rounded-2xl" /> },
+);
 
 const PERIOD_LABELS: Record<StatsPeriod, string> = {
   today: "Имрӯз",

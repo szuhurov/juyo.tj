@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 function extractStoragePath(imageUrl: string | null | undefined): string | null {
   if (!imageUrl) return null;
@@ -70,8 +71,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     return NextResponse.json({ ok: true, image_url: newImageUrl });
-  } catch (err: any) {
-    console.error("PATCH /api/admin/posts/[id]/images:", err.message);
+  } catch (err) {
+    console.error("PATCH /api/admin/posts/[id]/images:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

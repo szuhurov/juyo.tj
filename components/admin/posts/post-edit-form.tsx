@@ -29,7 +29,7 @@ export function PostEditForm({ item }: { item: AdminPostDetail["item"] }) {
   const handleSave = () => {
     mutate(form, {
       onSuccess: () => toast.success("Эълон навсозӣ шуд"),
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 

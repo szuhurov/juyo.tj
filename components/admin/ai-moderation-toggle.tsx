@@ -17,7 +17,7 @@ export function AiModerationToggle() {
       {
         onSuccess: () =>
           toast.success(next ? "AI moderation фаъол шуд" : "AI moderation хомӯш шуд — эълонҳои нав дар интизори тасдиқи дастӣ мемонанд"),
-        onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+        onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
       },
     );
   };

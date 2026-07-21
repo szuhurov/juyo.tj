@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 /**
  * Пас аз он ки клиент почтаи навро бо рамз тасдиқ кард (attemptVerification —
@@ -62,14 +63,14 @@ export async function POST(req: NextRequest) {
       for (const account of linkedAccounts) {
         try {
           await client.users.deleteUserExternalAccount({ userId, externalAccountId: account.external_account_id });
-        } catch (unlinkErr: any) {
-          console.error("deleteUserExternalAccount:", unlinkErr?.errors ?? unlinkErr.message);
+        } catch (unlinkErr) {
+          console.error("deleteUserExternalAccount:", getErrorMessage(unlinkErr));
         }
       }
       try {
         await client.emailAddresses.deleteEmailAddress(oldEmail.id);
-      } catch (destroyErr: any) {
-        console.error("deleteEmailAddress:", destroyErr?.errors ?? destroyErr.message);
+      } catch (destroyErr) {
+        console.error("deleteEmailAddress:", getErrorMessage(destroyErr));
       }
     }
 
@@ -79,8 +80,8 @@ export async function POST(req: NextRequest) {
       .eq("id", userId);
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("POST /api/account/change-email:", err.message);
+  } catch (err) {
+    console.error("POST /api/account/change-email:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

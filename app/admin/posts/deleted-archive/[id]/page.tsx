@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import Image from "next/image";
 import { format } from "date-fns";
 import { Archive, Package, Eye } from "lucide-react";
 import { useDeletedItemEntry } from "@/lib/hooks/use-admin-posts";
@@ -49,13 +50,12 @@ export default function DeletedPostDetailPage({ params }: { params: Promise<{ id
         {s.images?.length > 0 && (
           <div className="flex gap-2 overflow-x-auto">
             {s.images.map((img) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <div
                 key={img.image_url}
-                src={img.image_url}
-                alt={s.title}
-                className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0 object-cover"
-              />
+                className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0"
+              >
+                <Image src={img.image_url} alt={s.title} fill sizes="96px" className="object-cover" />
+              </div>
             ))}
           </div>
         )}

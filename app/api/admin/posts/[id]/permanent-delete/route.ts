@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 function extractStoragePath(imageUrl: string | null | undefined): string | null {
   if (!imageUrl) return null;
@@ -49,9 +50,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await supabaseAdmin.from("deleted_items_archive").insert([{ item_id: id, item_snapshot: item }]);
 
-    const storagePaths = ((item as any).images ?? [])
-      .map((img: any) => extractStoragePath(img.image_url))
-      .filter((p: string | null): p is string => !!p);
+    const itemImages = (item as { images?: { image_url: string }[] }).images ?? [];
+    const storagePaths = itemImages
+      .map((img) => extractStoragePath(img.image_url))
+      .filter((p): p is string => !!p);
     if (storagePaths.length > 0) {
       await supabaseAdmin.storage.from("items").remove(storagePaths);
     }
@@ -60,8 +62,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (deleteError) throw deleteError;
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("POST /api/admin/posts/[id]/permanent-delete:", err.message);
+  } catch (err) {
+    console.error("POST /api/admin/posts/[id]/permanent-delete:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

@@ -7,18 +7,17 @@
 
 import { useEffect, useState } from "react"; // Хукҳои React
 import { useUser, useAuth, useClerk } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар ва хуруҷ
-import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
+import { useLanguage, type Locale } from "@/lib/language-context"; // Барои тарҷумаи забон
 import { ProfileService } from "@/lib/services/profile-service"; // Барои кор бо профили корбар
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Барои тирезаҳои огоҳӣ
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Барои тирезаҳои огоҳӣ
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { Input } from "@/components/ui/input"; // Компоненти воридкунии матн
 import { Label } from "@/components/ui/label"; // Компоненти тамға
-import { Phone, Loader2, LogOut } from "lucide-react"; // Иконкаҳо
+import { Phone, Loader2 } from "lucide-react"; // Иконкаҳо
 import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
 import { Checkbox } from "@/components/ui/checkbox"; // Компоненти чексбокс
 import { cn } from "@/lib/utils"; // Барои пайваст кардани стилҳо
-import Link from "next/link";
 
 export function MandatoryPhoneModal() {
   const { user, isLoaded: userLoaded } = useUser();
@@ -29,7 +28,6 @@ export function MandatoryPhoneModal() {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [secondaryType, setSecondaryType] = useState<string>("");
   const [showTermsDetails, setShowTermsDetails] = useState(false);
 
   useEffect(() => {
@@ -96,7 +94,7 @@ export function MandatoryPhoneModal() {
       setShowModal(false);
       toast.success(t('phoneSaved'));
       window.location.reload();
-    } catch (err) {
+    } catch {
       toast.error(t('error'));
     } finally {
       setLoading(false);
@@ -123,7 +121,7 @@ export function MandatoryPhoneModal() {
             <button
               key={lang.code}
               onClick={() => {
-                setLocale(lang.code as any);
+                setLocale(lang.code as Locale);
               }}
               className={cn(
                 "px-3 py-2 rounded-xl text-[9px] font-black transition-all duration-300 flex-1 max-w-[100px]",
@@ -220,7 +218,7 @@ export function MandatoryPhoneModal() {
           <Button 
             type="submit" 
             form="mandatory-form"
-            className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+            className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
             disabled={loading || !acceptedTerms}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}

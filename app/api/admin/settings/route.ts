@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const { userId } = await auth();
   if (!isAdminUser(userId)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -13,8 +14,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await supabaseAdmin.from("app_settings").select("*").eq("id", true).single();
     if (error) throw error;
     return NextResponse.json({ settings: data });
-  } catch (err: any) {
-    console.error("GET /api/admin/settings:", err.message);
+  } catch (err) {
+    console.error("GET /api/admin/settings:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -39,8 +40,8 @@ export async function PATCH(req: NextRequest) {
     const { data, error } = await supabaseAdmin.from("app_settings").update(updates).eq("id", true).select().single();
     if (error) throw error;
     return NextResponse.json({ settings: data });
-  } catch (err: any) {
-    console.error("PATCH /api/admin/settings:", err.message);
+  } catch (err) {
+    console.error("PATCH /api/admin/settings:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

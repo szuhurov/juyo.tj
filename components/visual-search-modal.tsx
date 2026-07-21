@@ -1,17 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import type { Item } from "@/lib/services/item-service";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogPortal,
   DialogOverlay
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Camera, Upload, X, Search, Loader2, Sparkles, Scan, ShieldCheck, Zap } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { ItemService } from "@/lib/services/item-service";
 import { toast } from "sonner";
@@ -27,12 +24,10 @@ interface VisualSearchModalProps {
 
 export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: VisualSearchModalProps) {
   const { t } = useLanguage();
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [scanProgress, setScanProgress] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -46,29 +41,10 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
     return () => clearInterval(timer);
   }, [isSearching]);
 
-  // Ҳамин ки directFile омад, ҷустуҷӯро оғоз мекунем
-  useEffect(() => {
-    if (directFile && isOpen) {
-      setSelectedImage(directFile);
-      setPreviewUrl(URL.createObjectURL(directFile));
-      handleSearch(directFile);
-    }
-  }, [directFile, isOpen]);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      handleSearch(file);
-    }
-  };
-
   const handleSearch = async (file: File) => {
     setIsSearching(true);
     setScanProgress(0);
-    const startTime = Date.now();
-    
+
     // Аниматсияи прогресс
     const interval = setInterval(() => {
       setScanProgress(prev => (prev < 95 ? prev + Math.random() * 5 : prev));
@@ -100,6 +76,18 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
       setIsSearching(false);
     }
   };
+
+  // Ҳамин ки directFile омад, ҷустуҷӯро оғоз мекунем. `handleSearch` дар
+  // deps илова намешавад — он ба `t`/`onResults`/`onClose`-и волидайн такя
+  // мекунад, ки мемоизатсия нашудаанд (аз рӯи reference дар ҳар render нав
+  // мешаванд), пас иловаи он боиси такрори ҷустуҷӯ дар ҳар render мешуд.
+  useEffect(() => {
+    if (directFile && isOpen) {
+      setPreviewUrl(URL.createObjectURL(directFile));
+      handleSearch(directFile);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directFile, isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSearching && onClose()}>

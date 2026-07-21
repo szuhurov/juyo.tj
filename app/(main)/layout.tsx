@@ -5,11 +5,32 @@
  */
 
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { unstable_cache } from "next/cache";
+import Link from "next/link";
 import { Header } from "@/components/header";
 import { MobileNavbar } from "@/components/mobile-navbar";
 import { HomeProvider } from "@/lib/home-context";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { BlockedAccountScreen } from "@/components/blocked-account-screen";
+
+// Ин хониш (status/phone) дар ин layout ДАР ҲАР ГУЗАРИШ (ҳатто дохили
+// ҳамин гурӯҳ, масалан хона → профил) иҷро мешуд — як дархости DB барои
+// ҳар клик, ки ба сустии гузариш мусоидат мекард. Кэш (30 сония) ин
+// сустиро нест мекунад, вале боз ҳам блоки "ҳисоби басташуда" ва
+// backfill-и телефон дар доираи чанд сония амал мекунанд — на воқеан
+// "лаҳзавӣ", вале ин барои санҷиши заминавӣ кофист.
+const getCachedProfileStatus = unstable_cache(
+  async (userId: string) => {
+    const { data } = await supabaseAdmin
+      .from("profiles")
+      .select("status, phone")
+      .eq("id", userId)
+      .maybeSingle();
+    return data;
+  },
+  ["main-layout-profile-status"],
+  { revalidate: 30 },
+);
 
 export default async function MainLayout({
   children,
@@ -18,11 +39,7 @@ export default async function MainLayout({
 }) {
   const { userId } = await auth();
   if (userId) {
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("status, phone")
-      .eq("id", userId)
-      .maybeSingle();
+    const profile = await getCachedProfileStatus(userId);
     if (profile?.status === "deleted") {
       return <BlockedAccountScreen />;
     }
@@ -75,7 +92,7 @@ export default async function MainLayout({
         <div className="max-w-[1600px] mx-auto px-4 text-center text-zinc-500 text-sm">
           <p>© 2026 juyo - All rights reserved.</p>
           <div className="mt-2">
-            <a href="/privacy" className="hover:underline">Сиёсати махфият</a>
+            <Link href="/privacy" className="hover:underline">Сиёсати махфият</Link>
           </div>
         </div>
       </footer>

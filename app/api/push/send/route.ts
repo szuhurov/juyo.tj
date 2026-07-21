@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import webpush from "web-push";
+import webpush, { WebPushError } from "web-push";
 
 /**
  * Фиристодани воқеии як web push (аз тарафи браузер, на Expo). Ин марҳила
@@ -41,12 +41,11 @@ export async function POST(req: NextRequest) {
     // болои экран, бе кашидани notification shade) дошта бошад.
     await webpush.sendNotification(subscription, JSON.stringify(payload ?? {}), { urgency: "high" });
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
+  } catch (err) {
     // 200 — статуси HTTP-и ин route-ро бо статуси push-и ноком омехта накунем;
     // 404/410 (абонемент бекор шудааст) барои даъвати edge function лозим аст.
-    return NextResponse.json(
-      { ok: false, statusCode: err?.statusCode, message: err?.message },
-      { status: 200 },
-    );
+    const statusCode = err instanceof WebPushError ? err.statusCode : undefined;
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ ok: false, statusCode, message }, { status: 200 });
   }
 }

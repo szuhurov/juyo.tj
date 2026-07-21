@@ -2,7 +2,10 @@
  * Луғати тарҷумаҳои барнома (Translations).
  */
 
-export const translations: Record<string, any> = {
+export type TranslationValue = string | string[] | { [key: string]: TranslationValue };
+export type TranslationDict = { [key: string]: TranslationValue };
+
+export const translations: Record<string, TranslationDict> = {
   tg: {
     menu: "Меню",
     menuDescription: "Менюи пайвандҳо",

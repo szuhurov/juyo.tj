@@ -11,6 +11,7 @@ import {
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CATEGORIES } from "@/lib/services/item-service";
+import { getErrorMessage } from "@/lib/error-utils";
 
 // PostgREST-и .neq() бо NULL кор намекунад (NULL <> 'deleted' = NULL, на true),
 // пас барои "ҳамаи корбарони фаъол" ҳамеша .or() бо status.is.null истифода мешавад.
@@ -139,8 +140,8 @@ export async function GET(req: NextRequest) {
       signupsGranularity: granularity,
       itemsByCategory,
     });
-  } catch (err: any) {
-    console.error("GET /api/admin/stats:", err.message);
+  } catch (err) {
+    console.error("GET /api/admin/stats:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

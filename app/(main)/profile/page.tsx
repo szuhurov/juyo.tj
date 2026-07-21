@@ -5,18 +5,18 @@
  */ "use client";
 
 import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
+import dynamic from "next/dynamic";
 import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
 import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
-import { Item, ItemService, CATEGORIES } from "@/lib/services/item-service"; // Барои кор бо хизматрасониҳои эълонҳо ва категорияҳо
+import { translations } from "@/lib/translations"; // Барои қисми "guide.qrItems" (рӯйхат, на матни оддӣ)
+import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
 import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
 import { ItemCard } from "@/components/item-card"; // Барои нишон додани карточкаҳои эълонҳо
 import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Барои сохтани блокҳои иттилоотӣ
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Барои нишон додани сурати корбар
 import { Skeleton } from "@/components/ui/skeleton"; // Барои ҳолати боргирии муваққатӣ
 import { Input } from "@/components/ui/input"; // Майдони воридкунии матн
 import { Label } from "@/components/ui/label"; // Сарлавҳаҳо барои майдонҳои форма
-import { Textarea } from "@/components/ui/textarea"; // Майдони воридкунии матни калон
 import {
   Select,
   SelectContent,
@@ -24,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"; // Рӯйхати интихобшаванда
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Гурӯҳи интихобкунандаҳо
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
 import {
   User,
@@ -36,43 +35,27 @@ import {
   LayoutGrid,
   Trash2,
   Loader2,
-  Clock,
-  X,
-  Send,
   ShieldCheck,
-  ShieldAlert,
-  PlusCircle,
   AlertTriangle,
   Phone,
   Pencil,
   QrCode,
   Menu as MenuIcon,
   Download,
-  Share2,
   RefreshCw,
   Palette,
-  Type,
-  ChevronLeft,
   Search,
   HelpCircle,
-  Brain,
-  CheckCircle2,
-  Calendar,
-  Eye,
   KeyRound,
   MousePointerClick,
 } from "lucide-react";
 // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
-import Image from "next/image"; // Барои нишон додани суратҳои оптимизатсияшуда
 import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
 import { cn } from "@/lib/utils"; // Барои пайваст кардани классҳои CSS
 import { toast } from "sonner"; // Барои нишон додани огоҳиномаҳо
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳои кӯтоҳ
 import {
   Dialog,
@@ -91,19 +74,33 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 // Интеграцияи QR
-import { QRCard } from "@/components/qr-editor/qr-card"; // Компонент барои сохтани QR-код
+// Ин компонент html-to-image ва react-colorful-ро истифода мебарад (вазнин)
+// ва танҳо дар tab-и QR лозим аст — на дар tab-ҳои "Эълонҳо"/"Захирашуда",
+// ки дефолт мебошанд.
+const QRCard = dynamic(() => import("@/components/qr-editor/qr-card").then((m) => m.QRCard));
+import type { DotType, CornerSquareType, CornerDotType } from "qr-code-styling"; // Навъҳои дурусти услуби QR (ба ҷои `any`)
 import { toPng } from "html-to-image"; // Барои табдил додани HTML ба сурати PNG
 import { HexColorPicker } from "react-colorful"; // Барои интихоби ранги QR-код
-import { compressImage } from "@/lib/image-utils"; // Барои фишурдани суратҳо
 
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   useUserItems,
   useSavedItems,
-  ITEM_KEYS,
 } from "@/lib/hooks/use-items"; // Хукҳои махсус барои гирифтани ашёҳо аз база
 import { useQueryClient } from "@tanstack/react-query"; // Барои идоракунии кэши маълумотҳо
 import { VerifiedBadge } from "@/components/verified-badge";
+import { useProfileQuery } from "@/lib/hooks/use-profile";
+
+// Клерк одатан хатогиро ҳамчун { errors: [{ longMessage, message }] } мефиристад —
+// ин helper новобаста аз шакли воқеии хатогӣ (Clerk, Error, ё дигар) паёми
+// хониданиро бе `any` мебарорад.
+function getClerkErrorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === "object") {
+    const clerkErr = err as { errors?: { longMessage?: string; message?: string }[]; message?: string };
+    return clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || clerkErr.message || fallback;
+  }
+  return fallback;
+}
 
 function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
@@ -133,7 +130,7 @@ function ProfileContent() {
   const [emailStep, setEmailStep] = useState<"input" | "verify">("input");
   const [newEmailInput, setNewEmailInput] = useState("");
   const [emailCodeInput, setEmailCodeInput] = useState("");
-  const [pendingEmailAddress, setPendingEmailAddress] = useState<any>(null);
+  const [pendingEmailAddress, setPendingEmailAddress] = useState<NonNullable<typeof user>["emailAddresses"][number] | null>(null);
   const [emailSubmitting, setEmailSubmitting] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendSubmitting, setResendSubmitting] = useState(false);
@@ -161,9 +158,9 @@ function ProfileContent() {
       await pendingEmailAddress.prepareVerification({ strategy: "email_code" });
       setResendCooldown(59);
       toast.success(t("codeResent"));
-    } catch (err: any) {
+    } catch (err) {
       console.error("Resend code error:", err);
-      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
+      toast.error(getClerkErrorMessage(err, t("error")));
     } finally {
       setResendSubmitting(false);
     }
@@ -193,9 +190,9 @@ function ProfileContent() {
       setPendingEmailAddress(emailAddress);
       setEmailStep("verify");
       setResendCooldown(59);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Start email change error:", err);
-      toast.error(err.message || t("error"));
+      toast.error(getClerkErrorMessage(err, t("error")));
     } finally {
       setEmailSubmitting(false);
     }
@@ -223,9 +220,9 @@ function ProfileContent() {
       await user.reload();
       toast.success(t("emailChangeSuccess"));
       resetEmailModal();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Clerk error:", err);
-      toast.error(err.errors?.[0]?.longMessage || err.errors?.[0]?.message || err.message || t("error"));
+      toast.error(getClerkErrorMessage(err, t("error")));
     } finally {
       setEmailSubmitting(false);
     }
@@ -243,7 +240,7 @@ function ProfileContent() {
 
       toast.success(t("deleteAccountSuccess"));
       router.push("/");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Delete account error:", err);
       toast.error(t("error"));
       setDeletingAccount(false);
@@ -253,8 +250,8 @@ function ProfileContent() {
   // Стейтҳо барои нигоҳ доштани маълумоти профил ва нишон додани модалҳо
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- setter истифода мешавад, вале UI-и он (MandatoryPhoneModal) ба дарахти компонент васл нашудааст, ниг. ёддошти аудит
   const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [showSecurityInfo, setShowSecurityInfo] = useState(false);
   const [showSecondaryPhoneModal, setShowSecondaryPhoneModal] = useState(false);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
   const [secondaryType, setSecondaryType] = useState<string>("");
@@ -266,38 +263,39 @@ function ProfileContent() {
     qrColor: "#26ba90",
     bgColor: "#eefbf5",
     text: t("qrScanMe"),
-    dotsType: "extra-rounded" as any,
-    cornersSquareType: "dot" as any,
-    cornersDotType: "dot" as any,
+    dotsType: "extra-rounded" as DotType,
+    cornersSquareType: "dot" as CornerSquareType,
+    cornersDotType: "dot" as CornerDotType,
   });
 
-  // Гирифтани токени базаи додаҳо ва маълумоти профил дар як вақт барои кам кардани ре-рендерҳо
+  // Токен барои Supabase — лозим барои useUserItems/useSavedItems ва
+  // амалиётҳои дигар (иваз кардани email, аватар ва ғ.) дар ин саҳифа.
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
-    const loadData = async () => {
-      if (!userId) return;
-      try {
-        const supabaseToken = await getToken({ template: "supabase" });
-        if (!supabaseToken) return;
+    if (!userId) return;
+    getToken({ template: "supabase" })
+      .then((t) => { if (t) setToken(t); })
+      .catch((err) => console.error("Error loading token:", err));
+  }, [userId, getToken]);
 
-        setToken(supabaseToken);
+  // Профил — тавассути React Query (кэши 2 дақиқа), на бо fetch-и дастии
+  // бе кэш — пеш аз ин ҳар гузариш ба /profile (масалан home → QR →
+  // бозгашт) skeleton-и наверо нишон медод, ҳатто агар чанд сония пеш
+  // аллакай fetch шуда буд.
+  const { data: queriedProfile, isError: profileQueryError } = useProfileQuery(userId, token);
+  useEffect(() => {
+    if (queriedProfile !== undefined) {
+      setProfile(queriedProfile);
+      setProfileLoading(false);
 
-        const supabase = createClerkSupabaseClient(supabaseToken);
-        const data = await ProfileService.getProfile(supabase, userId);
-        setProfile(data);
-
-        // Агар рақами телефон набошад, тирезаи махсусро нишон медиҳем (ТАНҲО рақами асосӣ)
-        if (data && (!data.phone || data.phone.trim() === "")) {
-          setShowPhoneModal(true);
-        }
-      } catch (err) {
-        console.error("Error loading profile/token:", err);
-      } finally {
-        setProfileLoading(false);
+      // Агар рақами телефон набошад, тирезаи махсусро нишон медиҳем (ТАНҲО рақами асосӣ)
+      if (queriedProfile && (!queriedProfile.phone || queriedProfile.phone.trim() === "")) {
+        setShowPhoneModal(true);
       }
-    };
-    loadData();
-  }, [userId]);
+    } else if (profileQueryError) {
+      setProfileLoading(false);
+    }
+  }, [queriedProfile, profileQueryError]);
 
   // Гирифтани рӯйхати эълонҳо, ашёҳои захирашуда ва ашёҳои "Қуттии бехатарӣ"
   const { data: myItems = [], isLoading: postsLoading } = useUserItems(
@@ -439,8 +437,8 @@ function ProfileContent() {
       });
 
       // Агар дар дохили React Native WebView бошад
-      if (typeof window !== "undefined" && (window as any).ReactNativeWebView) {
-        (window as any).ReactNativeWebView.postMessage(
+      if (typeof window !== "undefined" && window.ReactNativeWebView) {
+        window.ReactNativeWebView.postMessage(
           JSON.stringify({ type: "DOWNLOAD_QR", payload: dataUrl }),
         );
         toast.success(t("qrSavedSuccess"));
@@ -518,7 +516,7 @@ function ProfileContent() {
       const supabaseToken = await getToken({ template: "supabase" });
       const supabase = createClerkSupabaseClient(supabaseToken!);
 
-      const updates: any = {};
+      const updates: Partial<Profile> = {};
       if (needsPhone) updates.phone = phone;
       if (needsSecondary) {
         updates.secondary_phone = secondary_phone;
@@ -553,27 +551,6 @@ function ProfileContent() {
   /**
    * Функсияи паҳн кардани QR-код (Share)
    */
-  const handleShareQR = () => {
-    const url = `${window.location.origin}/qr/${userId}`;
-    const shareData = {
-      title: "JUYO QR",
-      text: t("foundUserItem").replace("%{name}", user?.firstName || ""),
-      url: url,
-    };
-
-    if (navigator.share) {
-      navigator.share(shareData).catch((error) => {
-        if (error.name !== "AbortError") {
-          navigator.clipboard.writeText(url);
-          toast.success(t("success"));
-        }
-      });
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success(t("success"));
-    }
-  };
-
   if (!userLoaded) return null;
 
   // Нишон додани мӯҳтаво вобаста ба таби интихобшуда
@@ -585,13 +562,13 @@ function ProfileContent() {
             {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-200">
               {postsLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
+                <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="aspect-square rounded-2xl" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
+                <div className={ITEM_GRID_CLASS}>
                   {myItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -614,13 +591,13 @@ function ProfileContent() {
             {/* Рӯйхати эълонҳои шахсӣ */}
             <div className="animate-in fade-in duration-200">
               {postsLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
+                <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="aspect-square rounded-2xl" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
+                <div className={ITEM_GRID_CLASS}>
                   {myItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -638,6 +615,24 @@ function ProfileContent() {
         );
 
       case "qr":
+        // profile ҳанӯз client-side fetch мешавад (Clerk token → Supabase) —
+        // то он вақт skeleton нишон медиҳем, на UI-и нопурраи бо
+        // profile=null (тугмаҳои вайрон, QR-и холӣ), то гузариш аз дигар
+        // саҳифа ба ин таб "холӣ меистад" ҳис нашавад.
+        if (profileLoading) {
+          return (
+            <div className="space-y-8 pb-32">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
+                <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-[2rem]" />
+                <div className="space-y-5">
+                  <Skeleton className="h-10 w-40 rounded-lg" />
+                  <Skeleton className="h-24 w-full rounded-2xl" />
+                  <Skeleton className="h-24 w-full rounded-2xl" />
+                </div>
+              </div>
+            </div>
+          );
+        }
         return (
           <div className="space-y-8 pb-32">
             {/* Сарлавҳаи таби QR-код */}
@@ -726,7 +721,7 @@ function ProfileContent() {
                   <div className="flex justify-between gap-1.5 mb-2 sm:mb-6 w-full">
                     <Button
                       onClick={() => setShowWhyQRModal(true)}
-                      className="flex-1 h-9 sm:h-10 rounded-lg bg-emerald-500 text-white border-none font-black text-[8px] sm:text-[9px] tracking-widest hover:bg-emerald-600 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
+                      className="flex-1 h-9 sm:h-10 rounded-lg bg-emerald-700 text-white border-none font-black text-[8px] sm:text-[9px] tracking-widest hover:bg-emerald-800 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
                     >
                       <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
                       {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
@@ -782,7 +777,7 @@ function ProfileContent() {
                       <Select
                         value={qrSettings.dotsType}
                         onValueChange={(val) =>
-                          setQrSettings({ ...qrSettings, dotsType: val as any })
+                          setQrSettings({ ...qrSettings, dotsType: val as DotType })
                         }
                       >
                         <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-[11px] font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
@@ -819,13 +814,13 @@ function ProfileContent() {
                       <Select
                         value={qrSettings.cornersSquareType}
                         onValueChange={(val) => {
-                          const cornerStyle = val as any;
-                          const dotStyle =
+                          const cornerStyle = val as CornerSquareType;
+                          const dotStyle: CornerDotType =
                             cornerStyle === "square" ? "square" : "dot";
                           setQrSettings({
                             ...qrSettings,
                             cornersSquareType: cornerStyle,
-                            cornersDotType: dotStyle as any,
+                            cornersDotType: dotStyle,
                           });
                         }}
                       >
@@ -1127,7 +1122,7 @@ function ProfileContent() {
                   </p>
 
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 relative z-10">
-                    {(t("guide.qrItems") as string[]).map((item, i) => (
+                    {((translations[locale]?.guide as { qrItems: string[] } | undefined)?.qrItems ?? []).map((item, i) => (
                       <div
                         key={i}
                         className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl text-center border border-white/10"
@@ -1223,7 +1218,7 @@ function ProfileContent() {
                               await user?.setProfileImage({ file });
                               toast.dismiss();
                               toast.success(t("photoUpdated"));
-                            } catch (err) {
+                            } catch {
                               toast.dismiss();
                               toast.error(t("error"));
                             }
@@ -1269,7 +1264,7 @@ function ProfileContent() {
                         await user?.reload();
 
                         toast.success(t("profileUpdated"));
-                      } catch (err: any) {
+                      } catch (err) {
                         console.error("Profile Update Error:", err);
                         toast.error(t("error"));
                       } finally {
@@ -1465,13 +1460,13 @@ function ProfileContent() {
             {/* Рӯйхати ашёҳои захирашуда */}
             <div className="animate-in fade-in duration-200">
               {savedLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
+                <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
                     <Skeleton key={i} className="aspect-square rounded-2xl" />
                   ))}
                 </div>
               ) : savedItems.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-3">
+                <div className={ITEM_GRID_CLASS}>
                   {savedItems.map((item) => (
                     <ItemCard key={item.id} item={item} />
                   ))}
@@ -1844,7 +1839,7 @@ function ProfileContent() {
             <Button
               type="submit"
               form="secondary-phone-form"
-              className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+              className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[11px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
               disabled={
                 secondaryLoading ||
                 ((!profile?.secondary_phone ||
@@ -1969,7 +1964,7 @@ function ProfileContent() {
           <div className="mt-8 flex flex-col gap-2">
             <Button
               onClick={() => setShowWhyQRModal(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2004,7 +1999,7 @@ function ProfileContent() {
           <div className="mt-8">
             <Button
               onClick={() => setShowSecurityModal(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2218,7 +2213,7 @@ function ProfileContent() {
               <Button
                 onClick={handleVerifyEmailChange}
                 disabled={emailSubmitting || emailCodeInput.length < 6}
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
               >
                 {emailSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -2257,24 +2252,5 @@ export default function ProfilePage() {
     >
       <ProfileContent />
     </Suspense>
-  );
-}
-
-/**
- * Компоненти хурд барои нишонҳо (Badge)
- */
-function Badge({ children, className, variant = "default" }: any) {
-  return (
-    <span
-      className={cn(
-        "px-2 py-0.5 rounded text-[10px] font-bold",
-        variant === "default"
-          ? "bg-zinc-900 text-white"
-          : "border border-zinc-200 text-zinc-500",
-        className,
-      )}
-    >
-      {children}
-    </span>
   );
 }

@@ -145,7 +145,7 @@ export interface DeletedAccountEntry {
 }
 
 export function normalizeDeletedAccountSnapshot(entry: DeletedAccountEntry): DeletedAccountSnapshot {
-  const raw = entry.profile_snapshot as any;
+  const raw = entry.profile_snapshot;
   if (raw && typeof raw === "object" && "profile" in raw) {
     return raw as DeletedAccountSnapshot;
   }

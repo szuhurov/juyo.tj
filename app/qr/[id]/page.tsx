@@ -8,13 +8,11 @@
 import { ItemService } from "@/lib/services/item-service";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { use } from "react";
-import { useLanguage } from "@/lib/language-context";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Phone, ShieldCheck, QrCode, ArrowLeft } from "lucide-react";
+import { Phone, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 import { cookies } from "next/headers";
 import { translations } from "@/lib/translations";
 import { VerifiedBadge } from "@/components/verified-badge";
@@ -34,7 +32,10 @@ export async function generateMetadata({
   try {
     const cookieStore = await cookies();
     const locale = lang || cookieStore.get("juyo-locale")?.value || "tg";
-    const t = (key: string) => translations[locale as any]?.[key] || key;
+    const t = (key: string) => {
+      const value = translations[locale]?.[key];
+      return typeof value === "string" ? value : key;
+    };
 
     // Гирифтани маълумоти соҳиби QR
     const item = await ItemService.getItemDetails(id);
@@ -46,7 +47,7 @@ export async function generateMetadata({
         `${profile?.first_name} ${profile?.last_name}`,
       ),
     };
-  } catch (e) {
+  } catch {
     return { title: "JUYO.TJ" };
   }
 }
@@ -58,7 +59,10 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
 
   // Афзалият: 1. Параметри URL (?lang=) 2. Cookie 3. Дефолт (tg)
   const locale = lang || cookieStore.get("juyo-locale")?.value || "tg";
-  const t = (key: string) => translations[locale as any]?.[key] || key;
+  const t = (key: string) => {
+    const value = translations[locale]?.[key];
+    return typeof value === "string" ? value : key;
+  };
 
   // Боргузории маълумот дар сервер (SSR) — тавассути RPC-и махдуд (на ҷадвали profiles мустақим),
   // то ки танҳо як профили мушаххас (бо id) намоён шавад, на ҳамаи корбарон.
@@ -116,7 +120,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
               className={cn(
                 "px-4 py-2 rounded-full text-[11px] font-black tracking-wider transition-all duration-300",
                 locale === lang.id
-                  ? "bg-emerald-500 text-white shadow-lg scale-105"
+                  ? "bg-emerald-700 text-white shadow-lg scale-105"
                   : "bg-transparent text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
               )}
             >
@@ -131,9 +135,11 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
           <div className="relative inline-block mb-6">
             <div className="w-32 h-32 border-4 border-white dark:border-zinc-800 shadow-2xl rounded-[2.5rem] overflow-hidden bg-zinc-100 relative">
               {profile.avatar_url ? (
-                <img
+                <Image
                   src={profile.avatar_url}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="128px"
+                  className="object-cover"
                   alt="Avatar"
                 />
               ) : (
@@ -142,7 +148,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
                 </div>
               )}
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white p-2 rounded-2xl shadow-lg border-4 border-white dark:border-zinc-900">
+            <div className="absolute -bottom-2 -right-2 bg-emerald-700 text-white p-2 rounded-2xl shadow-lg border-4 border-white dark:border-zinc-900">
               <ShieldCheck className="w-5 h-5" />
             </div>
           </div>
@@ -193,21 +199,5 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         </div>
       </div>
     </div>
-  );
-}
-
-function Badge({ children, className, variant = "default" }: any) {
-  return (
-    <span
-      className={cn(
-        "px-2 py-0.5 rounded text-[10px] font-bold inline-block",
-        variant === "default"
-          ? "bg-zinc-900 text-white"
-          : "border border-zinc-200 text-zinc-500",
-        className,
-      )}
-    >
-      {children}
-    </span>
   );
 }

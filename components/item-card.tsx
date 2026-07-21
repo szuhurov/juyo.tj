@@ -1,35 +1,24 @@
 "use client";
 
-import Image from "next/image";
-
-declare global {
-  interface Window {
-    ReactNativeWebView?: { postMessage: (msg: string) => void };
-  }
-} // Барои нишон додани суратҳо
+import Image from "next/image"; // Барои нишон додани суратҳо
 import Link from "next/link"; // Барои пайвандҳо
 import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
 import { Item } from "@/lib/services/item-service"; // Типи маълумоти эълон
 import { Badge } from "@/components/ui/badge"; // Компоненти нишон
 import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Card, CardContent, CardFooter } from "@/components/ui/card"; // Компоненти корт
 import {
-  MapPin,
   Calendar,
   Pencil,
   Trash2,
   Loader2,
-  AlertTriangle,
   ShieldAlert,
   Clock,
-  AlertCircle,
-  Sparkles,
 } from "lucide-react"; // Иконкаҳо
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 import { format } from "date-fns"; // Барои формат кардани вақт
 import { cn } from "@/lib/utils"; // Барои классҳои CSS
 import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
-import { useState, useEffect } from "react"; // Хукҳои React
+import { useState } from "react"; // Хукҳои React
 import { useAuth } from "@clerk/nextjs"; // Барои аутентификатсия
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
 import { ItemService } from "@/lib/services/item-service"; // Сервиси эълонҳо
@@ -65,9 +54,6 @@ export function ItemCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  // Состояние барои фаъол будани ротатсияи суратҳо
-  const [isHovered, setIsHovered] = useState(false);
 
   // Санҷиши соҳиби эълон
   const isOwner = !!userId && userId === item.user_id;
@@ -106,7 +92,7 @@ export function ItemCard({
       toast.success(t("success"));
       setShowDeleteConfirm(false);
       window.dispatchEvent(new Event("items-updated"));
-    } catch (error) {
+    } catch {
       toast.error(t("error"));
     } finally {
       setIsActionLoading(false);
@@ -119,11 +105,7 @@ export function ItemCard({
         href={`/items/${item.id}`}
         prefetch={true}
         className="block h-fit"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => {
-          setIsHovered(false);
-          setCurrentImageIndex(0);
-        }}
+        onMouseLeave={() => setCurrentImageIndex(0)}
       >
         <div
           className={cn(
@@ -169,9 +151,9 @@ export function ItemCard({
               </div>
             )}
             <div className="flex items-center gap-1.5">
-              <h3 className="min-w-0 flex-1 font-extrabold text-[11px] sm:text-sm lg:text-base truncate leading-snug tracking-tight text-white drop-shadow-md">
-                {capitalizeFirst(item.title)}
-              </h3>
+              <h2 className="min-w-0 flex-1 font-extrabold text-[11px] sm:text-sm lg:text-base truncate leading-snug tracking-tight text-white drop-shadow-md">
+                {capitalizeFirst(item.title) || item.category}
+              </h2>
               <div className="shrink-0 flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold bg-black/60 px-1.5 py-0.5 rounded border border-white/10">
                 <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 <span>{exactDate}</span>
@@ -186,14 +168,14 @@ export function ItemCard({
                 "font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap",
                 item.type === "lost"
                   ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-emerald-600 text-white hover:bg-emerald-700",
+                  : "bg-emerald-700 text-white hover:bg-emerald-800",
               )}
             >
               {item.type === "lost" ? t("lost") : t("found")}
             </Badge>
 
             {item.similarity_score !== undefined && (
-              <Badge className="bg-emerald-600 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
+              <Badge className="bg-emerald-700 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
                 {Math.round(item.similarity_score * 100)}%{" "}
                 {t("matchForYourImage")}
               </Badge>

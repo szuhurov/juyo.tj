@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
  * Аватари даъвогар — бо fallback ба доираи ҳарфи аввал агар URL кор
  * накунад (масалан snapshot-и кӯҳнаи Clerk, ки аллакай 404 медиҳад).
+ * className андозаро (масалан w-11 h-11) муайян мекунад — истифода
+ * мешавад ба wrapper-и relative, зеро next/image bo fill андозаи
+ * падари positioned-ро талаб мекунад.
  */
 export function ClaimantAvatar({
   url,
@@ -20,15 +24,21 @@ export function ClaimantAvatar({
 
   if (url && !failed) {
     return (
-      <img
-        src={url}
-        alt=""
-        onError={() => setFailed(true)}
+      <div
         className={cn(
-          "rounded-full object-cover shrink-0 border border-zinc-100 dark:border-zinc-800",
+          "relative rounded-full overflow-hidden shrink-0 border border-zinc-100 dark:border-zinc-800",
           className,
         )}
-      />
+      >
+        <Image
+          src={url}
+          alt=""
+          fill
+          sizes="48px"
+          onError={() => setFailed(true)}
+          className="object-cover"
+        />
+      </div>
     );
   }
 

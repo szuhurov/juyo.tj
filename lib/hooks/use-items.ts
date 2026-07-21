@@ -4,6 +4,7 @@
  */
 
 import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Item, ItemService } from "@/lib/services/item-service";
 
 export interface ItemFilters {
@@ -32,7 +33,14 @@ export const ITEM_KEYS = {
 const PAGE_SIZE = 20;
 const MAX_PAGES = 10; // Ҳадди аксари саҳифаҳо дар хотира (200 ашё)
 
-export function useItems(filters?: ItemFilters) {
+// initialItems — саҳифаи аввали натиҷа, ки дар сервер (Server Component)
+// аллакай гирифта шудааст (ниг. app/(main)/page.tsx) — React Query онро
+// ҳамчун "саҳифаи 0"-и кэш истифода мебарад, то HTML-и аввалия аллакай
+// итемҳоро дошта бошад (барои Google/SEO), бе интизори fetch-и клиентӣ.
+// Танҳо барои query-и БОИСТОДА (filters-и пешфарз, ки дар сервер гирифта
+// шуда буд) амал мекунад — вақте ки корбар филтр иваз кунад, queryKey
+// дигар мешавад ва fetch-и муқаррарии клиентӣ рӯй медиҳад.
+export function useItems(filters?: ItemFilters, initialItems?: Item[]) {
   return useInfiniteQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
     queryFn: ({ pageParam = 0 }) =>
@@ -44,6 +52,9 @@ export function useItems(filters?: ItemFilters) {
     initialPageParam: 0,
     staleTime: 1000 * 60 * 5,
     maxPages: MAX_PAGES,
+    ...(initialItems
+      ? { initialData: { pages: [initialItems], pageParams: [0] } }
+      : {}),
   });
 }
 
@@ -56,7 +67,7 @@ export function useItemDetails(id: string, token: string | null | undefined, ini
   return useQuery({
     queryKey: ITEM_KEYS.detail(id),
     queryFn: async () => {
-      let supabaseClient = null;
+      let supabaseClient: SupabaseClient | undefined;
       if (token) {
         const { createClerkSupabaseClient } = await import("@/lib/supabase");
         supabaseClient = createClerkSupabaseClient(token);

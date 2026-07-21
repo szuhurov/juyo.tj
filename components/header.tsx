@@ -11,7 +11,6 @@ import { useAuth, useUser, useClerk } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
 import {
-  Languages,
   Search,
   Home,
   ChevronDown,
@@ -49,15 +48,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
-import { VisualSearchModal } from "./visual-search-modal";
-import { CameraCaptureModal } from "./camera-capture-modal";
+import dynamic from "next/dynamic";
 import { useHomeState } from "@/lib/home-context";
 import type { Item } from "@/lib/services/item-service";
 import { NotificationBell } from "@/components/notification-bell";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+
+// Ин ду компонент (модали камера, ҷустуҷӯи визуалӣ) дар Header ҳастанд, ки
+// дар ҲАМАИ саҳифаҳо render мешавад — вале аксари ташрифҳо ҳеҷ гоҳ онҳоро
+// намекушоянд. next/dynamic JS-и онҳоро аз bundle-и асосии ҳар саҳифа ҷудо
+// мекунад (chunk-и алоҳида), то first-load JS-и умумии барнома камтар шавад.
+const VisualSearchModal = dynamic(() =>
+  import("./visual-search-modal").then((m) => m.VisualSearchModal),
+);
+const CameraCaptureModal = dynamic(() =>
+  import("./camera-capture-modal").then((m) => m.CameraCaptureModal),
+);
 
 export function Header() {
   const pathname = usePathname();
@@ -114,8 +122,10 @@ export function Header() {
     },
   ];
 
-  // Пешгирии Hydration Mismatch
+  // Пешгирии Hydration Mismatch — синхронизатсияи "клиент омода аст" бо
+  // ягона роҳи имконпазир: effect (native browser API аст, на state аз рендер).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -158,7 +168,9 @@ export function Header() {
   // showing stale text after browser back/forward or after navigating home
   // via a link/route that doesn't go through this input.
   useEffect(() => {
+    // Синхронизатсия АЗ URL (система берун аз React) — маҳз ҳамин барои effect аст.
     if (pathname === "/") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchValue(searchParams.get("q") || "");
     }
   }, [pathname, searchParams]);
@@ -215,6 +227,7 @@ export function Header() {
           <div className="flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
             <Link
               href="/"
+              aria-label="JUYO"
               className="flex items-center space-x-2 shrink-0"
               onClick={(e) => {
                 if (pathname === "/") {
@@ -246,7 +259,7 @@ export function Header() {
                   }
 
                   // Функсия барои назорати дастӣ
-                  const handleNavClick = (e: React.MouseEvent) => {
+                  const handleNavClick = () => {
                     const isProtected =
                       link.href.includes("/profile") ||
                       link.href.includes("/items/add");
@@ -306,7 +319,7 @@ export function Header() {
               )}
               <button
                 onClick={() => setShowPhotoChoice(true)}
-                className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className="hidden p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                 title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
               >
                 <Camera className="h-3.5 w-3.5" />
@@ -356,7 +369,7 @@ export function Header() {
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    className="rounded-lg font-black text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-md h-9 px-4"
+                    className="rounded-lg font-black text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-md h-9 px-4"
                     asChild
                   >
                     <Link href="/items/add">

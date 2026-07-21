@@ -11,6 +11,7 @@ export function AdminSearchProvider({ children }: { children: React.ReactNode })
 
   // Ҷустуҷӯ ба саҳифаи ҷорӣ вобаста аст — ҳангоми гузариш ба саҳифаи дигар тоза мешавад.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuery("");
   }, [pathname]);
 

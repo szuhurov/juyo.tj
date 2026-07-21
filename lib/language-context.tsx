@@ -5,15 +5,15 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"; // Хукҳо ва типҳои React
-import { translations } from "./translations"; // Файли тарҷумаҳо
+import { translations, type TranslationValue } from "./translations"; // Файли тарҷумаҳо
 
 // Намудҳои забонҳои дастгиришаванда
-type Locale = "tg" | "ru" | "en";
+export type Locale = "tg" | "ru" | "en";
 
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string, params?: Record<string, any>) => any;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 // Сохтани Контекст барои дастрасии глобалӣ ба забон дар тамоми барнома
@@ -28,10 +28,12 @@ export function LanguageProvider({
 }) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
 
-  // Бори аввал хондани забони интихобшуда аз хотираи браузер (localStorage)
+  // Бори аввал хондани забони интихобшуда аз хотираи браузер (localStorage) —
+  // синхронизатсия АЗ система берун аз React, ягона роҳаш effect аст.
   useEffect(() => {
     const saved = localStorage.getItem("juyo-locale") as Locale;
     if (saved && ["tg", "ru", "en"].includes(saved)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocale(saved);
       // Ҳамзамон дар Cookie сабт мекунем, то сервер ҳам хабардор шавад
       document.cookie = `juyo-locale=${saved}; path=/; max-age=31536000; SameSite=Lax`;
@@ -40,9 +42,9 @@ export function LanguageProvider({
 
   // Навсозии номи саҳифа (Tab Title) дар браузер ҳангоми иваз шудани забон
   useEffect(() => {
-    const t = translations[locale];
-    if (t && t.seoTitle) {
-      document.title = t.seoTitle;
+    const seoTitle = translations[locale]?.seoTitle;
+    if (typeof seoTitle === 'string') {
+      document.title = seoTitle;
     }
   }, [locale]);
 
@@ -63,19 +65,19 @@ export function LanguageProvider({
    * Калидро (key) мегирад ва матни мувофиқро аз файли тарҷумаҳо бармегардонад.
    * Агар калид ёфт нашавад, ҳамчун 'fallback' забони англисиро истифода мебарад.
    */
-  const t = (key: string, params?: Record<string, any>) => {
+  const t = (key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
-    let value = translations[locale];
-    
+    let value: TranslationValue = translations[locale];
+
     // Ҷустуҷӯи калид дар дохили объекти тарҷумаҳо
     for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && k in value) {
         value = value[k];
       } else {
         // Агар дар забони ҷорӣ ёфт нашавад, ба забони англисӣ мегузарем
-        let fallbackValue = translations['en'];
+        let fallbackValue: TranslationValue = translations['en'];
         for (const fk of keys) {
-          if (fallbackValue && typeof fallbackValue === 'object' && fk in fallbackValue) {
+          if (fallbackValue && typeof fallbackValue === 'object' && !Array.isArray(fallbackValue) && fk in fallbackValue) {
             fallbackValue = fallbackValue[fk];
           } else {
             fallbackValue = key;
@@ -87,7 +89,11 @@ export function LanguageProvider({
       }
     }
 
-    if (typeof value !== 'string') return value;
+    // Агар калид ба зершохаи объект/массив расад (масалан "categories" ё
+    // "qrItems" бе идомаи роҳ), ин леафи ниҳоии тарҷума НЕСТ — ба худи
+    // калид bargardem, то ҳаргиз объект/массив ба JSX нарасад (React онро
+    // рендер карда наметавонад).
+    if (typeof value !== 'string') return key;
 
     // Иваз кардани параметрҳо дар дохили матн (масалан, %{name})
     if (params) {

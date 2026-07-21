@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import Image from "next/image";
 import { format } from "date-fns";
 import { Archive, Package } from "lucide-react";
 import { useDeletedAccountEntry, normalizeDeletedAccountSnapshot } from "@/lib/hooks/use-admin-users";
@@ -145,10 +146,9 @@ function ReadOnlyList({
         {rows.map((row) => (
           <div key={row.key} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="relative w-10 h-10 rounded-xl bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center">
                 {row.thumb ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={row.thumb} alt={row.title} className="object-cover w-full h-full" />
+                  <Image src={row.thumb} alt={row.title} fill sizes="40px" className="object-cover" />
                 ) : (
                   <Package className="w-4 h-4 text-zinc-300" />
                 )}

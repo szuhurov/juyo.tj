@@ -7,9 +7,6 @@
 "use client";
 
 import { UserProfile } from "@clerk/nextjs"; // Компоненти профили корбар аз Clerk
-import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { ArrowLeft } from "lucide-react"; // Иконкаи бозгашт
-import Link from "next/link"; // Барои гузариш байни саҳифаҳо
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 
 export default function EditProfilePage() {

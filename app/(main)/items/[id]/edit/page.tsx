@@ -5,11 +5,12 @@
  * Оптимизатсияшуда барои суръат ва сифати AI.
  */
 
-import { useEffect, useState, use } from "react"; // Барои кор бо стейт ва эффектҳо
+import { useEffect, useState, useCallback, use } from "react"; // Барои кор бо стейт ва эффектҳо
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
 import { useAuth } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { ItemService, CATEGORIES, Item } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
+import { CATEGORIES, Item } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { Input } from "@/components/ui/input"; // Компоненти воридкунии матн
@@ -25,11 +26,10 @@ import {
 } from "@/components/ui/select"; // Барои рӯйхати интихобшаванда
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Компоненти корт
 import { toast } from "sonner"; // Барои нишон додани хабарҳо
-import { Loader2, Plus, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react"; // Иконкаҳо
+import { Loader2, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react"; // Иконкаҳо
 import Image from "next/image"; // Барои суратҳо
-import Link from "next/link"; // Барои гузаштан ба саҳифаҳо
 import { compressImage } from "@/lib/image-utils";
-import { PrivacyBlurEditor, type PrivacyRegion } from "@/components/privacy-blur-editor";
+import type { PrivacyRegion } from "@/components/privacy-blur-editor";
 
 import {
   Tooltip,
@@ -37,6 +37,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳо
+
+const PrivacyBlurEditor = dynamic(() =>
+  import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
+);
 
 export default function EditItemPage({
   params,
@@ -79,8 +83,8 @@ export default function EditItemPage({
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
-    let interval: any;
-    let timer: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    let timer: ReturnType<typeof setInterval> | undefined;
 
     if (moderationStatus === "checking") {
       const technicalSteps = [
@@ -122,15 +126,10 @@ export default function EditItemPage({
     };
   }, [moderationStatus, previews.length, t]);
 
-  // Вақте ки саҳифа кушода мешавад, маълумоти эълонро аз база мехонем
-  useEffect(() => {
-    if (userId) loadItem();
-  }, [id, userId]);
-
   /**
    * Функсия барои гирифтани маълумоти эълон аз база
    */
-  const loadItem = async () => {
+  const loadItem = useCallback(async () => {
     try {
       setLoading(true);
       const token = await getToken({ template: "supabase" });
@@ -156,7 +155,7 @@ export default function EditItemPage({
       setCategory(data.category);
       if (data.images) {
         setPreviews(
-          data.images.map((img: any) => ({
+          data.images.map((img: { image_url: string }) => ({
             url: img.image_url,
             isExisting: true,
           })),
@@ -169,7 +168,12 @@ export default function EditItemPage({
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, userId, getToken, router, t]);
+
+  // Вақте ки саҳифа кушода мешавад, маълумоти эълонро аз база мехонем
+  useEffect(() => {
+    if (userId) loadItem();
+  }, [userId, loadItem]);
 
   /**
    * Функсия барои коркарди суратҳои нави интихобшуда
@@ -251,10 +255,10 @@ export default function EditItemPage({
         redactedTitle: (data?.redacted_title as string) || currentTitle,
         redactedDescription: (data?.redacted_description as string) || currentDesc,
       };
-    } catch (error: any) {
+    } catch (error) {
       console.error("AI Moderation Error:", error);
       setModerationStatus("failed");
-      setModerationError(error.message);
+      setModerationError(error instanceof Error ? error.message : String(error));
       return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[], redactedTitle: currentTitle, redactedDescription: currentDesc };
     }
   };
@@ -293,10 +297,10 @@ export default function EditItemPage({
       setScanMessage(t("ai_steps.text_passed") || "Матн қабул шуд!");
       await new Promise((resolve) => setTimeout(resolve, 1500));
       return true;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Text Moderation Error:", error);
       setModerationStatus("failed");
-      setModerationError(error.message);
+      setModerationError(error instanceof Error ? error.message : String(error));
       return false;
     }
   };
@@ -421,7 +425,7 @@ export default function EditItemPage({
       supabase = createClerkSupabaseClient(token);
 
       // 2. Нав кардани маълумоти эълон дар база (Update query)
-      const updateData: any = {
+      const updateData: Omit<Partial<Item>, "reward"> & { reward: string | null } = {
         title: finalTitle,
         description: finalDescription,
         category: finalCategory,
@@ -451,7 +455,7 @@ export default function EditItemPage({
                 const url = new URL(urlStr);
                 const pathParts = url.pathname.split("/public/items/");
                 return pathParts.length > 1 ? pathParts[1] : null;
-              } catch (e) {
+              } catch {
                 const parts = urlStr.split("/public/items/");
                 return parts.length > 1 ? parts[1].split("?")[0] : null;
               }
@@ -497,9 +501,9 @@ export default function EditItemPage({
       toast.success(t("updateSuccess"));
       router.push(`/items/${id}`);
       router.refresh();
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      toast.error(error.message || t("error"));
+      toast.error(error instanceof Error ? error.message : t("error"));
       // Агар хатогии техникӣ шавад, ба ҳолати аслӣ бармегардем
       setModerationStatus("idle");
     } finally {

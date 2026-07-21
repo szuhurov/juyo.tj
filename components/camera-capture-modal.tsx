@@ -24,6 +24,8 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
   };
 
   useEffect(() => {
+    // Бозсозии state ҳангоми пӯшидани модал (isOpen → false) — синхронизатсия
+    // бо prop-и берунӣ, на "state, ки аз рендер ҳисоб мешавад".
     if (!isOpen) {
       stopStream();
       setIsReady(false);
@@ -58,6 +60,10 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
       cancelled = true;
       stopStream();
     };
+    // `t` аз useLanguage дар ҳар render objект/функсияи нав аст (мемоизатсия
+    // нашудааст) — иловаи он ба deps камераро дар ҳар render аз нав оғоз
+    // мекард. Танҳо бояд ҳангоми кушода/пӯшида шудани модал иҷро шавад.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const handleCapture = () => {

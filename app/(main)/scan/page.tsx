@@ -79,7 +79,7 @@ export default function ScanPage() {
         if (html5QrCodeRef.current.isScanning) {
           await html5QrCodeRef.current.stop();
         }
-      } catch (_) {}
+      } catch {}
       html5QrCodeRef.current = null;
     }
     const el = document.getElementById('reader');
@@ -142,16 +142,17 @@ export default function ScanPage() {
     }
     try {
       await runScanner();
-    } catch (err: any) {
+    } catch (err) {
+      const { name, message } = err as { name?: string; message?: string };
       setIsInitializing(false);
       setIsScanning(false);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
         setIsBlocked(true);
         setError("denied");
-      } else if (err.name === 'NotFoundError' || err.message === 'notfound') {
+      } else if (name === 'NotFoundError' || message === 'notfound') {
         setError("notfound");
       } else {
-        setError(err.message || "error");
+        setError(message || "error");
       }
     }
   };
@@ -164,27 +165,31 @@ export default function ScanPage() {
 
     try {
       await runScanner();
-    } catch (err: any) {
+    } catch (err) {
+      const { name, message } = err as { name?: string; message?: string };
       setIsInitializing(false);
       setIsScanning(false);
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
         setIsBlocked(true);
         setError("denied");
-      } else if (err.name === 'NotFoundError' || err.message === 'notfound') {
+      } else if (name === 'NotFoundError' || message === 'notfound') {
         setError("notfound");
       } else {
-        setError(err.message || "error");
+        setError(message || "error");
       }
     }
   };
 
   useEffect(() => {
+    // Огози скан як маротиба ҳангоми mount — дархости иҷозати камера.
     startScanner();
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
         html5QrCodeRef.current.stop().catch(console.error);
       }
     };
+    // startScanner на мемоизатсия шудааст — маҳз якборагӣ дар mount лозим аст.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const SCAN_SIZE = 260;
@@ -278,9 +283,9 @@ export default function ScanPage() {
                 setShowUnknownQr(false);
                 setIsInitializing(true);
                 setIsScanning(false);
-                try { await runScanner(); } catch (err: any) {
+                try { await runScanner(); } catch (err) {
                   setIsInitializing(false);
-                  setError(err.message || "error");
+                  setError(err instanceof Error ? err.message : "error");
                 }
               }}
               className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const { userId } = await auth();
   if (!isAdminUser(userId)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -18,8 +19,8 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ entries: data ?? [] });
-  } catch (err: any) {
-    console.error("GET /api/admin/users/deleted-archive:", err.message);
+  } catch (err) {
+    console.error("GET /api/admin/users/deleted-archive:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

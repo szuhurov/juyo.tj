@@ -1,5 +1,12 @@
-import { translations } from "./translations";
+import { translations, type TranslationValue } from "./translations";
 import { ruRU, enUS } from "@clerk/localizations";
+
+// Луғати `clerk`-и ҳар забон дар воқеъ як объекти ҳамвор (флеш) аз сатрҳост
+// (бо як зерқисми `errors`) — ин намуд онро аз навъи умумии рекурсивии
+// TranslationValue ба шакли воқеиаш дуруст мекунад, то дастрасии `t.xyz`
+// амну бе `any` кор кунад.
+type ClerkDict = Record<string, string> & { errors: Record<string, string> };
+const asClerkDict = (value: TranslationValue): ClerkDict => value as unknown as ClerkDict;
 
 /**
  * Функсия барои сохтани объекти тарҷумаи Clerk аз луғати асосии барнома.
@@ -7,7 +14,7 @@ import { ruRU, enUS } from "@clerk/localizations";
 export const getClerkLocalization = (locale: string) => {
   // Агар забон русӣ бошад, аз тарҷумаи расмии Clerk истифода мебарем
   if (locale === 'ru') {
-    const t = translations['ru'].clerk;
+    const t = asClerkDict(translations['ru'].clerk);
     return {
       ...ruRU,
       signIn: {
@@ -79,8 +86,8 @@ export const getClerkLocalization = (locale: string) => {
       },
       userButton: {
         ...ruRU.userButton,
-        action__signOut: translations['ru'].signOut,
-        action__manageAccount: translations['ru'].manageAccount,
+        action__signOut: translations['ru'].signOut as string,
+        action__manageAccount: translations['ru'].manageAccount as string,
       },
       formFieldAction__forgotPassword: t.forgotPasswordLabel,
       formFieldLabel__newPassword: t.newPasswordLabel,
@@ -124,7 +131,7 @@ export const getClerkLocalization = (locale: string) => {
   
   // Агар забон англисӣ бошад, аз тарҷумаи расмии Clerk истифода мебарем
   if (locale === 'en') {
-    const t = translations['en'].clerk;
+    const t = asClerkDict(translations['en'].clerk);
     return {
       ...enUS,
       signIn: {
@@ -232,7 +239,7 @@ export const getClerkLocalization = (locale: string) => {
   }
 
   // Барои забони тоҷикӣ тарҷумаи худамонро истифода мебарем
-  const t = translations[locale]?.clerk || translations['tg'].clerk;
+  const t = asClerkDict(translations[locale]?.clerk ?? translations['tg'].clerk);
 
   return {
     ...enUS,
@@ -259,6 +266,10 @@ export const getClerkLocalization = (locale: string) => {
         resendButton: t.resendCode,
       },
       password: {
+        // `password` набудани навъи расмии Clerk-и enUS.signUp аст (версияи
+        // фаъли @clerk/localizations онро эълон намекунад, вале runtime-и
+        // воқеӣ дороаш) — cast-и мушаххас ба ҷои `any`.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...(enUS.signUp as any)?.password,
         title: t.signUpPasswordLabel,
         subtitle: t.passwordHint,

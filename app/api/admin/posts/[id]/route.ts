@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { ItemService } from "@/lib/services/item-service";
+import { getErrorMessage } from "@/lib/error-utils";
 
 const ALLOWED_FIELDS = [
   "title",
@@ -35,8 +36,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!item) return NextResponse.json({ error: "Эълон ёфт нашуд" }, { status: 404 });
 
     return NextResponse.json({ item });
-  } catch (err: any) {
-    console.error("GET /api/admin/posts/[id]:", err.message);
+  } catch (err) {
+    console.error("GET /api/admin/posts/[id]:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -67,8 +68,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (error) throw error;
 
     return NextResponse.json({ item: data });
-  } catch (err: any) {
-    console.error("PATCH /api/admin/posts/[id]:", err.message);
+  } catch (err) {
+    console.error("PATCH /api/admin/posts/[id]:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -85,8 +86,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     await ItemService.deleteItem(supabaseAdmin, id);
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("DELETE /api/admin/posts/[id]:", err.message);
+  } catch (err) {
+    console.error("DELETE /api/admin/posts/[id]:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

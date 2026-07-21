@@ -2,12 +2,14 @@
  * Созгузории забонҳо барои китобхонаи date-fns.
  * Барои дуруст нишон додани сана ва вақт бо забонҳои гуногун.
  */
-import { ru, enUS } from "date-fns/locale"; // Барои забонҳои русиву англисӣ
+import { ru, enUS, type Locale } from "date-fns/locale"; // Барои забонҳои русиву англисӣ
 
-// Омода кардани локали оддии тоҷикӣ барои date-fns
-const tgLocale: any = {
+// Омода кардани локали оддии тоҷикӣ барои date-fns. Танҳо `formatDistance`
+// амалан истифода мешавад (аз ин рӯ на ҳамаи хосиятҳои Locale пур карда
+// шудаанд) — Partial<Locale> инро дуруст ифода мекунад, на `any`.
+const tgLocale: Partial<Locale> = {
   code: 'tg',
-  formatDistance: (token: string, count: number, options: any) => {
+  formatDistance: (token, count) => {
     const format: Record<string, string> = {
       lessThanXSeconds: 'ҳозир',
       xSeconds: 'ҳозир',

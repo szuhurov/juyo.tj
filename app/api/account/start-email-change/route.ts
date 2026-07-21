@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getErrorMessage } from "@/lib/error-utils";
 
 /**
  * Сохтани почтаи нав (то ҳанӯз тасдиқнашуда) барои раванди ивази email.
@@ -43,11 +44,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ ok: true, emailAddressId: created.id });
-  } catch (err: any) {
-    console.error("POST /api/account/start-email-change:", err?.errors ?? err.message);
-    return NextResponse.json(
-      { error: err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Internal error" },
-      { status: 500 },
-    );
+  } catch (err) {
+    const message = getErrorMessage(err);
+    console.error("POST /api/account/start-email-change:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

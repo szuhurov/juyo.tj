@@ -1,0 +1,465 @@
+/**
+ * Қисми клиентии саҳифаи асосӣ (филтрҳо, infinite scroll, ҷустуҷӯ).
+ * initialItems аз сервер (ниг. page.tsx) меояд — то HTML-и аввалия
+ * итемҳоро аллакай дошта бошад (SEO), бе интизори fetch-и клиентӣ.
+ */
+"use client";
+
+import { useState, useRef, Suspense, useEffect, useMemo } from "react";
+import { CATEGORIES, type Item } from "@/lib/services/item-service";
+import { ItemCard } from "@/components/item-card";
+import { useLanguage } from "@/lib/language-context";
+import { cn } from "@/lib/utils";
+import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSearchParams } from "next/navigation";
+import { useItems, useSavedItems } from "@/lib/hooks/use-items";
+import { useQueryClient } from "@tanstack/react-query";
+import { useHomeState } from "@/lib/home-context";
+import { useInView } from "react-intersection-observer";
+import {
+  X,
+  Cpu,
+  IdCard,
+  KeyRound,
+  Shirt,
+  PawPrint,
+  Package,
+  CalendarDays,
+  Car,
+  Wallet,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@clerk/nextjs";
+
+// Icon per category, used in the home-feed filter pills. Monochrome — inherits the button's text color.
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  Electronics: Cpu,
+  Documents: IdCard,
+  Keys: KeyRound,
+  Clothing: Shirt,
+  Pets: PawPrint,
+  Other: Package,
+  LicensePlate: Car,
+  Wallet: Wallet,
+};
+
+function HomeContent({ initialItems }: { initialItems?: Item[] }) {
+  const { t } = useLanguage();
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
+  const queryClient = useQueryClient();
+  const { ref, inView } = useInView();
+  const { userId, getToken } = useAuth();
+
+  const {
+    visualSearchResults,
+    isSearchTyping,
+    goHomeSignal,
+    setVisualSearchResults,
+  } = useHomeState();
+
+  const [category, setCategory] = useState("All");
+  const [itemType, setItemType] = useState<"lost" | "found" | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<string | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [draftFrom, setDraftFrom] = useState("");
+  const [draftTo, setDraftTo] = useState("");
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Синхронизатсия бо Clerk (система берун аз React) — токен аз auth меояд.
+    if (!userId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setToken(null);
+      return;
+    }
+    getToken({ template: "supabase" }).then((t) => setToken(t));
+  }, [userId, getToken]);
+
+  // Як query барои ҳамаи saved IDs — бе N+1
+  const { data: savedItemsList = [] } = useSavedItems(
+    userId ?? undefined,
+    token,
+  );
+  const savedItemIds = useMemo(
+    () => new Set(savedItemsList.map((i) => i.id)),
+    [savedItemsList],
+  );
+
+  const filters = useMemo(
+    () => ({
+      category: category === "All" ? undefined : category,
+      type: itemType || undefined,
+      search: searchQuery,
+      dateFrom,
+      dateTo,
+    }),
+    [category, itemType, searchQuery, dateFrom, dateTo],
+  );
+
+  // initialItems танҳо барои filters-и пешфарз (яъне ҳамон чизе, ки дар
+  // сервер гирифта шуда буд) амал мекунад — фарқи filters аз пешфарз
+  // маънои онро дорад, ки корбар аллакай филтреро иваз кардааст.
+  const isDefaultFilters =
+    !filters.category && !filters.type && !filters.search && !filters.dateFrom && !filters.dateTo;
+
+  const {
+    data,
+    isLoading,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useItems(filters, isDefaultFilters ? initialItems : undefined);
+
+  // Боркунии саҳифаи навбатӣ ҳангоми расидан ба охири рӯйхат
+  useEffect(() => {
+    if (inView && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    const handleItemsUpdate = () =>
+      queryClient.invalidateQueries({ queryKey: ["items", "list"] });
+    const handleSavedUpdate = () =>
+      queryClient.invalidateQueries({ queryKey: ["items", "saved"] });
+    window.addEventListener("items-updated", handleItemsUpdate);
+    window.addEventListener("saved-items-updated", handleSavedUpdate);
+    return () => {
+      window.removeEventListener("items-updated", handleItemsUpdate);
+      window.removeEventListener("saved-items-updated", handleSavedUpdate);
+    };
+  }, [queryClient]);
+
+  // Reset filters when visual search results arrive
+  useEffect(() => {
+    // Синхронизатсия бо натиҷаи ҷустуҷӯи визуалӣ (сигнали берунӣ аз context).
+    if (visualSearchResults) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCategory("All");
+      setItemType(null);
+      setDateFrom(undefined);
+      setDateTo(undefined);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [visualSearchResults]);
+
+  // Reset everything when user clicks the home logo
+  useEffect(() => {
+    // Синхронизатсия бо сигнали берунӣ (goHomeSignal аз context).
+    if (goHomeSignal === 0) return;
+    setVisualSearchResults(null);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCategory("All");
+    setItemType(null);
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [goHomeSignal, setVisualSearchResults]);
+
+  // Пӯшидани попапи филтри сана ҳангоми клик берун аз он
+  useEffect(() => {
+    if (!showDatePicker) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDatePicker]);
+
+  const openDatePicker = () => {
+    setDraftFrom(dateFrom ?? "");
+    setDraftTo(dateTo ?? "");
+    setShowDatePicker((v) => !v);
+  };
+
+  const applyDateFilter = () => {
+    setDateFrom(draftFrom || undefined);
+    setDateTo(draftTo || undefined);
+    setShowDatePicker(false);
+  };
+
+  const clearDateFilter = () => {
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setDraftFrom("");
+    setDraftTo("");
+    setShowDatePicker(false);
+  };
+
+  // Ҷамъоварии ҳамаи ашёҳо аз ҳамаи саҳифаҳо
+  const allItems = useMemo(() => {
+    return data?.pages.flatMap((page) => page) || [];
+  }, [data]);
+
+  // Усули"Pro": Намоиши ашёҳо бидуни филтри зиёдатии фронтенд (чун backend аллакай филтр мекунад)
+  const displayedItems = useMemo(() => {
+    if (visualSearchResults) return visualSearchResults;
+    return allItems;
+  }, [allItems, visualSearchResults]);
+
+  return (
+    <div className="pb-18 bg-white dark:bg-white">
+      {/* Қисмати Филтрҳо (Header/Filters) */}
+      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-100 dark:border-zinc-900">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-0.5 pb-1 sm:py-0">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-0.5 md:gap-1 md:h-14">
+            {/* Кнопкаҳои категорияҳо */}
+            <div
+              className={cn(
+                "flex items-center overflow-x-auto no-scrollbar -mx-1 px-1",
+                visualSearchResults && "w-full justify-end",
+              )}
+            >
+              {visualSearchResults ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisualSearchResults(null)}
+                  className="rounded-xl h-8 text-[10px] font-black tracking-widest border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400"
+                >
+                  <X className="h-3.5 w-3.5 mr-2" />
+                  {t("clearResults")}
+                </Button>
+              ) : (
+                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+                  <button
+                    onClick={() => setCategory("All")}
+                    className={cn(
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer whitespace-nowrap",
+                      category === "All"
+                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                    )}
+                  >
+                    {t("all")}
+                  </button>
+                  {CATEGORIES.map((cat) => {
+                    const active = category === cat.name;
+                    const Icon = CATEGORY_ICONS[cat.name] ?? Package;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setCategory(cat.name)}
+                        className={cn(
+                          "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+                          active
+                            ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                        )}
+                      >
+                        <Icon className="w-3.5 h-3.5 text-emerald-500" />
+                        {t(`categories.${cat.id}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Интихоби навъ: Гумшуда ё Ёфтшуда */}
+            {!visualSearchResults && (
+              <div className="flex items-center gap-1.5 self-end md:self-auto mb-0.5 md:mb-0">
+                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+                  <button
+                    onClick={() => setItemType(null)}
+                    className={cn(
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
+                      itemType === null
+                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                    )}
+                  >
+                    {t("all")}
+                  </button>
+                  <button
+                    onClick={() => setItemType("lost")}
+                    className={cn(
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
+                      itemType === "lost"
+                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                        : "text-red-700 hover:text-red-800",
+                    )}
+                  >
+                    {t("filterLost")}
+                  </button>
+                  <button
+                    onClick={() => setItemType("found")}
+                    className={cn(
+                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
+                      itemType === "found"
+                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
+                        : "text-emerald-700 hover:text-emerald-800",
+                    )}
+                  >
+                    {t("filterFound")}
+                  </button>
+                </div>
+
+                {/* Филтри бозаи сана (Аз/То) */}
+                <div className="relative" ref={datePickerRef}>
+                  <button
+                    type="button"
+                    onClick={openDatePicker}
+                    aria-label={t("filterByDate")}
+                    className={cn(
+                      "h-7 w-7 md:h-9 md:w-9 flex items-center justify-center rounded-lg border transition-all cursor-pointer shadow-sm",
+                      dateFrom || dateTo
+                        ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
+                        : "bg-zinc-100/60 dark:bg-zinc-900/60 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                    )}
+                  >
+                    <CalendarDays className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                  </button>
+
+                  {showDatePicker && (
+                    <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg p-3 space-y-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                          {t("dateFrom")}
+                        </label>
+                        <input
+                          type="date"
+                          value={draftFrom}
+                          max={draftTo || undefined}
+                          onChange={(e) => setDraftFrom(e.target.value)}
+                          className="w-full h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
+                          {t("dateTo")}
+                        </label>
+                        <input
+                          type="date"
+                          value={draftTo}
+                          min={draftFrom || undefined}
+                          onChange={(e) => setDraftTo(e.target.value)}
+                          className="w-full h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10"
+                        />
+                      </div>
+                      <div className="flex items-center justify-between pt-1">
+                        <button
+                          type="button"
+                          onClick={clearDateFilter}
+                          className="text-[11px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                        >
+                          {t("clearFilter")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={applyDateFilter}
+                          className="px-3 h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-[11px] font-bold cursor-pointer"
+                        >
+                          {t("applyFilter")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
+      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px] touch-pan-y">
+        {isLoading &&
+        allItems.length === 0 &&
+        !searchQuery &&
+        category === "All" &&
+        itemType === null &&
+        !isSearchTyping ? (
+          <div className={ITEM_GRID_CLASS}>
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="aspect-square w-full rounded-xl" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+            ))}
+          </div>
+        ) : displayedItems.length > 0 ? (
+          <>
+            {/* Версияи Desktop ва Mobile: Рӯйхати умумӣ */}
+            <div className={ITEM_GRID_CLASS}>
+              {displayedItems.map((item, index) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  savedItemIds={savedItemIds}
+                />
+              ))}
+            </div>
+
+            {/* Элемент барои Infinite Scroll */}
+            <div
+              ref={ref}
+              className="h-10 mt-4 flex items-center justify-center"
+            >
+              {isFetchingNextPage && (
+                <div className="flex gap-1.5 items-center">
+                  <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s]"></span>
+                  <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
+                  <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+            <h2 className="text-xl font-black tracking-tight flex items-center justify-center gap-1">
+              {isLoading || isFetching || isSearchTyping ? (
+                <>
+                  {t("search")}
+                  <span className="flex gap-1 items-center ml-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s]"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
+                  </span>
+                </>
+              ) : (
+                t("noItemsFound")
+              )}
+            </h2>
+            {!(isLoading || isFetching || isSearchTyping) && (
+              <p className="text-zinc-500 text-sm mt-2">
+                {t("noItemsSubtitle")}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HomeSkeleton() {
+  return (
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px]">
+      <div className={ITEM_GRID_CLASS}>
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="space-y-3">
+            <Skeleton className="aspect-square w-full rounded-xl" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function HomeClient({ initialItems }: { initialItems?: Item[] }) {
+  return (
+    <Suspense fallback={<HomeSkeleton />}>
+      <HomeContent initialItems={initialItems} />
+    </Suspense>
+  );
+}

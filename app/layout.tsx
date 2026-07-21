@@ -6,7 +6,7 @@
 import type { Viewport } from "next"; // Барои танзими маълумоти SEO ва экран
 import { Inter } from "next/font/google"; // Барои истифодаи шрифти Inter
 import "./globals.css"; // Пайваст кардани услубҳои асосии CSS
-import { LanguageProvider } from "@/lib/language-context"; // Барои идоракунии забони тамоми сайт
+import { LanguageProvider, type Locale } from "@/lib/language-context"; // Барои идоракунии забони тамоми сайт
 import { Toaster } from "@/components/ui/sonner"; // Барои нишон додани огоҳиномаҳо дар экран
 import { NetworkStatus } from "@/components/network-status"; // Барои санҷиши пайвастшавӣ ба интернет
 import { Analytics } from "@vercel/analytics/react"; // Барои ҷамъоварии омори истифодабарандагон
@@ -103,7 +103,6 @@ export async function generateMetadata() {
       icon: [
         { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
         { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
-        { url: "/favicon.ico", sizes: "any" },
       ],
       shortcut: "/icon-192.png",
       apple: [
@@ -119,8 +118,11 @@ export async function generateMetadata() {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // `maximumScale`/`userScalable: false` пештар зум-ро пурра манъ мекард —
+  // WCAG 1.4.4-ро вайрон мекунад (корбарони бинои заиф наметавонанд калон
+  // кунанд). Ҳадди 5x кофист барои пешгирии зуми тасодуфӣ, вале ҳамзамон
+  // ба талаботи дастрасӣ ҷавобгӯ мебошад.
+  maximumScale: 5,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
@@ -186,17 +188,22 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
-        <LanguageProvider initialLocale={locale as any}>
+        <LanguageProvider initialLocale={locale as Locale}>
           <ClerkLocalizationProvider>
-            {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад */}
-            <h1 className="sr-only">
-              роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар
-              Тоҷикистон. Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки
-              ашёи худро гум кардаанд, метавонанд эълон гузошта бо ҳамдигар
-              иртибот пайдо кунанд. Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба
-              ашёҳои арзишманд часпонда шавад, то дар ҳолати гум шудан,
-              ёбандагон зуд тамос гирифта, онро баргардонанд.
-            </h1>
+            {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад.
+                Дар div-и бо role="region" печонда шудааст (на худи h1), то ки
+                a) axe/screen reader онро ҳамчун landmark-и дуруст шиносад,
+                б) семантикаи "heading"-и худи h1 бетаъсир монад. */}
+            <div role="region" aria-label="JUYO">
+              <h1 className="sr-only">
+                роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар
+                Тоҷикистон. Дар ин барнома одамоне, ки ашё ёфтаанд ва одамоне, ки
+                ашёи худро гум кардаанд, метавонанд эълон гузошта бо ҳамдигар
+                иртибот пайдо кунанд. Ҳамчунин имкон ҳаст, ки QR-коди шахсӣ ба
+                ашёҳои арзишманд часпонда шавад, то дар ҳолати гум шудан,
+                ёбандагон зуд тамос гирифта, онро баргардонанд.
+              </h1>
+            </div>
             <QueryProvider>
               {children}
               <NetworkStatus />

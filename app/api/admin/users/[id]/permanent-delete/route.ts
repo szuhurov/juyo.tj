@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage, getErrorStatus } from "@/lib/error-utils";
 
 function extractStoragePath(imageUrl: string | null | undefined): string | null {
   if (!imageUrl) return null;
@@ -51,8 +52,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const client = await clerkClient();
     try {
       await client.users.deleteUser(id);
-    } catch (clerkErr: any) {
-      if (clerkErr?.status !== 404) throw clerkErr;
+    } catch (clerkErr) {
+      if (getErrorStatus(clerkErr) !== 404) throw clerkErr;
     }
 
     const [{ data: items }, { data: savedItems }] = await Promise.all([
@@ -81,7 +82,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // то саҳифаи Эълонҳо → "Нестшудаҳо" онҳоро низ бинад (на танҳо эълонҳое,
     // ки мустақим нест шудаанд) — ниг. app/api/admin/posts/[id]/permanent-delete.
     if ((items ?? []).length > 0) {
-      const ownerName = `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim() || null;
       await supabaseAdmin.from("deleted_items_archive").insert(
         (items ?? []).map((item) => ({
           item_id: item.id,
@@ -92,7 +92,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const storagePaths: string[] = [];
     for (const item of items ?? []) {
-      for (const img of (item as any).images ?? []) {
+      const itemImages = (item as { images?: { image_url: string }[] }).images ?? [];
+      for (const img of itemImages) {
         const path = extractStoragePath(img.image_url);
         if (path) storagePaths.push(path);
       }
@@ -109,8 +110,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (deleteError) throw deleteError;
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("POST /api/admin/users/[id]/permanent-delete:", err.message);
+  } catch (err) {
+    console.error("POST /api/admin/users/[id]/permanent-delete:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

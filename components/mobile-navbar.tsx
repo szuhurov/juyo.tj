@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
@@ -51,6 +50,10 @@ export function MobileNavbar() {
       }
     } catch (err) {
       console.error("Navigation error:", err);
+      // Fallback: агар router.push бо ягон сабаб партояд, гузариши пурраи
+      // саҳифа (full page navigation) — ин ягона роҳи боэътимоди идомаи
+      // корбар аст, on-render mutation нест (танҳо дар event handler).
+      // eslint-disable-next-line react-hooks/immutability
       window.location.href = href;
     }
   };
@@ -73,7 +76,6 @@ export function MobileNavbar() {
           {navItems.map((item) => {
             const currentPath = optimisticPath || pathname;
             let isActive = currentPath === item.href;
-            const isNavigatingTo = optimisticPath === item.href && optimisticPath !== pathname;
 
             if (item.id === "qr") {
               isActive = optimisticPath
@@ -92,6 +94,7 @@ export function MobileNavbar() {
                   onClick={(e) => handleNavClick(item.href, e)}
                   onMouseEnter={() => handlePrefetch(item.href)}
                   onTouchStart={() => handlePrefetch(item.href)}
+                  aria-label={item.label}
                   className="flex items-center justify-center"
                 >
                   <div className={cn(
@@ -111,6 +114,7 @@ export function MobileNavbar() {
                   onClick={(e) => handleNavClick(item.href, e)}
                   onMouseEnter={() => handlePrefetch(item.href)}
                   onTouchStart={() => handlePrefetch(item.href)}
+                  aria-label={item.label}
                   className="flex items-center justify-center active:scale-90 transition-transform duration-150"
                 >
                   <div className={cn(
@@ -137,6 +141,7 @@ export function MobileNavbar() {
                 onClick={(e) => handleNavClick(item.href, e)}
                 onMouseEnter={() => handlePrefetch(item.href)}
                 onTouchStart={() => handlePrefetch(item.href)}
+                aria-label={item.label}
                 className="flex items-center justify-center active:scale-90 transition-transform duration-150"
               >
                 <div className={cn(

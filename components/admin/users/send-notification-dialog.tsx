@@ -49,7 +49,7 @@ export function SendNotificationDialog({
           setBody("");
           onOpenChange(false);
         },
-        onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+        onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
       },
     );
   };

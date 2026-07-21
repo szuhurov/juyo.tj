@@ -78,7 +78,17 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     // ҳамон категорияҳое, ки худи корбар низ эълон дорад.
     const { data: catData } = await supabase.rpc("get_my_category_notifications", { p_limit: categoryLimit });
 
-    const rows: NotificationItem[] = (catData ?? []).map((row: any) => ({
+    interface CategoryNotificationRow {
+      item_id: string;
+      item_title: string | null;
+      item_image_url: string | null;
+      created_at: string;
+      poster_first_name: string | null;
+      poster_last_name: string | null;
+      poster_avatar_url: string | null;
+    }
+
+    const rows: NotificationItem[] = (catData ?? []).map((row: CategoryNotificationRow) => ({
       id: `category:${row.item_id}`,
       kind: "category_post" as const,
       itemId: row.item_id,
@@ -110,6 +120,10 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
   }, [userId, getToken, t, categoryLimit, seenIds]);
 
   useEffect(() => {
+    // Боркунии аввалия ҳангоми mount/иваз шудани userId — дар дохили
+    // fetchAll шохаи "корбар нест" пеш аз await state-ро синхронӣ иваз
+    // мекунад, ки барои эффекти боркунии маълумот коррект аст.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll();
     if (!userId) return;
     const interval = setInterval(fetchAll, POLL_MS);

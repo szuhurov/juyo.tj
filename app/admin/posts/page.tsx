@@ -26,6 +26,8 @@ export default function AdminPostsPage() {
   const { data: stats } = useAdminStats();
 
   useEffect(() => {
+    // Бознишонии саҳифа ба 0 ҳангоми иваз шудани ҷустуҷӯ (сигнали берунӣ).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters((f) => ({ ...f, page: 0 }));
   }, [search]);
 

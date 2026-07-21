@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // Test the pure logic of ITEM_KEYS and pagination without React
 describe('ITEM_KEYS', () => {

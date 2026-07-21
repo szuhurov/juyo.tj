@@ -20,7 +20,9 @@ export function useWebPush() {
   const [status, setStatus] = useState<WebPushStatus>("default");
 
   useEffect(() => {
+    // Хониши иҷозати браузер (система берун аз React) ва синхронизатсияи он.
     if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("unsupported");
       return;
     }

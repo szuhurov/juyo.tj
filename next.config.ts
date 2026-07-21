@@ -54,6 +54,24 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  experimental: {
+    // Танҳо icon-ҳои воқеан истифодашударо bundle мекунад (на тамоми
+    // китобхонаро) — lucide-react ва radix дар тамоми барнома васеъ
+    // истифода мешаванд.
+    optimizePackageImports: ["lucide-react", "date-fns"],
+    // Пешфарзи Next.js барои саҳифаҳои dynamic (ҳамаи саҳифаҳои мо, чун
+    // cookies()/auth() истифода мешавад) = 0 сония — яъне ҲАР гузариш
+    // (ҳатто ба саҳифае, ки чанд сония пеш дидаед) маҷбуран ба сервер
+    // меравад ва loading.tsx-ро нишон медиҳад, ҳатто агар React Query
+    // маълумоти клиентиро аллакай кэш карда бошад (масалан home → qr →
+    // home). 30 сония ин "flash"-и louding-ро дар гузариши зуд-зуд нест
+    // мекунад, вале маълумот боз ҳам зуд-зуд тоза мешавад (аз 30 сония зиёд
+    // набударо на, React Query худаш дар паси парда навсозӣ мекунад).
+    staleTimes: {
+      dynamic: 30,
+    },
+  },
+
   images: {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],

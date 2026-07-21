@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/language-context";
@@ -42,7 +43,7 @@ export default function NotificationsPage() {
     try {
       await dismissNotification(deleteTarget);
       setDeleteTarget(null);
-    } catch (e) {
+    } catch {
       toast.error(t("error"));
     } finally {
       setDeleting(false);
@@ -128,11 +129,15 @@ export default function NotificationsPage() {
                 {expanded && (
                   <div className="px-4 pb-4 border-t border-zinc-100 dark:border-zinc-800 pt-3.5">
                     {item.itemImageUrl && (
-                      <img
-                        src={item.itemImageUrl}
-                        alt=""
-                        className="w-full h-40 object-cover rounded-xl mb-3"
-                      />
+                      <div className="relative w-full h-40 rounded-xl overflow-hidden mb-3">
+                        <Image
+                          src={item.itemImageUrl}
+                          alt=""
+                          fill
+                          sizes="(max-width: 640px) 100vw, 480px"
+                          className="object-cover"
+                        />
+                      </div>
                     )}
                     <div className="flex items-center gap-2">
                       <Link

@@ -5,7 +5,7 @@ const mockCanvas = {
   getContext: vi.fn().mockReturnValue({
     drawImage: vi.fn(),
   }),
-  toBlob: vi.fn((cb: (b: Blob | null) => void, type: string, quality: number) => {
+  toBlob: vi.fn((cb: (b: Blob | null) => void, type: string) => {
     cb(new Blob(['mock'], { type }));
   }),
   width: 0,
@@ -37,8 +37,8 @@ describe('image-utils (compressImage)', () => {
   });
 
   it('module exports compressImage function', async () => {
-    const module = await import('@/lib/image-utils');
-    expect(typeof module.compressImage).toBe('function');
+    const mod = await import('@/lib/image-utils');
+    expect(typeof mod.compressImage).toBe('function');
   });
 
   it('compressImage accepts a File and returns a File', async () => {

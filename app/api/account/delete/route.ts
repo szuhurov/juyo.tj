@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage, getErrorStatus } from "@/lib/error-utils";
 
 function extractStoragePath(imageUrl: string | null | undefined): string | null {
   if (!imageUrl) return null;
@@ -25,7 +26,7 @@ const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, 
  * snapshot+cascade-delete-и "Пурра нест кардан"-и admin такрор мешавад,
  * то дар архиви admin низ дида шавад.
  */
-export async function POST(req: NextRequest) {
+export async function POST() {
   const { userId } = await auth();
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -41,8 +42,8 @@ export async function POST(req: NextRequest) {
     const client = await clerkClient();
     try {
       await client.users.deleteUser(userId);
-    } catch (clerkErr: any) {
-      if (clerkErr?.status !== 404) throw clerkErr;
+    } catch (clerkErr) {
+      if (getErrorStatus(clerkErr) !== 404) throw clerkErr;
     }
 
     const [{ data: items }, { data: savedItems }] = await Promise.all([
@@ -78,7 +79,8 @@ export async function POST(req: NextRequest) {
 
     const storagePaths: string[] = [];
     for (const item of items ?? []) {
-      for (const img of (item as any).images ?? []) {
+      const itemImages = (item as { images?: { image_url: string }[] }).images ?? [];
+      for (const img of itemImages) {
         const path = extractStoragePath(img.image_url);
         if (path) storagePaths.push(path);
       }
@@ -95,8 +97,8 @@ export async function POST(req: NextRequest) {
     if (deleteError) throw deleteError;
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("POST /api/account/delete:", err.message);
+  } catch (err) {
+    console.error("POST /api/account/delete:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

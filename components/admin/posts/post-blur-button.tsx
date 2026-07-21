@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { Loader2, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PrivacyBlurEditor } from "@/components/privacy-blur-editor";
 import { useReplacePostImages } from "@/lib/hooks/use-admin-posts";
+
+const PrivacyBlurEditor = dynamic(() =>
+  import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
+);
 
 /**
  * Тугмаи "Мозаика кардан" — ба admin имкон медиҳад, ки дар дилхоҳ эълон
@@ -47,7 +51,7 @@ export function PostBlurButton({ postId, images }: { postId: string; images: { i
     const replacements = images.map((img, i) => ({ imageId: img.id, oldUrl: img.image_url, file: finalFiles[i] }));
     mutate(replacements, {
       onSuccess: () => toast.success("Аксҳо мозаика ва захира шуданд"),
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { ItemService, CATEGORIES } from '@/lib/services/item-service';
 import type { SupabaseClient } from '@supabase/supabase-js';
 

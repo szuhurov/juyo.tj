@@ -36,7 +36,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
     if (!file) return;
     uploadAvatar(file, {
       onSuccess: () => toast.success("Акс иваз карда шуд"),
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 
@@ -49,7 +49,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
         toast.success("Корбар нест карда шуд");
         setDeleteOpen(false);
       },
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 
@@ -58,7 +58,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
       { status: null },
       {
         onSuccess: () => toast.success("Корбар барқарор карда шуд"),
-        onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+        onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
       },
     );
   };
@@ -69,7 +69,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
         toast.success("Ҳисоб пурра нест карда шуд — аз Clerk низ");
         router.push("/admin/users");
       },
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 

@@ -18,7 +18,7 @@ const REQUIRED_KEYS = [
 describe('translations completeness', () => {
   for (const locale of LOCALES) {
     it(`[${locale}] has all required top-level keys`, () => {
-      const t = translations[locale];
+      const t = translations[locale] as Record<string, any>;
       expect(t, `Locale "${locale}" not found in translations`).toBeDefined();
 
       for (const key of REQUIRED_KEYS) {
@@ -31,7 +31,7 @@ describe('translations completeness', () => {
   }
 
   it('tg locale has ai_steps object with all required sub-keys', () => {
-    const aiSteps = translations.tg.ai_steps;
+    const aiSteps = translations.tg.ai_steps as Record<string, any>;
     expect(aiSteps).toBeDefined();
     const requiredSubKeys = [
       'scanning_pixels', 'detecting_features', 'checking_safety',
@@ -43,7 +43,7 @@ describe('translations completeness', () => {
   });
 
   it('tg locale has imageModeration with submitted, pending, rejected', () => {
-    const mod = translations.tg.imageModeration;
+    const mod = translations.tg.imageModeration as Record<string, any>;
     expect(mod).toBeDefined();
     expect(mod.submitted).toBeDefined();
     expect(mod.pending).toBeDefined();
@@ -51,7 +51,7 @@ describe('translations completeness', () => {
   });
 
   it('ru locale has imageModeration with submitted, pending, rejected', () => {
-    const mod = translations.ru.imageModeration;
+    const mod = translations.ru.imageModeration as Record<string, any>;
     expect(mod).toBeDefined();
     expect(mod.submitted).toBeDefined();
     expect(mod.pending).toBeDefined();
@@ -59,7 +59,7 @@ describe('translations completeness', () => {
   });
 
   it('tg locale has categories for all 6 CATEGORIES', () => {
-    const cats = translations.tg.categories;
+    const cats = translations.tg.categories as Record<string, any>;
     expect(cats).toBeDefined();
     const expectedNames = ['Electronics', 'Documents', 'Keys', 'Clothing', 'Pets', 'Other'];
     for (const name of expectedNames) {
@@ -69,7 +69,7 @@ describe('translations completeness', () => {
 
   it('no translation value is an empty string for required keys', () => {
     for (const locale of LOCALES) {
-      const t = translations[locale];
+      const t = translations[locale] as Record<string, any>;
       if (!t) continue;
       for (const key of REQUIRED_KEYS) {
         if (t[key] !== undefined) {

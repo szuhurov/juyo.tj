@@ -11,7 +11,6 @@ import { cookies } from "next/headers";
 import ItemDetailsClient from "./item-details-client";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { notFound } from "next/navigation";
 
 const getItemCached = cache((id: string) => ItemService.getItemDetails(id));
 
@@ -31,11 +30,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const cookieStore = await cookies();
     const locale = cookieStore.get("juyo-locale")?.value || "tg";
-    const t = (translations as any)[locale] || translations.tg;
+    const t = translations[locale] || translations.tg;
 
     const typeText = item.type === 'lost' ? t.lost : t.found;
     const title = `${item.title} — ${typeText} | juyo.tj`;
-    const description = item.description?.substring(0, 160) || t.seoDesc;
+    const description = item.description?.substring(0, 160) || (t.seoDesc as string);
     const imageUrl = item.images?.[0]?.image_url || "https://juyo.tj/juyo-logo.jpg";
 
     return {
@@ -63,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         images: [imageUrl],
       },
     };
-  } catch (e) {
+  } catch {
     return { title: "JUYO.TJ" };
   }
 }
@@ -107,7 +106,7 @@ export default async function ItemDetailsPage({ params }: Props) {
     if (initialItem) {
       const cookieStore = await cookies();
       const locale = cookieStore.get("juyo-locale")?.value || "tg";
-      const t = (translations as any)[locale] || translations.tg;
+      const t = translations[locale] || translations.tg;
       jsonLd = {
         "@context": "https://schema.org",
         "@type": "WebPage",

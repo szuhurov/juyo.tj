@@ -3,7 +3,7 @@
  * Тамоми логикаи интерактивӣ (тугмаҳо, карусел ва ғайра) дар ин ҷост.
  */ "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Item, ItemService } from "@/lib/services/item-service";
 import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Calendar,
   Phone,
   Eye,
-  ArrowLeft,
-  ShieldCheck,
   User,
   ChevronLeft,
   ChevronRight,
@@ -30,7 +27,6 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@clerk/nextjs";
@@ -149,7 +145,7 @@ export default function ItemDetailsClient({
           viewIncremented.current = true;
           ItemService.incrementView(id).then(() => {
             sessionStorage.setItem(sessionKey, "true");
-            queryClient.setQueryData(["items", "detail", id], (old: any) => {
+            queryClient.setQueryData(["items", "detail", id], (old: Item | undefined) => {
               if (!old) return old;
               return { ...old, views: (old?.views || 0) + 1 };
             });
@@ -160,19 +156,7 @@ export default function ItemDetailsClient({
     }
   }, [id, userId, isLoaded, item, queryClient]);
 
-  useEffect(() => {
-    if (userId && id) {
-      checkInitialSavedState();
-    }
-  }, [id, userId]);
-
-  useEffect(() => {
-    if (isLoaded && item && isOwner && item.moderation_status === "rejected") {
-      setShowBlockedInfo(true);
-    }
-  }, [isLoaded, item, isOwner]);
-
-  const checkInitialSavedState = async () => {
+  const checkInitialSavedState = useCallback(async () => {
     try {
       const token = await getToken({ template: "supabase" });
       if (!token) return;
@@ -184,10 +168,22 @@ export default function ItemDetailsClient({
         .eq("item_id", id)
         .maybeSingle();
       setIsSaved(!!data);
-    } catch (e) {
+    } catch {
       setIsSaved(false);
     }
-  };
+  }, [getToken, userId, id]);
+
+  useEffect(() => {
+    if (userId && id) {
+      checkInitialSavedState();
+    }
+  }, [id, userId, checkInitialSavedState]);
+
+  useEffect(() => {
+    if (isLoaded && item && isOwner && item.moderation_status === "rejected") {
+      setShowBlockedInfo(true);
+    }
+  }, [isLoaded, item, isOwner]);
 
   const toggleSave = async () => {
     if (!userId) {
@@ -204,7 +200,7 @@ export default function ItemDetailsClient({
       setIsSaved(saved);
       toast.success(saved ? t("addedToSaved") : t("removedFromSaved"));
       queryClient.invalidateQueries({ queryKey: ["items", "saved", userId] });
-    } catch (e) {
+    } catch {
       toast.error(t("error"));
     } finally {
       setIsToggling(false);
@@ -222,9 +218,9 @@ export default function ItemDetailsClient({
       navigator.share(shareData).catch(console.error);
     } else if (
       typeof window !== "undefined" &&
-      (window as any).ReactNativeWebView
+      window.ReactNativeWebView
     ) {
-      (window as any).ReactNativeWebView.postMessage(
+      window.ReactNativeWebView.postMessage(
         JSON.stringify({ type: "SHARE", payload: shareData }),
       );
     } else {
@@ -241,7 +237,7 @@ export default function ItemDetailsClient({
       await ItemService.deleteItem(supabase, id);
       toast.success(t("success"));
       router.push("/");
-    } catch (e) {
+    } catch {
       toast.error(t("error"));
     } finally {
       setIsActionLoading(false);
@@ -257,7 +253,7 @@ export default function ItemDetailsClient({
       await ItemService.deleteItem(supabase, id);
       toast.success(t("itemResolvedSuccess"));
       router.push("/");
-    } catch (e) {
+    } catch {
       toast.error(t("error"));
     } finally {
       setIsActionLoading(false);
@@ -378,7 +374,7 @@ export default function ItemDetailsClient({
                   "absolute top-4 left-4 font-black rounded-md px-3 py-1 shadow-md border-none z-10",
                   item?.type === "lost"
                     ? "bg-red-600 text-white"
-                    : "bg-emerald-600 text-white",
+                    : "bg-emerald-700 text-white",
                 )}
               >
                 {item?.type === "lost" ? t("lost") : t("found")}
@@ -417,7 +413,7 @@ export default function ItemDetailsClient({
                   </div>
                 </div>
               )}
-              <div className="flex items-center gap-1.5 text-zinc-400 text-xs font-black">
+              <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-black">
                 <Eye className="w-4 h-4" /> {item?.views || 0}
               </div>
             </div>
@@ -430,7 +426,7 @@ export default function ItemDetailsClient({
                 "font-black rounded-md px-3 py-1 shadow-md border-none mb-6 w-fit text-sm",
                 item?.type === "lost"
                   ? "bg-red-600 text-white"
-                  : "bg-emerald-600 text-white",
+                  : "bg-emerald-700 text-white",
               )}
             >
               {item?.type === "lost" ? t("lost") : t("found")}
@@ -448,9 +444,9 @@ export default function ItemDetailsClient({
             )}
 
             <div className="mb-8">
-              <h3 className="font-black text-[10px] text-zinc-400 mb-4">
+              <h2 className="font-black text-[10px] text-zinc-500 mb-4">
                 {t("description")}
-              </h3>
+              </h2>
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">
                 {item?.description}
               </p>
@@ -462,6 +458,7 @@ export default function ItemDetailsClient({
                   <Button
                     variant="secondary"
                     size="icon"
+                    aria-label={t("edit")}
                     className="flex-1 h-12 md:h-16 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm"
                     asChild
                   >
@@ -472,6 +469,7 @@ export default function ItemDetailsClient({
                   <Button
                     variant="secondary"
                     size="icon"
+                    aria-label={t("delete")}
                     className="flex-1 h-12 md:h-16 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isActionLoading}
@@ -483,6 +481,7 @@ export default function ItemDetailsClient({
               <Button
                 variant="secondary"
                 size="icon"
+                aria-label={t("share")}
                 className="flex-1 h-12 md:h-16 rounded-lg bg-blue-50 dark:bg-blue-900/10 text-blue-600 border border-blue-100/50 shadow-sm"
                 onClick={handleShare}
               >
@@ -491,6 +490,7 @@ export default function ItemDetailsClient({
               <Button
                 variant="secondary"
                 size="icon"
+                aria-label={isSaved ? t("removedFromSaved") : t("addedToSaved")}
                 className={cn(
                   "flex-1 h-12 md:h-16 rounded-lg transition-all border shadow-sm",
                   isSaved
@@ -513,7 +513,7 @@ export default function ItemDetailsClient({
               {isLoaded && isOwner ? (
                 <Button
                   size="lg"
-                  className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                  className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg"
                   onClick={() => setShowResolvedConfirm(true)}
                   disabled={isActionLoading}
                 >

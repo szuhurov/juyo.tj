@@ -25,7 +25,7 @@ export function UserEditForm({ profile }: { profile: AdminUserDetail["profile"] 
   const handleSave = () => {
     mutate(form, {
       onSuccess: () => toast.success("Маълумот навсозӣ шуд"),
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 

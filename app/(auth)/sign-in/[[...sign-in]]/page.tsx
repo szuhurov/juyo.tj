@@ -6,7 +6,7 @@
 "use client";
 
 import { SignIn } from "@clerk/nextjs"; // Барои ворид шудан ба профил
-import { useLanguage } from "@/lib/language-context"; // Барои иваз кардани забони сайт
+import { useLanguage, type Locale } from "@/lib/language-context"; // Барои иваз кардани забони сайт
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -24,14 +24,15 @@ export default function Page() {
 
   return (
     // Контейнер барои марказонидани (center) формаи воридшавӣ
-    <div className="min-h-screen flex flex-col items-center bg-zinc-50 dark:bg-zinc-950 p-4 pt-6 sm:pt-12">
-      
+    <main className="min-h-screen flex flex-col items-center bg-zinc-50 dark:bg-zinc-950 p-4 pt-6 sm:pt-12">
+
       {/* Сарлавҳаи боло: Тугмаи Ба қафо ва Ивази забон */}
       <div className="w-full max-w-[480px] relative flex items-center justify-center mb-10 sm:mb-14">
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => router.back()}
+          aria-label={t("back")}
           className="absolute left-0 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 shrink-0"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -44,7 +45,7 @@ export default function Page() {
               variant={locale === lang.code ? "default" : "outline"}
               size="sm"
               onClick={() => {
-                setLocale(lang.code as any);
+                setLocale(lang.code as Locale);
               }}
               className={`font-bold rounded-lg px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
                 locale === lang.code
@@ -73,6 +74,6 @@ export default function Page() {
           }}
         />
       </div>
-    </div>
+    </main>
   );
 }

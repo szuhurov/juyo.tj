@@ -29,7 +29,7 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
         toast.success("Эълон нест карда шуд");
         router.push("/admin/posts");
       },
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 
@@ -38,7 +38,7 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
       { status: "active" },
       {
         onSuccess: () => toast.success("Эълон барқарор карда шуд"),
-        onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+        onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
       },
     );
   };
@@ -49,7 +49,7 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
         toast.success("Эълон пурра нест карда шуд");
         router.push("/admin/posts");
       },
-      onError: (err: any) => toast.error(err.message || "Хатогӣ рух дод"),
+      onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),
     });
   };
 

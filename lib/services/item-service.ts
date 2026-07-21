@@ -106,8 +106,22 @@ export const ItemService = {
     if (error) throw error;
     if (!data.results || data.results.length === 0) return [];
 
+    interface VisualSearchResultRow {
+      id: string;
+      user_id?: string;
+      title: string;
+      description?: string;
+      category?: string;
+      type?: string;
+      date?: string;
+      created_at?: string;
+      is_resolved?: boolean;
+      score?: number;
+      image_url: string;
+    }
+
     // Харитасозии натиҷаҳо ба формати Item
-    return data.results.map((res: any) => ({
+    return data.results.map((res: VisualSearchResultRow) => ({
       id: res.id,
       user_id: res.user_id || "",
       title: res.title,
@@ -125,7 +139,7 @@ export const ItemService = {
   /**
    * Гирифтани маълумоти муфассали як ашё ва профили соҳиби он.
    */
-  async getItemDetails(id: string, supabaseClient?: any) {
+  async getItemDetails(id: string, supabaseClient?: SupabaseClient) {
     const client = supabaseClient || supabase;
 
     // Query 1: item + images (FK-и мустақим мавҷуд аст, эмбед кор мекунад)
@@ -197,8 +211,8 @@ export const ItemService = {
         if (insertError) throw insertError;
         return true;
       }
-    } catch (error: any) {
-      console.error("Хатогӣ дар toggleSaveItem:", error.message);
+    } catch (error) {
+      console.error("Хатогӣ дар toggleSaveItem:", error instanceof Error ? error.message : error);
       throw error;
     }
   },
@@ -216,7 +230,10 @@ export const ItemService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data.map((d: any) => d.items) as Item[];
+    // Supabase-и бе Database-generated types муносибати items-ро ҳамчун
+    // массив тахмин мезанад (гарчанде дар воқеият як-ба-як аст) — d.items
+    // санҷиши сахти навъро гирифта наметавонад, аз ин рӯ ба Item мустақим cast мешавад.
+    return data.map((d: { items: unknown }) => d.items as Item);
   },
 
   /**

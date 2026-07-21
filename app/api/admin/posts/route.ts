@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 const NOT_DELETED = "status.is.null,status.neq.deleted";
 
@@ -57,8 +58,8 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ posts: data ?? [], total: count ?? 0, page, pageSize });
-  } catch (err: any) {
-    console.error("GET /api/admin/posts:", err.message);
+  } catch (err) {
+    console.error("GET /api/admin/posts:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

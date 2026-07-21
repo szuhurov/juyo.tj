@@ -8,7 +8,6 @@
 
 import { useEffect, useState } from "react"; // Хукҳои React
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { toast } from "sonner"; // Барои нишон додани хабарҳо
 import { WifiOff } from "lucide-react"; // Иконкаи интернет
 import { cn } from "@/lib/utils"; // Барои якҷоя кардани классҳои CSS
 
@@ -18,8 +17,10 @@ export function NetworkStatus() {
   const [status, setStatus] = useState<"idle" | "online" | "offline">("idle");
 
   useEffect(() => {
-    // Санҷиши аввалия: агар интернет набошад, статусро офлайн мекунем
+    // Санҷиши аввалия: хониши ҳолати навигатор (система берун аз React) ва
+    // синхронизатсияи он ба state — маҳз барои ҳамин мавридҳо effect лозим аст.
     if (!navigator.onLine) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("offline");
     }
 
@@ -56,6 +57,7 @@ export function NetworkStatus() {
 
   return (
     <div
+      role="status"
       className={cn(
         "fixed top-0 left-0 right-0 z-[7000] transition-all duration-500 ease-in-out overflow-hidden",
         isVisible ? "h-10" : "h-0"

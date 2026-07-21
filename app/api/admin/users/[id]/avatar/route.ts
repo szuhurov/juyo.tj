@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId: adminId } = await auth();
@@ -41,8 +42,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (updateError) throw updateError;
 
     return NextResponse.json({ profile });
-  } catch (err: any) {
-    console.error("POST /api/admin/users/[id]/avatar:", err.message);
+  } catch (err) {
+    console.error("POST /api/admin/users/[id]/avatar:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

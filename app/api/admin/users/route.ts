@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { startOfDay, startOfMonth } from "date-fns";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 const NOT_DELETED = "status.is.null,status.neq.deleted";
 
@@ -80,8 +81,8 @@ export async function GET(req: NextRequest) {
     }));
 
     return NextResponse.json({ users, total: count ?? 0, page, pageSize });
-  } catch (err: any) {
-    console.error("GET /api/admin/users:", err.message);
+  } catch (err) {
+    console.error("GET /api/admin/users:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

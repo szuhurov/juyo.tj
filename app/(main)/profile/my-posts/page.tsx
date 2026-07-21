@@ -6,22 +6,22 @@
 
 "use client";
 
-import { useEffect, useState } from "react"; // Барои кор бо стейт ва эффектҳо
+import { useEffect, useState, useCallback, type CSSProperties } from "react"; // Барои кор бо стейт ва эффектҳо
 import { useAuth } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар
 import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
 import { ItemCard } from "@/components/item-card"; // Компоненти корти эълон
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { Skeleton } from "@/components/ui/skeleton"; // Компоненти боргузорӣ
-import { ArrowLeft, PackageSearch, Trash2, CheckCircle2 } from "lucide-react"; // Иконкаҳо
+import { PackageSearch, Trash2 } from "lucide-react"; // Иконкаҳо
 import Link from "next/link"; // Барои гузариш байни саҳифаҳо
 import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
+import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"; // Барои тирезаҳои огоҳӣ
@@ -39,24 +39,10 @@ export default function MyPostsPage() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  // Вақте саҳифа кушода мешавад, эълонҳои корбарро аз база мехонем
-  useEffect(() => {
-    if (userId) loadMyItems();
-    
-    // Агар дар ягон ҷо эълонҳо нав шаванд, рӯйхатро нав мекунем
-    const handleUpdate = () => {
-      if (userId) loadMyItems();
-    };
-    window.addEventListener('items-updated', handleUpdate);
-    return () => {
-      window.removeEventListener('items-updated', handleUpdate);
-    };
-  }, [userId]);
-
   /**
    * Функсия барои гирифтани эълонҳои шахсӣ аз база
    */
-  const loadMyItems = async () => {
+  const loadMyItems = useCallback(async () => {
     if (!userId) return;
     try {
       const data = await ItemService.getItems({ user_id: userId });
@@ -66,7 +52,21 @@ export default function MyPostsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  // Вақте саҳифа кушода мешавад, эълонҳои корбарро аз база мехонем
+  useEffect(() => {
+    if (userId) loadMyItems();
+
+    // Агар дар ягон ҷо эълонҳо нав шаванд, рӯйхатро нав мекунем
+    const handleUpdate = () => {
+      if (userId) loadMyItems();
+    };
+    window.addEventListener('items-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('items-updated', handleUpdate);
+    };
+  }, [userId, loadMyItems]);
 
   /**
    * Функсия барои нест кардани эълон (Delete)
@@ -82,7 +82,7 @@ export default function MyPostsPage() {
       // Рӯйхати эълонҳоро дар экран нав мекунем (Optimistic UI)
       setItems(prev => prev.filter(item => item.id !== itemToDelete));
       toast.success(t('success'));
-    } catch (error) {
+    } catch {
       toast.error(t('error'));
     } finally {
       setIsActionLoading(false);
@@ -99,12 +99,12 @@ export default function MyPostsPage() {
 
       {loading ? (
         /* Намоиши скелетон ҳангоми боргузории маълумот */
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+        <div className={ITEM_GRID_CLASS}>
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-xl" />)}
         </div>
       ) : items.length > 0 ? (
         /* Рендеринги рӯйхати эълонҳои ман */
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6" style={{ contentVisibility: 'auto' } as any}>
+        <div className={ITEM_GRID_CLASS} style={{ contentVisibility: 'auto' } as CSSProperties}>
           {items.map((item) => (
             <div key={item.id} className="relative group">
               <ItemCard item={item} />

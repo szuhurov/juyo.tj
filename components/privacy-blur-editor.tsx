@@ -15,7 +15,7 @@
  */
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -232,7 +232,10 @@ export function PrivacyBlurEditor({
   const [ready, setReady] = useState(false);
 
   const current = slots[currentIndex] as ImageSlot | undefined;
-  const regions = current?.regions ?? [];
+  // useMemo: агар `current` мавҷуд набошад, `?? []` дар ҳар render як
+  // массиви НАВ месозад — ин reference-и `render`-и useCallback (поён)-ро
+  // бе сабаб мешиканад.
+  const regions = useMemo(() => current?.regions ?? [], [current]);
   const history = current?.history ?? [[]];
   const historyIndex = current?.historyIndex ?? 0;
 
@@ -280,9 +283,13 @@ export function PrivacyBlurEditor({
   // ҳамеша ҳамаи аксҳоро дошта бошад, новобаста аз он ки корбар воқеан
   // ба ҳар яки онҳо гузаштааст ё не.
   useEffect(() => {
+    // Бозоғозии state танҳо дар лаҳзаи ГУЗАРИШИ open → true (бо ref пайгирӣ
+    // мешавад, на бо оддии `open` дар deps) — синхронизатсия бо prop-и
+    // берунӣ, на "state аз рендер ҳисобшуда".
     if (open && !wasOpenRef.current) {
       wasOpenRef.current = true;
       if (files.length === 0) return;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(false);
       setCurrentIndex(0);
       setSelectedId(null);
@@ -410,7 +417,7 @@ export function PrivacyBlurEditor({
     const role = target.dataset.role;
     const regionId = target.dataset.regionId;
     const pos = getRelPos(e);
-    (wrapRef.current as any)?.setPointerCapture?.(e.pointerId);
+    wrapRef.current?.setPointerCapture?.(e.pointerId);
 
     if (role === "handle" && regionId) {
       const region = regions.find((r) => r.id === regionId);
@@ -563,7 +570,7 @@ export function PrivacyBlurEditor({
     );
   };
 
-  const handleWrapPointerUp = (e: React.PointerEvent) => {
+  const handleWrapPointerUp = () => {
     const drag = dragRef.current;
     dragRef.current = null;
     if (!drag) return;
@@ -864,7 +871,7 @@ export function PrivacyBlurEditor({
             type="button"
             onClick={handleFooterButton}
             disabled={!ready}
-            className="w-full h-12 rounded-xl font-black tracking-widest text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+            className="w-full h-12 rounded-xl font-black tracking-widest text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg"
           >
             {isLastSlot ? t("privacyConfirmBtn") : t("next")}
           </Button>

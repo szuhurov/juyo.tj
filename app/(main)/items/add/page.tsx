@@ -4,56 +4,59 @@
  */ "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
-import { ItemService, CATEGORIES } from "@/lib/services/item-service";
+import { CATEGORIES } from "@/lib/services/item-service";
 import { ProfileService } from "@/lib/services/profile-service";
 import {
   createClerkSupabaseClient,
   supabase as anonSupabase,
 } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
-import { PrivacyBlurEditor, type PrivacyRegion } from "@/components/privacy-blur-editor";
+import type { PrivacyRegion } from "@/components/privacy-blur-editor";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
   Loader2,
   Plus,
   X,
-  Upload,
   ArrowLeft,
   ShieldAlert,
   CheckCircle2,
-  Search,
   Camera,
   Image as ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useRef } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
-import { CameraCaptureModal } from "@/components/camera-capture-modal";
+
+// Ин ду компонент (муҳаррири canvas-и privacy blur, модали камера) вазнин
+// ва танҳо дар ҳолатҳои хос (ҳуҷҷат ошкор шуд / камера кушода шуд) лозиманд
+// — next/dynamic онҳоро аз chunk-и асосии саҳифаи "Илова кардани эълон"
+// ҷудо мекунад.
+const PrivacyBlurEditor = dynamic(() =>
+  import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
+);
+const CameraCaptureModal = dynamic(() =>
+  import("@/components/camera-capture-modal").then((m) => m.CameraCaptureModal),
+);
 
 function AddItemForm() {
   const { t, locale } = useLanguage();
@@ -108,7 +111,7 @@ function AddItemForm() {
     "idle" | "checking" | "passed" | "failed"
   >("idle");
   const [moderationError, setModerationError] = useState<string | null>(null);
-  const [showSearchChoice, setShowSearchChoice] = useState(false);
+
   const [scanMessage, setScanMessage] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -271,6 +274,7 @@ function AddItemForm() {
   };
 
   const onFinalSubmit = async () => {
+    setLoading(true);
     let finalImages: File[] = images;
     let finalTitle = formData.title;
     let finalDescription = formData.description;
@@ -334,6 +338,7 @@ function AddItemForm() {
               t("ai_steps.text_moderation_failed") ||
               "Эълони шумо ба қоидаҳо мувофиқат намекунад.",
           );
+          setLoading(false);
           return;
         }
 
@@ -359,14 +364,16 @@ function AddItemForm() {
             // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
             // ҳуҷҷати бе мозаика ҳаргиз нашр нашавад.
             setStep(4);
+            setLoading(false);
             return;
           }
           setImages(blurred);
           finalImages = blurred;
         }
-      } catch (err: any) {
+      } catch (err) {
         setModerationStatus("failed");
-        setModerationError(err.message);
+        setModerationError(err instanceof Error ? err.message : String(err));
+        setLoading(false);
         return;
       }
     } else {
@@ -386,6 +393,7 @@ function AddItemForm() {
     });
     if (!proceed) {
       setStep(4);
+      setLoading(false);
       return;
     }
 
@@ -399,10 +407,10 @@ function AddItemForm() {
     setModerationStatus("passed");
 
     const publishWork = async () => {
-      let token = await getToken({ template: "supabase" });
+      const token = await getToken({ template: "supabase" });
       if (!token) throw new Error("Authentication token missing");
 
-      let supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(token);
 
       const imageUrls = [];
       for (const file of finalImages) {
@@ -495,10 +503,11 @@ function AddItemForm() {
       ).catch(() => {});
     };
 
-    publishWork().catch((error: any) => {
+    publishWork().catch((error) => {
       console.error(error);
-      toast.error(error.message || t("error"));
+      toast.error(error instanceof Error ? error.message : t("error"));
     });
+    setLoading(false);
   };
 
   return (
@@ -830,7 +839,7 @@ function AddItemForm() {
                   </div>
                   <Button
                     onClick={() => router.push(postSuccessRedirect)}
-                    className="w-full h-14 rounded-2xl font-black tracking-widest text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg"
+                    className="w-full h-14 rounded-2xl font-black tracking-widest text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg"
                   >
                     {t("done")}
                   </Button>
@@ -1061,7 +1070,7 @@ function AddItemForm() {
                 setSafetyAck(null);
                 resolve?.(true);
               }}
-              className="w-full h-14 rounded-2xl font-black tracking-widest text-xs text-white bg-emerald-500 hover:bg-emerald-600 shadow-xl"
+              className="w-full h-14 rounded-2xl font-black tracking-widest text-xs text-white bg-emerald-700 hover:bg-emerald-800 shadow-xl"
             >
               {t("safetyPostModal.confirmBtn")}
             </Button>

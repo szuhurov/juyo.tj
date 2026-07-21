@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 /**
  * Тағйири ном, насаб ва рақамҳои телефон. Номро дар Clerk тавассути
@@ -26,8 +27,8 @@ export async function POST(req: NextRequest) {
     try {
       const clerkUser = await client.users.updateUser(userId, { firstName, lastName });
       avatarUrl = clerkUser.imageUrl;
-    } catch (clerkErr: any) {
-      console.error("Clerk updateUser error:", clerkErr?.errors ?? clerkErr?.message);
+    } catch (clerkErr) {
+      console.error("Clerk updateUser error:", getErrorMessage(clerkErr));
     }
 
     const { data: updated, error } = await supabaseAdmin
@@ -46,8 +47,8 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ ok: true, profile: updated });
-  } catch (err: any) {
-    console.error("POST /api/account/update-profile:", err.message);
+  } catch (err) {
+    console.error("POST /api/account/update-profile:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

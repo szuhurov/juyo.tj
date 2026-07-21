@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getErrorMessage } from "@/lib/error-utils";
 
 const ALLOWED_FIELDS = [
   "first_name",
@@ -52,8 +53,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       savedItems: savedItems ?? [],
       pushTokenCount: pushTokenCount ?? 0,
     });
-  } catch (err: any) {
-    console.error("GET /api/admin/users/[id]:", err.message);
+  } catch (err) {
+    console.error("GET /api/admin/users/[id]:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -84,8 +85,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (error) throw error;
 
     return NextResponse.json({ profile: data });
-  } catch (err: any) {
-    console.error("PATCH /api/admin/users/[id]:", err.message);
+  } catch (err) {
+    console.error("PATCH /api/admin/users/[id]:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
@@ -106,8 +107,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (error) throw error;
 
     return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error("DELETE /api/admin/users/[id]:", err.message);
+  } catch (err) {
+    console.error("DELETE /api/admin/users/[id]:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }
