@@ -25,6 +25,7 @@ import {
   Bookmark,
   Camera,
   Image as ImageIcon,
+  Shield,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -67,7 +68,7 @@ const CameraCaptureModal = dynamic(() =>
   import("./camera-capture-modal").then((m) => m.CameraCaptureModal),
 );
 
-export function Header() {
+export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -567,6 +568,21 @@ export function Header() {
                         {t("aboutApp")}
                       </span>
                     </DropdownMenuItem>
+
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2 my-1" />
+                        <DropdownMenuItem
+                          onClick={() => router.push("/admin")}
+                          className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                        >
+                          <Shield className="mr-3 h-4 w-4 text-amber-500" />
+                          <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
+                            Admin
+                          </span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
 
                     <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2 my-1" />
 
