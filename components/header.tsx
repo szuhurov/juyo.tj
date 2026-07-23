@@ -336,14 +336,14 @@ export function Header() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="flex gap-2 rounded-md font-bold text-zinc-600 cursor-pointer border border-emerald-500 ring-2 ring-emerald-500/20 transition-all bg-white shadow-sm focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 h-10 px-3"
+                  className="flex gap-2 rounded-md font-bold text-zinc-600 cursor-pointer border border-emerald-500 ring-2 ring-emerald-500/20 transition-all bg-white shadow-sm focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 h-9 sm:h-10 px-3"
                 >
-                  <span className="text-[13px] font-black dark:text-zinc-100">
+                  <span className="text-[10px] sm:text-[13px] font-black dark:text-zinc-100">
                     {mounted
                       ? languages.find((l) => l.code === locale)?.label
                       : languages.find((l) => l.code === "tg")?.label}
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent

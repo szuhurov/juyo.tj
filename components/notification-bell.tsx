@@ -26,9 +26,9 @@ export function NotificationBell() {
         variant="secondary"
         size="sm"
         aria-label={t("notifications")}
-        className="relative h-10 w-10 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
+        className="relative h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
       >
-        <Bell className="h-[18px] w-[18px] text-zinc-600 dark:text-zinc-400" />
+        <Bell className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-zinc-600 dark:text-zinc-400" />
         {count > 0 && (
           <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
             {count > 9 ? "9+" : count}
