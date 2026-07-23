@@ -320,6 +320,7 @@ export default function ItemDetailsClient({
                       src={img.image_url}
                       alt={item?.title || "JUYO Item"}
                       fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
                       className="object-contain"
                       priority={index === 0}
                       quality={90}

@@ -136,7 +136,12 @@ export function ItemCard({
                   "object-cover",
                   i === currentImageIndex ? "opacity-100" : "opacity-0",
                 )}
-                priority={index < 12 && i === 0} // Танҳо барои 8 корти аввал priority мемонем
+                // Танҳо 4 корти аввал priority мегиранд (LCP) — дар mobile
+                // (2 сутун) ин тақрибан 2 қатор, яъне воқеан above-the-fold.
+                // 12 хеле зиёд буд: дар mobile аксарашон беруни экран буданд,
+                // вале бо priority ҳамзамон/eagerly бор мешуданд, бо суратҳои
+                // воқеан намоён барои bandwidth/main-thread рақобат мекарданд.
+                priority={index < 4 && i === 0}
               />
             );
           })}

@@ -87,7 +87,14 @@ self.addEventListener("fetch", (event) => {
   // ҷои RSC payload/JS chunk бармегардонд — Next.js онро вайрон
   // мешуморид ва маҷбуран ба full-page reload мегузашт (skeleton/loading
   // такрории "аз ҳар ҷо" маҳз аз ҳамин буд, на аз кэши RSC-и худи Next).
-  if (url.searchParams.has("_rsc") || url.pathname.startsWith("/_next/")) {
+  // Суратҳо (/_next/image) низ монанди RSC — Next.js/браузер аллакай онҳоро
+  // бо HTTP cache-и худ (minimumCacheTTL, ниг. next.config.ts) хуб идора
+  // мекунад. Агар дархости сурат abort шавад (масалан ҳангоми scroll-и
+  // зуд), SW-и мо ба ҷои он HTML-и "офлайн" месохт — сурати вайроншуда.
+  if (
+    url.searchParams.has("_rsc") ||
+    url.pathname.startsWith("/_next/")
+  ) {
     return;
   }
 
