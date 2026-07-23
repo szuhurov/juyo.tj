@@ -80,6 +80,17 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Дархостҳои дохилии Next.js (RSC payload-и навигатсияи клиентӣ, build
+  // chunk-ҳо) — ин ду ҳаргиз набояд ба ин fetch-и custom дароянд. Next.js
+  // тез-тез ин дархостҳоро abort мекунад (масалан ҳангоми якчанд клики
+  // пайдарпай), ва .catch(offlineResponse) дар поён HTML-и "офлайн"-ро ба
+  // ҷои RSC payload/JS chunk бармегардонд — Next.js онро вайрон
+  // мешуморид ва маҷбуран ба full-page reload мегузашт (skeleton/loading
+  // такрории "аз ҳар ҷо" маҳз аз ҳамин буд, на аз кэши RSC-и худи Next).
+  if (url.searchParams.has("_rsc") || url.pathname.startsWith("/_next/")) {
+    return;
+  }
+
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request.clone())
