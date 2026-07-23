@@ -192,12 +192,14 @@ export function ItemCard({
             <div className="absolute top-2 right-2 z-20 hidden sm:flex flex-col gap-1.5 items-end">
               <button
                 onClick={handleEdit}
+                aria-label={t("edit")}
                 className="p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-blue-600 transition-all shadow-md border border-white/10"
               >
                 <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
               <button
                 onClick={handleDelete}
+                aria-label={t("delete")}
                 className="p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-red-600 transition-all shadow-md border border-white/10"
               >
                 <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

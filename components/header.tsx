@@ -285,13 +285,13 @@ export function Header() {
                       variant={isActive ? "secondary" : "ghost"}
                       size="sm"
                       onClick={handleNavClick}
-                      className={`gap-2 rounded-md font-bold text-[10px] tracking-wider transition-all border ${
+                      className={`gap-2 rounded-md font-bold text-[13px] tracking-wider transition-all border ${
                         isActive
                           ? "bg-white shadow-sm text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                           : "text-zinc-500 hover:text-zinc-900 border-transparent focus:outline-none"
                       }`}
                     >
-                      <link.icon className="h-3.5 w-3.5" />
+                      <link.icon className="h-4 w-4" />
                       {link.label}
                     </Button>
                   );
@@ -312,6 +312,7 @@ export function Header() {
               {searchValue && (
                 <button
                   onClick={() => setSearchValue("")}
+                  aria-label={t("clearFilter") || "Тоза кардан"}
                   className="p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors"
                 >
                   <X className="h-3 w-3" />
@@ -335,14 +336,14 @@ export function Header() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="flex gap-2 rounded-md font-bold text-zinc-600 cursor-pointer border border-emerald-500 ring-2 ring-emerald-500/20 transition-all bg-white shadow-sm focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 h-9 px-3"
+                  className="flex gap-2 rounded-md font-bold text-zinc-600 cursor-pointer border border-emerald-500 ring-2 ring-emerald-500/20 transition-all bg-white shadow-sm focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 h-10 px-3"
                 >
-                  <span className="text-[10px] font-black dark:text-zinc-100">
+                  <span className="text-[13px] font-black dark:text-zinc-100">
                     {mounted
                       ? languages.find((l) => l.code === locale)?.label
                       : languages.find((l) => l.code === "tg")?.label}
                   </span>
-                  <ChevronDown className="h-3 w-3 opacity-50" />
+                  <ChevronDown className="h-3.5 w-3.5 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -369,25 +370,25 @@ export function Header() {
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    className="rounded-lg font-black text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-md h-9 px-4"
+                    className="rounded-lg font-black text-[13px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-md h-10 px-4"
                     asChild
                   >
                     <Link href="/items/add">
-                      <PlusCircle className="h-4 w-4 mr-1.5" />
+                      <PlusCircle className="h-[18px] w-[18px] mr-1.5" />
                       {t("addItemTitle")}
                     </Link>
                   </Button>
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="font-bold text-[10px] text-zinc-900 dark:text-zinc-100 h-9 px-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100"
+                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100"
                     asChild
                   >
                     <Link href="/sign-in">{t("login")}</Link>
                   </Button>
                   <Button
                     size="sm"
-                    className="rounded-md font-bold text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 h-9 px-4"
+                    className="rounded-md font-bold text-[13px] bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 h-10 px-4"
                     asChild
                   >
                     <Link href="/sign-up">{t("signup")}</Link>
@@ -399,11 +400,11 @@ export function Header() {
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
-                        className="rounded-lg font-black text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white shadow-md h-9 px-4"
+                        className="rounded-lg font-black text-[13px] bg-zinc-900 hover:bg-zinc-800 text-white shadow-md h-10 px-4"
                         asChild
                       >
                         <Link href="/items/add">
-                          <PlusCircle className="h-4 w-4 mr-1.5" />
+                          <PlusCircle className="h-[18px] w-[18px] mr-1.5" />
                           {t("addItemTitle")}
                         </Link>
                       </Button>
@@ -416,7 +417,7 @@ export function Header() {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="relative h-9 w-9 rounded-full border-2 border-primary/20 shadow-sm p-0"
+                        className="relative h-10 w-10 rounded-full border-2 border-primary/20 shadow-sm p-0"
                       >
                         <Avatar className="h-full w-full rounded-full">
                           <AvatarImage
@@ -506,6 +507,7 @@ export function Header() {
                   <Button
                     variant="secondary"
                     size="sm"
+                    aria-label={t("menu")}
                     className="sm:hidden h-9 w-9 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
                   >
                     <Menu className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
