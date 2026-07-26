@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Package, ExternalLink } from "lucide-react";
+import { LayoutDashboard, Users, Package, Flag, UserX, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePendingPostsCount } from "@/lib/hooks/use-admin-posts";
+import { usePendingReportsCount } from "@/lib/hooks/use-admin-reports";
+import { usePendingDeletionRequestsCount } from "@/lib/hooks/use-admin-deletion-requests";
 
 export const NAV_ITEMS = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
   { href: "/admin/users", label: "Корбарон", icon: Users },
   { href: "/admin/posts", label: "Эълонҳо", icon: Package },
+  { href: "/admin/reports", label: "Шикоятҳо", icon: Flag },
+  { href: "/admin/deletion-requests", label: "Нест кардани ҳисоб", icon: UserX },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -30,6 +34,8 @@ function PendingBadge({ count }: { count: number }) {
 export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { data: pendingCount = 0 } = usePendingPostsCount();
+  const { data: pendingReports = 0 } = usePendingReportsCount();
+  const { data: pendingDeletions = 0 } = usePendingDeletionRequestsCount();
 
   return (
     <nav className="flex-1 px-3 py-4 space-y-1">
@@ -50,6 +56,8 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
             <Icon className="w-4 h-4 shrink-0" />
             {label}
             {href === "/admin/posts" && <PendingBadge count={pendingCount} />}
+            {href === "/admin/reports" && <PendingBadge count={pendingReports} />}
+            {href === "/admin/deletion-requests" && <PendingBadge count={pendingDeletions} />}
           </Link>
         );
       })}
@@ -61,6 +69,8 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
 export function AdminSidebar() {
   const pathname = usePathname();
   const { data: pendingCount = 0 } = usePendingPostsCount();
+  const { data: pendingReports = 0 } = usePendingReportsCount();
+  const { data: pendingDeletions = 0 } = usePendingDeletionRequestsCount();
 
   return (
     <aside className="hidden md:flex md:w-64 shrink-0 flex-col bg-white border-r border-zinc-100">
@@ -85,6 +95,8 @@ export function AdminSidebar() {
               <Icon className="w-[18px] h-[18px] shrink-0" />
               {label}
               {href === "/admin/posts" && <PendingBadge count={pendingCount} />}
+              {href === "/admin/reports" && <PendingBadge count={pendingReports} />}
+              {href === "/admin/deletion-requests" && <PendingBadge count={pendingDeletions} />}
             </Link>
           );
         })}

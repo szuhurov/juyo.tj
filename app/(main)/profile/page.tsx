@@ -48,6 +48,7 @@ import {
   HelpCircle,
   KeyRound,
   MousePointerClick,
+  UserX,
 } from "lucide-react";
 // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
@@ -289,6 +290,35 @@ function ProfileContent() {
       .then((t) => { if (t) setToken(t); })
       .catch((err) => console.error("Error loading token:", err));
   }, [userId, getToken]);
+
+  // Рӯйхати корбарони block-шуда (барои таби "Маълумоти шахсӣ")
+  const [blockedUsers, setBlockedUsers] = useState<
+    { user_id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[]
+  >([]);
+  const [unblockingId, setUnblockingId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!token) return;
+    const supabase = createClerkSupabaseClient(token);
+    supabase.rpc("get_my_blocked_users").then(({ data }) => {
+      if (data) setBlockedUsers(data);
+    });
+  }, [token]);
+
+  const handleUnblockUser = async (targetUserId: string) => {
+    if (unblockingId) return;
+    setUnblockingId(targetUserId);
+    try {
+      const supabase = createClerkSupabaseClient(token!);
+      const { error } = await supabase.rpc("unblock_user", { p_user_id: targetUserId });
+      if (error) throw error;
+      setBlockedUsers((prev) => prev.filter((u) => u.user_id !== targetUserId));
+      toast.success(t("success"));
+    } catch {
+      toast.error(t("error"));
+    } finally {
+      setUnblockingId(null);
+    }
+  };
 
   // Профил — тавассути React Query (кэши 2 дақиқа), на бо fetch-и дастии
   // бе кэш — пеш аз ин ҳар гузариш ба /profile (масалан home → QR →
@@ -1426,6 +1456,49 @@ function ProfileContent() {
                   </Button>
                 </div>
               </section>
+
+              {/* Корбарони block-шуда */}
+              {blockedUsers.length > 0 && (
+                <section className="space-y-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <UserX className="w-4 h-4 text-zinc-400" />
+                    <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
+                      {t("blockedUsers")}
+                    </h4>
+                  </div>
+                  <div className="bg-zinc-50 dark:bg-zinc-900/30 rounded-3xl border border-zinc-100 dark:border-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-900">
+                    {blockedUsers.map((u) => (
+                      <div key={u.user_id} className="p-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="w-9 h-9 border border-zinc-200 dark:border-zinc-800">
+                            <AvatarImage src={u.avatar_url ?? undefined} />
+                            <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-xs">
+                              <User className="w-4 h-4 text-zinc-400" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <p className="font-bold text-sm truncate">
+                            {u.first_name || t("user")} {u.last_name || ""}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={unblockingId === u.user_id}
+                          onClick={() => handleUnblockUser(u.user_id)}
+                          className="h-9 rounded-lg font-black text-[9px] tracking-widest shrink-0"
+                        >
+                          {unblockingId === u.user_id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            t("unblockUser")
+                          )}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Минтақаи хатарнок (Danger Zone) */}
               <section className="space-y-6">

@@ -8,4 +8,8 @@ export const ADMIN_KEYS = {
   postsList: (filters: unknown) => [...ADMIN_KEYS.posts(), "list", { filters }] as const,
   postDetail: (id: string) => [...ADMIN_KEYS.posts(), "detail", id] as const,
   settings: () => [...ADMIN_KEYS.all, "settings"] as const,
+  reports: () => [...ADMIN_KEYS.all, "reports"] as const,
+  reportsList: (status: string) => [...ADMIN_KEYS.reports(), "list", status] as const,
+  deletionRequests: () => [...ADMIN_KEYS.all, "deletion-requests"] as const,
+  deletionRequestsList: (status: string) => [...ADMIN_KEYS.deletionRequests(), "list", status] as const,
 };

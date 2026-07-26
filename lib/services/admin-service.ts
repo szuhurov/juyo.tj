@@ -149,4 +149,24 @@ export const AdminService = {
       body: JSON.stringify(updates),
     });
   },
+
+  getReports(filters: { status?: string } = {}) {
+    return adminFetch(`/api/admin/reports${toQueryString(filters)}`);
+  },
+  updateReport(id: string, updates: { status: "reviewed" | "dismissed" }) {
+    return adminFetch(`/api/admin/reports/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  getDeletionRequests(filters: { status?: string } = {}) {
+    return adminFetch(`/api/admin/deletion-requests${toQueryString(filters)}`);
+  },
+  updateDeletionRequest(id: string, updates: { status: "processed" | "rejected" }) {
+    return adminFetch(`/api/admin/deletion-requests/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+  },
 };

@@ -40,7 +40,7 @@ const content = {
       },
       {
         title: "7. Ҳуқуқҳои шумо",
-        text: "Шумо метавонед дар ҳар вақт маълумоти худро дар танзимоти профил иваз кунед ё дархости нест кардани ҳисоби худро ба privacy@juyo.tj фиристед."
+        text: "Шумо метавонед дар ҳар вақт маълумоти худро дар танзимоти профил иваз кунед. Барои нест кардани ҳисоби худ — ҳатто бе воридшавӣ ба барнома — саҳифаи juyo.tj/delete-account-ро кушоед ё ба s.zuhurov@outlook.com нависед."
       }
     ]
   },
@@ -75,7 +75,7 @@ const content = {
       },
       {
         title: "7. Ваши права",
-        text: "Вы можете в любое время изменить свои данные в настройках профиля или отправить запрос на удаление учётной записи на privacy@juyo.tj."
+        text: "Вы можете в любое время изменить свои данные в настройках профиля. Чтобы удалить аккаунт — даже без входа в приложение — откройте juyo.tj/delete-account или напишите на s.zuhurov@outlook.com."
       }
     ]
   },
@@ -110,7 +110,7 @@ const content = {
       },
       {
         title: "7. Your Rights",
-        text: "You can change your data in profile settings at any time or send a request to delete your account to privacy@juyo.tj."
+        text: "You can change your data in profile settings at any time. To delete your account — even without signing into the app — visit juyo.tj/delete-account or email s.zuhurov@outlook.com."
       }
     ]
   }
@@ -141,7 +141,7 @@ export function PrivacyContent() {
       </div>
 
       <div className="mt-12 pt-8 border-t text-sm text-zinc-500">
-        <p>Email: privacy@juyo.tj</p>
+        <p>Email: s.zuhurov@outlook.com</p>
       </div>
     </div>
   );
