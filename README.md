@@ -42,7 +42,7 @@
 │  ├─ Next.js              ├─ Supabase (PostgreSQL)        │
 │  ├─ React                ├─ Supabase Functions (Deno)    │
 │  ├─ TypeScript           ├─ Supabase Storage             │
-│  ├─ Tailwind CSS         └─ Sightengine (Moderation)     │
+│  ├─ Tailwind CSS         └─ OpenAI (Moderation)          │
 │  ├─ React Query          │                                │
 │  ├─ React Hook Form      EXTERNAL SERVICES:              │
 │  ├─ Zod (Validation)     ├─ Clerk (Authentication)       │
@@ -117,7 +117,7 @@
 │  └──────────────────────────────────────────────────┘   │
 │                                                           │
 │  External APIs:                                         │
-│  ├─ Sightengine (Image Moderation)                     │
+│  ├─ OpenAI (Image Moderation)                          │
 │  ├─ Vercel Analytics (Tracking)                        │
 │  └─ Unsplash (Placeholder Images)                      │
 │                                                           │
@@ -439,7 +439,7 @@ User кликс "Add Lost/Found Item"
 ┌────────────────────────────────────────┐
 │ Trigger Image Moderation (Optional)    │
 │ POST /functions/v1/image-moderation    │
-│ ├─ Analyze images with Sightengine     │
+│ ├─ Analyze images with OpenAI          │
 │ └─ Update moderation_status            │
 └────────────────────────────────────────┘
          ↓
