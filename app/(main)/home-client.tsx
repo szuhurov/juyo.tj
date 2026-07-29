@@ -44,6 +44,10 @@ const CATEGORY_ICONS: Record<string, React.ElementType> = {
   Wallet: Wallet,
 };
 
+// "Taxi" — тугмаи махсус дар навори филтр, ки на аз рӯи категория, балки
+// аз рӯи корбар (Ali Mirzoev, allimirzoev2000@icloud.com) филтр мекунад.
+const TAXI_FILTER_USER_ID = "user_3H0PTIOzFRgmfVuBGBrKYR6RcFO";
+
 function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
@@ -61,6 +65,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<"lost" | "found" | null>(null);
+  const [taxiFilter, setTaxiFilter] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
   const [dateTo, setDateTo] = useState<string | undefined>(undefined);
@@ -90,21 +95,30 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   );
 
   const filters = useMemo(
-    () => ({
-      category: category === "All" ? undefined : category,
-      type: itemType || undefined,
-      search: searchQuery,
-      dateFrom,
-      dateTo,
-    }),
-    [category, itemType, searchQuery, dateFrom, dateTo],
+    () =>
+      taxiFilter
+        ? { user_id: TAXI_FILTER_USER_ID }
+        : {
+            category: category === "All" ? undefined : category,
+            type: itemType || undefined,
+            search: searchQuery,
+            dateFrom,
+            dateTo,
+          },
+    [taxiFilter, category, itemType, searchQuery, dateFrom, dateTo],
   );
+
+  const toggleTaxiFilter = () => {
+    setTaxiFilter((v) => !v);
+    setCategory("All");
+    setItemType(null);
+  };
 
   // initialItems танҳо барои filters-и пешфарз (яъне ҳамон чизе, ки дар
   // сервер гирифта шуда буд) амал мекунад — фарқи filters аз пешфарз
   // маънои онро дорад, ки корбар аллакай филтреро иваз кардааст.
   const isDefaultFilters =
-    !filters.category && !filters.type && !filters.search && !filters.dateFrom && !filters.dateTo;
+    !filters.category && !filters.type && !filters.search && !filters.dateFrom && !filters.dateTo && !("user_id" in filters);
 
   const {
     data,
@@ -230,7 +244,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               ) : (
                 <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                   <button
-                    onClick={() => setCategory("All")}
+                    onClick={() => {
+                      setTaxiFilter(false);
+                      setCategory("All");
+                    }}
                     className={cn(
                       "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer whitespace-nowrap",
                       category === "All"
@@ -246,7 +263,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     return (
                       <button
                         key={cat.id}
-                        onClick={() => setCategory(cat.name)}
+                        onClick={() => {
+                          setTaxiFilter(false);
+                          setCategory(cat.name);
+                        }}
                         className={cn(
                           "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
                           active
@@ -266,9 +286,23 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
             {/* Интихоби навъ: Гумшуда ё Ёфтшуда */}
             {!visualSearchResults && (
               <div className="flex items-center gap-1.5 self-end md:self-auto mb-0.5 md:mb-0">
+                <button
+                  onClick={toggleTaxiFilter}
+                  className={cn(
+                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer whitespace-nowrap border shadow-sm",
+                    taxiFilter
+                      ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
+                      : "bg-zinc-100/60 dark:bg-zinc-900/60 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                  )}
+                >
+                  {t("taxiFilter")}
+                </button>
                 <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
                   <button
-                    onClick={() => setItemType(null)}
+                    onClick={() => {
+                      setTaxiFilter(false);
+                      setItemType(null);
+                    }}
                     className={cn(
                       "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
                       itemType === null
@@ -279,7 +313,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     {t("all")}
                   </button>
                   <button
-                    onClick={() => setItemType("lost")}
+                    onClick={() => {
+                      setTaxiFilter(false);
+                      setItemType("lost");
+                    }}
                     className={cn(
                       "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
                       itemType === "lost"
@@ -290,7 +327,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     {t("filterLost")}
                   </button>
                   <button
-                    onClick={() => setItemType("found")}
+                    onClick={() => {
+                      setTaxiFilter(false);
+                      setItemType("found");
+                    }}
                     className={cn(
                       "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
                       itemType === "found"

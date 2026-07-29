@@ -16,7 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton"; // Компоненти б�
 import { PackageSearch, Trash2 } from "lucide-react"; // Иконкаҳо
 import Link from "next/link"; // Барои гузариш байни саҳифаҳо
 import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
-import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
 import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
 import {
   Dialog,
@@ -28,7 +27,7 @@ import {
 
 export default function MyPostsPage() {
   // Хукҳо барои аутентификатсия ва тарҷумаи забон
-  const { userId, getToken } = useAuth();
+  const { userId } = useAuth();
   const { t } = useLanguage();
   
   // Стейтҳо барои нигоҳ доштани рӯйхати эълонҳо ва ҳолати боргузорӣ (Loading)
@@ -75,10 +74,9 @@ export default function MyPostsPage() {
     if (!itemToDelete) return;
     setIsActionLoading(true);
     try {
-      const token = await getToken({ template: 'supabase' });
-      const supabase = createClerkSupabaseClient(token!);
-      await ItemService.deleteItem(supabase, itemToDelete);
-      
+      const res = await fetch(`/api/items/${itemToDelete}/delete`, { method: 'POST' });
+      if (!res.ok) throw new Error();
+
       // Рӯйхати эълонҳоро дар экран нав мекунем (Optimistic UI)
       setItems(prev => prev.filter(item => item.id !== itemToDelete));
       toast.success(t('success'));

@@ -292,9 +292,8 @@ export default function ItemDetailsClient({
   const handleDelete = async () => {
     setIsActionLoading(true);
     try {
-      const token = await getToken({ template: "supabase" });
-      const supabase = createClerkSupabaseClient(token!);
-      await ItemService.deleteItem(supabase, id);
+      const res = await fetch(`/api/items/${id}/delete`, { method: "POST" });
+      if (!res.ok) throw new Error();
       toast.success(t("success"));
       router.push("/");
     } catch {
