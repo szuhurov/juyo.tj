@@ -1,6 +1,8 @@
 "use client";
 
 import { use, useState } from "react";
+import Link from "next/link";
+import { PlusCircle } from "lucide-react";
 import { useAdminUser } from "@/lib/hooks/use-admin-users";
 import { UserDetailHeader } from "@/components/admin/users/user-detail-header";
 import { UserEditForm } from "@/components/admin/users/user-edit-form";
@@ -8,6 +10,7 @@ import { UserPostsPanel } from "@/components/admin/users/user-posts-panel";
 import { UserSavedItems } from "@/components/admin/users/user-saved-items";
 import { UserQrStats } from "@/components/admin/users/user-qr-stats";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type Tab = "items" | "saved" | "qr";
@@ -42,6 +45,14 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   return (
     <div className="space-y-5">
       <UserDetailHeader profile={data.profile} />
+      <div className="flex justify-end">
+        <Button asChild size="sm" variant="outline" className="rounded-xl font-bold">
+          <Link href={`/admin/post-as-user?userId=${id}`}>
+            <PlusCircle className="w-4 h-4 mr-1.5" />
+            Илова кардани элон аз номи ин корбар
+          </Link>
+        </Button>
+      </div>
       <UserEditForm profile={data.profile} />
 
       <div className="flex flex-wrap items-center gap-2">
