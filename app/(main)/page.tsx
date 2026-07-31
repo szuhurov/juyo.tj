@@ -25,6 +25,16 @@ const getCachedHomeItems = unstable_cache(
   { revalidate: 15 },
 );
 
+// Ин саҳифа ягон dynamic function (cookies()/headers()/auth()) истифода
+// намекунад, пас Next.js онро статикӣ render мекунад — HTML/RSC-и худи
+// route (Full Route Cache) АЛОҲИДА аз Data Cache-и unstable_cache боло
+// аст. Бе ин экспорт, HTML-и саҳифа метавонад аз давраи кэши дохилӣ (15с)
+// дертар нав шавад — эълони нав дар база аллакай ҳаст, аммо HTML-и
+// фиристодашуда ба боздидкунандагони нав то дафъаи навбатии revalidate-и
+// РОҲ (на танҳо маълумот) куҳна мемонад. revalidate-и якхела (15с) дар
+// ин ҷо ҳарду сатҳро синхрон нигоҳ медорад.
+export const revalidate = 15;
+
 export default async function HomePage() {
   let initialItems: Awaited<ReturnType<typeof ItemService.getItems>> = [];
   try {

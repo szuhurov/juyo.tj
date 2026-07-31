@@ -60,9 +60,18 @@ function PostAsUserContent() {
   const [reward, setReward] = useState("");
 
   const [images, setImages] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [blurredDone, setBlurredDone] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Бозсозии preview-и аксҳо ҳар дафъае, ки images иваз мешавад (аз
+  // интихоби нав ё аз натиҷаи мозаика) — object URL-ҳои кӯҳна озод мешаванд.
+  useEffect(() => {
+    const urls = images.map((f) => URL.createObjectURL(f));
+    setPreviewUrls(urls);
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
+  }, [images]);
 
   useEffect(() => {
     if (!debouncedSearch.trim()) {
