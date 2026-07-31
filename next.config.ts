@@ -77,16 +77,14 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    formats: ["image/avif", "image/webp"],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     remotePatterns,
     contentDispositionType: "inline",
-    // Пешфарз 60 сония буд — суратҳои эълонҳо номи файли бетакрор доранд
-    // (Date.now()+random, ниг. items/add ва items/[id]/edit), яъне як URL
-    // ҳаргиз мӯҳтавояшро иваз намекунад. Кэши 1-сола маънои онро дорад, ки
-    // сурате, ки як бор оптимизатсия шудааст, дигар ҳар 60 сония бозоптими-
-    // затсия намешавад (сабаби асосии "суратҳо дер бор мешаванд").
-    minimumCacheTTL: 31536000,
+    // Ҳадди Image Optimization-и Vercel (шумораи аксҳои беназир дар моҳ)
+    // тамом шуд (402 Payment Required — OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED)
+    // баъд аз воридкунии якчанд садто акси нав аз Telegram. Бе optimizer,
+    // аксҳо мустақим аз URL-и аслӣ (Supabase Storage/Clerk) фиристода
+    // мешаванд — андозаашон каме калонтар, вале ягон ҳад/пардохт лозим нест.
+    unoptimized: true,
   },
 
   compress: true,
