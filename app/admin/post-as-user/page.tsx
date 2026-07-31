@@ -100,7 +100,8 @@ function PostAsUserContent() {
   async function handleSubmit() {
     if (!selectedUser) return toast.error("Аввал корбарро интихоб кунед");
     if (!title.trim() || !description.trim()) return toast.error("Унвон ва тавсиф ҳатмист");
-    if (images.length > 0 && !blurredDone) {
+    if (images.length === 0) return toast.error("Ҳадди ақал як акс ҳатмист");
+    if (!blurredDone) {
       const proceed = window.confirm(
         "Шумо мозаика насохтед. Оё мутмаинед, ки дар аксҳо маълумоти ҳассос (рақами шиноснома, чек ва ғ.) нест?",
       );
