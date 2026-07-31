@@ -120,6 +120,11 @@ export function useItemDetails(id: string, token: string | null | undefined, ini
     // Агар зудтар иҷро шавад, anon client эълонҳои pending/rejected-ро дида наметавонад.
     enabled: !!id && token !== undefined,
     staleTime: 1000 * 30,
+    // Ҳар дафъае, ки саҳифаи муфассал кушода мешавад, ҳатман аз сервер нав
+    // мегирад (на кэши куҳна) — moderation_status ва аксҳо метавонанд байни
+    // боздидҳо тағир ёбанд (RLS-и item_images ба moderation_status вобаста
+    // аст), пас кэши stale метавонад акси нодуруст/холӣ нишон диҳад.
+    refetchOnMount: "always",
   });
 }
 
