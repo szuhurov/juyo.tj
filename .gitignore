@@ -42,3 +42,8 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# claude code — rules/skills/agents ARE committed, only these stay local
+/.claude/settings.local.json
+/.claude/claims/
+/.claude/scheduled_tasks.lock
