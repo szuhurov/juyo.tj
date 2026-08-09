@@ -44,9 +44,9 @@ export function ItemFeedCard({ item }: { item: Item }) {
     <Link
       href={`/items/${item.id}`}
       prefetch
-      className="flex flex-col gap-2 rounded-[1.125rem] p-2 bg-white dark:bg-gradient-to-b dark:from-zinc-900 dark:to-emerald-800/70 shadow-[0_1px_2px_rgba(5,150,105,0.09),0_9px_20px_rgba(5,150,105,0.16),0_18px_36px_-14px_rgba(5,150,105,0.21)] dark:shadow-none dark:border dark:border-emerald-900/30 overflow-hidden"
+      className="flex flex-col gap-2 rounded-[1.125rem] p-1.5 bg-white dark:bg-gradient-to-b dark:from-zinc-900 dark:to-emerald-800/70 shadow-[0_1px_2px_rgba(5,150,105,0.09),0_9px_20px_rgba(5,150,105,0.16),0_18px_36px_-14px_rgba(5,150,105,0.21)] dark:shadow-none dark:border dark:border-emerald-900/30 overflow-hidden"
     >
-      <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-800">
         {thumb && (
           <Image
             src={thumb}
@@ -80,7 +80,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
         </button>
       </div>
 
-      <div className="px-1 pb-1 flex flex-col flex-1 gap-0.5">
+      <div className="px-2 pb-2 flex flex-col flex-1 gap-0.5">
         <div className="flex items-center justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate font-extrabold text-[15px] min-[1084px]:text-base min-[1503px]:text-lg text-zinc-900 dark:text-zinc-100">
             {item.title || item.category}

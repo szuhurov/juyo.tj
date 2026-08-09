@@ -427,14 +427,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         category === "All" &&
         itemType === null &&
         !isSearchTyping ? (
-          <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2 sm:gap-3">
             {[...Array(8)].map((_, i) => (
               <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
             ))}
           </div>
         ) : displayedItems.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2.5 sm:gap-3">
+            <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2 sm:gap-3">
               {displayedItems.map((item) => (
                 <ItemFeedCard key={item.id} item={item} />
               ))}
@@ -485,7 +485,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 function HomeSkeleton() {
   return (
     <div className="w-full px-3 sm:px-4 pt-[181px] min-[768px]:pt-[189px] min-[1084px]:pt-[197px] min-[1503px]:pt-[205px] min-[1920px]:pt-[213px]">
-      <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2 sm:gap-3">
         {[...Array(8)].map((_, i) => (
           <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
         ))}
