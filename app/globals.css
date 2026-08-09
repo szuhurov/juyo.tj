@@ -1,7 +1,17 @@
 @import "tailwindcss";
 
+/* Ҷои scrollbar ҳамеша холӣ мемонад (ҳатто вақте ки мӯҳтаво кӯтоҳ аст ва
+   scrollbar нест) — бе ин, пайдо/нопадид шудани scrollbar (~15-17px)
+   васеъгии CSS-и саҳифаро тағйир медиҳад ва breakpoint-ҳои дақиқи grid-ро
+   (масалан min-[2023px]) ноустувор мекунад. */
+html { scrollbar-gutter: stable; }
+
 * { -webkit-tap-highlight-color: transparent; }
 .no-flicker { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+/* Home-и филтр pill-ҳо ва carousel-и "имрӯз" ба ин такя мекунанд (scroll
+   бо муш/ангушт кор мекунад, танҳо scrollbar-и намоён пинҳон мешавад). */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 @plugin "tailwindcss-animate";
 
@@ -10,7 +20,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  /* Пеш аз ин ба Inter ишора мекард. Nunito-и воқеан боршуда
+     (app/layout.tsx, next/font/google) инҷо мустақим васл шуд, то
+     font-sans (body-и layout) ниҳоят Nunito-ро истифода барад. */
+  --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -38,6 +51,17 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /* Ҳадди дизайни сатҳи iOS (HIG): scale-и собити radius/shadow/motion,
+     то ба ҷои арзишҳои тасодуфӣ дар ҳар компонент, ҳама ҷо аз ҳамин
+     токенҳо истифода шавад. */
+  --radius-control: 0.875rem; /* 14px — тугма, input, pill-набуда */
+  --radius-card: 1.25rem; /* 20px — card, sheet/dialog content */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
+  --shadow-2: 0 1px 2px rgba(5, 150, 105, 0.09), 0 9px 20px rgba(5, 150, 105, 0.16),
+    0 18px 36px -14px rgba(5, 150, 105, 0.21); /* тобиши сабз (emerald-600) */
+  --shadow-3: 0 8px 30px rgba(0, 0, 0, 0.18); /* floating — modal/sheet/FAB */
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1); /* хамон curve-и sheet-и iOS */
 
   --animate-scan: scan 2s ease-in-out infinite alternate;
   --animate-scan-fast: scan-fast 1.5s linear infinite;
@@ -140,6 +164,11 @@
     min-height: 100%;
     display: flex;
     flex-direction: column;
+    /* Nunito x-height-аш аз Inter (фонти пешина) хурдтар аст — дар ҳамон
+       font-size матн хурдтар менамуд. font-size-adjust андозаи намоёни
+       матнро калон мекунад, бе он ки худи font-size/padding-ро тағйир
+       диҳад — ба ин васила ҳама text-[Npx]-и arbitrary низ фаро мегирад. */
+    font-size-adjust: 0.56;
   }
 }
 

@@ -228,7 +228,7 @@ export default function ScanPage() {
           {!isBlocked && (
             <Button
               onClick={handlePermissionClick}
-              className="bg-zinc-900 text-white font-black text-[10px] tracking-widest px-12 h-14 rounded-2xl active:scale-95 transition-all border-none"
+              className="bg-emerald-500 text-white font-black text-[10px] tracking-widest px-12 h-14 rounded-2xl transition-all border-none"
             >
               {t('permissionGrant') || 'Иҷозат додан'}
             </Button>
@@ -288,7 +288,7 @@ export default function ScanPage() {
                   setError(err instanceof Error ? err.message : "error");
                 }
               }}
-              className="w-full h-14 rounded-2xl bg-zinc-900 text-white font-black tracking-widest text-xs hover:bg-zinc-800 transition-all active:scale-95"
+              className="w-full h-14 rounded-2xl bg-emerald-500 text-white font-black tracking-widest text-xs hover:bg-emerald-600 transition-all"
             >
               {t('confirm') || 'OK'}
             </Button>

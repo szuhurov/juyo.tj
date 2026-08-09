@@ -4,7 +4,7 @@
  */ "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Item, ItemService } from "@/lib/services/item-service";
+import { Item, ItemService, UNSPECIFIED_REWARD } from "@/lib/services/item-service";
 import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   Phone,
   Eye,
   User,
+  ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Share2,
@@ -350,9 +351,9 @@ export default function ItemDetailsClient({
 
   return (
     <TooltipProvider>
-      <div className="mx-auto max-w-6xl md:pt-8 md:px-4">
+      <div className="min-h-screen bg-white dark:bg-zinc-950 mx-auto max-w-6xl md:pt-8 md:px-4">
         <div className="flex flex-col md:grid md:grid-cols-2 gap-0 md:gap-12 md:items-start relative">
-          <div className="sticky top-0 md:top-24 z-0 w-full h-[100vw] md:h-auto md:aspect-square flex items-start justify-center md:self-start">
+          <div className="sticky top-12 sm:top-16 md:top-24 z-0 w-full h-[100vw] md:h-auto md:aspect-square flex items-start justify-center md:self-start">
             <div className="relative w-full h-full md:rounded-[32px] overflow-hidden border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 md:shadow-xl group shimmer-bg">
               <div
                 ref={scrollContainerRef}
@@ -373,14 +374,28 @@ export default function ItemDetailsClient({
                 {images.map((img, index) => (
                   <div
                     key={index}
-                    className="h-full w-full shrink-0 snap-center relative"
+                    className="h-full w-full shrink-0 snap-center relative overflow-hidden"
                   >
+                    {/* Background — ҳамон акс, calon-шуда ва blur-шуда, то
+                        фазои холии canorho (агар нисбати акс мувофиқ
+                        набошад) бо контексти рангии худи акс пур шавад,
+                        на бо ранги ҳамвор (мисли Instagram Stories). */}
+                    <Image
+                      src={img.image_url}
+                      alt=""
+                      aria-hidden="true"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover scale-110 blur-2xl opacity-70"
+                      priority={index === 0}
+                      quality={20}
+                    />
                     <Image
                       src={img.image_url}
                       alt={item?.title || "JUYO Item"}
                       fill
                       sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-contain"
+                      className="relative z-10 object-contain"
                       priority={index === 0}
                       quality={90}
                     />
@@ -392,13 +407,13 @@ export default function ItemDetailsClient({
                 <>
                   <button
                     onClick={goToPrev}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/40 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={goToNext}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/40 transition-colors"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -422,43 +437,58 @@ export default function ItemDetailsClient({
               )}
 
               {images.length > 1 && (
-                <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full z-20 pointer-events-none">
+                <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full z-20 pointer-events-none">
                   <p className="text-[10px] font-black text-white tracking-widest">
                     {currentImageIndex + 1} / {images.length}
                   </p>
                 </div>
               )}
 
-              <Badge
-                className={cn(
-                  "absolute top-4 left-4 font-black rounded-md px-3 py-1 shadow-md border-none z-10",
-                  item?.type === "lost"
-                    ? "bg-red-600 text-white"
-                    : "bg-emerald-700 text-white",
-                )}
-              >
-                {item?.type === "lost" ? t("lost") : t("found")}
-              </Badge>
+              <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  aria-label={t("back")}
+                  className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/40 transition-colors shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <Badge
+                  className={cn(
+                    "font-black rounded-md px-3 py-1 shadow-md border-none",
+                    item?.type === "lost"
+                      ? "bg-red-600 text-white"
+                      : "bg-emerald-500 text-white",
+                  )}
+                >
+                  {item?.type === "lost" ? t("lost") : t("found")}
+                </Badge>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12 shadow-[0_-10px_40px_rgba(0,0,0,0.1)] md:shadow-none">
-            <div className="flex justify-between items-center mb-6 pb-6 border-b border-zinc-100 dark:border-zinc-800">
+          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12">
+            {/* Дастаки кашиш (drag handle) — мисли bottom sheet-и iOS/app-и
+                мобилӣ, нишон медиҳад ки ин панел боло-поён мешавад. */}
+            <div className="md:hidden flex justify-center -mt-6 mb-4">
+              <div className="w-10 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+            </div>
+            <div className="flex justify-between items-center mb-5">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12 border border-zinc-200 shadow-sm">
+                  <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-zinc-200 shadow-sm">
                     <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
                     <AvatarFallback className="bg-zinc-50 dark:bg-zinc-900">
-                      <User className="w-6 h-6 text-zinc-400" />
+                      <User className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 text-zinc-400" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <p className="font-black text-sm leading-tight flex items-center gap-1">
+                    <p className="font-black text-sm min-[1084px]:text-base min-[1920px]:text-lg leading-tight flex items-center gap-1">
                       {item.profiles?.first_name || t("user")}
                       {item.profiles?.is_verified && <VerifiedBadge />}
                     </p>
                     {item.profiles?.last_name && (
-                      <p className="text-[10px] text-zinc-500 font-bold tracking-tight">
+                      <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs text-zinc-500 font-bold tracking-tight">
                         {item.profiles.last_name}
                       </p>
                     )}
@@ -474,8 +504,8 @@ export default function ItemDetailsClient({
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-zinc-500 text-xs font-black">
-                  <Eye className="w-4 h-4" /> {item?.views || 0}
+                <div className="flex items-center gap-1.5 text-zinc-500 text-xs min-[1084px]:text-sm font-black">
+                  <Eye className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" /> {item?.views || 0}
                 </div>
                 {isLoaded && !isOwner && userId && (
                   <DropdownMenu>
@@ -508,36 +538,36 @@ export default function ItemDetailsClient({
               </div>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none mb-3">
-              {item?.title}
-            </h1>
-            <Badge
-              className={cn(
-                "font-black rounded-md px-3 py-1 shadow-md border-none mb-6 w-fit text-sm",
-                item?.type === "lost"
-                  ? "bg-red-600 text-white"
-                  : "bg-emerald-700 text-white",
-              )}
-            >
-              {item?.type === "lost" ? t("lost") : t("found")}
-            </Badge>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h1 className="min-w-0 truncate text-2xl min-[1503px]:text-3xl font-black tracking-tighter leading-none">
+                {item?.title}
+              </h1>
+              <Badge
+                className={cn(
+                  "shrink-0 font-black rounded-md px-3 py-1 shadow-md border-none text-sm",
+                  item?.type === "lost"
+                    ? "bg-red-600 text-white"
+                    : "bg-emerald-500 text-white",
+                )}
+              >
+                {item?.type === "lost" ? t("lost") : t("found")}
+              </Badge>
+            </div>
 
-            {item?.type === "lost" && item.reward && (
-              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 rounded-xl p-3 mb-8 shadow-sm">
-                <p className="text-emerald-600 font-black text-[9px] mb-0.5">
-                  {t("reward_gives_viewer")}
-                </p>
-                <p className="text-xl font-black text-emerald-900 dark:text-emerald-100">
-                  {item.reward} TJS
-                </p>
+            <div className="mb-5">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <h2 className="font-black text-base min-[1084px]:text-lg min-[1503px]:text-xl text-zinc-500">
+                  {t("description")}
+                </h2>
+                {item?.type === "lost" && item.reward && (
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-sm min-[1503px]:text-base font-black shadow-md">
+                    {item.reward === UNSPECIFIED_REWARD
+                      ? t("reward_unspecified_viewer")
+                      : `${t("reward_gives_viewer")} ${item.reward} TJS`}
+                  </span>
+                )}
               </div>
-            )}
-
-            <div className="mb-8">
-              <h2 className="font-black text-[10px] text-zinc-500 mb-4">
-                {t("description")}
-              </h2>
-              <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base whitespace-pre-wrap font-medium">
+              <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base min-[1084px]:text-lg min-[1503px]:text-xl whitespace-pre-wrap font-medium">
                 {item?.description}
               </p>
             </div>
@@ -549,22 +579,22 @@ export default function ItemDetailsClient({
                     variant="secondary"
                     size="icon"
                     aria-label={t("edit")}
-                    className="flex-1 h-12 md:h-16 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-sm"
+                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-md"
                     asChild
                   >
                     <Link href={`/items/${id}/edit`}>
-                      <Pencil className="w-5 h-5 md:w-7 md:h-7" />
+                      <Pencil className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
                     </Link>
                   </Button>
                   <Button
                     variant="secondary"
                     size="icon"
                     aria-label={t("delete")}
-                    className="flex-1 h-12 md:h-16 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-sm"
+                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-md"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isActionLoading}
                   >
-                    <Trash2 className="w-5 h-5 md:w-7 md:h-7" />
+                    <Trash2 className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
                   </Button>
                 </>
               )}
@@ -572,27 +602,22 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={t("share")}
-                className="flex-1 h-12 md:h-16 rounded-lg bg-blue-50 dark:bg-blue-900/10 text-blue-600 border border-blue-100/50 shadow-sm"
+                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 shadow-md"
                 onClick={handleShare}
               >
-                <Share2 className="w-5 h-5 md:w-7 md:h-7" />
+                <Share2 className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
               </Button>
               <Button
                 variant="secondary"
                 size="icon"
                 aria-label={isSaved ? t("removedFromSaved") : t("addedToSaved")}
-                className={cn(
-                  "flex-1 h-12 md:h-16 rounded-lg transition-all border shadow-sm",
-                  isSaved
-                    ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                    : "bg-zinc-50 dark:bg-zinc-900/50 border-zinc-100",
-                )}
+                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 shadow-md transition-all"
                 onClick={toggleSave}
                 disabled={isToggling}
               >
                 <Bookmark
                   className={cn(
-                    "w-5 h-5 md:w-7 md:h-7",
+                    "w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9",
                     isSaved && "fill-emerald-600",
                   )}
                 />
@@ -603,26 +628,26 @@ export default function ItemDetailsClient({
               {isLoaded && isOwner ? (
                 <Button
                   size="lg"
-                  className="h-14 md:h-16 w-full rounded-2xl font-black bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg"
+                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
                   onClick={() => setShowResolvedConfirm(true)}
                   disabled={isActionLoading}
                 >
-                  <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 mr-2" />{" "}
+                  <CheckCircle2 className="w-5 h-5 min-[768px]:w-6 min-[768px]:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" />{" "}
                   {t("resolved")}?
                 </Button>
               ) : item?.phone_number ? (
                 <Button
                   size="lg"
-                  className="h-14 md:h-16 w-full rounded-2xl font-black bg-zinc-900 hover:bg-zinc-800 text-white shadow-lg"
+                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
                   asChild
                 >
                   <a href={`tel:${item.phone_number}`}>
-                    <Phone className="w-5 h-5 md:w-6 md:h-6 mr-2" /> {t("call")}
+                    <Phone className="w-5 h-5 min-[768px]:w-6 min-[768px]:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" /> {t("call")}
                   </a>
                 </Button>
               ) : (
-                <div className="h-14 md:h-16 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 text-zinc-400 font-bold text-sm text-center px-4">
-                  <Phone className="w-5 h-5 shrink-0" /> {t("phoneNotAvailable")}
+                <div className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 text-zinc-400 font-bold text-sm min-[1503px]:text-base text-center px-4">
+                  <Phone className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0" /> {t("phoneNotAvailable")}
                 </div>
               )}
             </div>
@@ -679,7 +704,7 @@ export default function ItemDetailsClient({
                 {t("cancel")}
               </Button>
               <Button
-                className="bg-emerald-600"
+                className="bg-emerald-500 hover:bg-emerald-600"
                 onClick={handleResolved}
                 disabled={isActionLoading}
               >
@@ -727,7 +752,7 @@ export default function ItemDetailsClient({
             <DialogFooter className="pt-2">
               <Button
                 type="button"
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 text-white"
+                className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white"
                 onClick={() => setShowBlockedInfo(false)}
               >
                 {t("ok")}

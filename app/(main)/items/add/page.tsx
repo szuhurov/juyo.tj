@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
-import { CATEGORIES } from "@/lib/services/item-service";
+import { CATEGORIES, UNSPECIFIED_REWARD } from "@/lib/services/item-service";
 import { ProfileService } from "@/lib/services/profile-service";
 import {
   createClerkSupabaseClient,
@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
@@ -72,6 +73,7 @@ function AddItemForm() {
   // Ҳолатҳои форма (Form States)
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [rewardEnabled, setRewardEnabled] = useState(false);
 
   // Маълумоти эълон (Consolidated State for better stability)
   const [formData, setFormData] = useState({
@@ -81,11 +83,17 @@ function AddItemForm() {
     description: "",
     phone: "",
     reward: "",
+    locationType: null as "taxi" | "hotel_restaurant" | "public_place" | "airport" | null,
   });
+  // Қадами 6 ("дар куҷо?") аз рӯи интихоб маҷбурист — вале "Дигар" низ як
+  // интихоби эътиборнок аст (locationType ҳамоно null мемонад). Ин flag
+  // танҳо барои фарқ кардани "ҳанӯз интихоб накардааст" аз "Дигарро
+  // интихоб кард" лозим аст, то RadioGroup аз аввал холӣ намояд.
+  const [locationAnswered, setLocationAnswered] = useState(false);
 
   // Тартиби воқеии қадамҳо аз рӯи навигатсия — қадами 3 (санҷиши AI)
-  // охирин аст, на сеюм (ниг. nextStep/onFinalSubmit поён).
-  const stepOrder = [1, 2, 4, 5, 3];
+  // охирин аст, на сеюм; қадами 6 ("дар куҷо?") пас аз тафсилот ҷойгир аст.
+  const stepOrder = [1, 2, 4, 6, 5, 3];
   const stepIndex = stepOrder.indexOf(step);
 
   const [images, setImages] = useState<File[]>([]);
@@ -111,6 +119,9 @@ function AddItemForm() {
     "idle" | "checking" | "passed" | "failed"
   >("idle");
   const [moderationError, setModerationError] = useState<string | null>(null);
+  const [moderationViolationSource, setModerationViolationSource] = useState<
+    "image" | "text" | "both" | null
+  >(null);
 
   const [scanMessage, setScanMessage] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -238,15 +249,19 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      // Ҳеҷ AI дар ин ҷо кор намекунад — корбар худаш маълумотро пур мекунад.
-      // AI ягона бор, дар охир (onFinalSubmit), акс+матни ниҳоиро месанҷад.
-      setStep(4);
+      setStep(4); // Тафсилот пеш аз "дар куҷо?"
     } else if (step === 4) {
       if (
         !formData.title.trim() ||
         !formData.category ||
         !formData.description.trim()
       ) {
+        toast.error(t("fillAllFields"));
+        return;
+      }
+      setStep(6); // Қадами ихтиёрии "дар куҷо гум/ёфт кардед?" пас аз тафсилот
+    } else if (step === 6) {
+      if (!locationAnswered) {
         toast.error(t("fillAllFields"));
         return;
       }
@@ -262,10 +277,12 @@ function AddItemForm() {
 
   const prevStep = () => {
     if (step === 4) {
-      setStep(2); // Skip Step 3 (Scan) and go to Type Selection
+      setStep(2);
       setModerationStatus("idle");
+    } else if (step === 6) {
+      setStep(4); // Back to details, not straight to Type
     } else if (step === 5) {
-      setStep(4);
+      setStep(6);
     } else if (step > 1 && step !== 3) {
       setStep(step - 1);
       // Reset moderation if going back to edit photos or type
@@ -338,6 +355,7 @@ function AddItemForm() {
               t("ai_steps.text_moderation_failed") ||
               "Эълони шумо ба қоидаҳо мувофиқат намекунад.",
           );
+          setModerationViolationSource(checkData?.violation_source ?? null);
           setLoading(false);
           return;
         }
@@ -435,13 +453,16 @@ function AddItemForm() {
         type: formData.type,
         phone_number: formData.phone,
         reward:
-          formData.type === "lost" && formData.reward
-            ? `${formData.reward}`
+          formData.type === "lost"
+            ? rewardEnabled
+              ? UNSPECIFIED_REWARD
+              : formData.reward || null
             : null,
         date: new Date().toISOString().split("T")[0],
         is_resolved: false,
         moderation_status: finalModerationStatus,
         moderation_result: finalModerationResult,
+        location_type: formData.locationType,
       };
 
       const { data: item, error: itemError } = await supabase
@@ -539,9 +560,9 @@ function AddItemForm() {
         <CardContent className="p-2 sm:p-4 md:p-6 lg:p-8 flex-1 flex flex-col justify-start pt-10 sm:pt-6 overflow-y-auto scrollbar-none">
           {/* Step 1: Photos First (Refined) */}
           {step === 1 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full pt-4">
+            <div className="space-y-6 w-full pt-4">
               <div className="text-center space-y-1 mb-8">
-                <h2 className="text-2xl font-black tracking-tight text-zinc-800">
+                <h2 className="text-2xl min-[1503px]:text-3xl min-[1920px]:text-[32px] font-black tracking-tight text-emerald-600 dark:text-emerald-400">
                   {t("pickImage")}
                 </h2>
               </div>
@@ -549,12 +570,12 @@ function AddItemForm() {
                 {images.length < 5 && (
                   <div
                     onClick={() => setShowPhotoChoice(true)}
-                    className="aspect-square flex flex-col items-center justify-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer hover:bg-emerald-50/30 transition-all active:scale-95 group order-first shadow-sm"
+                    className="aspect-square flex flex-col items-center justify-center gap-2.5 border-2 border-dashed border-emerald-200 dark:border-emerald-900/50 rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/50 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 hover:bg-emerald-50/30 transition-all group order-first shadow-sm"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
-                      <Plus className="w-5 h-5" />
+                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 shadow-md ring-1 ring-zinc-100 dark:ring-zinc-800 group-hover:bg-zinc-500 group-hover:text-white group-hover:ring-zinc-500 group-hover:shadow-lg transition-all">
+                      <Plus className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7" strokeWidth={3} />
                     </div>
-                    <span className="mt-2.5 text-[8px] font-black tracking-widest text-zinc-400 group-hover:text-emerald-600 transition-colors">
+                    <span className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-black tracking-wide text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-500 dark:group-hover:text-zinc-400 transition-colors text-center px-1">
                       {t("pickImage")}
                     </span>
                   </div>
@@ -577,9 +598,9 @@ function AddItemForm() {
                         e.stopPropagation();
                         removeImage(i);
                       }}
-                      className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 text-red-500 p-1.5 rounded-lg shadow-lg active:scale-90 transition-all z-20"
+                      className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 text-red-500 p-1.5 min-[1084px]:p-2 rounded-lg shadow-lg transition-all z-20"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 min-[1920px]:w-4 min-[1920px]:h-4" />
                     </button>
                   </div>
                 ))}
@@ -598,7 +619,7 @@ function AddItemForm() {
               <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
                 <DialogContent className="max-w-[320px] rounded-[1.5rem] p-5 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
                   <DialogHeader className="mb-2">
-                    <DialogTitle className="text-lg font-black tracking-tight text-center text-emerald-600">
+                    <DialogTitle className="text-lg min-[1084px]:text-xl min-[1920px]:text-2xl font-black tracking-tight text-center text-emerald-600">
                       {t("choose_photo_method")}
                     </DialogTitle>
                   </DialogHeader>
@@ -611,10 +632,10 @@ function AddItemForm() {
                         setShowCameraCapture(true);
                       }}
                     >
-                      <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all shadow-sm">
-                        <Camera className="w-5 h-5" />
+                      <div className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all shadow-sm">
+                        <Camera className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7" />
                       </div>
-                      <span className="text-[9px] font-black tracking-widest text-blue-700">
+                      <span className="text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-black tracking-widest text-blue-700">
                         {t("camera")}
                       </span>
                     </Button>
@@ -626,10 +647,10 @@ function AddItemForm() {
                         galleryInputRef.current?.click();
                       }}
                     >
-                      <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all shadow-sm">
-                        <ImageIcon className="w-5 h-5" />
+                      <div className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all shadow-sm">
+                        <ImageIcon className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7" />
                       </div>
-                      <span className="text-[9px] font-black tracking-widest text-orange-700">
+                      <span className="text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-black tracking-widest text-orange-700">
                         {t("gallery")}
                       </span>
                     </Button>
@@ -647,9 +668,9 @@ function AddItemForm() {
 
           {/* Step 2: Type Selection */}
           {step === 2 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
+            <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1">
-                <h2 className="text-2xl font-black tracking-tight">
+                <h2 className="text-2xl min-[1503px]:text-3xl min-[1920px]:text-[32px] font-black tracking-tight text-emerald-600 dark:text-emerald-400">
                   {t("what_happened")}
                 </h2>
               </div>
@@ -666,46 +687,46 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="lost"
-                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-5 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
+                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-5 min-[1084px]:p-6 min-[1920px]:p-7 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <div className="w-14 h-14 min-[1084px]:w-16 min-[1084px]:h-16 min-[1920px]:w-[72px] min-[1920px]:h-[72px] rounded-2xl bg-red-100 flex items-center justify-center text-2xl min-[1084px]:text-3xl min-[1920px]:text-4xl group-hover:scale-110 transition-transform">
                       🔍
                     </div>
                     <div className="flex-1">
-                      <span className="block font-black text-lg leading-none mb-1">
+                      <span className="block font-black text-lg min-[1084px]:text-xl min-[1920px]:text-2xl leading-none mb-1 text-red-600 dark:text-red-500">
                         {t("lost")}
                       </span>
-                      <span className="text-zinc-500 text-[10px] font-bold">
+                      <span className="text-zinc-500 text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] font-bold">
                         {t("lost_desc")}
                       </span>
                     </div>
                     <RadioGroupItem
                       value="lost"
                       id="lost"
-                      className="w-6 h-6 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
                     />
                   </Label>
                 </div>
                 <div className="relative">
                   <Label
                     htmlFor="found"
-                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-5 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
+                    className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-5 min-[1084px]:p-6 min-[1920px]:p-7 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <div className="w-14 h-14 min-[1084px]:w-16 min-[1084px]:h-16 min-[1920px]:w-[72px] min-[1920px]:h-[72px] rounded-2xl bg-emerald-100 flex items-center justify-center text-2xl min-[1084px]:text-3xl min-[1920px]:text-4xl group-hover:scale-110 transition-transform">
                       🎁
                     </div>
                     <div className="flex-1">
-                      <span className="block font-black text-lg leading-none mb-1">
+                      <span className="block font-black text-lg min-[1084px]:text-xl min-[1920px]:text-2xl leading-none mb-1 text-emerald-600 dark:text-emerald-500">
                         {t("found")}
                       </span>
-                      <span className="text-zinc-500 text-[10px] font-bold">
+                      <span className="text-zinc-500 text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] font-bold">
                         {t("found_desc")}
                       </span>
                     </div>
                     <RadioGroupItem
                       value="found"
                       id="found"
-                      className="w-6 h-6 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
                     />
                   </Label>
                 </div>
@@ -713,9 +734,69 @@ function AddItemForm() {
             </div>
           )}
 
+          {/* Step 6: Ҷои гумшудан/ёфтшудан (ихтиёрӣ) */}
+          {step === 6 && (
+            <div className="space-y-6 max-w-lg mx-auto w-full">
+              <div className="text-center space-y-1">
+                <h2 className="text-2xl min-[1503px]:text-3xl min-[1920px]:text-[32px] font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+                  {formData.type === "lost"
+                    ? t("addItemLocationStep.titleLost")
+                    : formData.type === "found"
+                      ? t("addItemLocationStep.titleFound")
+                      : t("addItemLocationStep.title")}
+                </h2>
+              </div>
+              <RadioGroup
+                value={locationAnswered ? formData.locationType || "none" : undefined}
+                onValueChange={(val) => {
+                  setLocationAnswered(true);
+                  setFormData((prev) => ({
+                    ...prev,
+                    locationType:
+                      val === "none"
+                        ? null
+                        : (val as "taxi" | "hotel_restaurant" | "public_place" | "airport"),
+                  }));
+                }}
+                className="grid grid-cols-1 gap-3"
+              >
+                {(
+                  [
+                    { value: "taxi", emoji: "🚕" },
+                    { value: "airport", emoji: "✈️" },
+                    { value: "hotel_restaurant", emoji: "🏨" },
+                    { value: "public_place", emoji: "🎭" },
+                    { value: "none", emoji: "🤷" },
+                  ] as const
+                ).map((opt) => (
+                  <div key={opt.value} className="relative">
+                    <Label
+                      htmlFor={`loc-${opt.value}`}
+                      className="flex items-center gap-6 rounded-3xl border-2 border-zinc-100 p-4 min-[1084px]:p-5 min-[1920px]:p-6 hover:bg-zinc-50 has-[button[data-state=checked]]:border-emerald-500 has-[button[data-state=checked]]:bg-emerald-50/30 cursor-pointer transition-all group"
+                    >
+                      <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 rounded-2xl bg-zinc-100 flex items-center justify-center text-xl min-[1084px]:text-2xl min-[1920px]:text-3xl group-hover:scale-110 transition-transform">
+                        {opt.emoji}
+                      </div>
+                      <span className="flex-1 font-black text-sm min-[1084px]:text-base min-[1920px]:text-lg">
+                        {opt.value === "none"
+                          ? t("addItemLocationStep.notSpecified")
+                          : t(`addItemLocationStep.${opt.value}`)}
+                      </span>
+                      <RadioGroupItem
+                        value={opt.value}
+                        id={`loc-${opt.value}`}
+                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      />
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
+
           {/* Step 3: AI Scanning & Auto-fill (Inline Visual Search Style) */}
           {step === 3 && (
-            <div className="space-y-6 text-center animate-in fade-in zoom-in duration-500 max-w-5xl mx-auto w-full py-2 flex-1 flex flex-col justify-start pt-4 sm:pt-6">
+            <div className="space-y-6 text-center max-w-5xl mx-auto w-full py-2 flex-1 flex flex-col justify-start pt-4 sm:pt-6">
               {moderationStatus === "checking" && (
                 <div className="flex flex-col items-center gap-4 w-full">
                   <div className="relative group w-full aspect-square max-w-[85vw] sm:max-w-[40vh] lg:max-w-[30vh]">
@@ -764,7 +845,7 @@ function AddItemForm() {
                           {/* Timer & Counter Overlay */}
                           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[10px] font-black text-white tracking-widest whitespace-nowrap">
+                            <span className="text-sm min-[1084px]:text-base min-[1920px]:text-lg font-black text-white tracking-widest whitespace-nowrap">
                               {t("ai_steps.seconds_left").replace(
                                 "%{count}",
                                 elapsedSeconds.toString(),
@@ -778,9 +859,9 @@ function AddItemForm() {
 
                   {/* Status Text & Info */}
                   <div className="space-y-4 w-full px-6">
-                    <div className="h-6 flex items-center justify-center">
+                    <div className="h-8 flex items-center justify-center">
                       <p
-                        className="text-emerald-600 font-black text-[10px] sm:text-xs tracking-[0.2em] text-center animate-in slide-in-from-bottom-2 duration-700"
+                        className="text-sm min-[640px]:text-base min-[1084px]:text-lg min-[1920px]:text-xl text-emerald-600 font-black tracking-[0.2em] text-center"
                         key={scanMessage}
                       >
                         {scanMessage}
@@ -793,11 +874,11 @@ function AddItemForm() {
               {/* Failed State UI (White Theme) */}
               {moderationStatus === "failed" && (
                 <div className="space-y-6 text-center max-w-md mx-auto p-6 bg-red-50 rounded-[2.5rem] border border-red-100 shadow-sm">
-                  <div className="w-20 h-20 rounded-[2rem] bg-white flex items-center justify-center mx-auto shadow-sm">
-                    <ShieldAlert className="w-10 h-10 text-red-500" />
+                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-[2rem] bg-white flex items-center justify-center mx-auto shadow-sm">
+                    <ShieldAlert className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-red-500" />
                   </div>
                   <div className="space-y-3">
-                    <h2 className="text-xl font-black tracking-tight text-red-600">
+                    <h2 className="text-xl min-[1503px]:text-2xl min-[1920px]:text-[26px] font-black tracking-tight text-red-600">
                       {t("ai_steps.step5_failed")}
                     </h2>
                     <div className="bg-white p-4 rounded-2xl border border-red-100">
@@ -808,12 +889,28 @@ function AddItemForm() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        // Санҷиши ниҳоӣ акс+матнро якҷоя месанҷад — корбарро
-                        // ба қадами форма (4) бармегардонем, то ислоҳ кунад.
-                        setStep(4);
+                        // Санҷиши ниҳоӣ акс+матнро якҷоя месанҷад — агар
+                        // сабаби рад акс бошад, корбарро ба қадами акс (1)
+                        // бармегардонем ва аксҳои радшударо тоза мекунем, то
+                        // акси наверо интихоб кунад; агар танҳо матн бошад,
+                        // ба қадами тавсиф (4) бармегардонем.
+                        if (
+                          moderationViolationSource === "image" ||
+                          moderationViolationSource === "both"
+                        ) {
+                          setImages([]);
+                          setPreviews((prev) => {
+                            prev.forEach((url) => URL.revokeObjectURL(url));
+                            return [];
+                          });
+                          setStep(1);
+                        } else {
+                          setStep(4);
+                        }
                         setModerationStatus("idle");
+                        setModerationViolationSource(null);
                       }}
-                      className="rounded-xl font-bold text-[10px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100"
+                      className="rounded-xl font-bold text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100"
                     >
                       {t("ai_steps.step5_fix_btn")}
                     </Button>
@@ -825,12 +922,12 @@ function AddItemForm() {
                   нашри ниҳоӣ (боркунии аксҳо, сабти база) экран холӣ/сафед
                   нанамояд. */}
               {moderationStatus === "passed" && (
-                <div className="space-y-6 animate-in zoom-in duration-300 max-w-sm mx-auto w-full">
-                  <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
-                    <CheckCircle2 className="w-10 h-10 text-emerald-500" />
+                <div className="space-y-6 max-w-sm mx-auto w-full">
+                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
+                    <CheckCircle2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-emerald-500" />
                   </div>
                   <div className="space-y-2">
-                    <h2 className="text-xl font-black tracking-tight text-emerald-600">
+                    <h2 className="text-xl min-[1503px]:text-2xl min-[1920px]:text-[26px] font-black tracking-tight text-emerald-600">
                       {t("success")}
                     </h2>
                     <p className="text-zinc-500 dark:text-zinc-400 font-bold text-sm tracking-tight">
@@ -839,7 +936,7 @@ function AddItemForm() {
                   </div>
                   <Button
                     onClick={() => router.push(postSuccessRedirect)}
-                    className="w-full h-14 rounded-2xl font-black tracking-widest text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg"
+                    className="w-full h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] rounded-2xl font-black tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-[15px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
                   >
                     {t("done")}
                   </Button>
@@ -849,9 +946,9 @@ function AddItemForm() {
               {/* Idle — вақте ки корбар дар тирезаи блур аст (privacyReview
                   боз аст) ё AI натиҷаро аллакай пеш аз боркунии ниҳоӣ дод. */}
               {moderationStatus === "idle" && (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                  <div className="w-20 h-20 rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
-                    <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+                <div className="space-y-4">
+                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-[2rem] bg-emerald-50 dark:bg-emerald-900/10 flex items-center justify-center mx-auto shadow-sm">
+                    <Loader2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-emerald-500 animate-spin" />
                   </div>
                 </div>
               )}
@@ -860,14 +957,14 @@ function AddItemForm() {
 
           {/* Step 4: Details (Auto-filled) */}
           {step === 4 && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
+            <div className="space-y-5 max-w-lg mx-auto w-full">
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+                <Label className="text-xs min-[1084px]:text-sm min-[1920px]:text-base font-black tracking-widest text-zinc-400 ml-1">
                   {t("titleLabel")}
                 </Label>
                 <Input
                   placeholder={t("titleLabel")}
-                  className="rounded-xl h-12 bg-white border-zinc-200 text-sm font-bold focus-visible:border-emerald-500 shadow-none ring-2 ring-emerald-500/10"
+                  className="rounded-xl h-12 min-[1084px]:h-14 min-[1920px]:h-[60px] bg-white border-zinc-200 text-base min-[1084px]:text-lg font-bold focus-visible:border-emerald-500 shadow-none ring-2 ring-emerald-500/10"
                   value={formData.title}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -879,7 +976,7 @@ function AddItemForm() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+                <Label className="text-xs min-[1084px]:text-sm min-[1920px]:text-base font-black tracking-widest text-zinc-400 ml-1">
                   {t("categoryLabel")}
                 </Label>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -894,7 +991,7 @@ function AddItemForm() {
                         }))
                       }
                       className={cn(
-                        "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all active:scale-95 text-center",
+                        "flex flex-col items-center gap-1.5 p-2.5 min-[1084px]:p-3 min-[1920px]:p-3.5 rounded-lg border-2 transition-all text-center",
                         formData.category === cat.name
                           ? "border-emerald-500 bg-emerald-50/30 text-emerald-700 shadow-sm"
                           : "border-zinc-100 bg-white hover:border-zinc-200 text-zinc-600",
@@ -902,7 +999,7 @@ function AddItemForm() {
                     >
                       <div
                         className={cn(
-                          "w-6 h-6 rounded-md flex items-center justify-center text-sm shrink-0",
+                          "w-8 h-8 min-[1084px]:w-10 min-[1084px]:h-10 min-[1920px]:w-11 min-[1920px]:h-11 rounded-md flex items-center justify-center text-base min-[1084px]:text-lg shrink-0",
                           formData.category === cat.name
                             ? "bg-emerald-100"
                             : "bg-zinc-50",
@@ -910,7 +1007,7 @@ function AddItemForm() {
                       >
                         {cat.icon}
                       </div>
-                      <span className="text-[8px] font-black tracking-tight leading-tight">
+                      <span className="text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] font-black tracking-tight leading-tight">
                         {t(`categories.${cat.id}`)}
                       </span>
                     </button>
@@ -919,12 +1016,12 @@ function AddItemForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+                <Label className="text-xs min-[1084px]:text-sm min-[1920px]:text-base font-black tracking-widest text-zinc-400 ml-1">
                   {t("description")}
                 </Label>
                 <Textarea
                   placeholder={t("description")}
-                  className="rounded-xl min-h-[100px] bg-white border-zinc-200 text-sm font-medium focus-visible:border-emerald-500 shadow-none resize-none ring-2 ring-emerald-500/10"
+                  className="rounded-xl min-h-[100px] min-[1084px]:min-h-[120px] min-[1920px]:min-h-[140px] bg-white border-zinc-200 text-base min-[1084px]:text-lg font-medium focus-visible:border-emerald-500 shadow-none resize-none ring-2 ring-emerald-500/10"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -939,20 +1036,20 @@ function AddItemForm() {
 
           {/* Step 5: Contact & Reward */}
           {step === 5 && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500 max-w-lg mx-auto w-full">
+            <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1 mb-4">
-                <h2 className="text-2xl font-black tracking-tight">
+                <h2 className="text-2xl min-[1503px]:text-3xl min-[1920px]:text-[32px] font-black tracking-tight text-emerald-600 dark:text-emerald-400">
                   {t("contactInfo") || "Contact Information"}
                 </h2>
               </div>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+                  <Label className="text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] font-black tracking-widest text-zinc-400 ml-1">
                     {t("phoneLabel")}
                   </Label>
                   <Input
                     placeholder={t("phoneLabel")}
-                    className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black px-5 focus-visible:border-emerald-500 transition-all"
+                    className="rounded-xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] bg-white border-zinc-200 text-lg min-[1084px]:text-xl font-black text-emerald-600 px-5 min-[1084px]:px-6 min-[1920px]:px-7 focus-visible:border-emerald-500 transition-all"
                     value={formData.phone}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -965,27 +1062,51 @@ function AddItemForm() {
                   />
                 </div>
                 {formData.type === "lost" && (
-                  <div className="space-y-1.5">
-                    <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
-                      {t("reward_gives_input")}
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-sm text-zinc-400">
-                        TJS
-                      </span>
-                      <Input
-                        placeholder={t("reward_gives_input")}
-                        className="rounded-xl h-14 bg-white border-zinc-200 text-lg font-black pr-14 pl-5 focus-visible:border-emerald-500 transition-all"
-                        value={formData.reward}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            reward: e.target.value.replace(/[^0-9]/g, ""),
-                          }))
-                        }
-                        inputMode="numeric"
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer select-none rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+                      <Checkbox
+                        checked={rewardEnabled}
+                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 rounded-md border-zinc-200"
+                        onCheckedChange={(checked) => {
+                          const isChecked = checked === true;
+                          setRewardEnabled(isChecked);
+                          if (isChecked) {
+                            setFormData((prev) => ({ ...prev, reward: "" }));
+                          }
+                        }}
                       />
-                    </div>
+                      <span className="text-lg min-[1084px]:text-xl font-black text-muted-foreground">
+                        {t("reward_gives")}
+                      </span>
+                    </label>
+                    {!rewardEnabled && (
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] font-black tracking-widest text-zinc-400 ml-1">
+                          {t("reward_gives_input")}
+                        </Label>
+                        <div className="relative">
+                          <span className="absolute right-5 top-1/2 -translate-y-1/2 font-black text-sm min-[1084px]:text-base text-zinc-400">
+                            TJS
+                          </span>
+                          <Input
+                            placeholder={t("reward_gives_input")}
+                            className="rounded-xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] bg-white border-zinc-200 text-lg min-[1084px]:text-xl font-black text-emerald-600 pr-14 pl-5 min-[1084px]:pl-6 min-[1920px]:pl-7 focus-visible:border-emerald-500 transition-all"
+                            value={formData.reward}
+                            onChange={(e) => {
+                              const digits = e.target.value
+                                .replace(/[^0-9]/g, "")
+                                .replace(/^0+/, "")
+                                .slice(0, 4);
+                              setFormData((prev) => ({
+                                ...prev,
+                                reward: digits,
+                              }));
+                            }}
+                            inputMode="numeric"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1002,17 +1123,17 @@ function AddItemForm() {
                 variant="outline"
                 size="lg"
                 onClick={prevStep}
-                className="flex-1 rounded-2xl h-14 border-2 font-black tracking-widest text-[10px] hover:bg-zinc-50 transition-all active:scale-95"
+                className="flex-1 rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] border-2 font-black tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] hover:bg-zinc-50 transition-all"
               >
-                <ArrowLeft className="w-4 h-4 mr-2" />
+                <ArrowLeft className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5 mr-2" />
                 {t("back")}
               </Button>
             )}
-            {(step === 1 || step === 2 || step === 4) && (
+            {(step === 1 || step === 2 || step === 6 || step === 4) && (
               <Button
                 size="lg"
                 onClick={nextStep}
-                className="flex-[1.5] rounded-2xl h-14 font-black tracking-widest text-[10px] bg-zinc-900 hover:bg-zinc-800 shadow-xl active:scale-95 transition-all"
+                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] font-black tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] bg-emerald-500 hover:bg-emerald-600 shadow-xl transition-all"
               >
                 {t("next")}
               </Button>
@@ -1021,10 +1142,10 @@ function AddItemForm() {
               <Button
                 onClick={nextStep}
                 disabled={loading}
-                className="flex-[1.5] rounded-2xl h-14 bg-emerald-500 hover:bg-emerald-600 font-black tracking-widest text-[10px] shadow-xl shadow-emerald-500/20 active:scale-95 transition-all"
+                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] bg-emerald-500 hover:bg-emerald-600 font-black tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] shadow-xl shadow-emerald-500/20 transition-all"
               >
                 {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 animate-spin" />
                 ) : (
                   t("publishBtn")
                 )}
@@ -1047,16 +1168,16 @@ function AddItemForm() {
       >
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
           <div className="p-7 space-y-5 text-center">
-            <div className="w-16 h-16 rounded-[1.5rem] flex items-center justify-center mx-auto bg-red-50 animate-in zoom-in duration-500">
-              <ShieldAlert className="w-8 h-8 text-red-500" />
+            <div className="w-16 h-16 min-[1084px]:w-20 min-[1084px]:h-20 min-[1920px]:w-24 min-[1920px]:h-24 rounded-[1.5rem] flex items-center justify-center mx-auto bg-red-50">
+              <ShieldAlert className="w-8 h-8 min-[1084px]:w-10 min-[1084px]:h-10 min-[1920px]:w-11 min-[1920px]:h-11 text-red-500" />
             </div>
             <div className="space-y-2">
-              <DialogTitle className="text-lg font-black tracking-tight leading-snug">
+              <DialogTitle className="text-lg min-[1084px]:text-xl min-[1920px]:text-2xl font-black tracking-tight leading-snug">
                 {formData.type === "found"
                   ? t("safetyPostModal.foundTitle")
                   : t("safetyPostModal.lostTitle")}
               </DialogTitle>
-              <p className="text-zinc-500 font-bold text-[13px] leading-relaxed">
+              <p className="text-zinc-500 font-bold text-[13px] min-[1084px]:text-sm min-[1920px]:text-base leading-relaxed">
                 {formData.type === "found"
                   ? t("safetyPostModal.foundDesc")
                   : t("safetyPostModal.lostDesc")}
@@ -1070,7 +1191,7 @@ function AddItemForm() {
                 setSafetyAck(null);
                 resolve?.(true);
               }}
-              className="w-full h-14 rounded-2xl font-black tracking-widest text-xs text-white bg-emerald-700 hover:bg-emerald-800 shadow-xl"
+              className="w-full h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] rounded-2xl font-black tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-[15px] text-white bg-emerald-500 hover:bg-emerald-600 shadow-xl"
             >
               {t("safetyPostModal.confirmBtn")}
             </Button>

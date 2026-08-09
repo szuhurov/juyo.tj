@@ -18,6 +18,7 @@ export interface NotificationItem {
   itemId: string;
   itemTitle: string;
   itemImageUrl: string | null;
+  itemType?: "lost" | "found" | null;
   createdAt: string;
   posterName?: string | null;
   posterAvatar?: string | null;
@@ -86,6 +87,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       poster_first_name: string | null;
       poster_last_name: string | null;
       poster_avatar_url: string | null;
+      item_type?: "lost" | "found" | null;
     }
 
     const rows: NotificationItem[] = (catData ?? []).map((row: CategoryNotificationRow) => ({
@@ -94,6 +96,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       itemId: row.item_id,
       itemTitle: row.item_title ?? "",
       itemImageUrl: row.item_image_url ?? null,
+      itemType: row.item_type ?? null,
       createdAt: row.created_at,
       posterName: `${row.poster_first_name ?? ""} ${row.poster_last_name ?? ""}`.trim() || null,
       posterAvatar: row.poster_avatar_url ?? null,
@@ -158,6 +161,19 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     });
   }, []);
 
+  // Ҳамаи сатрҳои ҳозираро якбора "хондашуда" мегузорад (тугмаи
+  // "Ҳамаро хондашуда қайд кунед").
+  const markAllOpened = useCallback(() => {
+    setOpenedIds((prev) => {
+      const next = new Set(prev);
+      for (const item of items) next.add(item.id);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(OPENED_STORAGE_KEY, JSON.stringify([...next]));
+      }
+      return next;
+    });
+  }, [items]);
+
   const count = items.filter((item) => !seenIds.has(item.id)).length;
   const isOpened = useCallback((id: string) => openedIds.has(id), [openedIds]);
 
@@ -185,5 +201,5 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     [getToken],
   );
 
-  return { items, count, loading, refetch: fetchAll, markAllSeen, markOpened, isOpened, dismissNotification };
+  return { items, count, loading, refetch: fetchAll, markAllSeen, markOpened, markAllOpened, isOpened, dismissNotification };
 }

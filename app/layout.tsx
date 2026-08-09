@@ -4,7 +4,7 @@
  * Test commit: git push санҷиш.
  */
 import type { Viewport } from "next"; // Барои танзими маълумоти SEO ва экран
-import { Inter } from "next/font/google"; // Барои истифодаи шрифти Inter
+import { Nunito } from "next/font/google"; // Барои истифодаи шрифти Nunito
 import "./globals.css"; // Пайваст кардани услубҳои асосии CSS
 import { LanguageProvider, type Locale } from "@/lib/language-context"; // Барои идоракунии забони тамоми сайт
 import { Toaster } from "@/components/ui/sonner"; // Барои нишон додани огоҳиномаҳо дар экран
@@ -18,10 +18,11 @@ import { translations } from "@/lib/translations"; // Барои дастрас�
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import Script from "next/script";
 
-// Танзимоти ҳуруфи Inter бо дастгирии алифбои лотинӣ ва кирилӣa
-const inter = Inter({
+// Nunito — мудаввар, дӯстона, ба SF Compact Rounded монанд; дастгирии
+// пурраи алифбои лотинӣ ва кирилӣ (тоҷикӣ/русӣ/англисӣ дар як фонт).
+const nunito = Nunito({
   subsets: ["latin", "cyrillic"],
-  variable: "--font-inter",
+  variable: "--font-nunito",
 });
 
 /**
@@ -143,7 +144,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${inter.variable} h-full antialiased`}
+      className={`${nunito.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

@@ -18,6 +18,7 @@ export type WebPushStatus = "unsupported" | "denied" | "default" | "granted";
 export function useWebPush() {
   const { userId, getToken } = useAuth();
   const [status, setStatus] = useState<WebPushStatus>("default");
+  const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
     // Хониши иҷозати браузер (система берун аз React) ва синхронизатсияи он.
@@ -26,7 +27,14 @@ export function useWebPush() {
       setStatus("unsupported");
       return;
     }
-    setStatus(Notification.permission as WebPushStatus);
+    const permission = Notification.permission as WebPushStatus;
+    setStatus(permission);
+    if (permission === "granted") {
+      navigator.serviceWorker.ready
+        .then((registration) => registration.pushManager.getSubscription())
+        .then((subscription) => setSubscribed(!!subscription))
+        .catch(() => setSubscribed(false));
+    }
   }, []);
 
   const subscribe = useCallback(async () => {
@@ -56,6 +64,7 @@ export function useWebPush() {
           { user_id: userId, platform: "web", token: JSON.stringify(subscription) },
           { onConflict: "user_id,token" },
         );
+      setSubscribed(true);
       return true;
     } catch (err) {
       console.error("web push subscribe failed:", err);
@@ -63,5 +72,32 @@ export function useWebPush() {
     }
   }, [userId, getToken]);
 
-  return { status, subscribe };
+  // Браузер иҷозати Notification-ро аз тарафи сайт бекор карда наметавонад
+  // (танҳо худи корбар аз танзимоти браузер) — вале аз pushManager
+  // unsubscribe кардан мумкин аст, то push дигар нарасад.
+  const unsubscribe = useCallback(async () => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return false;
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        const token = await getToken({ template: "supabase" });
+        if (token) {
+          const supabase = createClerkSupabaseClient(token);
+          await supabase
+            .from("push_tokens")
+            .delete()
+            .eq("token", JSON.stringify(subscription));
+        }
+        await subscription.unsubscribe();
+      }
+      setSubscribed(false);
+      return true;
+    } catch (err) {
+      console.error("web push unsubscribe failed:", err);
+      return false;
+    }
+  }, [getToken]);
+
+  return { status, subscribed, subscribe, unsubscribe };
 }

@@ -49,7 +49,7 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
             className={cn(
               "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-bold transition-colors",
               active
-                ? "bg-zinc-900 text-white shadow-sm"
+                ? "bg-emerald-500 text-white shadow-sm"
                 : "text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900",
             )}
           >

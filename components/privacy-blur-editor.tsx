@@ -665,7 +665,7 @@ export function PrivacyBlurEditor({
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-lg font-black tracking-tight">
+                <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
                   {t("privacyReviewTitle")}
                 </DialogTitle>
                 {slots.length > 1 && (
@@ -674,7 +674,7 @@ export function PrivacyBlurEditor({
                   </span>
                 )}
               </div>
-              <p className="text-xs font-bold text-zinc-400 mt-0.5">
+              <p className="text-sm font-bold text-zinc-400 mt-0.5">
                 {t("privacyReviewDesc")}
               </p>
             </div>
@@ -871,7 +871,7 @@ export function PrivacyBlurEditor({
             type="button"
             onClick={handleFooterButton}
             disabled={!ready}
-            className="w-full h-12 rounded-xl font-black tracking-widest text-xs bg-emerald-700 hover:bg-emerald-800 text-white shadow-lg"
+            className="w-full h-12 rounded-xl font-black tracking-widest text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
           >
             {isLastSlot ? t("privacyConfirmBtn") : t("next")}
           </Button>

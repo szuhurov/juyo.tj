@@ -1,27 +1,32 @@
 "use client";
 
-import Image from "next/image"; // Барои нишон додани суратҳо
-import Link from "next/link"; // Барои пайвандҳо
-import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
-import { Item } from "@/lib/services/item-service"; // Типи маълумоти эълон
-import { Badge } from "@/components/ui/badge"; // Компоненти нишон
-import { Button } from "@/components/ui/button"; // Компоненти тугма
+/**
+ * Card-и эълон барои профил (Эълонҳои ман / Захирашуда) — ба сабки
+ * product-card-и ItemFeedCard-и саҳифаи асосӣ мутобиқ карда шуд (акси
+ * inset бо padding, соя-и мулоим, rounded калон, pill-и поёнӣ). Аз
+ * ItemFeedCard фарқ мекунад: барои соҳиби эълон тугмаҳои edit/delete ва
+ * overlay-и ҳолати moderation (pending/rejected) дорад.
+ */
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Item, UNSPECIFIED_REWARD, ItemService } from "@/lib/services/item-service";
 import {
-  Calendar,
+  ArrowRight,
   Pencil,
   Trash2,
   Loader2,
   ShieldAlert,
   Clock,
-} from "lucide-react"; // Иконкаҳо
-import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { format } from "date-fns"; // Барои формат кардани вақт
-import { cn } from "@/lib/utils"; // Барои классҳои CSS
-import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
-import { useState } from "react"; // Хукҳои React
-import { useAuth } from "@clerk/nextjs"; // Барои аутентификатсия
-import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
-import { ItemService } from "@/lib/services/item-service"; // Сервиси эълонҳо
+  Share2,
+} from "lucide-react";
+import { useLanguage } from "@/lib/language-context";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useState } from "react";
+import { useAuth } from "@clerk/nextjs";
+import { createClerkSupabaseClient } from "@/lib/supabase";
 import {
   Dialog,
   DialogContent,
@@ -29,60 +34,35 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"; // Тирезаҳои огоҳӣ
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
-function capitalizeFirst(text: string) {
-  if (!text) return text;
-  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-}
-
-// Пропҳои компонент
-export function ItemCard({
-  item,
-  index = 0,
-}: {
-  item: Item;
-  index?: number;
-  savedItemIds?: Set<string>;
-}) {
-  // Хукҳо ва лоигкаи асосӣ
+export function ItemCard({ item }: { item: Item; index?: number; savedItemIds?: Set<string> }) {
   const { t } = useLanguage();
   const router = useRouter();
   const { getToken, userId } = useAuth();
 
-  // Состояниеҳо (States) барои идоракунии UI
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Санҷиши соҳиби эълон
   const isOwner = !!userId && userId === item.user_id;
   const exactDate = format(new Date(item.date), "dd.MM.yyyy");
+  const thumb = item.images?.[0]?.image_url;
 
-  // Агар сурат набошад, плейсхолдер мемонем
-  const images =
-    item.images && item.images.length > 0
-      ? item.images
-      : [{ image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO" }];
-
-  // Гузаштан ба страницаи редактирование
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     router.push(`/items/${item.id}/edit`);
   };
 
-  // Кушодани тасдиқи нест кардан
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setShowDeleteConfirm(true);
   };
 
-  // Функсияи тасдиқи удаление (Запрос ба сервис)
   const confirmDelete = async () => {
     if (isActionLoading) return;
-
     setIsActionLoading(true);
     try {
       const token = await getToken({ template: "supabase" });
@@ -99,125 +79,104 @@ export function ItemCard({
     }
   };
 
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const shareData = {
+      title: item.title,
+      text: item.description,
+      url: `${window.location.origin}/items/${item.id}`,
+    };
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {});
+    } else if (typeof window !== "undefined" && window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(
+        JSON.stringify({ type: "SHARE", payload: shareData }),
+      );
+    } else {
+      navigator.clipboard.writeText(shareData.url);
+      toast.success(t("success"));
+    }
+  };
+
   return (
     <>
       <Link
         href={`/items/${item.id}`}
-        prefetch={true}
-        className="block h-fit"
-        onMouseLeave={() => setCurrentImageIndex(0)}
+        prefetch
+        className="flex flex-col gap-2 rounded-3xl p-2 bg-white dark:bg-gradient-to-b dark:from-zinc-900 dark:to-emerald-800/70 shadow-[0_1px_2px_rgba(5,150,105,0.09),0_9px_20px_rgba(5,150,105,0.16),0_18px_36px_-14px_rgba(5,150,105,0.21)] dark:shadow-none dark:border dark:border-emerald-900/30 overflow-hidden"
       >
-        <div
-          className={cn(
-            "relative aspect-square overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900 shimmer-bg group shadow-sm",
-            item.moderation_status === "rejected" &&
-              isOwner &&
-              "opacity-75 grayscale-[0.5]",
-          )}
-        >
-          {/* Қисми болоии карточка: Сурат ва Баҷҳо */}
-          {/* Оптимизатсияи намоиши суратҳо: Танҳо сурати фаъол ва навбатиро нишон медиҳем */}
-          {images.map((img, i) => {
-            if (
-              Math.abs(i - currentImageIndex) > 1 &&
-              !(currentImageIndex === images.length - 1 && i === 0)
-            ) {
-              return null;
-            }
-            return (
-              <Image
-                key={i}
-                src={img.image_url}
-                alt={item.title}
-                fill
-                sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                quality={75}
-                className={cn(
-                  "object-cover",
-                  i === currentImageIndex ? "opacity-100" : "opacity-0",
-                )}
-                // Танҳо 4 корти аввал priority мегиранд (LCP) — дар mobile
-                // (2 сутун) ин тақрибан 2 қатор, яъне воқеан above-the-fold.
-                // 12 хеле зиёд буд: дар mobile аксарашон беруни экран буданд,
-                // вале бо priority ҳамзамон/eagerly бор мешуданд, бо суратҳои
-                // воқеан намоён барои bandwidth/main-thread рақобат мекарданд.
-                priority={index < 4 && i === 0}
-              />
-            );
-          })}
-
-          {/* Overlay (Title, Date, Reward) - Darker bottom, clearer top */}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/100 via-black/40 to-transparent p-3 pt-12 flex flex-col gap-1 z-10 pointer-events-none">
-            {item.type === "lost" && item.reward && (
-              <div className="flex justify-end">
-                <Badge className="bg-amber-400 text-amber-950 hover:bg-amber-500 font-black rounded-md text-[8px] sm:text-[10px] px-1.5 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap pointer-events-auto">
-                  {t("reward_gives_viewer")} {item.reward} TJS
-                </Badge>
-              </div>
-            )}
-            <div className="flex items-center gap-1.5">
-              <h2 className="min-w-0 flex-1 font-extrabold text-[11px] sm:text-sm lg:text-base truncate leading-snug tracking-tight text-white drop-shadow-md">
-                {capitalizeFirst(item.title) || item.category}
-              </h2>
-              <div className="shrink-0 flex items-center gap-1 text-white/90 text-[8px] sm:text-[10px] font-bold bg-black/60 px-1.5 py-0.5 rounded border border-white/10">
-                <Calendar className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                <span>{exactDate}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Статус: Гумшуда ё Ёфтшуда ва Фоизи Мувофиқат */}
-          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 flex flex-col gap-1.5 items-start">
-            <Badge
+        <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+          {thumb && (
+            <Image
+              src={thumb}
+              alt={item.title}
+              fill
+              sizes="(max-width: 640px) 50vw, 25vw"
+              quality={75}
               className={cn(
-                "font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap",
-                item.type === "lost"
-                  ? "bg-red-600 text-white hover:bg-red-700"
-                  : "bg-emerald-700 text-white hover:bg-emerald-800",
+                "object-cover",
+                item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
               )}
-            >
-              {item.type === "lost" ? t("lost") : t("found")}
-            </Badge>
+            />
+          )}
+          <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/25 to-transparent pointer-events-none" />
 
-            {item.similarity_score !== undefined && (
-              <Badge className="bg-emerald-700 text-white font-black rounded-md text-[9px] sm:text-[10px] px-2 sm:px-2.5 py-0.5 sm:py-1 shadow-lg border-none whitespace-nowrap">
-                {Math.round(item.similarity_score * 100)}%{" "}
-                {t("matchForYourImage")}
-              </Badge>
+          <span
+            className={cn(
+              "absolute top-2 left-2 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] min-[1084px]:text-xs min-[1920px]:text-sm font-black shadow-lg",
+              item.type === "lost" ? "bg-red-600 text-white" : "bg-[#0eab7a] text-white",
             )}
-          </div>
+          >
+            {item.type === "lost" ? t("lost") : t("found")}
+          </span>
 
-          {/* Тугмаҳои амалиёт (Actions) — танҳо барои соҳиб */}
-          {isOwner && (
-            <div className="absolute top-2 right-2 z-20 hidden sm:flex flex-col gap-1.5 items-end">
+          {item.similarity_score !== undefined && (
+            <span className="absolute top-2 left-2 mt-8 inline-flex items-center rounded-full px-2.5 py-1 text-[9px] font-black shadow-md bg-emerald-600 text-white">
+              {Math.round(item.similarity_score * 100)}% {t("matchForYourImage")}
+            </span>
+          )}
+
+          {isOwner ? (
+            <div className="absolute top-2 right-2 flex items-center gap-1.5">
               <button
+                type="button"
                 onClick={handleEdit}
                 aria-label={t("edit")}
-                className="p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-blue-600 transition-all shadow-md border border-white/10"
+                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white text-zinc-700 shadow-lg hover:bg-zinc-50 transition-colors cursor-pointer"
               >
-                <Pencil className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Pencil className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
               </button>
               <button
+                type="button"
                 onClick={handleDelete}
                 aria-label={t("delete")}
-                className="p-1.5 sm:p-2 rounded-full bg-black/50 text-white hover:bg-red-600 transition-all shadow-md border border-white/10"
+                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white text-red-600 shadow-lg hover:bg-red-50 transition-colors cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <Trash2 className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
               </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleShare}
+              aria-label={t("share")}
+              className="absolute top-2 right-2 w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white text-zinc-700 shadow-lg hover:bg-zinc-50 transition-colors cursor-pointer"
+            >
+              <Share2 className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
+            </button>
           )}
 
           {isOwner && item.moderation_status === "pending" && (
             <div
-              className="absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-30 cursor-pointer backdrop-blur-[2px]"
+              className="absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-10 cursor-pointer backdrop-blur-[2px]"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                // Барои ҳолати дар интизорӣ, мо метавонем як хабар нишон диҳем
                 toast.info(t("imageModeration.pending"));
               }}
             >
-              <div className="bg-white/95 dark:bg-zinc-900/95 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-in zoom-in duration-300">
+              <div className="bg-white/95 dark:bg-zinc-900/95 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center animate-pulse">
                   <Clock className="w-6 h-6 text-amber-500" />
                 </div>
@@ -229,8 +188,8 @@ export function ItemCard({
           )}
 
           {isOwner && item.moderation_status === "rejected" && (
-            <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-4 z-30 cursor-pointer backdrop-blur-[4px]">
-              <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 animate-in zoom-in duration-300 border border-red-500/20">
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-4 z-10 cursor-pointer backdrop-blur-[4px]">
+              <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 border border-red-500/20">
                 <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
                   <ShieldAlert className="w-6 h-6 text-red-600" />
                 </div>
@@ -241,9 +200,40 @@ export function ItemCard({
             </div>
           )}
         </div>
+
+        <div className="px-1 pb-1 flex flex-col flex-1 gap-0.5">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="min-w-0 flex-1 truncate font-extrabold text-[15px] min-[1084px]:text-base min-[1920px]:text-lg text-zinc-900 dark:text-zinc-100">
+              {item.title || item.category}
+            </h3>
+            <span className="shrink-0 text-[11px] min-[1084px]:text-xs min-[1920px]:text-sm font-bold text-zinc-400 dark:text-zinc-500">
+              {exactDate}
+            </span>
+          </div>
+
+          {item.description && (
+            <p className="text-[11px] min-[1084px]:text-xs min-[1920px]:text-sm text-zinc-400 dark:text-zinc-500 line-clamp-2 leading-relaxed">
+              {item.description}
+            </p>
+          )}
+
+          <span className="mt-auto translate-y-0.5 flex items-center justify-between gap-2 rounded-full pl-2.5 pr-1 py-1 min-[1084px]:py-1.5 bg-emerald-100 dark:bg-emerald-950/40 shadow-sm">
+            <span className="min-w-0 flex items-center gap-1 text-[11px] min-[1084px]:text-xs min-[1920px]:text-sm font-black text-emerald-700 dark:text-emerald-400">
+              {item.reward === UNSPECIFIED_REWARD ? (
+                <span className="min-w-0 truncate">{t("reward_unspecified_viewer")}</span>
+              ) : item.reward ? (
+                <span className="min-w-0 truncate">{`${t("reward_gives_viewer")} ${item.reward} TJS`}</span>
+              ) : (
+                <span className="min-w-0 truncate">{t("moreInfoViewer")}</span>
+              )}
+            </span>
+            <span className="shrink-0 w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 flex items-center justify-center rounded-full bg-emerald-600 dark:bg-emerald-500">
+              <ArrowRight className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 min-[1920px]:w-4 min-[1920px]:h-4 text-white" />
+            </span>
+          </span>
+        </div>
       </Link>
 
-      {/* Модал барои тасдиқи нест кардан */}
       <Dialog
         open={showDeleteConfirm}
         onOpenChange={(open) => !isActionLoading && setShowDeleteConfirm(open)}
@@ -275,11 +265,7 @@ export function ItemCard({
               }}
               disabled={isActionLoading}
             >
-              {isActionLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                t("delete")
-              )}
+              {isActionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : t("delete")}
             </Button>
             <Button
               type="button"

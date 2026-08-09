@@ -72,7 +72,7 @@ export function MobileNavbar() {
       style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
       <div className="mx-3 pointer-events-auto">
-        <div className="flex items-center justify-around h-[60px] bg-white dark:bg-zinc-900 rounded-[32px] shadow-[0_4px_24px_rgba(0,0,0,0.12),0_1px_4px_rgba(0,0,0,0.06)] border border-zinc-100 dark:border-zinc-800 px-2">
+        <div className="flex items-center justify-around h-[60px] bg-white dark:bg-zinc-900 rounded-[32px] shadow-[0_4px_24px_rgba(5,150,105,0.15),0_1px_4px_rgba(5,150,105,0.08)] border border-zinc-100 dark:border-zinc-800 px-2">
           {navItems.map((item) => {
             const currentPath = optimisticPath || pathname;
             let isActive = currentPath === item.href;
@@ -98,8 +98,8 @@ export function MobileNavbar() {
                   className="flex items-center justify-center"
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center active:scale-90 transition-all duration-150",
-                    isActive ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "text-zinc-400 dark:text-zinc-500"
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    isActive ? "bg-emerald-500 text-white" : "text-zinc-400 dark:text-zinc-500"
                   )}>
                     <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                   </div>
@@ -115,17 +115,17 @@ export function MobileNavbar() {
                   onMouseEnter={() => handlePrefetch(item.href)}
                   onTouchStart={() => handlePrefetch(item.href)}
                   aria-label={item.label}
-                  className="flex items-center justify-center active:scale-90 transition-transform duration-150"
+                  className="flex items-center justify-center"
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150",
-                    isActive ? "bg-zinc-900 dark:bg-zinc-100" : ""
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    isActive ? "bg-emerald-500" : ""
                   )}>
                     <Avatar className="h-7 w-7">
                       <AvatarImage src={user?.imageUrl} />
                       <AvatarFallback className={cn(
                         "text-[10px]",
-                        isActive ? "bg-zinc-700 text-white" : "bg-zinc-100 dark:bg-zinc-800"
+                        isActive ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-800"
                       )}>
                         {user?.firstName?.charAt(0) || <User className="h-4 w-4" />}
                       </AvatarFallback>
@@ -142,12 +142,12 @@ export function MobileNavbar() {
                 onMouseEnter={() => handlePrefetch(item.href)}
                 onTouchStart={() => handlePrefetch(item.href)}
                 aria-label={item.label}
-                className="flex items-center justify-center active:scale-90 transition-transform duration-150"
+                className="flex items-center justify-center"
               >
                 <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150",
+                  "w-10 h-10 rounded-xl flex items-center justify-center",
                   isActive
-                    ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900"
+                    ? "bg-emerald-500 text-white"
                     : "text-zinc-400 dark:text-zinc-500"
                 )}>
                   <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />

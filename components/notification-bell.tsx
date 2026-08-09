@@ -26,11 +26,11 @@ export function NotificationBell() {
         variant="secondary"
         size="sm"
         aria-label={t("notifications")}
-        className="relative h-9 w-9 sm:h-10 sm:w-10 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
+        className="relative h-9 w-9 min-[640px]:h-10 min-[640px]:w-10 min-[1084px]:h-11 min-[1084px]:w-11 min-[1920px]:h-12 min-[1920px]:w-12 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
       >
-        <Bell className="h-4 w-4 sm:h-[18px] sm:w-[18px] text-zinc-600 dark:text-zinc-400" />
+        <Bell className="h-4 w-4 min-[640px]:h-[18px] min-[640px]:w-[18px] min-[1084px]:h-5 min-[1084px]:w-5 min-[1920px]:h-[22px] min-[1920px]:w-[22px] text-emerald-600 dark:text-emerald-400" />
         {count > 0 && (
-          <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 h-4 min-w-4 min-[1084px]:h-[18px] min-[1084px]:min-w-[18px] min-[1920px]:h-5 min-[1920px]:min-w-5 px-1 rounded-full bg-red-500 text-white text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-black flex items-center justify-center">
             {count > 9 ? "9+" : count}
           </span>
         )}

@@ -7,46 +7,40 @@
 
 import { useState, useRef, Suspense, useEffect, useMemo } from "react";
 import { CATEGORIES, type Item } from "@/lib/services/item-service";
-import { ItemCard } from "@/components/item-card";
+import { ItemFeedCard } from "@/components/item-feed-card";
+import { CATEGORY_ICONS } from "@/lib/category-icons";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
-import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSearchParams } from "next/navigation";
-import { useItems, useSavedItems } from "@/lib/hooks/use-items";
+import { useItems } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
 import {
   X,
-  Cpu,
-  IdCard,
-  KeyRound,
-  Shirt,
-  PawPrint,
   Package,
   CalendarDays,
   Car,
-  Wallet,
+  Plane,
+  Hotel,
+  Landmark,
+  LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@clerk/nextjs";
 
-// Icon per category, used in the home-feed filter pills. Monochrome — inherits the button's text color.
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  Electronics: Cpu,
-  Documents: IdCard,
-  Keys: KeyRound,
-  Clothing: Shirt,
-  Pets: PawPrint,
-  Other: Package,
-  LicensePlate: Car,
-  Wallet: Wallet,
-};
-
-// "Taxi" — тугмаи махсус дар навори филтр, ки на аз рӯи категория, балки
-// аз рӯи корбар (Ali Mirzoev, allimirzoev2000@icloud.com) филтр мекунад.
-const TAXI_FILTER_USER_ID = "user_3H0PTIOzFRgmfVuBGBrKYR6RcFO";
+// Тугмаҳои амали зуд — филтри location_type (ба ҷои тугмаи куҳнаи "Такси"-и
+// махсус, ки танҳо аз рӯи як корбари собит филтр мекард — ниг. migration
+// 20260802000000_items_location_type.sql). Ин филтри УМУМӢ барои ҳамаи
+// корбарон аст, аз рӯи посух ба саволи wizard-и items/add. "all" маънии
+// location_type-и нест дорад — тугмаи тоза кардани ин филтр, на филтри воқеӣ.
+const QUICK_ACTIONS = [
+  { value: "all", icon: LayoutGrid, tint: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300" },
+  { value: "taxi", icon: Car, tint: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" },
+  { value: "hotel_restaurant", icon: Hotel, tint: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" },
+  { value: "airport", icon: Plane, tint: "bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400" },
+  { value: "public_place", icon: Landmark, tint: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400" },
+] as const;
 
 function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const { t } = useLanguage();
@@ -54,7 +48,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const searchQuery = searchParams.get("q") || "";
   const queryClient = useQueryClient();
   const { ref, inView } = useInView();
-  const { userId, getToken } = useAuth();
 
   const {
     visualSearchResults,
@@ -65,8 +58,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
   const [category, setCategory] = useState("All");
   const [itemType, setItemType] = useState<"lost" | "found" | null>(null);
-  const [taxiFilter, setTaxiFilter] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+  const [locationType, setLocationType] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
   const [dateTo, setDateTo] = useState<string | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -74,51 +66,27 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const [draftTo, setDraftTo] = useState("");
   const datePickerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Синхронизатсия бо Clerk (система берун аз React) — токен аз auth меояд.
-    if (!userId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setToken(null);
-      return;
-    }
-    getToken({ template: "supabase" }).then((t) => setToken(t));
-  }, [userId, getToken]);
-
-  // Як query барои ҳамаи saved IDs — бе N+1
-  const { data: savedItemsList = [] } = useSavedItems(
-    userId ?? undefined,
-    token,
-  );
-  const savedItemIds = useMemo(
-    () => new Set(savedItemsList.map((i) => i.id)),
-    [savedItemsList],
-  );
-
   const filters = useMemo(
-    () =>
-      taxiFilter
-        ? { user_id: TAXI_FILTER_USER_ID }
-        : {
-            category: category === "All" ? undefined : category,
-            type: itemType || undefined,
-            search: searchQuery,
-            dateFrom,
-            dateTo,
-          },
-    [taxiFilter, category, itemType, searchQuery, dateFrom, dateTo],
+    () => ({
+      category: category === "All" ? undefined : category,
+      type: itemType || undefined,
+      search: searchQuery,
+      dateFrom,
+      dateTo,
+      locationType: locationType || undefined,
+    }),
+    [category, itemType, searchQuery, dateFrom, dateTo, locationType],
   );
 
-  const toggleTaxiFilter = () => {
-    setTaxiFilter((v) => !v);
-    setCategory("All");
-    setItemType(null);
+  const toggleLocationType = (value: string) => {
+    setLocationType((v) => (v === value ? null : value));
   };
 
   // initialItems танҳо барои filters-и пешфарз (яъне ҳамон чизе, ки дар
   // сервер гирифта шуда буд) амал мекунад — фарқи filters аз пешфарз
   // маънои онро дорад, ки корбар аллакай филтреро иваз кардааст.
   const isDefaultFilters =
-    !filters.category && !filters.type && !filters.search && !filters.dateFrom && !filters.dateTo && !("user_id" in filters);
+    !filters.category && !filters.type && !filters.search && !filters.dateFrom && !filters.dateTo && !filters.locationType;
 
   const {
     data,
@@ -158,6 +126,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
       setItemType(null);
       setDateFrom(undefined);
       setDateTo(undefined);
+      setLocationType(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [visualSearchResults]);
@@ -172,6 +141,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     setItemType(null);
     setDateFrom(undefined);
     setDateTo(undefined);
+    setLocationType(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [goHomeSignal, setVisualSearchResults]);
 
@@ -218,41 +188,43 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     return allItems;
   }, [allItems, visualSearchResults]);
 
+  // Carousel-и "имрӯз" ва тугмаҳои амали зуд танҳо дар ҳолати "тамошои
+  // озод" маъно доранд — вақте ки корбар аллакай ҷустуҷӯ мекунад ё
+  // натиҷаи ҷустуҷӯи визуалӣ мебинад, ин рӯйхат намефорояд (мисли навори
+  // категорияҳо, ки дар ҳамин ҳолатҳо ба тугмаи "тоза кардан" иваз мешавад).
+  const showTopSections = !visualSearchResults && !searchQuery;
+
   return (
-    <div className="pb-18 bg-white dark:bg-white">
+    <div className="pb-18 min-h-screen bg-white dark:bg-zinc-950">
       {/* Қисмати Филтрҳо (Header/Filters) */}
-      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-100 dark:border-zinc-900">
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-0.5 pb-1 sm:py-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-0.5 md:gap-1 md:h-14">
-            {/* Кнопкаҳои категорияҳо */}
-            <div
-              className={cn(
-                "flex items-center overflow-x-auto no-scrollbar -mx-1 px-1",
-                visualSearchResults && "w-full justify-end",
-              )}
-            >
+      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white dark:bg-zinc-950">
+        <div className="w-full pl-3 sm:pl-4">
+          <div className="w-full py-1.5">
+          <div
+            className={cn(
+              "flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-2.5 -my-2.5",
+              visualSearchResults && "w-full justify-end",
+            )}
+          >
               {visualSearchResults ? (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setVisualSearchResults(null)}
-                  className="rounded-xl h-8 text-[10px] font-black tracking-widest border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400"
+                  className="rounded-full h-8 text-[10px] font-black tracking-widest border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400"
                 >
                   <X className="h-3.5 w-3.5 mr-2" />
                   {t("clearResults")}
                 </Button>
               ) : (
-                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
+                <>
                   <button
-                    onClick={() => {
-                      setTaxiFilter(false);
-                      setCategory("All");
-                    }}
+                    onClick={() => setCategory("All")}
                     className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer whitespace-nowrap",
+                      "shrink-0 px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer whitespace-nowrap border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
                       category === "All"
-                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                        ? "bg-emerald-500 border-emerald-500 text-white"
+                        : "bg-white dark:bg-zinc-900 border-transparent text-zinc-700 dark:text-zinc-300 hover:border-zinc-200 dark:hover:border-zinc-700",
                     )}
                   >
                     {t("all")}
@@ -263,99 +235,74 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     return (
                       <button
                         key={cat.id}
-                        onClick={() => {
-                          setTaxiFilter(false);
-                          setCategory(cat.name);
-                        }}
+                        onClick={() => setCategory(cat.name)}
                         className={cn(
-                          "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+                          "shrink-0 px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center gap-1.5 cursor-pointer whitespace-nowrap border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
                           active
-                            ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                            : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                            ? "bg-emerald-500 border-emerald-500 text-white"
+                            : "bg-white dark:bg-zinc-900 border-transparent text-zinc-700 dark:text-zinc-300 hover:border-zinc-200 dark:hover:border-zinc-700",
                         )}
                       >
-                        <Icon className="w-3.5 h-3.5 text-emerald-500" />
+                        <Icon className={cn("w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5 min-[1920px]:w-[21px] min-[1920px]:h-[21px]", active ? "text-white" : "text-emerald-500")} />
                         {t(`categories.${cat.id}`)}
                       </button>
                     );
                   })}
-                </div>
+                </>
               )}
-            </div>
+          </div>
 
-            {/* Интихоби навъ: Гумшуда ё Ёфтшуда */}
-            {!visualSearchResults && (
-              <div className="flex items-center gap-1.5 self-end md:self-auto mb-0.5 md:mb-0">
+          {/* Интихоби навъ: Гумшуда ё Ёфтшуда — қатори алоҳида, бе swipe (адади ками tugma) */}
+          {!visualSearchResults && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-3">
                 <button
-                  onClick={toggleTaxiFilter}
+                  onClick={() => setItemType(null)}
                   className={cn(
-                    "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer whitespace-nowrap border shadow-sm",
-                    taxiFilter
-                      ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
-                      : "bg-zinc-100/60 dark:bg-zinc-900/60 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                    "px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                    itemType === null
+                      ? "bg-emerald-500 border-emerald-500 text-white"
+                      : "bg-white dark:bg-zinc-900 border-transparent text-zinc-700 dark:text-zinc-300 hover:border-zinc-200 dark:hover:border-zinc-700",
                   )}
                 >
-                  {t("taxiFilter")}
+                  {t("all")}
                 </button>
-                <div className="flex bg-zinc-100/60 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50 shadow-sm">
-                  <button
-                    onClick={() => {
-                      setTaxiFilter(false);
-                      setItemType(null);
-                    }}
-                    className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
-                      itemType === null
-                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
-                    )}
-                  >
-                    {t("all")}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTaxiFilter(false);
-                      setItemType("lost");
-                    }}
-                    className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
-                      itemType === "lost"
-                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-red-700 hover:text-red-800",
-                    )}
-                  >
-                    {t("filterLost")}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setTaxiFilter(false);
-                      setItemType("found");
-                    }}
-                    className={cn(
-                      "px-3 md:px-4 h-7 md:h-9 rounded-lg font-bold text-[10px] md:text-[11px] tracking-wider transition-all cursor-pointer",
-                      itemType === "found"
-                        ? "bg-zinc-900 text-white shadow-md dark:bg-white dark:text-zinc-900"
-                        : "text-emerald-700 hover:text-emerald-800",
-                    )}
-                  >
-                    {t("filterFound")}
-                  </button>
-                </div>
+                <button
+                  onClick={() => setItemType("lost")}
+                  className={cn(
+                    "px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                    itemType === "lost"
+                      ? "bg-red-600 border-red-600 text-white"
+                      : "bg-white dark:bg-zinc-900 border-transparent text-red-600 dark:text-red-500",
+                  )}
+                >
+                  {t("filterLost")}
+                </button>
+                <button
+                  onClick={() => setItemType("found")}
+                  className={cn(
+                    "px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                    itemType === "found"
+                      ? "bg-emerald-500 border-emerald-500 text-white"
+                      : "bg-white dark:bg-zinc-900 border-emerald-100 dark:border-emerald-950/50 text-emerald-700 dark:text-emerald-500 hover:border-emerald-200",
+                  )}
+                >
+                  {t("filterFound")}
+                </button>
 
-                {/* Филтри бозаи сана (Аз/То) */}
-                <div className="relative" ref={datePickerRef}>
+                {/* Филтри бозаи сана (Аз/То) — то лаби рости қатор тела дода мешавад (ml-auto) */}
+                <div className="relative ml-auto mr-2" ref={datePickerRef}>
                   <button
                     type="button"
                     onClick={openDatePicker}
                     aria-label={t("filterByDate")}
                     className={cn(
-                      "h-7 w-7 md:h-9 md:w-9 flex items-center justify-center rounded-lg border transition-all cursor-pointer shadow-sm",
+                      "h-8 w-8 min-[768px]:h-9 min-[768px]:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-full border cursor-pointer shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
                       dateFrom || dateTo
-                        ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
-                        : "bg-zinc-100/60 dark:bg-zinc-900/60 border-zinc-200/50 dark:border-zinc-800/50 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100",
+                        ? "bg-emerald-500 text-white border-emerald-500"
+                        : "bg-emerald-50 dark:bg-zinc-900 border-emerald-100 dark:border-emerald-900/50 text-emerald-500 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800",
                     )}
                   >
-                    <CalendarDays className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    <CalendarDays className="w-[18px] h-[18px] min-[768px]:w-5 min-[768px]:h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
                   </button>
 
                   {showDatePicker && (
@@ -395,7 +342,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                         <button
                           type="button"
                           onClick={applyDateFilter}
-                          className="px-3 h-8 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-[11px] font-bold cursor-pointer"
+                          className="px-3 h-8 rounded-lg bg-emerald-500 text-white text-[11px] font-bold cursor-pointer"
                         >
                           {t("applyFilter")}
                         </button>
@@ -403,39 +350,93 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+            </div>
+          )}
           </div>
+
+          {/* Тугмаҳои амали зуд — дар ДОХИЛИ filter bar-и fixed, то ин қисм
+              (филтрҳо + quick actions) ҳангоми scroll асло аз ҷояш начунбад —
+              танҳо рӯйхати элонҳо аз таги он мегузарад. */}
+          {showTopSections && (
+            <div className="mt-2 mb-3">
+            <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5">
+              {QUICK_ACTIONS.map(({ value, icon: Icon, tint }) => {
+                const active = value === "all" ? locationType === null : locationType === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() =>
+                      value === "all" ? setLocationType(null) : toggleLocationType(value)
+                    }
+                    className={cn(
+                      "shrink-0 snap-start w-40 min-[1503px]:w-44 min-[1920px]:w-[188px] flex items-center justify-between gap-1.5 pl-3 pr-3 py-3 min-[1503px]:py-3.5 min-[1920px]:py-[15px] rounded-2xl border text-left cursor-pointer shadow-[0_5px_20px_rgba(5,150,105,0.24),0_1px_3px_rgba(5,150,105,0.13)]",
+                      active
+                        ? "bg-emerald-500 border-emerald-500"
+                        : cn(tint, "border-transparent"),
+                    )}
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span
+                        className={cn(
+                          "font-extrabold text-[13px] min-[1503px]:text-sm min-[1920px]:text-[15px] leading-tight tracking-wide truncate",
+                          active
+                            ? "text-white"
+                            : "text-zinc-900 dark:text-zinc-100",
+                        )}
+                      >
+                        {t(`quickActions.${value}.title`)}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-left font-semibold text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] leading-tight tracking-wide whitespace-nowrap truncate",
+                          active
+                            ? "text-white/70"
+                            : "text-zinc-400 dark:text-zinc-500",
+                        )}
+                      >
+                        {t(`quickActions.${value}.desc`)}
+                      </span>
+                    </div>
+                    <Icon
+                      className={cn(
+                        "w-9 h-9 min-[1503px]:w-10 min-[1503px]:h-10 min-[1920px]:w-[42px] min-[1920px]:h-[42px] shrink-0",
+                        active && "text-white",
+                      )}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
-      <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px] touch-pan-y">
+      <div
+        className={cn(
+          "w-full px-3 sm:px-4 touch-pan-y",
+          visualSearchResults
+            ? "pt-[64px] min-[768px]:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
+            : "pt-[181px] min-[768px]:pt-[189px] min-[1084px]:pt-[197px] min-[1503px]:pt-[205px] min-[1920px]:pt-[213px]",
+        )}
+      >
         {isLoading &&
         allItems.length === 0 &&
         !searchQuery &&
         category === "All" &&
         itemType === null &&
         !isSearchTyping ? (
-          <div className={ITEM_GRID_CLASS}>
+          <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2.5 sm:gap-3">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-square w-full rounded-xl" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
+              <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
             ))}
           </div>
         ) : displayedItems.length > 0 ? (
           <>
-            {/* Версияи Desktop ва Mobile: Рӯйхати умумӣ */}
-            <div className={ITEM_GRID_CLASS}>
-              {displayedItems.map((item, index) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  savedItemIds={savedItemIds}
-                />
+            <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2.5 sm:gap-3">
+              {displayedItems.map((item) => (
+                <ItemFeedCard key={item.id} item={item} />
               ))}
             </div>
 
@@ -483,13 +484,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
 function HomeSkeleton() {
   return (
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px]">
-      <div className={ITEM_GRID_CLASS}>
+    <div className="w-full px-3 sm:px-4 pt-[181px] min-[768px]:pt-[189px] min-[1084px]:pt-[197px] min-[1503px]:pt-[205px] min-[1920px]:pt-[213px]">
+      <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2.5 sm:gap-3">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="space-y-3">
-            <Skeleton className="aspect-square w-full rounded-xl" />
-            <Skeleton className="h-4 w-2/3" />
-          </div>
+          <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
         ))}
       </div>
     </div>

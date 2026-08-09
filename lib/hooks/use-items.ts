@@ -14,6 +14,7 @@ export interface ItemFilters {
   user_id?: string;
   dateFrom?: string;
   dateTo?: string;
+  locationType?: string;
   page?: number;
   pageSize?: number;
 }
@@ -134,15 +135,22 @@ export function useUserItems(userId?: string, token?: string | null) {
     queryKey: ITEM_KEYS.userItems(userId || ""),
     queryFn: async () => {
       if (!userId || !token) return [];
-      
+
       const { createClerkSupabaseClient } = await import("@/lib/supabase");
       const supabaseClient = createClerkSupabaseClient(token);
-      
+
       return ItemService.getItems({ user_id: userId }, supabaseClient);
     },
     enabled: !!userId && !!token,
     staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
     refetchOnWindowFocus: false,
+    // Санҷиши AI дар сервер async аст (якчанд сония мегирад) — то он
+    // тамом шавад, эълон "pending" мемонад. Бе ин, staleTime-и 5-дақиқагӣ
+    // корбарро то reload-и дастӣ бо "Дар ҳоли санҷиш"-и кӯҳна мегузорад.
+    refetchInterval: (query) =>
+      query.state.data?.some((item) => item.moderation_status === "pending")
+        ? 3000
+        : false,
   });
 }
 

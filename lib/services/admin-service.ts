@@ -150,6 +150,16 @@ export const AdminService = {
     });
   },
 
+  getEmbeddingsMissingCount() {
+    return adminFetch<{ missingCount: number }>("/api/admin/reprocess-embeddings");
+  },
+  reprocessEmbeddings() {
+    return adminFetch<{ total: number; processed: number; failed: number }>(
+      "/api/admin/reprocess-embeddings",
+      { method: "POST" },
+    );
+  },
+
   getReports(filters: { status?: string } = {}) {
     return adminFetch(`/api/admin/reports${toQueryString(filters)}`);
   },

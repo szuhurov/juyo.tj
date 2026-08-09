@@ -11,7 +11,7 @@ import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
 
 export default function MainLoading() {
   return (
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-4 pt-[80px] md:pt-[62px]">
+    <div className="w-full px-3 sm:px-4 pt-[80px] md:pt-[62px]">
       <div className={ITEM_GRID_CLASS}>
         {[...Array(8)].map((_, i) => (
           <div key={i} className="space-y-3">

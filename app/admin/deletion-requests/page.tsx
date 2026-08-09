@@ -22,8 +22,8 @@ export default function AdminDeletionRequestsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <UserXIcon className="w-5 h-5 text-rose-500" />
-        <h1 className="text-lg font-black text-zinc-900">Дархостҳои нест кардани ҳисоб</h1>
+        <UserXIcon className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-rose-500" />
+        <h1 className="text-lg min-[1084px]:text-xl font-black text-zinc-900">Дархостҳои нест кардани ҳисоб</h1>
       </div>
 
       <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm space-y-4">
@@ -33,9 +33,9 @@ export default function AdminDeletionRequestsPage() {
               key={tab.id}
               onClick={() => setStatus(tab.id)}
               className={cn(
-                "px-4 h-9 rounded-lg font-bold text-[11px] tracking-wider transition-all",
+                "px-4 min-[1084px]:px-5 h-9 min-[1084px]:h-10 rounded-lg font-bold text-[11px] min-[1084px]:text-xs tracking-wider transition-all",
                 status === tab.id
-                  ? "bg-zinc-900 text-white shadow-md"
+                  ? "bg-emerald-500 text-white shadow-md"
                   : "text-zinc-500 hover:text-zinc-900",
               )}
             >
@@ -62,12 +62,12 @@ export default function AdminDeletionRequestsPage() {
                 className="p-4 rounded-xl border border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="min-w-0 space-y-1">
-                  <p className="font-bold text-sm text-zinc-900">{r.email}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="font-bold text-sm min-[1084px]:text-base text-zinc-900">{r.email}</p>
+                  <p className="text-xs min-[1084px]:text-[13px] text-zinc-500">
                     {new Date(r.created_at).toLocaleDateString("tg-TJ")}
                   </p>
                   {r.note && (
-                    <p className="text-xs text-zinc-600 italic max-w-xl">&ldquo;{r.note}&rdquo;</p>
+                    <p className="text-xs min-[1084px]:text-[13px] text-zinc-600 italic max-w-xl">&ldquo;{r.note}&rdquo;</p>
                   )}
                 </div>
                 {r.status === "pending" && (
@@ -77,9 +77,9 @@ export default function AdminDeletionRequestsPage() {
                       variant="outline"
                       disabled={updateRequest.isPending}
                       onClick={() => updateRequest.mutate({ id: r.id, status: "rejected" })}
-                      className="h-9 rounded-lg font-black text-[9px] tracking-widest gap-1.5"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5"
                     >
-                      <XIcon className="w-3.5 h-3.5" />
+                      <XIcon className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Радд
                     </Button>
                     <Button
@@ -90,9 +90,9 @@ export default function AdminDeletionRequestsPage() {
                           updateRequest.mutate({ id: r.id, status: "processed" });
                         }
                       }}
-                      className="h-9 rounded-lg font-black text-[9px] tracking-widest gap-1.5 bg-emerald-700 hover:bg-emerald-800"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5 bg-emerald-500 hover:bg-emerald-600"
                     >
-                      <CheckIcon className="w-3.5 h-3.5" />
+                      <CheckIcon className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Тасдиқ ва нест кардан
                     </Button>
                   </div>

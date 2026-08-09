@@ -10,11 +10,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const FORENSIC_PROMPT = `You are an elite forensic AI expert specialized in object identification.
-Analyze the image with extreme precision to find unique identifiers.
-Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear).
+const FORENSIC_PROMPT = `You are an elite forensic AI expert specialized in object identification for a lost-and-found platform.
+Analyze the image with extreme precision to find unique identifiers. Identify ALL of the following, if visible:
+- Brand, Model, precise color shades, material
+- Shape, form factor, and style
+- Condition/state (new, used, worn, damaged, scratches, dents, stickers)
+- ANY visible text, printed or handwritten: names, numbers, serial numbers, document fields, license plate numbers, labels, logos — transcribe exactly as seen, do not translate or normalize
 Return JSON: {
-  "description_en": "EXHAUSTIVE forensic technical string in English for 100% vector matching"
+  "description_en": "EXHAUSTIVE forensic technical string in English for 100% vector matching, including all transcribed text verbatim"
 }`;
 
 Deno.serve(async (req) => {
@@ -42,7 +45,7 @@ Deno.serve(async (req) => {
           model: "gpt-4o-mini",
           messages: [
             { role: "system", content: FORENSIC_PROMPT },
-            { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "low" } }] }
+            { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "high" } }] }
           ],
           response_format: { type: "json_object" }
         }),

@@ -126,7 +126,7 @@ export function MandatoryPhoneModal() {
               className={cn(
                 "px-3 py-2 rounded-xl text-[9px] font-black transition-all duration-300 flex-1 max-w-[100px]",
                 locale === lang.code 
-                  ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-105" 
+                  ? "bg-emerald-500 text-white shadow-md scale-105" 
                   : "bg-zinc-100 dark:bg-zinc-900 text-zinc-400 hover:text-zinc-600"
               )}
             >
@@ -136,12 +136,12 @@ export function MandatoryPhoneModal() {
         </div>
 
         <div className="overflow-y-auto flex-1 px-8 pt-6 pb-4 space-y-4 text-center">
-          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-500">
+          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1">
             <Phone className="w-7 h-7 text-emerald-500" />
           </div>
           
           <DialogHeader className="space-y-1">
-            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">
+            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
               {t('phoneRequiredTitle')}
             </DialogTitle>
             <p className="text-zinc-400 font-bold text-[10px] tracking-widest leading-none">
@@ -196,7 +196,7 @@ export function MandatoryPhoneModal() {
         <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
           <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
             <DialogHeader className="space-y-3">
-              <DialogTitle className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">
+              <DialogTitle className="text-lg font-black tracking-tight text-emerald-600 dark:text-emerald-400">
                 {t('terms.link')}
               </DialogTitle>
             </DialogHeader>
@@ -207,7 +207,7 @@ export function MandatoryPhoneModal() {
             </div>
             <Button 
               onClick={() => setShowTermsDetails(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
             >
               {t('ok')}
             </Button>
@@ -218,7 +218,7 @@ export function MandatoryPhoneModal() {
           <Button 
             type="submit" 
             form="mandatory-form"
-            className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+            className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all disabled:opacity-50 border-none"
             disabled={loading || !acceptedTerms}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}

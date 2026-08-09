@@ -182,7 +182,7 @@ TEXT RULES:
 2. ALLOWED: normal contextual mentions (e.g. "found a kitchen knife" describing a household item), normal frustration without targeting individuals.
 
 If the text is not already in {{LANG}}, still judge it, but write "reason" in {{LANG}}.
-If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", quoting the exact original text if it's a text violation.
+If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", quoting the exact original text if it's a text violation. ALSO set "violation_source" to "image" if the image(s) caused the rejection, "text" if only the title/description did, or "both" if both did. If is_safe is true, violation_source must be null.
 
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly — this is independent of is_safe.
 IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Each box must be a SMALL, TIGHT box around ONLY that one specific number/code field — never a large region that sweeps across nearby text too. A small margin around the field is fine, but do not enlarge the box beyond what is needed to fully cover that field's text.
@@ -190,7 +190,7 @@ IF is_document IS TRUE, also locate every field that is a unique identifier that
 CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable. If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
 ${DOCUMENT_TEXT_RULES}
 
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "violation_source": "image"/"text"/"both"/null, "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
 
     let promptToUse = MASTER_PROMPT;
     if (mode === 'moderation_only') {
@@ -247,7 +247,7 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
 
     // If unsafe, return immediately
     if (!result.is_safe) {
-       return new Response(JSON.stringify({ is_safe: false, reason: result.reason }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+       return new Response(JSON.stringify({ is_safe: false, reason: result.reason, violation_source: result.violation_source ?? null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // moderation_only and final_check are pure accept/reject decisions — no auto-fill payload,

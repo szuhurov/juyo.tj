@@ -49,6 +49,8 @@ import {
   KeyRound,
   MousePointerClick,
   UserX,
+  Globe,
+  UserCog,
 } from "lucide-react";
 // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
@@ -71,7 +73,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 // Интеграцияи QR
@@ -119,7 +120,7 @@ function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
-  const { t, locale } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
   const searchParams = useSearchParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -138,6 +139,16 @@ function ProfileContent() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  // ADMIN_USER_IDS дар сервер аст (env-и берун аз NEXT_PUBLIC_) — ин
+  // саҳифа "use client" аст, пас статуси admin-ро тавассути API-и хурд
+  // мегирем (танҳо ба худи корбар мегӯяд, ки ӯ admin аст ё не).
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    fetch("/api/admin/whoami")
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(!!data.isAdmin))
+      .catch(() => {});
+  }, []);
 
   const [showEmailChangeModal, setShowEmailChangeModal] = useState(false);
   const [emailStep, setEmailStep] = useState<"input" | "verify">("input");
@@ -388,6 +399,12 @@ function ProfileContent() {
   });
 
   // Элементҳои менюи паҳлӯӣ (Sidebar Menu)
+  const LANGUAGES: Array<{ code: "tg" | "ru" | "en"; label: string }> = [
+    { code: "tg", label: "Тоҷикӣ" },
+    { code: "ru", label: "Русский" },
+    { code: "en", label: "English" },
+  ];
+
   const menuItems = [
     {
       id: "posts",
@@ -602,7 +619,7 @@ function ProfileContent() {
         return (
           <div className="space-y-6">
             {/* Рӯйхати эълонҳои шахсӣ */}
-            <div className="animate-in fade-in duration-200">
+            <div>
               {postsLoading ? (
                 <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
@@ -617,8 +634,8 @@ function ProfileContent() {
                 </div>
               ) : (
                 <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-                  <PackageSearch className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 text-xs tracking-widest">
+                  <PackageSearch className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
+                  <h4 className="font-bold text-zinc-400 text-xs min-[1084px]:text-sm tracking-widest">
                     {t("noItemsFound")}
                   </h4>
                 </div>
@@ -631,7 +648,7 @@ function ProfileContent() {
         return (
           <div className="space-y-6">
             {/* Рӯйхати эълонҳои шахсӣ */}
-            <div className="animate-in fade-in duration-200">
+            <div className="">
               {postsLoading ? (
                 <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
@@ -646,8 +663,8 @@ function ProfileContent() {
                 </div>
               ) : (
                 <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-                  <PackageSearch className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 text-xs tracking-widest">
+                  <PackageSearch className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
+                  <h4 className="font-bold text-zinc-400 text-xs min-[1084px]:text-sm tracking-widest">
                     {t("noItemsFound")}
                   </h4>
                 </div>
@@ -677,85 +694,8 @@ function ProfileContent() {
         }
         return (
           <div className="space-y-8 pb-32">
-            {/* Сарлавҳаи таби QR-код */}
-            <div className="hidden sm:block sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <div className="flex items-start gap-4">
-                <h3 className="text-lg font-black tracking-tight">
-                  {t("qrMyCode")}
-                </h3>
-
-                <div className="flex flex-col items-end gap-1 mt-1">
-                  <button
-                    onClick={async () => {
-                      if (!profile) return;
-                      const previousState = profile.is_qr_active;
-                      const newState = !previousState;
-
-                      // Optimistic update
-                      setProfile({ ...profile, is_qr_active: newState });
-
-                      try {
-                        const token = await getToken({
-                          template: "supabase",
-                        });
-                        const supabase = createClerkSupabaseClient(token!);
-
-                        // Background update
-                        ProfileService.updateProfile(supabase, userId!, {
-                          is_qr_active: newState,
-                        })
-                          .then((updated) => {
-                            setProfile(updated);
-                            toast.success(
-                              newState
-                                ? t("qrActivatedSuccess")
-                                : t("qrDeactivatedSuccess"),
-                            );
-                          })
-                          .catch((err) => {
-                            console.error(err);
-                            setProfile({
-                              ...profile,
-                              is_qr_active: previousState,
-                            });
-                            toast.error(t("error"));
-                          });
-                      } catch (err) {
-                        console.error(err);
-                        setProfile({ ...profile, is_qr_active: previousState });
-                        toast.error(t("error"));
-                      }
-                    }}
-                    className={cn(
-                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                      profile?.is_qr_active
-                        ? "bg-emerald-500"
-                        : "bg-zinc-300 dark:bg-zinc-700",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                        profile?.is_qr_active
-                          ? "translate-x-4"
-                          : "translate-x-0",
-                      )}
-                    />
-                  </button>
-
-                  <button
-                    onClick={() => setShowSecurityModal(true)}
-                    className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
-                  >
-                    {t("qrSecurityStatusWhy") ||
-                      "Барои чӣ QR-код статус лозим?"}
-                  </button>
-                </div>
-              </div>
-            </div>
-
             {/* Танзимоти намуди зоҳирии QR */}
-            <div className="animate-in fade-in duration-200 space-y-8">
+            <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
                 <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
@@ -763,27 +703,27 @@ function ProfileContent() {
                   <div className="flex justify-between gap-1.5 mb-2 sm:mb-6 w-full">
                     <Button
                       onClick={() => setShowWhyQRModal(true)}
-                      className="flex-1 h-9 sm:h-10 rounded-lg bg-emerald-700 text-white border-none font-black text-[8px] sm:text-[9px] tracking-widest hover:bg-emerald-800 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
+                      className="flex-1 h-9 min-[768px]:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-lg bg-emerald-500 text-white border-none font-black text-[8px] min-[768px]:text-[9px] min-[1084px]:text-[10px] min-[1503px]:text-[11px] tracking-widest hover:bg-emerald-600 transition-all gap-1.5 px-2 min-[1084px]:px-3 shadow-sm"
                     >
-                      <HelpCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+                      <HelpCircle className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
                       {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
                     </Button>
                     <Button
                       onClick={handleDownloadQR}
                       disabled={isDownloading}
-                      className="flex-1 h-9 sm:h-10 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 border-none font-black text-[8px] sm:text-[9px] tracking-widest hover:opacity-90 transition-all active:scale-95 gap-1.5 px-2 shadow-sm"
+                      className="flex-1 h-9 min-[768px]:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-lg bg-emerald-500 text-white border-none font-black text-[8px] min-[768px]:text-[9px] min-[1084px]:text-[10px] min-[1503px]:text-[11px] tracking-widest hover:opacity-90 transition-all gap-1.5 px-2 min-[1084px]:px-3 shadow-sm"
                     >
                       {isDownloading ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
                       ) : (
-                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <Download className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
                       )}
                       {t("download")}
                     </Button>
                   </div>
 
                   <div className="relative group bg-transparent sm:bg-zinc-100 sm:dark:bg-zinc-900 rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-[0.9] sm:scale-100 origin-center transition-transform duration-300 shrink-0">
+                    <div className="scale-[0.9] min-[768px]:scale-100 min-[1084px]:scale-105 min-[1503px]:scale-110 min-[1920px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
                         settings={{
@@ -803,207 +743,19 @@ function ProfileContent() {
                       />
                     </div>
                   </div>
-                </div>
 
-                {/* Панели танзимоти QR - Full Width ва Compact */}
-                <div className="space-y-5 px-1 pb-10">
-                  {/* Стил ва Шаклҳо */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <LayoutGrid className="w-3 h-3 text-zinc-400" />
-                        <Label className="text-[10px] font-bold text-zinc-500">
-                          {t("qrDotsStyle") || "Нуқтаҳо"}
-                        </Label>
-                      </div>
-                      <Select
-                        value={qrSettings.dotsType}
-                        onValueChange={(val) =>
-                          setQrSettings({ ...qrSettings, dotsType: val as DotType })
-                        }
-                      >
-                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-[11px] font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
-                          <SelectItem value="square">
-                            {t("qrDotSquare")}
-                          </SelectItem>
-                          <SelectItem value="dots">{t("qrDotDots")}</SelectItem>
-                          <SelectItem value="rounded">
-                            {t("qrDotRounded")}
-                          </SelectItem>
-                          <SelectItem value="extra-rounded">
-                            {t("qrDotExtraRounded")}
-                          </SelectItem>
-                          <SelectItem value="classy">
-                            {t("qrDotClassy")}
-                          </SelectItem>
-                          <SelectItem value="classy-rounded">
-                            {t("qrDotClassyRounded")}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <RefreshCw className="w-3 h-3 text-zinc-400" />
-                        <Label className="text-[10px] font-bold text-zinc-500">
-                          {t("qrCornersStyle") || "Кунҷҳо"}
-                        </Label>
-                      </div>
-                      <Select
-                        value={qrSettings.cornersSquareType}
-                        onValueChange={(val) => {
-                          const cornerStyle = val as CornerSquareType;
-                          const dotStyle: CornerDotType =
-                            cornerStyle === "square" ? "square" : "dot";
-                          setQrSettings({
-                            ...qrSettings,
-                            cornersSquareType: cornerStyle,
-                            cornersDotType: dotStyle,
-                          });
-                        }}
-                      >
-                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-[11px] font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
-                          <SelectItem value="square">
-                            {t("qrCornerSquare")}
-                          </SelectItem>
-                          <SelectItem value="dot">
-                            {t("qrCornerDot")}
-                          </SelectItem>
-                          <SelectItem value="extra-rounded">
-                            {t("qrCornerRounded")}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Рангҳо */}
-                  <div className="grid grid-cols-2 gap-3 relative">
-                    <div className="space-y-2 relative">
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <Palette className="w-3 h-3 text-zinc-400" />
-                        <Label className="text-[10px] font-bold text-zinc-500">
-                          {t("qrColorLabel")}
-                        </Label>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePicker(activePicker === "qr" ? null : "qr");
-                        }}
-                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all active:scale-95 color-trigger px-2 shadow-sm hover:bg-zinc-50"
-                      >
-                        <div
-                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
-                          style={{ backgroundColor: qrSettings.qrColor }}
-                        />
-                        <span className="font-mono text-[11px] font-bold text-zinc-500">
-                          {qrSettings.qrColor}
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 relative">
-                      <Label className="text-[10px] font-bold text-zinc-500 ml-1">
-                        {t("qrBgLabel")}
-                      </Label>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePicker(activePicker === "bg" ? null : "bg");
-                        }}
-                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all active:scale-95 color-trigger px-2 shadow-sm hover:bg-zinc-50"
-                      >
-                        <div
-                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
-                          style={{ backgroundColor: qrSettings.bgColor }}
-                        />
-                        <span className="font-mono text-[11px] font-bold text-zinc-500">
-                          {qrSettings.bgColor}
-                        </span>
-                      </button>
-                    </div>
-
-                    {(activePicker === "qr" || activePicker === "bg") && (
-                      <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 animate-in slide-in-from-bottom sm:zoom-in-95 duration-300 color-picker-container overflow-hidden">
-                        <div className="flex flex-row p-0 gap-0 justify-center items-stretch h-full">
-                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950">
-                            <div className="p-0 flex justify-center flex-1 items-center">
-                              <HexColorPicker
-                                color={qrSettings.qrColor}
-                                onChange={(color) =>
-                                  setQrSettings({
-                                    ...qrSettings,
-                                    qrColor: color,
-                                  })
-                                }
-                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 border-l border-zinc-100 dark:border-zinc-800">
-                            <div className="p-0 flex justify-center flex-1 items-center">
-                              <HexColorPicker
-                                color={qrSettings.bgColor}
-                                onChange={(color) =>
-                                  setQrSettings({
-                                    ...qrSettings,
-                                    bgColor: color,
-                                  })
-                                }
-                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
-                          <Button
-                            className="w-full h-12 sm:h-12 rounded-xl font-black tracking-widest text-[11px] bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 hover:opacity-90 shadow-lg transition-all active:scale-[0.98]"
-                            onClick={() => setActivePicker(null)}
-                          >
-                            {t("done")}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Текст */}
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
-                      {t("qrFooterText")}
-                    </Label>
-                    <Input
-                      value={qrSettings.text}
-                      onChange={(e) =>
-                        setQrSettings({
-                          ...qrSettings,
-                          text: e.target.value,
-                        })
-                      }
-                      className="h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
-                      placeholder={t("qrInputPlaceholder")}
-                    />
-                  </div>
-
-                  {/* Статус - Танҳо дар мобил */}
-                  <div className="pt-2 sm:hidden">
-                    <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center justify-between">
+                  {/* Статус — акнун зери QR, бо ҳамон паҳно ва ранги
+                      рамзи шахсӣ, дар ҳама андоза намоён. */}
+                  <div className="mt-4 w-full">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-4 min-[1084px]:p-5 rounded-2xl flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col">
-                          <span className="text-[10px] font-black tracking-widest text-zinc-900 dark:text-white">
+                          <span className="text-[10px] min-[1084px]:text-xs min-[1503px]:text-sm font-black tracking-widest text-zinc-900 dark:text-white">
                             {t("qrStatus")}
                           </span>
                           <button
                             onClick={() => setShowSecurityModal(true)}
-                            className="text-[9px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                            className="text-[9px] min-[1084px]:text-[10px] min-[1503px]:text-[11px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
                           >
                             {t("qrSecurityStatusWhy") ||
                               "Барои чӣ QR-код статус лозим?"}
@@ -1073,6 +825,195 @@ function ProfileContent() {
                     </div>
                   </div>
                 </div>
+
+                {/* Панели танзимоти QR - Full Width ва Compact */}
+                <div className="space-y-5 px-1 pb-10">
+                  {/* Стил ва Шаклҳо */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <LayoutGrid className="w-3 h-3 text-zinc-400" />
+                        <Label className="text-xs font-bold text-zinc-500">
+                          {t("qrDotsStyle") || "Нуқтаҳо"}
+                        </Label>
+                      </div>
+                      <Select
+                        value={qrSettings.dotsType}
+                        onValueChange={(val) =>
+                          setQrSettings({ ...qrSettings, dotsType: val as DotType })
+                        }
+                      >
+                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-sm font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
+                          <SelectItem value="square">
+                            {t("qrDotSquare")}
+                          </SelectItem>
+                          <SelectItem value="dots">{t("qrDotDots")}</SelectItem>
+                          <SelectItem value="rounded">
+                            {t("qrDotRounded")}
+                          </SelectItem>
+                          <SelectItem value="extra-rounded">
+                            {t("qrDotExtraRounded")}
+                          </SelectItem>
+                          <SelectItem value="classy">
+                            {t("qrDotClassy")}
+                          </SelectItem>
+                          <SelectItem value="classy-rounded">
+                            {t("qrDotClassyRounded")}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <RefreshCw className="w-3 h-3 text-zinc-400" />
+                        <Label className="text-xs font-bold text-zinc-500">
+                          {t("qrCornersStyle") || "Кунҷҳо"}
+                        </Label>
+                      </div>
+                      <Select
+                        value={qrSettings.cornersSquareType}
+                        onValueChange={(val) => {
+                          const cornerStyle = val as CornerSquareType;
+                          const dotStyle: CornerDotType =
+                            cornerStyle === "square" ? "square" : "dot";
+                          setQrSettings({
+                            ...qrSettings,
+                            cornersSquareType: cornerStyle,
+                            cornersDotType: dotStyle,
+                          });
+                        }}
+                      >
+                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-sm font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
+                          <SelectItem value="square">
+                            {t("qrCornerSquare")}
+                          </SelectItem>
+                          <SelectItem value="dot">
+                            {t("qrCornerDot")}
+                          </SelectItem>
+                          <SelectItem value="extra-rounded">
+                            {t("qrCornerRounded")}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Рангҳо */}
+                  <div className="grid grid-cols-2 gap-3 relative">
+                    <div className="space-y-2 relative">
+                      <div className="flex items-center gap-1.5 ml-1">
+                        <Palette className="w-3 h-3 text-zinc-400" />
+                        <Label className="text-xs font-bold text-zinc-500">
+                          {t("qrColorLabel")}
+                        </Label>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePicker(activePicker === "qr" ? null : "qr");
+                        }}
+                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all color-trigger px-2 shadow-sm hover:bg-zinc-50"
+                      >
+                        <div
+                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
+                          style={{ backgroundColor: qrSettings.qrColor }}
+                        />
+                        <span className="font-mono text-xs font-bold text-zinc-500">
+                          {qrSettings.qrColor}
+                        </span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 relative">
+                      <Label className="text-xs font-bold text-zinc-500 ml-1">
+                        {t("qrBgLabel")}
+                      </Label>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePicker(activePicker === "bg" ? null : "bg");
+                        }}
+                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all color-trigger px-2 shadow-sm hover:bg-zinc-50"
+                      >
+                        <div
+                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
+                          style={{ backgroundColor: qrSettings.bgColor }}
+                        />
+                        <span className="font-mono text-xs font-bold text-zinc-500">
+                          {qrSettings.bgColor}
+                        </span>
+                      </button>
+                    </div>
+
+                    {(activePicker === "qr" || activePicker === "bg") && (
+                      <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 color-picker-container overflow-hidden">
+                        <div className="flex flex-row p-0 gap-0 justify-center items-stretch h-full">
+                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950">
+                            <div className="p-0 flex justify-center flex-1 items-center">
+                              <HexColorPicker
+                                color={qrSettings.qrColor}
+                                onChange={(color) =>
+                                  setQrSettings({
+                                    ...qrSettings,
+                                    qrColor: color,
+                                  })
+                                }
+                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 border-l border-zinc-100 dark:border-zinc-800">
+                            <div className="p-0 flex justify-center flex-1 items-center">
+                              <HexColorPicker
+                                color={qrSettings.bgColor}
+                                onChange={(color) =>
+                                  setQrSettings({
+                                    ...qrSettings,
+                                    bgColor: color,
+                                  })
+                                }
+                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
+                          <Button
+                            className="w-full h-12 sm:h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg transition-all"
+                            onClick={() => setActivePicker(null)}
+                          >
+                            {t("done")}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Текст */}
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] font-black text-zinc-400 tracking-widest ml-1">
+                      {t("qrFooterText")}
+                    </Label>
+                    <Input
+                      value={qrSettings.text}
+                      onChange={(e) =>
+                        setQrSettings({
+                          ...qrSettings,
+                          text: e.target.value,
+                        })
+                      }
+                      className="h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
+                      placeholder={t("qrInputPlaceholder")}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1082,12 +1023,12 @@ function ProfileContent() {
         return (
           <div className="space-y-8 pb-20">
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <h3 className="text-lg font-black tracking-tight">
+              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-black tracking-tight">
                 {t("aboutApp") || "Оид ба JUYU"}
               </h3>
             </div>
 
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-200 space-y-10 px-2">
+            <div className="space-y-10 px-2">
               {/* Mission */}
               <section className="space-y-6">
                 <div className="bg-zinc-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
@@ -1224,12 +1165,12 @@ function ProfileContent() {
           <div className="space-y-12 pb-20">
             {/* Сарлавҳаи таби Маълумоти шахсӣ */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <h3 className="text-lg font-black tracking-tight">
+              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-black tracking-tight">
                 {t("personalInfo")}
               </h3>
             </div>
 
-            <div className="animate-in slide-in-from-right-4 duration-200 max-w-2xl px-2 space-y-12">
+            <div className="max-w-2xl px-2 space-y-12">
               {/* Бахши Аватар ва Ному насаб */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -1246,7 +1187,7 @@ function ProfileContent() {
                         {user?.firstName?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
-                    <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-zinc-900 border-2 border-white dark:border-zinc-800 flex items-center justify-center cursor-pointer shadow-md">
+                    <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-800 flex items-center justify-center cursor-pointer shadow-md">
                       <Pencil className="w-3.5 h-3.5 text-white" />
                       <input
                         type="file"
@@ -1389,7 +1330,7 @@ function ProfileContent() {
                       type="submit"
                       size="sm"
                       disabled={infoSubmitting}
-                      className="rounded-lg bg-zinc-900 text-white font-black text-[9px] tracking-widest px-6 w-full sm:w-auto"
+                      className="rounded-lg bg-emerald-500 text-white font-black text-[9px] tracking-widest px-6 w-full sm:w-auto"
                     >
                       {infoSubmitting ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -1500,6 +1441,33 @@ function ProfileContent() {
                 </section>
               )}
 
+              {/* Забони интерфейс */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Globe className="w-4 h-4 text-zinc-400" />
+                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
+                    {t("language") || "Забон"}
+                  </h4>
+                </div>
+                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-900 flex flex-wrap gap-2">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setLocale(lang.code)}
+                      className={cn(
+                        "h-10 px-4 rounded-xl font-black text-[11px] tracking-wide transition-all cursor-pointer border",
+                        locale === lang.code
+                          ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
+                          : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700",
+                      )}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
               {/* Минтақаи хатарнок (Danger Zone) */}
               <section className="space-y-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -1533,17 +1501,17 @@ function ProfileContent() {
             {/* Сарлавҳаи таби Захирашудаҳо */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-black tracking-tight">
+                <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-black tracking-tight">
                   {t("savedItems")}
                 </h3>
-                <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-zinc-900 text-white">
+                <div className="px-2 min-[1084px]:px-2.5 py-0.5 rounded text-[10px] min-[1084px]:text-xs min-[1503px]:text-sm font-bold bg-zinc-900 text-white">
                   {savedItems.length}
                 </div>
               </div>
             </div>
 
             {/* Рӯйхати ашёҳои захирашуда */}
-            <div className="animate-in fade-in duration-200">
+            <div className="">
               {savedLoading ? (
                 <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
@@ -1558,14 +1526,14 @@ function ProfileContent() {
                 </div>
               ) : (
                 <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-                  <Bookmark className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 text-xs tracking-widest">
+                  <Bookmark className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
+                  <h4 className="font-bold text-zinc-400 text-xs min-[1084px]:text-sm tracking-widest">
                     {t("savedItemsEmpty")}
                   </h4>
                   <Button
                     asChild
                     size="sm"
-                    className="mt-6 rounded-md font-black text-[10px] tracking-wider"
+                    className="mt-6 rounded-md font-black text-[10px] min-[1084px]:text-[11px] tracking-wider"
                   >
                     <Link href="/">{t("home")}</Link>
                   </Button>
@@ -1582,27 +1550,27 @@ function ProfileContent() {
 
   return (
     <TooltipProvider>
-      <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 py-0 sm:py-8 min-h-[90vh]">
+      <div className="w-full px-3 sm:px-4 py-0 sm:py-8 min-h-[90vh]">
         {/* Mobile Profile Header (Instagram Style) */}
         {activeTab === "posts" && (
           <div className="block lg:hidden border-b border-zinc-100 dark:border-zinc-900 bg-white dark:bg-zinc-950 px-4 pt-6 pb-8">
             <div className="flex items-center gap-6 mb-6">
-              <Avatar className="w-20 h-20 border-2 border-zinc-100 dark:border-zinc-800 p-0.5">
+              <Avatar className="w-20 h-20 min-[768px]:w-24 min-[768px]:h-24 border-2 border-zinc-100 dark:border-zinc-800 p-0.5">
                 <AvatarImage
                   src={user?.imageUrl}
                   className="rounded-full object-cover"
                 />
-                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-xl font-black">
+                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-xl min-[768px]:text-2xl font-black">
                   {user?.firstName?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1 flex flex-col gap-1">
-                <h2 className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-none flex items-center gap-1.5">
+                <h2 className="text-xl min-[768px]:text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-none flex items-center gap-1.5">
                   {user?.firstName} {user?.lastName}
                   {profile?.is_verified && <VerifiedBadge />}
                 </h2>
-                <p className="text-xs font-bold text-zinc-500 truncate max-w-[200px]">
+                <p className="text-xs min-[768px]:text-sm font-bold text-zinc-500 truncate max-w-[200px] min-[768px]:max-w-[260px]">
                   {user?.primaryEmailAddress?.emailAddress}
                 </p>
               </div>
@@ -1611,28 +1579,28 @@ function ProfileContent() {
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => handleTabChange("info")}
-                className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black text-[10px] tracking-wider border-none shadow-none"
+                className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-zinc-500 dark:text-zinc-400 font-black text-[10px] min-[768px]:text-[11px] tracking-wider border-none shadow-none"
               >
-                <Pencil className="w-3.5 h-3.5 mr-2" />
+                <Pencil className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 mr-2 text-emerald-500" />
                 {t("edit") || "Edit"}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex-1 h-9 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white font-black text-[10px] tracking-wider border-none shadow-none gap-2">
-                    <MenuIcon className="w-4 h-4" />
+                  <Button className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-zinc-500 dark:text-zinc-400 font-black text-[10px] min-[768px]:text-[11px] tracking-wider border-none shadow-none gap-2">
+                    <MenuIcon className="w-4 h-4 min-[768px]:w-[18px] min-[768px]:h-[18px] text-emerald-500" />
                     {t("settings") || "Settings"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 rounded-xl shadow-xl p-2 border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                  className="w-56 min-[768px]:w-60 rounded-xl shadow-xl p-2 border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"
                 >
                   {menuItems.map((item) => (
                     <DropdownMenuItem
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
                       className={cn(
-                        "flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] tracking-wider",
+                        "flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider",
                         activeTab === item.id
                           ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
                           : "text-zinc-500",
@@ -1641,16 +1609,26 @@ function ProfileContent() {
                       <div
                         className={cn("p-1.5 rounded-md", item.bg, item.color)}
                       >
-                        <item.icon className="w-3.5 h-3.5" />
+                        <item.icon className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                       </div>
                       {item.title}
                     </DropdownMenuItem>
                   ))}
-                  <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-1 my-1" />
+                  {isAdmin && (
+                    <DropdownMenuItem
+                      onClick={() => router.push("/admin")}
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                    >
+                      <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                        <UserCog className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                      </div>
+                      {t("adminPanel")}
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem className="p-0">
                     <SignOutButton>
-                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-red-500 font-bold text-[11px] tracking-wider">
-                        <div className="p-1.5 rounded-md bg-red-50 dark:bg-red-900/20">
+                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-zinc-500 font-bold text-[11px] tracking-wider">
+                        <div className="p-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800">
                           <LogOut className="w-3.5 h-3.5" />
                         </div>
                         {t("signOut")}
@@ -1673,30 +1651,30 @@ function ProfileContent() {
                     key={item.id}
                     onClick={() => handleTabChange(item.id)}
                     className={cn(
-                      "flex items-center justify-between p-3 rounded-xl transition-all group shadow-sm border",
+                      "flex items-center justify-between p-3 min-[1084px]:p-3.5 min-[1503px]:p-4 rounded-xl transition-all group shadow-sm border",
                       activeTab === item.id
-                        ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900 scale-[1.02] shadow-md"
+                        ? "bg-emerald-500 border-emerald-500 text-white scale-[1.02] shadow-md"
                         : "bg-white border-zinc-100 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700",
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
-                          "p-2 rounded-lg transition-colors",
+                          "p-2 min-[1084px]:p-2.5 rounded-lg transition-colors",
                           activeTab === item.id
-                            ? "bg-white/20 text-white dark:bg-zinc-900/10 dark:text-zinc-900"
+                            ? "bg-white/20 text-white"
                             : cn(item.bg, item.color),
                         )}
                       >
-                        <item.icon className="w-4 h-4" />
+                        <item.icon className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 min-[1920px]:w-[22px] min-[1920px]:h-[22px]" />
                       </div>
-                      <span className="font-black text-[10px] tracking-wider">
+                      <span className="font-black text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-wider">
                         {item.title}
                       </span>
                     </div>
                     <ChevronRight
                       className={cn(
-                        "w-4 h-4 transition-transform",
+                        "w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 transition-transform",
                         activeTab === item.id
                           ? "translate-x-1"
                           : "text-zinc-300 group-hover:translate-x-0.5",
@@ -1711,9 +1689,9 @@ function ProfileContent() {
                 <SignOutButton>
                   <Button
                     variant="ghost"
-                    className="w-full h-11 rounded-xl font-black text-[10px] tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4"
+                    className="w-full h-11 min-[1084px]:h-12 min-[1503px]:h-[52px] rounded-xl font-black text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5" />
                     {t("signOut")}
                   </Button>
                 </SignOutButton>
@@ -1751,7 +1729,7 @@ function ProfileContent() {
                 "flex-1 h-12 rounded-xl font-black tracking-widest text-[10px]",
                 confirmDialog.variant === "destructive"
                   ? "bg-red-600 hover:bg-red-700 text-white"
-                  : "bg-zinc-900 hover:bg-zinc-800 text-white",
+                  : "bg-emerald-500 hover:bg-emerald-600 text-white",
               )}
               onClick={() => confirmDialog.onConfirm()}
               disabled={confirmDialog.isLoading}
@@ -1785,12 +1763,12 @@ function ProfileContent() {
       >
         <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
           <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
-            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1 animate-in zoom-in duration-200">
+            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1">
               <ShieldCheck className="w-8 h-8 text-emerald-500" />
             </div>
 
             <DialogHeader className="space-y-2">
-              <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">
+              <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
                 {t("qrSecondaryModal.title")}
               </DialogTitle>
               <DialogDescription className="text-zinc-500 font-bold text-[11px] leading-relaxed">
@@ -1840,7 +1818,7 @@ function ProfileContent() {
                         <Input
                           name="secondary_phone"
                           placeholder={t("qrSecondaryModal.placeholder")}
-                          className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                          className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider text-emerald-600 dark:text-emerald-400 border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
                           required
                           inputMode="numeric"
                           onChange={(e) =>
@@ -1876,7 +1854,7 @@ function ProfileContent() {
                             className={cn(
                               "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black text-[10px] tracking-wider",
                               secondaryType === type
-                                ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md scale-[1.02]"
+                                ? "bg-emerald-500 text-white shadow-md scale-[1.02]"
                                 : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
                             )}
                           >
@@ -1924,7 +1902,7 @@ function ProfileContent() {
             <Button
               type="submit"
               form="secondary-phone-form"
-              className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[11px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-xl shadow-emerald-500/10 transition-all active:scale-95 disabled:opacity-50 border-none"
+              className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all disabled:opacity-50 border-none"
               disabled={
                 secondaryLoading ||
                 ((!profile?.secondary_phone ||
@@ -1954,7 +1932,7 @@ function ProfileContent() {
       <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
         <DialogContent className="w-[96%] sm:max-w-[400px] rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="text-lg font-black tracking-tight text-zinc-900 dark:text-white">
+            <DialogTitle className="text-lg font-black tracking-tight text-emerald-600 dark:text-emerald-400">
               {t("terms.link")}
             </DialogTitle>
           </DialogHeader>
@@ -1965,7 +1943,7 @@ function ProfileContent() {
           </div>
           <Button
             onClick={() => setShowTermsDetails(false)}
-            className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-zinc-900 text-white hover:bg-zinc-800 transition-all active:scale-95"
+            className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
           >
             {t("ok")}
           </Button>
@@ -1978,7 +1956,7 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <QrCode className="w-8 h-8 text-emerald-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("qrWhyGuideTitle") || "Чӣ тавр QR-код ба шумо кӯмак мекунад?"}
             </DialogTitle>
             <DialogDescription asChild>
@@ -1997,7 +1975,7 @@ function ProfileContent() {
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] tracking-wider text-zinc-900 dark:text-white">
+                      <h5 className="font-black text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep1Title") || "Дизайн ва скачат кунед"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
@@ -2015,7 +1993,7 @@ function ProfileContent() {
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] tracking-wider text-zinc-900 dark:text-white">
+                      <h5 className="font-black text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep2Title") || "Ёбанда скан мекунад"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
@@ -2033,7 +2011,7 @@ function ProfileContent() {
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] tracking-wider text-zinc-900 dark:text-white">
+                      <h5 className="font-black text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep3Title") || "Алоқаи фаврӣ ва бехатар"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
@@ -2049,7 +2027,7 @@ function ProfileContent() {
           <div className="mt-8 flex flex-col gap-2">
             <Button
               onClick={() => setShowWhyQRModal(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2064,7 +2042,7 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <ShieldCheck className="w-8 h-8 text-emerald-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("qrSecurityTitle") || "Реҷаи амниятӣ"}
             </DialogTitle>
             <DialogDescription asChild>
@@ -2084,7 +2062,7 @@ function ProfileContent() {
           <div className="mt-8">
             <Button
               onClick={() => setShowSecurityModal(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2104,7 +2082,7 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <Trash2 className="w-8 h-8 text-red-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("deleteAccountConfirmTitle")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
@@ -2115,7 +2093,7 @@ function ProfileContent() {
             <Button
               onClick={handleDeleteAccount}
               disabled={deletingAccount}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-95"
+              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all"
             >
               {deletingAccount ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -2142,7 +2120,7 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-violet-50 dark:bg-violet-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <KeyRound className="w-8 h-8 text-violet-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("changePassword")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
@@ -2185,7 +2163,7 @@ function ProfileContent() {
 
           <div className="mt-8">
             <SignOutButton>
-              <Button className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all active:scale-95 gap-2">
+              <Button className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all gap-2">
                 <LogOut className="w-4 h-4" />
                 {t("signOutToChangePassword")}
               </Button>
@@ -2219,7 +2197,7 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <Mail className="w-8 h-8 text-blue-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
+            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("changeEmail")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
@@ -2247,7 +2225,7 @@ function ProfileContent() {
               <Button
                 onClick={handleStartEmailChange}
                 disabled={emailSubmitting || !newEmailInput}
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-zinc-900 text-white hover:bg-zinc-800 shadow-lg transition-all active:scale-95"
+                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg transition-all"
               >
                 {emailSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -2298,7 +2276,7 @@ function ProfileContent() {
               <Button
                 onClick={handleVerifyEmailChange}
                 disabled={emailSubmitting || emailCodeInput.length < 6}
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-700 text-white hover:bg-emerald-800 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all"
               >
                 {emailSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

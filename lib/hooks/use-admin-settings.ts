@@ -25,3 +25,21 @@ export function useUpdateAdminSettings() {
     },
   });
 }
+
+export function useEmbeddingsMissingCount() {
+  return useQuery({
+    queryKey: ADMIN_KEYS.embeddingsMissing(),
+    queryFn: () => AdminService.getEmbeddingsMissingCount(),
+    staleTime: 30_000,
+  });
+}
+
+export function useReprocessEmbeddings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => AdminService.reprocessEmbeddings(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.embeddingsMissing() });
+    },
+  });
+}

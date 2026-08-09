@@ -80,7 +80,7 @@ export default async function MainLayout({
 
   return (
     <HomeProvider>
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-zinc-950">
       {/* Ҳедери сайт (Шапка) - Persistent UI */}
       <Header isAdmin={isAdmin} />
 
@@ -91,7 +91,7 @@ export default async function MainLayout({
 
       {/* Поёни сайт (Footer) */}
       <footer data-nosnippet className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12 mb-20 md:mb-0 hidden md:block">
-        <div className="max-w-[1600px] mx-auto px-4 text-center text-zinc-500 text-sm">
+        <div className="w-full px-4 text-center text-zinc-500 text-sm">
           <p>© 2026 juyo - All rights reserved.</p>
           <div className="mt-2">
             <Link href="/privacy" className="hover:underline">Сиёсати махфият</Link>

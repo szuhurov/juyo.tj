@@ -151,9 +151,9 @@ function PostAsUserContent() {
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-5 pb-20">
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs font-bold text-amber-800 flex gap-2">
-        <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+    <div className="max-w-xl min-[1084px]:max-w-2xl mx-auto space-y-5 pb-20">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs min-[1084px]:text-sm font-bold text-amber-800 flex gap-2">
+        <ShieldCheck className="w-4 h-4 min-[1084px]:w-5 min-[1084px]:h-5 shrink-0 mt-0.5" />
         <span>
           Ин восита санҷиши AI-ро гузаронда мешавад. Ҳимояи махфият ФАҚАТ ба
           мозаикаи дастии шумо вобаста аст — пеш аз сабт ҳатман минтақаҳои
@@ -186,7 +186,7 @@ function PostAsUserContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
             <Input
               placeholder="Ном, телефон ё почта..."
-              className="pl-9 rounded-xl h-11"
+              className="pl-9 rounded-xl h-11 min-[1084px]:h-12"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -218,7 +218,7 @@ function PostAsUserContent() {
       {/* Унвон */}
       <div className="space-y-1.5">
         <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">УНВОН</Label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-xl h-11" />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-xl h-11 min-[1084px]:h-12" />
       </div>
 
       {/* Тавсиф */}
@@ -256,7 +256,7 @@ function PostAsUserContent() {
             type="button"
             onClick={() => setType(tp)}
             className={cn(
-              "flex-1 h-11 rounded-xl border-2 font-black text-xs",
+              "flex-1 h-11 min-[1084px]:h-12 rounded-xl border-2 font-black text-xs min-[1084px]:text-sm",
               type === tp ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-100 text-zinc-500",
             )}
           >
@@ -269,11 +269,11 @@ function PostAsUserContent() {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">ТЕЛЕФОН</Label>
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-xl h-11" />
+          <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-xl h-11 min-[1084px]:h-12" />
         </div>
         <div className="space-y-1.5">
           <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">МУКОФОТ (агар бошад)</Label>
-          <Input value={reward} onChange={(e) => setReward(e.target.value)} className="rounded-xl h-11" />
+          <Input value={reward} onChange={(e) => setReward(e.target.value)} className="rounded-xl h-11 min-[1084px]:h-12" />
         </div>
       </div>
 
@@ -297,9 +297,9 @@ function PostAsUserContent() {
         type="button"
         disabled={submitting}
         onClick={handleSubmit}
-        className="w-full h-12 rounded-xl font-black bg-emerald-700 hover:bg-emerald-800 text-white"
+        className="w-full h-12 min-[1084px]:h-[52px] rounded-xl font-black text-sm min-[1084px]:text-base bg-emerald-500 hover:bg-emerald-600 text-white"
       >
-        {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Сабт кардан"}
+        {submitting ? <Loader2 className="w-4 h-4 min-[1084px]:w-5 min-[1084px]:h-5 animate-spin" /> : "Сабт кардан"}
       </Button>
 
       <PrivacyBlurEditor

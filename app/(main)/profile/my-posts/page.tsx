@@ -67,6 +67,16 @@ export default function MyPostsPage() {
     };
   }, [userId, loadMyItems]);
 
+  // Санҷиши AI дар сервер async аст (trigger_image_moderation, чанд сония
+  // мегирад) — то он тамом шавад, эълон "pending" мемонад. Бе ин polling,
+  // корбар "Дар ҳоли санҷиш"-ро то reload-и дастӣ мебинад, ҳатто агар
+  // сервер аллакай онро тасдиқ карда бошад.
+  useEffect(() => {
+    if (!items.some((item) => item.moderation_status === "pending")) return;
+    const interval = setInterval(loadMyItems, 3000);
+    return () => clearInterval(interval);
+  }, [items, loadMyItems]);
+
   /**
    * Функсия барои нест кардани эълон (Delete)
    */
@@ -89,10 +99,10 @@ export default function MyPostsPage() {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-2 sm:px-4 py-8">
+    <div className="w-full px-2 sm:px-4 py-8">
       {/* Сарлавҳаи саҳифа */}
       <div className="flex items-center gap-4 mb-8 px-2 sm:px-0">
-        <h1 className="text-2xl font-black tracking-tight">{t('myPosts')}</h1>
+        <h1 className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-black tracking-tight">{t('myPosts')}</h1>
       </div>
 
       {loading ? (
@@ -108,17 +118,17 @@ export default function MyPostsPage() {
               <ItemCard item={item} />
               {/* Тугмаи нест кардан дар болои корт */}
               <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-2">
-                <Button 
-                  variant="destructive" 
-                  size="icon" 
-                  className="h-8 w-8 rounded-lg shadow-lg bg-red-600/90 backdrop-blur-sm border-none"
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="h-8 w-8 min-[1084px]:h-9 min-[1084px]:w-9 min-[1920px]:h-10 min-[1920px]:w-10 rounded-lg shadow-lg bg-red-600/90 backdrop-blur-sm border-none"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     setItemToDelete(item.id);
                   }}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" />
                 </Button>
               </div>
             </div>
@@ -127,9 +137,9 @@ export default function MyPostsPage() {
       ) : (
         /* Агар ягон эълон набошад */
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-          <PackageSearch className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">{t('noItemsFound')}</h2>
-          <Button asChild className="rounded-md font-bold text-xs">
+          <PackageSearch className="w-16 h-16 min-[1084px]:w-20 min-[1084px]:h-20 min-[1920px]:w-24 min-[1920px]:h-24 text-zinc-300 mx-auto mb-4" />
+          <h2 className="text-xl min-[1084px]:text-2xl min-[1920px]:text-[28px] font-bold mb-2">{t('noItemsFound')}</h2>
+          <Button asChild className="rounded-md font-bold text-xs min-[1084px]:text-sm min-[1920px]:text-base min-[1084px]:h-10 min-[1920px]:h-11 min-[1084px]:px-5 min-[1920px]:px-6">
             <Link href="/items/add">{t('addItemTitle')}</Link>
           </Button>
         </div>

@@ -163,7 +163,7 @@ export const QRCard: React.FC<QRCardProps> = ({
             >
               <span
                 className="text-[20px] font-[900] tracking-[0.1em] block leading-none"
-                style={{ color: qrColor }}
+                style={{ color: qrColor, transform: "translate(0.2mm, 0.2mm)" }}
               >
                 JUYO
               </span>

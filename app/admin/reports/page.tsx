@@ -31,8 +31,8 @@ export default function AdminReportsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Flag className="w-5 h-5 text-rose-500" />
-        <h1 className="text-lg font-black text-zinc-900">Шикоятҳо (Reports)</h1>
+        <Flag className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-rose-500" />
+        <h1 className="text-lg min-[1084px]:text-xl font-black text-zinc-900">Шикоятҳо (Reports)</h1>
       </div>
 
       <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm space-y-4">
@@ -42,9 +42,9 @@ export default function AdminReportsPage() {
               key={tab.id}
               onClick={() => setStatus(tab.id)}
               className={cn(
-                "px-4 h-9 rounded-lg font-bold text-[11px] tracking-wider transition-all",
+                "px-4 min-[1084px]:px-5 h-9 min-[1084px]:h-10 rounded-lg font-bold text-[11px] min-[1084px]:text-xs tracking-wider transition-all",
                 status === tab.id
-                  ? "bg-zinc-900 text-white shadow-md"
+                  ? "bg-emerald-500 text-white shadow-md"
                   : "text-zinc-500 hover:text-zinc-900",
               )}
             >
@@ -72,23 +72,23 @@ export default function AdminReportsPage() {
               >
                 <div className="min-w-0 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[10px] font-black tracking-wider">
+                    <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[10px] min-[1084px]:text-[11px] font-black tracking-wider">
                       {REASON_LABELS[r.reason] ?? r.reason}
                     </span>
                     <Link
                       href={`/admin/posts/${r.item_id}`}
-                      className="font-bold text-sm text-zinc-900 hover:text-blue-600 inline-flex items-center gap-1"
+                      className="font-bold text-sm min-[1084px]:text-base text-zinc-900 hover:text-blue-600 inline-flex items-center gap-1"
                     >
                       {r.items?.title ?? r.item_id}
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5" />
                     </Link>
                   </div>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs min-[1084px]:text-[13px] text-zinc-500">
                     Аз: {r.reporter?.first_name || "Корбар"} {r.reporter?.last_name || ""} ·{" "}
                     {new Date(r.created_at).toLocaleDateString("tg-TJ")}
                   </p>
                   {r.details && (
-                    <p className="text-xs text-zinc-600 italic max-w-xl">&ldquo;{r.details}&rdquo;</p>
+                    <p className="text-xs min-[1084px]:text-[13px] text-zinc-600 italic max-w-xl">&ldquo;{r.details}&rdquo;</p>
                   )}
                 </div>
                 {r.status === "pending" && (
@@ -98,9 +98,9 @@ export default function AdminReportsPage() {
                       variant="outline"
                       disabled={updateReport.isPending}
                       onClick={() => updateReport.mutate({ id: r.id, status: "dismissed" })}
-                      className="h-9 rounded-lg font-black text-[9px] tracking-widest gap-1.5"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5"
                     >
-                      <XCircle className="w-3.5 h-3.5" />
+                      <XCircle className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Радд
                     </Button>
                     <Button
@@ -111,9 +111,9 @@ export default function AdminReportsPage() {
                           updateReport.mutate({ id: r.id, status: "reviewed" });
                         }
                       }}
-                      className="h-9 rounded-lg font-black text-[9px] tracking-widest gap-1.5 bg-emerald-700 hover:bg-emerald-800"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5 bg-emerald-500 hover:bg-emerald-600"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Тасдиқ ва нест кардан
                     </Button>
                   </div>

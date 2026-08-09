@@ -82,71 +82,76 @@ describe('CATEGORIES', () => {
 });
 
 // ─────────────────────────────────────────────
-// getItems
+// getItems — filters/pagination are forwarded to the search_items RPC
+// (supabase/migrations/20260714000000_search_items_rpc.sql onward); the
+// moderation/sort logic that used to live in a JS query-builder chain has
+// moved entirely into that RPC's SQL, so it's no longer observable here.
 // ─────────────────────────────────────────────
 describe('ItemService.getItems', () => {
-  it('filters ONLY approved items for public feed — never null moderation', async () => {
+  it('calls the search_items RPC', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({}, mock);
 
-    const eqCalls: string[][] = mock._chain.eq.mock.calls;
-    expect(eqCalls).toContainEqual(['moderation_status', 'approved']);
-
-    // Must NOT allow null moderation — check that `or` was NOT used for moderation
-    const orCalls: string[] = mock._chain.or.mock.calls.map((c: any[]) => c[0]);
-    const allowsNull = orCalls.some(c => c.includes('moderation_status.is.null'));
-    expect(allowsNull).toBe(false);
+    expect(mock.rpc).toHaveBeenCalledWith('search_items', expect.any(Object));
   });
 
-  it('does NOT apply moderation filter when user_id is provided', async () => {
-    const mock = makeMockClient();
-    await ItemService.getItems({ user_id: 'user-123' }, mock);
-
-    const eqCalls: string[][] = mock._chain.eq.mock.calls;
-    const hasModFilter = eqCalls.some(c => c[0] === 'moderation_status');
-    expect(hasModFilter).toBe(false);
-    expect(eqCalls).toContainEqual(['user_id', 'user-123']);
-  });
-
-  it('applies category filter when category is not "All"', async () => {
+  it('passes category as p_category, or null when "All"/unset', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({ category: 'Electronics' }, mock);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_category: 'Electronics' }),
+    );
 
-    const eqCalls: string[][] = mock._chain.eq.mock.calls;
-    expect(eqCalls).toContainEqual(['category', 'Electronics']);
+    const mockAll = makeMockClient();
+    await ItemService.getItems({ category: 'All' }, mockAll);
+    expect(mockAll.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_category: null }),
+    );
   });
 
-  it('does NOT apply category filter when category is "All"', async () => {
-    const mock = makeMockClient();
-    await ItemService.getItems({ category: 'All' }, mock);
-
-    const eqCalls: string[][] = mock._chain.eq.mock.calls;
-    const hasCatFilter = eqCalls.some(c => c[0] === 'category');
-    expect(hasCatFilter).toBe(false);
-  });
-
-  it('applies type filter', async () => {
+  it('passes type as p_type', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({ type: 'lost' }, mock);
-
-    const eqCalls: string[][] = mock._chain.eq.mock.calls;
-    expect(eqCalls).toContainEqual(['type', 'lost']);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_type: 'lost' }),
+    );
   });
 
-  it('applies ilike search on title and description', async () => {
+  it('passes user_id as p_user_id', async () => {
     const mock = makeMockClient();
-    await ItemService.getItems({ search: 'телефон' }, mock);
+    await ItemService.getItems({ user_id: 'user-123' }, mock);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_user_id: 'user-123' }),
+    );
+  });
 
-    const orCalls: string[] = mock._chain.or.mock.calls.map((c: any[]) => c[0]);
-    expect(orCalls.some((arg: string) => arg.includes('ilike') && arg.includes('телефон'))).toBe(true);
+  it('passes locationType as p_location_type, or null when unset', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems({ locationType: 'taxi' }, mock);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_location_type: 'taxi' }),
+    );
+
+    const mockUnset = makeMockClient();
+    await ItemService.getItems({}, mockUnset);
+    expect(mockUnset.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_location_type: null }),
+    );
   });
 
   it('trims whitespace from search query', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({ search: '  телефон  ' }, mock);
-
-    const orCalls: string[] = mock._chain.or.mock.calls.map((c: any[]) => c[0]);
-    expect(orCalls.some((arg: string) => arg.includes('телефон') && !arg.includes('  '))).toBe(true);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_search: 'телефон' }),
+    );
   });
 
   it('limits search query to 200 characters', async () => {
@@ -154,33 +159,55 @@ describe('ItemService.getItems', () => {
     const mock = makeMockClient();
     await ItemService.getItems({ search: longSearch }, mock);
 
-    const orCalls: string[] = mock._chain.or.mock.calls.map((c: any[]) => c[0]);
-    expect(orCalls.some((arg: string) => !arg.includes('а'.repeat(201)))).toBe(true);
+    const call = (mock.rpc as any).mock.calls[0][1];
+    expect((call.p_search as string).length).toBeLessThanOrEqual(200);
   });
 
-  it('uses correct pagination range for page 2 with pageSize 10', async () => {
-    const mock = makeMockClient();
-    await ItemService.getItems({ page: 2, pageSize: 10 }, mock);
-
-    expect(mock._chain.range).toHaveBeenCalledWith(20, 29);
-  });
-
-  it('uses correct pagination range for page 0 (first page)', async () => {
-    const mock = makeMockClient();
-    await ItemService.getItems({ page: 0, pageSize: 20 }, mock);
-
-    expect(mock._chain.range).toHaveBeenCalledWith(0, 19);
-  });
-
-  it('orders results by created_at descending', async () => {
+  it('passes null p_search when no search text given', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({}, mock);
-
-    expect(mock._chain.order).toHaveBeenCalledWith('created_at', { ascending: false });
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_search: null }),
+    );
   });
 
-  it('throws when supabase returns an error', async () => {
-    const mock = makeMockClient({ data: null, error: new Error('DB error') });
+  it('computes p_limit/p_offset for page 2 with pageSize 10', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems({ page: 2, pageSize: 10 }, mock);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_limit: 10, p_offset: 20 }),
+    );
+  });
+
+  it('defaults to page 0 / pageSize 20', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems({}, mock);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_limit: 20, p_offset: 0 }),
+    );
+  });
+
+  it('passes dateFrom/dateTo through as p_date_from/p_date_to', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems(
+      { dateFrom: '2026-01-01', dateTo: '2026-01-31' },
+      mock,
+    );
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({
+        p_date_from: '2026-01-01',
+        p_date_to: '2026-01-31',
+      }),
+    );
+  });
+
+  it('throws when the RPC returns an error', async () => {
+    const mock = makeMockClient();
+    mock.rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') });
     await expect(ItemService.getItems({}, mock)).rejects.toThrow('DB error');
   });
 });

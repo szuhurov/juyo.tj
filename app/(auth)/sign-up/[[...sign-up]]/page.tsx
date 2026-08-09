@@ -46,7 +46,7 @@ export default function Page() {
               }}
               className={`font-bold rounded-lg px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
                 locale === lang.code
-                  ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-md"
+                  ? "bg-emerald-500 text-white shadow-md"
                   : "bg-white dark:bg-zinc-900 text-zinc-600 hover:text-zinc-900 border-zinc-200 dark:border-zinc-800"
               }`}
             >
@@ -57,7 +57,7 @@ export default function Page() {
       </div>
 
       <div className="w-full max-w-[480px] -mt-4 sm:-mt-6">
-        <div className="animate-in fade-in zoom-in-95 duration-300 flex flex-col items-center">
+        <div className="flex flex-col items-center">
           <div className="w-full flex justify-center">
             <SignUp
               path="/sign-up"

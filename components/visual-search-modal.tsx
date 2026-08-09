@@ -52,16 +52,16 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
 
     try {
       const results = await ItemService.visualSearch(file);
-      
+
       // Натиҷаро фавран нишон медиҳем (бе таъхири сунъӣ)
       setScanProgress(100);
-      
+
       // Интизории кӯтоҳ танҳо барои анҷоми аниматсия
       await new Promise(resolve => setTimeout(resolve, 400));
-      
+
       onResults(results);
       onClose();
-      
+
       if (results.length > 0) {
         toast.success(t('visualSearchComplete') || "Ҷустуҷӯи визуалӣ ба анҷом расид");
       } else {
@@ -94,10 +94,9 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
       <DialogPortal>
         {/* Фони паси модал - муътадил ва шаффоф */}
         <DialogOverlay className="bg-black/40 backdrop-blur-sm" />
-        <DialogPrimitive.Content 
+        <DialogPrimitive.Content
           className={cn(
-            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 duration-200 outline-none",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
+            "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-0 outline-none",
             "border-none bg-transparent shadow-none p-0 overflow-visible"
           )}
         >
@@ -110,12 +109,12 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
           <div className="relative group px-4 sm:px-0">
             {/* Дурахши мулоим дар атрофи контейнер (Glassy Glow) */}
             <div className="absolute -inset-0.5 bg-emerald-500/20 rounded-[32px] blur-sm opacity-50"></div>
-            
+
             <div className={cn(
               "relative rounded-[30px] overflow-hidden border border-white/10 shadow-2xl transition-all duration-700",
-              (isSearching || scanProgress === 100) 
-                ? (scanProgress === 100 ? "bg-emerald-950/60 backdrop-blur-xl" : "bg-zinc-950/70 backdrop-blur-xl")
-                : "bg-zinc-950/90"
+              (isSearching || scanProgress === 100)
+                ? (scanProgress === 100 ? "bg-emerald-950/60 backdrop-blur-xl" : "bg-emerald-950/70 backdrop-blur-xl")
+                : "bg-emerald-950/95"
             )}>
               {(isSearching || scanProgress === 100) ? (
                 <div className="flex flex-col items-center">
@@ -124,16 +123,16 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
                     {previewUrl && (
                       <>
                         {/* Blurred background for empty spaces */}
-                        <Image 
-                          src={previewUrl} 
-                          alt="" 
-                          fill 
+                        <Image
+                          src={previewUrl}
+                          alt=""
+                          fill
                           className="object-cover blur-3xl opacity-40 scale-110"
                         />
-                        <Image 
-                          src={previewUrl} 
-                          alt="Analyzing" 
-                          fill 
+                        <Image
+                          src={previewUrl}
+                          alt="Analyzing"
+                          fill
                           className={cn(
                             "object-contain transition-opacity duration-700 relative z-10",
                             scanProgress === 100 ? "opacity-40" : "opacity-60"
@@ -141,7 +140,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
                         />
                       </>
                     )}
-                    
+
                     {/* Сканери лазерӣ */}
                     {scanProgress < 100 && (
                       <div className="absolute inset-0 z-10">
@@ -151,7 +150,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
                     )}
 
                     {/* Нуқтаҳои AI (Neural Grid) */}
-                    <div 
+                    <div
                       className={cn(
                         "absolute inset-0 transition-opacity duration-700 animate-grid-scan",
                         scanProgress === 100 ? "opacity-40" : "opacity-90"
@@ -174,7 +173,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
                   </div>
                 </div>
               ) : (
-                <div className="p-20 flex items-center justify-center bg-zinc-950">
+                <div className="p-20 flex items-center justify-center bg-emerald-950">
                   <div className="w-12 h-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
                 </div>
               )}

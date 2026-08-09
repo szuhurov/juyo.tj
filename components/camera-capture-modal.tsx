@@ -127,7 +127,7 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
             >
               <button
                 onClick={handleCapture}
-                className="w-16 h-16 rounded-full bg-white border-4 border-emerald-500 active:scale-90 transition-transform"
+                className="w-16 h-16 rounded-full bg-white border-4 border-emerald-500 transition-transform"
               />
             </div>
           )}

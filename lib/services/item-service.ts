@@ -1,6 +1,10 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 
+// Қимати махсуси майдони reward — вақте ки корбар мукофот медиҳад, аммо
+// маблағро нишон додан намехоҳад (checkbox фаъол, лекин input холӣ).
+export const UNSPECIFIED_REWARD = "unspecified";
+
 // Сохтори маълумотии Ашё (Interface)
 export interface Item {
   id: string;
@@ -19,6 +23,7 @@ export interface Item {
   moderation_result?: string;
   images?: { image_url: string }[];
   similarity_score?: number;
+  location_type?: "taxi" | "hotel_restaurant" | "public_place" | "airport" | null;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -54,6 +59,7 @@ export const ItemService = {
       user_id?: string;
       dateFrom?: string;
       dateTo?: string;
+      locationType?: string;
       page?: number;
       pageSize?: number;
     } = {},
@@ -66,6 +72,7 @@ export const ItemService = {
       user_id,
       dateFrom,
       dateTo,
+      locationType,
       page = 0,
       pageSize = 20,
     } = filters;
@@ -89,6 +96,7 @@ export const ItemService = {
       p_offset: page * pageSize,
       p_date_from: dateFrom || null,
       p_date_to: dateTo || null,
+      p_location_type: locationType || null,
     });
     if (error) throw error;
     return data as Item[];

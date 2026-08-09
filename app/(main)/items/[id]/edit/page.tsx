@@ -10,13 +10,14 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
 import { useAuth } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { CATEGORIES, Item } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
-import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
+import { CATEGORIES, Item, UNSPECIFIED_REWARD } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
+import { createClerkSupabaseClient, supabase as anonSupabase } from "@/lib/supabase"; // Барои пайваст шудан ба база
 import { Button } from "@/components/ui/button"; // Компоненти тугма
 import { Input } from "@/components/ui/input"; // Компоненти воридкунии матн
 import { Textarea } from "@/components/ui/textarea"; // Компоненти воридкунии матни дароз
 import { Label } from "@/components/ui/label"; // Компоненти тамға
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Барои интихоби як аз якчандто
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -61,6 +62,10 @@ export default function EditItemPage({
   // Стейтҳо барои навъи ашё, категория ва суратҳо
   const [type, setType] = useState<"lost" | "found">("lost");
   const [category, setCategory] = useState("");
+  const [locationType, setLocationType] = useState<
+    "taxi" | "hotel_restaurant" | "public_place" | "airport" | null
+  >(null);
+  const [rewardEnabled, setRewardEnabled] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<
     { url: string; isExisting: boolean }[]
@@ -81,6 +86,21 @@ export default function EditItemPage({
   const [scanMessage, setScanMessage] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  // Пешфарз true (то боркунии танзимот) — ниг. items/add/page.tsx барои
+  // маънии пурра. Агар хомӯш бошад, санҷиши AI-ро дар edit низ давр
+  // намезанем (харҷи бефоидаи OpenAI), эълон бо ҳолати "pending" мемонад.
+  const [aiModerationEnabled, setAiModerationEnabled] = useState(true);
+
+  useEffect(() => {
+    anonSupabase
+      .from("app_settings")
+      .select("ai_moderation_enabled")
+      .eq("id", true)
+      .single()
+      .then(({ data }) => {
+        if (data) setAiModerationEnabled(data.ai_moderation_enabled);
+      });
+  }, []);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -153,6 +173,8 @@ export default function EditItemPage({
       setItem(data);
       setType(data.type);
       setCategory(data.category);
+      setLocationType(data.location_type ?? null);
+      setRewardEnabled(!!data.reward);
       if (data.images) {
         setPreviews(
           data.images.map((img: { image_url: string }) => ({
@@ -318,7 +340,9 @@ export default function EditItemPage({
     const description = ((formData.get("description") as string) || "").trim();
     const phone = ((formData.get("phone") as string) || "").trim();
     const rewardField = formData.get("reward");
-    const reward = rewardField ? (rewardField as string).trim() : null;
+    const reward = rewardEnabled
+      ? (rewardField as string | null)?.trim() || UNSPECIFIED_REWARD
+      : null;
 
     // Месанҷем, ки ҳамаи майдонҳо пур шудаанд
     if (!title || !description || !category || !phone) {
@@ -347,8 +371,12 @@ export default function EditItemPage({
       let finalDescription = description;
       let finalCategory = category;
 
-      // МОДЕРАТСИЯИ МАҶБУРӢ
-      if (hasNewImages) {
+      const contentChanged = hasNewImages || textChanged;
+
+      // МОДЕРАТСИЯИ МАҶБУРӢ — танҳо агар AI аз admin фаъол бошад ва воқеан
+      // чизе тағйир ёфта бошад. Агар AI хомӯш бошад, ҳеҷ занги OpenAI
+      // намезанем (бефоида аст) — эълон бо "pending" мемонад, интизори admin.
+      if (aiModerationEnabled && hasNewImages) {
         // Агар акси нав бошад, AI Brain ҳардуро месанҷад (акс + матн)
         const { isSafe, isDocument, privacyRegions, redactedTitle, redactedDescription } = await runAIModeration(images, title, description);
         if (!isSafe) {
@@ -376,7 +404,7 @@ export default function EditItemPage({
           finalImages = blurred;
           setImages(blurred);
         }
-      } else if (textChanged) {
+      } else if (aiModerationEnabled && textChanged) {
         // Агар танҳо матн иваз шуда бошад
         const isSafe = await runTextModeration(title, description);
         if (!isSafe) {
@@ -432,7 +460,10 @@ export default function EditItemPage({
         type,
         phone_number: phone,
         reward: reward ? `${reward}` : null,
-        moderation_status: "approved", // Чун AI аллакай тафтиш кард
+        // Агар AI хомӯш бошад ва чизе воқеан тағйир ёфта бошад, "pending"
+        // мемонад (интизори admin) — вагарна AI аллакай тафтиш кардааст.
+        moderation_status: !aiModerationEnabled && contentChanged ? "pending" : "approved",
+        location_type: locationType,
       };
 
       const { error: updateError } = await supabase
@@ -499,7 +530,14 @@ export default function EditItemPage({
         );
 
       toast.success(t("updateSuccess"));
-      router.push(`/items/${id}`);
+      if (!aiModerationEnabled && contentChanged) {
+        // AI хомӯш аст — эълон "pending" шуд, интизори admin. Ба профил
+        // мебарем (на ба саҳифаи худи эълон), то корбар "дар ҳоли санҷиш"-ро
+        // дар "Эълонҳои ман" бинад.
+        router.push("/profile?tab=posts");
+      } else {
+        router.push(`/items/${id}`);
+      }
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -569,7 +607,7 @@ export default function EditItemPage({
               </div>
               <div className="h-6 flex items-center justify-center">
                 <p
-                  className="text-emerald-600 font-black text-xs tracking-[0.2em] animate-in slide-in-from-bottom-2 duration-700"
+                  className="text-emerald-600 font-black text-xs tracking-[0.2em]"
                   key={scanMessage}
                 >
                   {scanMessage}
@@ -579,7 +617,7 @@ export default function EditItemPage({
           )}
 
           {moderationStatus === "failed" && (
-            <div className="space-y-6 animate-in fade-in zoom-in duration-500">
+            <div className="space-y-6">
               <div className="w-20 h-20 rounded-[2rem] bg-red-50 flex items-center justify-center mx-auto shadow-sm">
                 <ShieldAlert className="w-10 h-10 text-red-500" />
               </div>
@@ -638,8 +676,8 @@ export default function EditItemPage({
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <Card className="rounded-2xl overflow-hidden border shadow-xl">
           {/* Сарлавҳаи форма */}
-          <CardHeader className="bg-zinc-900 text-white p-6">
-            <CardTitle className="text-2xl font-black tracking-tight">
+          <CardHeader className="bg-emerald-600 text-white p-6">
+            <CardTitle className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-black tracking-tight">
               {t("editItemTitle")}
             </CardTitle>
           </CardHeader>
@@ -647,7 +685,7 @@ export default function EditItemPage({
             <form onSubmit={onSubmit} className="space-y-6">
               {/* Интихоби навъи эълон (Радио-кнопкаҳо) */}
               <div className="space-y-3">
-                <Label className="text-sm font-black tracking-wider text-zinc-400">
+                <Label className="text-sm min-[1084px]:text-base font-black tracking-wider text-zinc-400">
                   {t("what_happened")}
                 </Label>
                 <RadioGroup
@@ -665,8 +703,8 @@ export default function EditItemPage({
                       htmlFor="lost"
                       className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-red-600 peer-data-[state=checked]:bg-red-50 cursor-pointer transition-all"
                     >
-                      <span className="text-2xl mb-1">🔍</span>
-                      <span className="font-bold text-sm">{t("lost")}</span>
+                      <span className="text-2xl min-[1084px]:text-3xl mb-1">🔍</span>
+                      <span className="font-bold text-sm min-[1084px]:text-base">{t("lost")}</span>
                     </Label>
                   </div>
                   <div>
@@ -679,8 +717,8 @@ export default function EditItemPage({
                       htmlFor="found"
                       className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-emerald-50 cursor-pointer transition-all"
                     >
-                      <span className="text-2xl mb-1">🎁</span>
-                      <span className="font-bold text-sm">{t("found")}</span>
+                      <span className="text-2xl min-[1084px]:text-3xl mb-1">🎁</span>
+                      <span className="font-bold text-sm min-[1084px]:text-base">{t("found")}</span>
                     </Label>
                   </div>
                 </RadioGroup>
@@ -691,7 +729,7 @@ export default function EditItemPage({
                 <div className="space-y-2">
                   <Label
                     htmlFor="title"
-                    className="font-bold text-xs text-zinc-500"
+                    className="font-bold text-xs min-[1084px]:text-sm text-zinc-500"
                   >
                     {t("titleLabel")}
                   </Label>
@@ -700,19 +738,19 @@ export default function EditItemPage({
                     name="title"
                     defaultValue={item?.title}
                     placeholder={t("titleLabel")}
-                    className="rounded-lg h-11"
+                    className="rounded-lg h-11 min-[1084px]:h-12"
                     required
                   />
                 </div>
                 <div className="space-y-2">
                   <Label
                     htmlFor="category"
-                    className="font-bold text-xs text-zinc-500"
+                    className="font-bold text-xs min-[1084px]:text-sm text-zinc-500"
                   >
                     {t("categoryLabel")}
                   </Label>
                   <Select value={category} onValueChange={setCategory} required>
-                    <SelectTrigger className="h-11 rounded-lg">
+                    <SelectTrigger className="h-11 min-[1084px]:h-12 rounded-lg">
                       <SelectValue placeholder={t("categoryLabel")} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -732,8 +770,48 @@ export default function EditItemPage({
 
               <div className="space-y-2">
                 <Label
+                  htmlFor="locationType"
+                  className="font-bold text-xs min-[1084px]:text-sm text-zinc-500"
+                >
+                  {t("addItemLocationStep.title")}
+                </Label>
+                <Select
+                  value={locationType ?? "none"}
+                  onValueChange={(val) =>
+                    setLocationType(
+                      val === "none"
+                        ? null
+                        : (val as "taxi" | "hotel_restaurant" | "public_place" | "airport"),
+                    )
+                  }
+                >
+                  <SelectTrigger className="h-11 min-[1084px]:h-12 rounded-lg">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="none" className="rounded-md">
+                      {t("addItemLocationStep.notSpecified")}
+                    </SelectItem>
+                    <SelectItem value="taxi" className="rounded-md">
+                      {t("addItemLocationStep.taxi")}
+                    </SelectItem>
+                    <SelectItem value="airport" className="rounded-md">
+                      {t("addItemLocationStep.airport")}
+                    </SelectItem>
+                    <SelectItem value="hotel_restaurant" className="rounded-md">
+                      {t("addItemLocationStep.hotel_restaurant")}
+                    </SelectItem>
+                    <SelectItem value="public_place" className="rounded-md">
+                      {t("addItemLocationStep.public_place")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label
                   htmlFor="description"
-                  className="font-bold text-xs text-zinc-500"
+                  className="font-bold text-xs min-[1084px]:text-sm text-zinc-500"
                 >
                   {t("description")}
                 </Label>
@@ -752,7 +830,7 @@ export default function EditItemPage({
                 <div className="space-y-2">
                   <Label
                     htmlFor="phone"
-                    className="font-bold text-xs text-zinc-500"
+                    className="font-bold text-xs min-[1084px]:text-sm text-zinc-500"
                   >
                     {t("phoneLabel")}
                   </Label>
@@ -761,7 +839,7 @@ export default function EditItemPage({
                     name="phone"
                     defaultValue={item?.phone_number}
                     placeholder={t("phonePlaceholder")}
-                    className="rounded-lg h-11"
+                    className="rounded-lg h-11 min-[1084px]:h-12"
                     required
                     type="text"
                     inputMode="numeric"
@@ -771,32 +849,47 @@ export default function EditItemPage({
                   />
                 </div>
                 {type === "lost" && (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                    <Label
-                      htmlFor="reward"
-                      className="font-bold text-xs text-zinc-500"
-                    >
-                      {t("reward_gives_input")}
-                    </Label>
-                    <Input
-                      id="reward"
-                      name="reward"
-                      defaultValue={item?.reward?.replace(/[^0-9]/g, "")}
-                      placeholder={t("rewardPlaceholder")}
-                      className="rounded-lg h-11"
-                      type="text"
-                      inputMode="numeric"
-                      onChange={(e) =>
-                        (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
-                      }
-                    />
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <Checkbox
+                        checked={rewardEnabled}
+                        onCheckedChange={(checked) =>
+                          setRewardEnabled(checked === true)
+                        }
+                      />
+                      <span className="font-bold text-xs min-[1084px]:text-sm text-zinc-500">
+                        {t("reward_gives")}
+                      </span>
+                    </label>
+                    {rewardEnabled && (
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="reward"
+                          className="font-bold text-xs min-[1084px]:text-sm text-zinc-500"
+                        >
+                          {t("reward_gives_input")}
+                        </Label>
+                        <Input
+                          id="reward"
+                          name="reward"
+                          defaultValue={item?.reward?.replace(/[^0-9]/g, "")}
+                          placeholder={t("rewardPlaceholder")}
+                          className="rounded-lg h-11 min-[1084px]:h-12"
+                          type="text"
+                          inputMode="numeric"
+                          onChange={(e) =>
+                            (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
               {/* Қисмати идоракунии суратҳо (Image Upload) */}
               <div className="space-y-4">
-                <Label className="font-bold text-xs text-zinc-500">
+                <Label className="font-bold text-xs min-[1084px]:text-sm text-zinc-500">
                   {t("addImages")} ({previews.length}/5)
                 </Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
@@ -814,7 +907,7 @@ export default function EditItemPage({
                       <button
                         type="button"
                         onClick={() => removeImage(i)}
-                        className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 text-red-500 p-1.5 rounded-lg shadow-lg active:scale-90 transition-all z-20 border border-zinc-100 dark:border-zinc-800"
+                        className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 text-red-500 p-1.5 rounded-lg shadow-lg transition-all z-20 border border-zinc-100 dark:border-zinc-800"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -849,12 +942,12 @@ export default function EditItemPage({
               <Button
                 type="submit"
                 size="lg"
-                className="w-full h-12 rounded-lg text-base font-black bg-zinc-900 hover:bg-zinc-800 mt-4 tracking-wider text-white"
+                className="w-full h-12 min-[1084px]:h-14 rounded-lg text-base min-[1084px]:text-lg font-black bg-emerald-500 hover:bg-emerald-600 mt-4 tracking-wider text-white"
                 disabled={saving}
               >
                 {saving ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 min-[1084px]:h-6 min-[1084px]:w-6 animate-spin" />
                     {t("loading")}
                   </>
                 ) : (

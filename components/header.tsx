@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import {
   Search,
   Home,
-  ChevronDown,
   User,
   X,
   LogOut,
@@ -25,7 +24,7 @@ import {
   Bookmark,
   Camera,
   Image as ImageIcon,
-  Shield,
+  UserCog,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -56,6 +55,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 // Ин ду компонент (модали камера, ҷустуҷӯи визуалӣ) дар Header ҳастанд, ки
 // дар ҲАМАИ саҳифаҳо render мешавад — вале аксари ташрифҳо ҳеҷ гоҳ онҳоро
@@ -93,24 +93,33 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { t, locale, setLocale } = useLanguage();
+  // Иконаи ҷустуҷӯи визуалӣ танҳо вақте намоён аст, ки AI фаъол аст — бе он
+  // embedding сохта намешавад ва ҷустуҷӯи аксӣ натиҷа намедиҳад.
+  const { data: appSettings } = useQuery({
+    queryKey: ["app-settings-ai-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("ai_moderation_enabled")
+        .eq("id", true)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60 * 1000,
+  });
+  const aiEnabled = appSettings?.ai_moderation_enabled ?? false;
+
+  const { t } = useLanguage();
   const { setVisualSearchResults, setIsSearchTyping, triggerGoHome } =
     useHomeState();
 
   const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
   const [mounted, setMounted] = useState(false);
-  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
   const [directFile, setDirectFile] = useState<File | null>(null);
   const [showPhotoChoice, setShowPhotoChoice] = useState(false);
   const [showCameraCapture, setShowCameraCapture] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
-
-  const languages: Array<{ code: "tg" | "ru" | "en"; label: string }> = [
-    { code: "tg", label: "Тоҷикӣ" },
-    { code: "ru", label: "Русский" },
-    { code: "en", label: "English" },
-  ];
 
   const navLinks = [
     { href: "/", value: "home", label: t("home"), icon: Home },
@@ -221,9 +230,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
     <TooltipProvider>
       <header
         data-nosnippet
-        className="fixed top-0 left-0 right-0 z-50 w-full bg-white/95 backdrop-blur-sm dark:bg-zinc-950/95 border-b border-zinc-100 dark:border-zinc-900/50"
+        className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-zinc-950"
       >
-        <div className="w-full max-w-[1600px] mx-auto flex h-12 sm:h-16 items-center px-3 sm:px-4 gap-2 sm:gap-4">
+        <div className="w-full flex h-12 sm:h-16 items-center px-3 sm:px-4 gap-2 sm:gap-4">
           {/* Қисми чап: Логотип ва Паймоиш */}
           <div className="flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
             <Link
@@ -286,13 +295,13 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                       variant={isActive ? "secondary" : "ghost"}
                       size="sm"
                       onClick={handleNavClick}
-                      className={`gap-2 rounded-md font-bold text-[13px] tracking-wider transition-all border ${
+                      className={`gap-2 rounded-md font-bold text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
                         isActive
                           ? "bg-white shadow-sm text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                           : "text-zinc-500 hover:text-zinc-900 border-transparent focus:outline-none"
                       }`}
                     >
-                      <link.icon className="h-4 w-4" />
+                      <link.icon className="h-4 w-4 min-[1503px]:h-[18px] min-[1503px]:w-[18px]" />
                       {link.label}
                     </Button>
                   );
@@ -302,67 +311,39 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
           {/* Қисми миёна: Сатри ҷустуҷӯ (Марказонидашуда) */}
           <div className="flex-[2] sm:flex-[1.5] max-w-xl relative block">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 min-[1084px]:h-4 min-[1084px]:w-4 text-emerald-500" />
             <Input
               placeholder={t("search")}
-              className="pl-8 pr-10 h-8 rounded-lg bg-zinc-100/50 border border-zinc-200 focus-visible:ring-2 focus-visible:ring-primary/20 transition-all text-[10px] w-full"
+              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
-            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
               {searchValue && (
                 <button
                   onClick={() => setSearchValue("")}
                   aria-label={t("clearFilter") || "Тоза кардан"}
-                  className="p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors"
+                  className="p-1.5 text-emerald-500 hover:text-emerald-700 transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
               )}
               <button
                 onClick={() => setShowPhotoChoice(true)}
-                className="hidden p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                className={cn(
+                  "p-1.5 text-emerald-500 hover:text-emerald-700 transition-colors",
+                  !aiEnabled && "hidden",
+                )}
                 title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
               >
-                <Camera className="h-3.5 w-3.5" />
+                <Camera className="h-5 w-5" />
               </button>
             </div>
           </div>
 
-          {/* Қисми рост: Интихоби забон ва аутентификатсия */}
+          {/* Қисми рост: Аутентификатсия. Ивази забон акнун аз Профил → Маълумоти шахсӣ
+              сурат мегирад, на аз ин ҷо — ниг. app/(main)/profile/page.tsx */}
           <div className="flex items-center gap-1.5 flex-initial sm:flex-1 justify-end shrink-0">
-            {/* Интихоби забон — дар тарафи рости ҷустуҷӯ, пеш аз зангула */}
-            <DropdownMenu onOpenChange={(open) => setLangDropdownOpen(open)}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="flex gap-2 rounded-md font-bold text-zinc-600 cursor-pointer border border-emerald-500 ring-2 ring-emerald-500/20 transition-all bg-white shadow-sm focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 h-9 sm:h-10 px-3"
-                >
-                  <span className="text-[10px] sm:text-[13px] font-black dark:text-zinc-100">
-                    {mounted
-                      ? languages.find((l) => l.code === locale)?.label
-                      : languages.find((l) => l.code === "tg")?.label}
-                  </span>
-                  <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-40 rounded-xl shadow-xl"
-              >
-                {languages.map((lang) => (
-                  <DropdownMenuItem
-                    key={lang.code}
-                    onClick={() => setLocale(lang.code)}
-                    className={`font-bold text-xs tracking-tight cursor-pointer ${locale === lang.code ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20" : ""}`}
-                  >
-                    {lang.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             {mounted && userId && <NotificationBell />}
 
             {/* User Button / Login (Танҳо барои Desktop) */}
@@ -371,7 +352,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    className="rounded-lg font-black text-[13px] bg-emerald-700 hover:bg-emerald-800 text-white shadow-md h-10 px-4"
+                    className="rounded-lg font-black text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-md h-10 px-4"
                     asChild
                   >
                     <Link href="/items/add">
@@ -389,7 +370,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                   </Button>
                   <Button
                     size="sm"
-                    className="rounded-md font-bold text-[13px] bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 h-10 px-4"
+                    className="rounded-md font-bold text-[13px] bg-emerald-500 text-white hover:bg-emerald-600 h-10 px-4"
                     asChild
                   >
                     <Link href="/sign-up">{t("signup")}</Link>
@@ -401,7 +382,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
-                        className="rounded-lg font-black text-[13px] bg-zinc-900 hover:bg-zinc-800 text-white shadow-md h-10 px-4"
+                        className="rounded-lg font-black text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-md h-10 px-4"
                         asChild
                       >
                         <Link href="/items/add">
@@ -496,7 +477,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
             {!userId ? (
               <Button
                 size="sm"
-                className="sm:hidden rounded-md font-bold text-[10px] h-9 bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 px-3 capitalize"
+                className="sm:hidden rounded-md font-bold text-[10px] h-9 bg-emerald-500 text-white px-3 capitalize"
                 asChild
               >
                 <Link href="/sign-up">{t("signup")}</Link>
@@ -511,104 +492,90 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     aria-label={t("menu")}
                     className="sm:hidden h-9 w-9 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
                   >
-                    <Menu className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
+                    <Menu className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-64 rounded-2xl p-2 shadow-xl border-zinc-200/50 dark:border-zinc-800/50"
+                  className="w-56 min-[768px]:w-60 rounded-xl shadow-xl p-2 border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"
                 >
-                  <div className="p-1 space-y-0.5">
+                  <DropdownMenuItem
+                    onClick={() => router.push("/profile?tab=posts")}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                  >
+                    <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                      <LayoutGrid className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                    </div>
+                    {t("myPosts")}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => router.push("/profile?tab=info")}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                  >
+                    <div className="p-1.5 rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600">
+                      <User className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                    </div>
+                    {t("personalInfo")}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => router.push("/profile?tab=qr")}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                  >
+                    <div className="p-1.5 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-600">
+                      <QrCode className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                    </div>
+                    {t("qrMyCode")}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => router.push("/profile?tab=saved")}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                  >
+                    <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600">
+                      <Bookmark className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                    </div>
+                    {t("savedItems")}
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem
+                    onClick={() => router.push("/profile?tab=guide")}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                  >
+                    <div className="p-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                      <Menu className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                    </div>
+                    {t("aboutApp")}
+                  </DropdownMenuItem>
+
+                  {isAdmin && (
                     <DropdownMenuItem
-                      onClick={() => router.push("/profile?tab=posts")}
-                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                      onClick={() => router.push("/admin")}
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
                     >
-                      <LayoutGrid className="mr-3 h-4 w-4 text-blue-500" />
-                      <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                        {t("myPosts")}
-                      </span>
+                      <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                        <UserCog className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                      </div>
+                      {t("adminPanel")}
                     </DropdownMenuItem>
+                  )}
 
-                    <DropdownMenuItem
-                      onClick={() => router.push("/profile?tab=info")}
-                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
-                    >
-                      <User className="mr-3 h-4 w-4 text-indigo-500" />
-                      <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                        {t("personalInfo")}
-                      </span>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => router.push("/profile?tab=qr")}
-                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
-                    >
-                      <QrCode className="mr-3 h-4 w-4 text-purple-500" />
-                      <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                        {t("qrMyCode")}
-                      </span>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => router.push("/profile?tab=saved")}
-                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
-                    >
-                      <Bookmark className="mr-3 h-4 w-4 text-emerald-500" />
-                      <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                        {t("savedItems")}
-                      </span>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => router.push("/profile?tab=guide")}
-                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
-                    >
-                      <Menu className="mr-3 h-4 w-4 text-zinc-500" />
-                      <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                        {t("aboutApp")}
-                      </span>
-                    </DropdownMenuItem>
-
-                    {isAdmin && (
-                      <>
-                        <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2 my-1" />
-                        <DropdownMenuItem
-                          onClick={() => router.push("/admin")}
-                          className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
-                        >
-                          <Shield className="mr-3 h-4 w-4 text-amber-500" />
-                          <span className="text-[11px] font-black tracking-wider text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                            Admin
-                          </span>
-                        </DropdownMenuItem>
-                      </>
-                    )}
-
-                    <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2 my-1" />
-
-                    <DropdownMenuItem
-                      onClick={() => signOut(() => router.push("/"))}
-                      className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-red-50 dark:focus:bg-red-950/30 transition-colors group"
-                    >
-                      <LogOut className="mr-3 h-4 w-4 text-red-500" />
-                      <span className="text-[11px] font-black tracking-wider text-red-600">
-                        {t("signOut")}
-                      </span>
-                    </DropdownMenuItem>
-                  </div>
+                  <DropdownMenuItem
+                    onClick={() => signOut(() => router.push("/"))}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                  >
+                    <div className="p-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800">
+                      <LogOut className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                    </div>
+                    {t("signOut")}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
           </div>
         </div>
       </header>
-
-      {/* Backdrop барои lang dropdown — танҳо дар mobile (sm:hidden). z-45:
-          болотар аз филтрҳои саҳифаи асосӣ (z-40, вагарна онҳо аз болои
-          ин backdrop равшан мемонанд), вале поёнтар аз худи dropdown (z-50). */}
-      {langDropdownOpen && (
-        <div className="fixed inset-0 z-[45] bg-black/50 sm:hidden" />
-      )}
 
       <VisualSearchModal
         isOpen={isVisualSearchOpen}

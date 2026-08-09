@@ -10,12 +10,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// MASTER FORENSIC PROMPT (Identical to AI-Brain for 100% Match)
-const MASTER_FORENSIC_PROMPT = `You are an elite forensic AI expert specialized in object identification. 
-Analyze the image with extreme precision to find unique identifiers.
-Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear).
-Return JSON: { 
-  "description_en": "EXHAUSTIVE forensic technical string in English for 100% vector matching" 
+// MASTER FORENSIC PROMPT (Identical to generate-embedding for 100% Match)
+const MASTER_FORENSIC_PROMPT = `You are an elite forensic AI expert specialized in object identification for a lost-and-found platform.
+Analyze the image with extreme precision to find unique identifiers. Identify ALL of the following, if visible:
+- Brand, Model, precise color shades, material
+- Shape, form factor, and style
+- Condition/state (new, used, worn, damaged, scratches, dents, stickers)
+- ANY visible text, printed or handwritten: names, numbers, serial numbers, document fields, license plate numbers, labels, logos — transcribe exactly as seen, do not translate or normalize
+Return JSON: {
+  "description_en": "EXHAUSTIVE forensic technical string in English for 100% vector matching, including all transcribed text verbatim"
 }`;
 
 Deno.serve(async (req) => {
@@ -24,7 +27,7 @@ Deno.serve(async (req) => {
   try {
     const formData = await req.formData();
     const image = formData.get('image') as File;
-    
+
     if (!image) throw new Error("No image provided");
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
@@ -41,14 +44,14 @@ Deno.serve(async (req) => {
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: MASTER_FORENSIC_PROMPT },
-          { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "low" } }] }
+          { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "high" } }] }
         ],
         response_format: { type: "json_object" }
       }),
     });
 
     const aiData = await aiResponse.json();
-    
+
     if (aiData.error) {
       console.error("OpenAI API Error:", aiData.error);
       throw new Error(aiData.error.message || "OpenAI API Error");
@@ -67,7 +70,7 @@ Deno.serve(async (req) => {
     });
 
     const embData = await embRes.json();
-    
+
     if (embData.error) {
       console.error("Embedding Error:", embData.error);
       throw new Error(embData.error.message || "Embedding Error");
@@ -115,9 +118,9 @@ Deno.serve(async (req) => {
 
   } catch (error: any) {
     console.error("Visual Search Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message, results: [] }), { 
+    return new Response(JSON.stringify({ error: error.message, results: [] }), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
