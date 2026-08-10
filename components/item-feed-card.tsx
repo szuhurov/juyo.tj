@@ -77,7 +77,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
         </div>
 
         {item.description && (
-          <div className="relative mt-auto">
+          <div className="relative mt-auto min-h-7 min-[1084px]:min-h-8">
             <p className="text-[11px] min-[1084px]:text-xs text-zinc-400 dark:text-zinc-500 line-clamp-2 leading-snug pr-8">
               {item.description}
             </p>

@@ -709,7 +709,7 @@ function ProfileContent() {
                 <div className="flex flex-col">
                 <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   <div className="relative group bg-transparent sm:bg-canvas rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-[0.78] min-[768px]:scale-90 min-[1084px]:scale-100 min-[1503px]:scale-105 origin-center transition-transform duration-300 shrink-0">
+                    <div className="scale-95 min-[768px]:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
                         settings={{
@@ -734,8 +734,8 @@ function ProfileContent() {
                 {/* Статус ва тугмаҳо — берун аз sticky, то бо танзимоти
                     поён якҷоя аз таги QR гузаранд. px-1 = ҳамон падинги
                     сутуни танзимот, то паҳноияшон баробар бошад. */}
-                <div className="mt-4 w-full px-1">
-                    <div className="bg-white dark:bg-zinc-900 border-none shadow-none p-4 min-[1084px]:p-5 rounded-2xl flex items-center justify-between">
+                <div className="mt-12 w-full px-1">
+                    <div className="bg-white dark:bg-zinc-900 border-none shadow-none p-4 min-[1084px]:p-5 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col">
                           <span className="text-xs min-[1084px]:text-sm font-bold tracking-wide text-zinc-900 dark:text-white">
@@ -814,17 +814,17 @@ function ProfileContent() {
                   </div>
 
                 {/* Тугмаҳои амалиёт — низ берун аз sticky */}
-                <div className="grid grid-cols-2 gap-3 mt-3 w-full px-1">
+                <div className="grid grid-cols-2 gap-3 mt-5 w-full px-1">
                   <Button
                     onClick={() => setShowWhyQRModal(true)}
-                    className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all gap-1.5 px-2.5"
+                    className="h-11 rounded-lg bg-white dark:bg-zinc-900 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all gap-1.5 px-2.5"
                   >
                     {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
                   </Button>
                   <Button
                     onClick={handleDownloadQR}
                     disabled={isDownloading}
-                    className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all gap-1.5 px-2.5"
+                    className="h-11 rounded-lg bg-white dark:bg-zinc-900 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all gap-1.5 px-2.5"
                   >
                     {isDownloading ? (
                       <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
@@ -853,7 +853,7 @@ function ProfileContent() {
                           setQrSettings({ ...qrSettings, dotsType: val as DotType })
                         }
                       >
-                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
+                        <SelectTrigger className="h-11 rounded-lg bg-white dark:bg-zinc-900 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
@@ -897,7 +897,7 @@ function ProfileContent() {
                           });
                         }}
                       >
-                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
+                        <SelectTrigger className="h-11 rounded-lg bg-white dark:bg-zinc-900 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
@@ -929,7 +929,7 @@ function ProfileContent() {
                           e.stopPropagation();
                           setActivePicker(activePicker === "qr" ? null : "qr");
                         }}
-                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
+                        className="w-full h-11 rounded-lg bg-white dark:bg-zinc-900 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
                       >
                         <div
                           className="w-7 h-7 rounded-xl border border-black/10"
@@ -950,7 +950,7 @@ function ProfileContent() {
                           e.stopPropagation();
                           setActivePicker(activePicker === "bg" ? null : "bg");
                         }}
-                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
+                        className="w-full h-11 rounded-lg bg-white dark:bg-zinc-900 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
                       >
                         <div
                           className="w-7 h-7 rounded-xl border border-black/10"
@@ -1019,7 +1019,7 @@ function ProfileContent() {
                           text: e.target.value,
                         })
                       }
-                      className="h-12 rounded-xl bg-white dark:bg-zinc-900 border-none shadow-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
+                      className="h-12 rounded-lg bg-white dark:bg-zinc-900 border-none shadow-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
                       placeholder={t("qrInputPlaceholder")}
                     />
                   </div>

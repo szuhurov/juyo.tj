@@ -66,13 +66,16 @@ export function MobileNavbar() {
   };
 
   return (
+    // Навор ба лаби поён мечаспад (сабки Alif): паҳнои пурра, бе мудаввар,
+    // танҳо як хати ҷудокунанда дар боло. safe-area ба ХУДИ навор дода
+    // мешавад, то дар iPhone мӯҳтаво ба хати home ламс накунад.
     <nav
       data-nosnippet
-      className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden pointer-events-none"
-      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-3 pointer-events-auto">
-        <div className="flex items-center justify-around h-[60px] bg-white dark:bg-zinc-900 rounded-[32px] border border-zinc-200 dark:border-zinc-800 px-2">
+      <div>
+        <div className="flex items-center justify-around h-[60px] px-2">
           {navItems.map((item) => {
             const currentPath = optimisticPath || pathname;
             let isActive = currentPath === item.href;

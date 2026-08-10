@@ -297,7 +297,7 @@ function AddItemForm() {
     let finalDescription = formData.description;
     let finalCategory = formData.category;
     let finalModerationStatus: "approved" | "pending" = "approved";
-    let finalModerationResult = "Approved by AI Brain";
+    let finalModerationResult: string | null = "Approved by AI Brain";
 
     // Пурсиши иҷозати огоҳиномаро ҳамин ҷо оғоз мекунем (на баъд аз upload/insert) —
     // то браузер онро ҳамчун идомаи бевоситаи клики корбар шиносад (баъзе браузерҳо
@@ -400,7 +400,11 @@ function AddItemForm() {
       // интизор" нашр мешавад: танҳо дар профили худи корбар намоён аст
       // (search_items RPC чунин филтр мекунад), то admin дастӣ тафтиш кунад.
       finalModerationStatus = "pending";
-      finalModerationResult = "AI moderation хомӯш буд — дар интизори тасдиқи дастии admin";
+      // ДИҚҚАТ: moderation_result ба корбар дар саҳифаи эълон намоён аст
+      // (ниг. item-details-client.tsx). Бинобар ин инҷо ҳеҷ сабабе навишта
+      // намешавад — корбар набояд бидонад, ки AI хомӯш аст; барои ӯ ин
+      // ҳамон ҳолати муқаррарии "дар ҳоли санҷиш" аст.
+      finalModerationResult = null;
     }
 
     // 1.6 Пеш аз худи нашр маслиҳати бехатариро нишон медиҳем — нашр
@@ -566,14 +570,14 @@ function AddItemForm() {
                   {t("pickImage")}
                 </h2>
               </div>
-              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 gap-2 sm:gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3">
                 {images.length < 5 && (
                   <div
                     onClick={() => setShowPhotoChoice(true)}
                     className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 transition-all group order-first"
                   >
-                    <div className="w-9 h-9 min-[1084px]:w-10 min-[1084px]:h-10 rounded-full bg-canvas dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                      <Plus className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" strokeWidth={3} />
+                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full bg-canvas dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                      <Plus className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6" strokeWidth={3} />
                     </div>
                   </div>
                 )}
@@ -684,16 +688,16 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="lost"
-                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3.5 min-[1084px]:p-4 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-zinc-900 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-xl min-[1084px]:text-2xl shrink-0">
+                    <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                       🔍
                     </div>
                     <div className="flex-1">
-                      <span className="block font-bold text-sm min-[1084px]:text-base leading-snug text-red-600 dark:text-red-500">
+                      <span className="block font-bold text-base min-[1084px]:text-lg leading-snug text-red-600 dark:text-red-500">
                         {t("lost")}
                       </span>
-                      <span className="text-zinc-400 text-[11px] min-[1084px]:text-xs font-medium">
+                      <span className="text-zinc-400 text-xs min-[1084px]:text-[13px] font-medium">
                         {t("lost_desc")}
                       </span>
                     </div>
@@ -707,16 +711,16 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="found"
-                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3.5 min-[1084px]:p-4 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-zinc-900 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-xl min-[1084px]:text-2xl shrink-0">
+                    <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                       🎁
                     </div>
                     <div className="flex-1">
-                      <span className="block font-bold text-sm min-[1084px]:text-base leading-snug text-emerald-600 dark:text-emerald-500">
+                      <span className="block font-bold text-base min-[1084px]:text-lg leading-snug text-emerald-600 dark:text-emerald-500">
                         {t("found")}
                       </span>
-                      <span className="text-zinc-400 text-[11px] min-[1084px]:text-xs font-medium">
+                      <span className="text-zinc-400 text-xs min-[1084px]:text-[13px] font-medium">
                         {t("found_desc")}
                       </span>
                     </div>
@@ -769,12 +773,12 @@ function AddItemForm() {
                   <div key={opt.value} className="relative">
                     <Label
                       htmlFor={`loc-${opt.value}`}
-                      className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3.5 min-[1084px]:p-4 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                      className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-zinc-900 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                     >
-                      <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-xl min-[1084px]:text-2xl shrink-0">
+                      <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                         {opt.emoji}
                       </div>
-                      <span className="flex-1 font-bold text-sm min-[1084px]:text-base leading-snug">
+                      <span className="flex-1 font-bold text-base min-[1084px]:text-lg leading-snug">
                         {opt.value === "none"
                           ? t("addItemLocationStep.notSpecified")
                           : t(`addItemLocationStep.${opt.value}`)}
@@ -956,7 +960,7 @@ function AddItemForm() {
           {step === 4 && (
             <div className="space-y-5 max-w-lg mx-auto w-full">
               <div className="space-y-1.5">
-                <Label className="text-[11px] min-[1084px]:text-xs font-bold tracking-wider text-zinc-400 ml-1">
+                <Label className="text-xs min-[1084px]:text-[13px] font-bold tracking-wider text-zinc-400 ml-1">
                   {t("titleLabel")}
                 </Label>
                 <Input
@@ -973,7 +977,7 @@ function AddItemForm() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[11px] min-[1084px]:text-xs font-bold tracking-wider text-zinc-400 ml-1">
+                <Label className="text-xs min-[1084px]:text-[13px] font-bold tracking-wider text-zinc-400 ml-1">
                   {t("categoryLabel")}
                 </Label>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -1013,7 +1017,7 @@ function AddItemForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] min-[1084px]:text-xs font-bold tracking-wider text-zinc-400 ml-1">
+                <Label className="text-xs min-[1084px]:text-[13px] font-bold tracking-wider text-zinc-400 ml-1">
                   {t("description")}
                 </Label>
                 <Textarea
@@ -1046,7 +1050,7 @@ function AddItemForm() {
                   </Label>
                   <Input
                     placeholder={t("phoneLabel")}
-                    className="rounded-xl h-11 min-[1084px]:h-12 bg-white border-none shadow-none text-sm min-[1084px]:text-base font-bold text-emerald-600 px-4 transition-all"
+                    className="rounded-xl h-13 min-[1084px]:h-14 bg-white border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 px-5 transition-all"
                     value={formData.phone}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -1087,7 +1091,7 @@ function AddItemForm() {
                           </span>
                           <Input
                             placeholder={t("reward_gives_input")}
-                            className="rounded-xl h-11 min-[1084px]:h-12 bg-white border-none shadow-none text-sm min-[1084px]:text-base font-bold text-emerald-600 pr-12 pl-4 transition-all"
+                            className="rounded-xl h-13 min-[1084px]:h-14 bg-white border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 pr-14 pl-5 transition-all"
                             value={formData.reward}
                             onChange={(e) => {
                               const digits = e.target.value
