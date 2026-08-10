@@ -292,9 +292,22 @@ export default function NotificationsPage() {
 
       {/* Рӯйхат */}
       {loading ? (
+        // Геометрия бо NotificationRow як хел: ҳамон rounded-2xl, ҳамон
+        // p-4, ҳамон андозаи аватар ва сатрҳо — то ҳангоми омадани
+        // маълумот рӯйхат наҷаҳад.
         <div className="space-y-2">
           {[0, 1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-2xl" />
+            <div
+              key={i}
+              className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 flex items-center gap-3"
+            >
+              <Skeleton className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full shrink-0" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-3.5 min-[1084px]:h-4 w-3/5 rounded" />
+                <Skeleton className="h-2.5 min-[1084px]:h-3 w-24 rounded" />
+              </div>
+              <Skeleton className="w-4 h-4 rounded shrink-0" />
+            </div>
           ))}
         </div>
       ) : items.length === 0 ? (

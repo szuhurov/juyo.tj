@@ -102,7 +102,7 @@ export function ItemCard({ item }: { item: Item; index?: number; savedItemIds?: 
 
           <span
             className={cn(
-              "absolute -bottom-1.5 right-0 inline-flex items-end leading-none rounded-none rounded-tl-lg px-3 pt-1.5 pb-0 text-xs min-[1084px]:text-sm font-bold bg-white dark:bg-zinc-900",
+              "absolute -bottom-1.5 right-0 z-20 inline-flex items-end leading-none rounded-none rounded-tl-lg px-3 pt-1.5 pb-0 text-xs min-[1084px]:text-sm font-bold bg-white dark:bg-zinc-900",
               item.type === "lost"
                 ? "text-rose-700 dark:text-rose-400"
                 : "text-green-700 dark:text-green-400",
@@ -151,18 +151,18 @@ export function ItemCard({ item }: { item: Item; index?: number; savedItemIds?: 
 
           {isOwner && item.moderation_status === "pending" && (
             <div
-              className="absolute inset-0 bg-black/60 flex items-center justify-center p-4 z-10 cursor-pointer backdrop-blur-[2px]"
+              className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 z-10 cursor-pointer backdrop-blur-[2px]"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 toast.info(t("imageModeration.pending"));
               }}
             >
-              <div className="bg-white/95 dark:bg-zinc-900/95 p-4 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center animate-pulse">
-                  <Clock className="w-6 h-6 text-amber-500" />
+              <div className="bg-white/95 dark:bg-zinc-900/95 px-3 py-2.5 rounded-xl flex flex-col items-center text-center gap-1.5">
+                <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center animate-pulse">
+                  <Clock className="w-4 h-4 text-amber-500" />
                 </div>
-                <span className="text-[10px] font-bold text-amber-600 tracking-wider block">
+                <span className="text-[10px] font-bold text-amber-600 leading-tight block">
                   {t("imageModeration.pending")}
                 </span>
               </div>
@@ -170,12 +170,12 @@ export function ItemCard({ item }: { item: Item; index?: number; savedItemIds?: 
           )}
 
           {isOwner && item.moderation_status === "rejected" && (
-            <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-4 z-10 cursor-pointer backdrop-blur-[4px]">
-              <div className="bg-white dark:bg-zinc-900 p-5 rounded-2xl shadow-2xl flex flex-col items-center text-center gap-3 border border-red-500/20">
-                <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
-                  <ShieldAlert className="w-6 h-6 text-red-600" />
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 z-10 cursor-pointer backdrop-blur-[4px]">
+              <div className="bg-white dark:bg-zinc-900 px-3 py-2.5 rounded-xl flex flex-col items-center text-center gap-1.5">
+                <div className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
+                  <ShieldAlert className="w-4 h-4 text-red-600" />
                 </div>
-                <span className="text-[10px] font-bold text-red-600 tracking-wider block">
+                <span className="text-[10px] font-bold text-red-600 leading-tight block">
                   {t("imageModeration.rejected")}
                 </span>
               </div>

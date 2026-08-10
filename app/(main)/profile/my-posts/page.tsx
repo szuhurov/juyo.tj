@@ -12,11 +12,11 @@ import { Item, ItemService } from "@/lib/services/item-service"; // Барои �
 import { ItemCard } from "@/components/item-card"; // Компоненти корти эълон
 import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
 import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Skeleton } from "@/components/ui/skeleton"; // Компоненти боргузорӣ
 import { PackageSearch, Trash2 } from "lucide-react"; // Иконкаҳо
 import Link from "next/link"; // Барои гузариш байни саҳифаҳо
 import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
 import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
+import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import {
   Dialog,
   DialogContent,
@@ -108,7 +108,7 @@ export default function MyPostsPage() {
       {loading ? (
         /* Намоиши скелетон ҳангоми боргузории маълумот */
         <div className={ITEM_GRID_CLASS}>
-          {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+          {[...Array(4)].map((_, i) => <ItemCardSkeleton key={i} variant="profile" />)}
         </div>
       ) : items.length > 0 ? (
         /* Рендеринги рӯйхати эълонҳои ман */

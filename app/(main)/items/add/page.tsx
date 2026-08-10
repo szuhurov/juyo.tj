@@ -688,9 +688,9 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="lost"
-                    className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-zinc-900 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3 min-[1084px]:p-3.5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
+                    <div className="w-10 h-10 min-[1084px]:w-11 min-[1084px]:h-11 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-lg min-[1084px]:text-xl shrink-0">
                       🔍
                     </div>
                     <div className="flex-1">
@@ -711,9 +711,9 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="found"
-                    className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-zinc-900 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3 min-[1084px]:p-3.5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
+                    <div className="w-10 h-10 min-[1084px]:w-11 min-[1084px]:h-11 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-lg min-[1084px]:text-xl shrink-0">
                       🎁
                     </div>
                     <div className="flex-1">
@@ -773,12 +773,12 @@ function AddItemForm() {
                   <div key={opt.value} className="relative">
                     <Label
                       htmlFor={`loc-${opt.value}`}
-                      className="flex items-center gap-3.5 rounded-2xl bg-white dark:bg-zinc-900 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                      className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3 min-[1084px]:p-3.5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                     >
-                      <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-800 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
+                      <div className="w-10 h-10 min-[1084px]:w-11 min-[1084px]:h-11 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-lg min-[1084px]:text-xl shrink-0">
                         {opt.emoji}
                       </div>
-                      <span className="flex-1 font-bold text-base min-[1084px]:text-lg leading-snug">
+                      <span className="flex-1 font-bold text-sm min-[1084px]:text-base leading-snug">
                         {opt.value === "none"
                           ? t("addItemLocationStep.notSpecified")
                           : t(`addItemLocationStep.${opt.value}`)}

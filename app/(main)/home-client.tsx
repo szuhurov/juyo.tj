@@ -10,7 +10,8 @@ import { CATEGORIES, type Item } from "@/lib/services/item-service";
 import { ItemFeedCard } from "@/components/item-feed-card";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ItemCardSkeleton } from "@/components/item-card-skeleton";
+import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 import { useSearchParams } from "next/navigation";
 import { useItems } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
@@ -365,7 +366,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       value === "all" ? setLocationType(null) : toggleLocationType(value)
                     }
                     className={cn(
-                      "shrink-0 snap-start w-40 min-[1503px]:w-44 min-[1920px]:w-[188px] flex items-center justify-between gap-1.5 pl-3 pr-3 py-3 min-[1503px]:py-3.5 min-[1920px]:py-[15px] rounded-2xl text-left cursor-pointer",
+                      "shrink-0 snap-start w-[42%] min-[480px]:w-40 min-[1503px]:w-44 min-[1920px]:w-[188px] flex items-center justify-between gap-1.5 pl-3 pr-3 py-3 min-[1503px]:py-3.5 min-[1920px]:py-[15px] rounded-2xl text-left cursor-pointer",
                       active
                         ? "bg-emerald-500"
                         : "bg-white dark:bg-zinc-900",
@@ -414,7 +415,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           "w-full px-3 sm:px-4 min-[1084px]:px-5 touch-pan-y",
           visualSearchResults
             ? "pt-[64px] min-[768px]:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
-            : "pt-[161px] min-[768px]:pt-[177px] min-[1084px]:pt-[185px] min-[1503px]:pt-[193px] min-[1920px]:pt-[201px]",
+            : HOME_CONTENT_PT,
         )}
       >
         {isLoading &&
@@ -423,14 +424,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         category === "All" &&
         itemType === null &&
         !isSearchTyping ? (
-          <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-3 sm:gap-4 min-[1084px]:gap-5">
+          <div className={HOME_GRID_CLASS}>
             {[...Array(8)].map((_, i) => (
-              <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
+              <ItemCardSkeleton key={i} />
             ))}
           </div>
         ) : displayedItems.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-3 sm:gap-4 min-[1084px]:gap-5">
+            <div className={HOME_GRID_CLASS}>
               {displayedItems.map((item) => (
                 <ItemFeedCard key={item.id} item={item} />
               ))}
@@ -480,10 +481,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
 function HomeSkeleton() {
   return (
-    <div className="w-full px-3 sm:px-4 min-[1084px]:px-5 pt-[161px] min-[768px]:pt-[177px] min-[1084px]:pt-[185px] min-[1503px]:pt-[193px] min-[1920px]:pt-[201px]">
-      <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-3 sm:gap-4 min-[1084px]:gap-5">
+    <div className={cn("w-full px-3 sm:px-4 min-[1084px]:px-5", HOME_CONTENT_PT)}>
+      <div className={HOME_GRID_CLASS}>
         {[...Array(8)].map((_, i) => (
-          <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
+          <ItemCardSkeleton key={i} />
         ))}
       </div>
     </div>

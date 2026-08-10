@@ -8,8 +8,8 @@ import { useEffect, useState, useRef, Suspense } from "react"; // Барои и�
 import dynamic from "next/dynamic";
 import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
 import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
-import { translations } from "@/lib/translations"; // Барои қисми "guide.qrItems" (рӯйхат, на матни оддӣ)
 import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
+import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
 import { ItemCard } from "@/components/item-card"; // Барои нишон додани карточкаҳои эълонҳо
 import { Button } from "@/components/ui/button"; // Компоненти тугма
@@ -45,7 +45,6 @@ import {
   Download,
   RefreshCw,
   Palette,
-  Search,
   KeyRound,
   MousePointerClick,
   UserX,
@@ -370,7 +369,7 @@ function ProfileContent() {
     const tab = searchParams.get("tab");
     if (
       tab &&
-      ["posts", "info", "saved", "qr", "guide"].includes(tab)
+      ["posts", "info", "saved", "qr"].includes(tab)
     ) {
       setActiveTab(tab);
     }
@@ -437,13 +436,6 @@ function ProfileContent() {
       id: "saved",
       title: t("savedItems"),
       icon: Bookmark,
-      color: "text-zinc-500",
-      bg: "bg-white dark:bg-zinc-900",
-    },
-    {
-      id: "guide",
-      title: t("aboutApp"),
-      icon: MenuIcon,
       color: "text-zinc-500",
       bg: "bg-white dark:bg-zinc-900",
     },
@@ -629,7 +621,7 @@ function ProfileContent() {
               {postsLoading ? (
                 <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="aspect-square rounded-2xl" />
+                    <ItemCardSkeleton key={i} variant="profile" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
@@ -658,7 +650,7 @@ function ProfileContent() {
               {postsLoading ? (
                 <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="aspect-square rounded-2xl" />
+                    <ItemCardSkeleton key={i} variant="profile" />
                   ))}
                 </div>
               ) : myItems.length > 0 ? (
@@ -1029,147 +1021,6 @@ function ProfileContent() {
           </div>
         );
 
-      case "guide":
-        return (
-          <div className="space-y-8 pb-20">
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4">
-              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
-                {t("aboutApp") || "Оид ба JUYU"}
-              </h3>
-            </div>
-
-            <div className="space-y-10 px-2">
-              {/* Mission */}
-              <section className="space-y-6">
-                <div className="bg-zinc-900 text-white p-8 rounded-3xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full -mr-16 -mt-16" />
-                  <h4 className="text-2xl font-bold tracking-tight mb-4 relative z-10">
-                    {t("guide.problemTitle")}
-                  </h4>
-                  <div className="text-zinc-400 font-bold leading-relaxed relative z-10 space-y-4">
-                    <p>{t("guide.problemDesc")}</p>
-                  </div>
-                </div>
-              </section>
-
-              {/* Solution */}
-              <section className="space-y-6">
-                <h4 className="text-2xl font-bold tracking-tight px-4">
-                  {t("guide.solutionTitle")}
-                </h4>
-                <div className="bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 p-8 rounded-3xl space-y-4">
-                  <p className="text-zinc-600 dark:text-zinc-400 font-bold">
-                    {t("guide.solutionDesc1")}
-                    <span className="text-emerald-600">
-                      {t("guide.solutionDesc2")}
-                    </span>
-                    {t("guide.solutionDesc3")}
-                    <span className="text-red-600">
-                      {t("guide.solutionDesc4")}
-                    </span>
-                    {t("guide.solutionDesc5")}
-                  </p>
-                </div>
-              </section>
-
-              {/* How it works */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-8 rounded-3xl bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
-                  <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center">
-                    <PackageSearch className="w-6 h-6 text-emerald-600" />
-                  </div>
-                  <h5 className="font-bold text-sm tracking-wider">
-                    {t("guide.foundTitle")}
-                  </h5>
-                  <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
-                    <li>{t("guide.foundStep1")}</li>
-                    <li>{t("guide.foundStep2")}</li>
-                    <li>{t("guide.foundStep3")}</li>
-                  </ol>
-                </div>
-
-                <div className="p-8 rounded-3xl bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
-                  <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
-                    <Search className="w-6 h-6 text-red-600" />
-                  </div>
-                  <h5 className="font-bold text-sm tracking-wider">
-                    {t("guide.lostTitle")}
-                  </h5>
-                  <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
-                    <li>{t("guide.lostStep1")}</li>
-                    <li>{t("guide.lostStep2")}</li>
-                    <li>{t("guide.lostStep3")}</li>
-                  </ol>
-                </div>
-              </div>
-
-              {/* QR System */}
-              <section className="space-y-6">
-                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-8 rounded-3xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-3xl rounded-full -mr-32 -mt-32" />
-                  <h4 className="text-2xl font-bold tracking-tight mb-4 relative z-10">
-                    {t("guide.qrSystemTitle")}
-                  </h4>
-                  <p className="text-zinc-400 font-bold mb-8 relative z-10">
-                    {t("guide.qrSystemDesc")}
-                  </p>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 relative z-10">
-                    {((translations[locale]?.guide as { qrItems: string[] } | undefined)?.qrItems ?? []).map((item, i) => (
-                      <div
-                        key={i}
-                        className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl text-center border border-white/10"
-                      >
-                        <p className="text-[10px] font-bold tracking-widest text-zinc-300">
-                          {item}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-12 p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4 relative z-10">
-                    <h5 className="font-bold text-xs tracking-[0.2em] text-emerald-400">
-                      {t("guide.qrHowTitle")}
-                    </h5>
-                    <ul className="space-y-3">
-                      <li className="flex gap-3 text-sm text-zinc-300 font-medium">
-                        <span className="text-emerald-500 font-bold">1.</span>
-                        {t("guide.qrHowStep1")}
-                      </li>
-                      <li className="flex gap-3 text-sm text-zinc-300 font-medium">
-                        <span className="text-emerald-500 font-bold">2.</span>
-                        {t("guide.qrHowStep2")}
-                      </li>
-                      <li className="flex gap-3 text-sm text-zinc-300 font-medium">
-                        <span className="text-emerald-500 font-bold">3.</span>
-                        {t("guide.qrHowStep3")}
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mt-6 flex justify-center relative z-10">
-                    <div className="bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-2xl border border-emerald-500/20 font-bold text-[10px] tracking-widest">
-                      {t("guide.qrAdvantage")}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Goal */}
-              <div className="grid grid-cols-1 gap-6 pb-12">
-                <div className="p-8 rounded-3xl bg-zinc-900 text-white space-y-4">
-                  <h5 className="font-bold text-sm tracking-wider text-emerald-400">
-                    {t("guide.mainGoalTitle")}
-                  </h5>
-                  <p className="text-sm text-zinc-400 font-bold leading-relaxed">
-                    {t("guide.mainGoalDesc")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
       case "info":
         return (
           <div className="pb-20">
@@ -1531,14 +1382,9 @@ function ProfileContent() {
           <div className="space-y-6">
             {/* Сарлавҳаи таби Захирашудаҳо */}
             <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
-                  {t("savedItems")}
-                </h3>
-                <div className="px-2 min-[1084px]:px-2.5 py-0.5 rounded text-[10px] min-[1084px]:text-xs min-[1503px]:text-sm font-bold bg-zinc-900 text-white">
-                  {savedItems.length}
-                </div>
-              </div>
+              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
+                {t("savedItems")}
+              </h3>
             </div>
 
             {/* Рӯйхати ашёҳои захирашуда */}
@@ -1546,7 +1392,7 @@ function ProfileContent() {
               {savedLoading ? (
                 <div className={ITEM_GRID_CLASS}>
                   {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="aspect-square rounded-2xl" />
+                    <ItemCardSkeleton key={i} variant="profile" />
                   ))}
                 </div>
               ) : savedItems.length > 0 ? (

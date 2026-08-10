@@ -539,16 +539,6 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     {t("savedItems")}
                   </DropdownMenuItem>
 
-                  <DropdownMenuItem
-                    onClick={() => router.push("/profile?tab=guide")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
-                      <Menu className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
-                    </div>
-                    {t("aboutApp")}
-                  </DropdownMenuItem>
-
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}

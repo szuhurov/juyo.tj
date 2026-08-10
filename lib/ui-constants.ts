@@ -19,3 +19,25 @@ export const ITEM_GRID_CLASS =
   "lg:grid-cols-[repeat(auto-fill,minmax(195px,1fr))] " +
   "xl:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] " +
   "2xl:grid-cols-[repeat(auto-fill,minmax(225px,1fr))]";
+
+/**
+ * Grid-и саҳифаи АСОСӢ — бар хилофи ITEM_GRID_CLASS шумораи СОБИТИ
+ * сутунҳо дорад (2 дар мобилӣ), чунки филтрбари fixed-и боло ва
+ * padding-и мӯҳтаво ба ҳамин зинаҳо (855/1084/1503/1920) басташудаанд.
+ *
+ * Ин константа маҳз барои он ҷудо аст, ки skeleton ва рӯйхати воқеӣ
+ * ҲАМЕША як хел бошанд — пештар loading.tsx ITEM_GRID_CLASS-и дигарро
+ * истифода мебурд ва ҳангоми омадани маълумот тарҳбандӣ меҷаҳид.
+ */
+export const HOME_GRID_CLASS =
+  "grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 " +
+  "min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 " +
+  "gap-3 sm:gap-4 min-[1084px]:gap-5";
+
+/**
+ * Падинги болои мӯҳтавои саҳифаи асосӣ — баландии филтрбари fixed.
+ * Ҳам рӯйхат, ҳам skeleton бояд аз ҳамин истифода баранд.
+ */
+export const HOME_CONTENT_PT =
+  "pt-[161px] min-[768px]:pt-[177px] min-[1084px]:pt-[185px] " +
+  "min-[1503px]:pt-[193px] min-[1920px]:pt-[201px]";
