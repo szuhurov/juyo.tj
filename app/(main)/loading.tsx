@@ -7,19 +7,23 @@
  * барои гузариши фаврӣ байни саҳифаҳо лозим аст.
  *
  * Геометрия бояд бо саҳифаи асосӣ АЙНАН як хел бошад — ҳамин сабаб
- * HOME_GRID_CLASS/HOME_CONTENT_PT ва ItemCardSkeleton истифода мешаванд,
- * на классҳои дастӣ.
+ * HOME_GRID_CLASS/HOME_CONTENT_PT ва компонентҳои умумии skeleton
+ * истифода мешаванд, на классҳои дастӣ.
  */
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
+import { HomeFiltersSkeleton } from "@/components/home-filters-skeleton";
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 
 export default function MainLoading() {
   return (
-    <div className={`w-full px-3 sm:px-4 min-[1084px]:px-5 ${HOME_CONTENT_PT}`}>
-      <div className={HOME_GRID_CLASS}>
-        {[...Array(8)].map((_, i) => (
-          <ItemCardSkeleton key={i} />
-        ))}
+    <div className="pb-18 min-h-screen bg-canvas">
+      <HomeFiltersSkeleton />
+      <div className={`w-full px-3 sm:px-4 min-[1084px]:px-5 ${HOME_CONTENT_PT}`}>
+        <div className={HOME_GRID_CLASS}>
+          {[...Array(8)].map((_, i) => (
+            <ItemCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     </div>
   );
