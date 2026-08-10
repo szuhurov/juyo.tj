@@ -99,7 +99,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
         </button>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-black text-zinc-900 tracking-tight">{name}</h1>
+            <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{name}</h1>
             {profile.is_verified && <VerifiedBadge />}
             <StatusPill status={profile.status ?? "active"} />
           </div>

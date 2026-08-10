@@ -76,7 +76,7 @@ export function NetworkStatus() {
         ) : (
           <div className="w-2 h-2 rounded-full bg-white animate-ping" />
         )}
-        <span className="text-xs font-black tracking-widest leading-none text-white">
+        <span className="text-xs font-bold tracking-widest leading-none text-white">
           {isOffline ? t("noInternet") : t("backOnline")}
         </span>
       </div>

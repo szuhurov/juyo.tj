@@ -32,7 +32,7 @@ export default function AdminReportsPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Flag className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-rose-500" />
-        <h1 className="text-lg min-[1084px]:text-xl font-black text-zinc-900">Шикоятҳо (Reports)</h1>
+        <h1 className="text-lg min-[1084px]:text-xl font-bold text-zinc-900">Шикоятҳо (Reports)</h1>
       </div>
 
       <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm space-y-4">
@@ -72,7 +72,7 @@ export default function AdminReportsPage() {
               >
                 <div className="min-w-0 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[10px] min-[1084px]:text-[11px] font-black tracking-wider">
+                    <span className="px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 text-[10px] min-[1084px]:text-[11px] font-bold tracking-wider">
                       {REASON_LABELS[r.reason] ?? r.reason}
                     </span>
                     <Link
@@ -98,7 +98,7 @@ export default function AdminReportsPage() {
                       variant="outline"
                       disabled={updateReport.isPending}
                       onClick={() => updateReport.mutate({ id: r.id, status: "dismissed" })}
-                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-bold text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5"
                     >
                       <XCircle className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Радд
@@ -111,7 +111,7 @@ export default function AdminReportsPage() {
                           updateReport.mutate({ id: r.id, status: "reviewed" });
                         }
                       }}
-                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5 bg-emerald-500 hover:bg-emerald-600"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-bold text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5 bg-emerald-500 hover:bg-emerald-600"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Тасдиқ ва нест кардан

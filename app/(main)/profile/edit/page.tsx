@@ -17,7 +17,7 @@ export default function EditProfilePage() {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Сарлавҳа */}
       <div className="flex items-center gap-4 mb-8">
-        <h1 className="text-2xl font-black tracking-tight">{t('personalInfo')}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t('personalInfo')}</h1>
       </div>
 
       {/* Намоиши интерфейси Clerk барои идоракунии профил (UserProfile Component) */}
@@ -29,9 +29,9 @@ export default function EditProfilePage() {
               rootBox: "w-full",
               card: "shadow-none border border-zinc-100 dark:border-zinc-800 rounded-2xl w-full",
               navbar: "hidden md:flex",
-              headerTitle: "text-xl font-black tracking-tight",
+              headerTitle: "text-xl font-bold tracking-tight",
               headerSubtitle: "text-zinc-500 text-sm",
-              profileSectionTitleText: "font-black text-xs tracking-wider text-zinc-400"
+              profileSectionTitleText: "font-bold text-xs tracking-wider text-zinc-400"
             }
           }}
         />

@@ -35,7 +35,7 @@ export function PostEditForm({ item }: { item: AdminPostDetail["item"] }) {
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
-      <h3 className="text-sm font-black text-zinc-900">Таҳрир кардан</h3>
+      <h3 className="text-sm font-bold text-zinc-900">Таҳрир кардан</h3>
 
       <div className="space-y-1.5">
         <Label>Сарлавҳа</Label>

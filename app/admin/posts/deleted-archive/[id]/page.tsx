@@ -44,7 +44,7 @@ export default function DeletedPostDetailPage({ params }: { params: Promise<{ id
         </div>
 
         <div>
-          <h1 className="text-lg font-black text-zinc-900 tracking-tight">{s.title}</h1>
+          <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{s.title}</h1>
         </div>
 
         {s.images?.length > 0 && (

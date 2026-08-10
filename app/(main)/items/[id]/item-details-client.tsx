@@ -351,10 +351,10 @@ export default function ItemDetailsClient({
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-white dark:bg-zinc-950 mx-auto max-w-6xl md:pt-8 md:px-4">
+      <div className="min-h-screen bg-white dark:bg-zinc-950 mx-auto max-w-6xl md:pt-8 md:px-4 -mb-20 pb-20 md:mb-0 md:pb-0">
         <div className="flex flex-col md:grid md:grid-cols-2 gap-0 md:gap-12 md:items-start relative">
           <div className="sticky top-12 sm:top-16 md:top-24 z-0 w-full h-[100vw] md:h-auto md:aspect-square flex items-start justify-center md:self-start">
-            <div className="relative w-full h-full md:rounded-[32px] overflow-hidden border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 md:shadow-xl group shimmer-bg">
+            <div className="relative w-full h-full md:rounded-[32px] overflow-hidden border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 group shimmer-bg">
               <div
                 ref={scrollContainerRef}
                 className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
@@ -438,7 +438,7 @@ export default function ItemDetailsClient({
 
               {images.length > 1 && (
                 <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full z-20 pointer-events-none">
-                  <p className="text-[10px] font-black text-white tracking-widest">
+                  <p className="text-[10px] font-semibold text-white tracking-widest">
                     {currentImageIndex + 1} / {images.length}
                   </p>
                 </div>
@@ -455,10 +455,10 @@ export default function ItemDetailsClient({
                 </button>
                 <Badge
                   className={cn(
-                    "font-black rounded-md px-3 py-1 shadow-md border-none",
+                    "font-semibold rounded-md px-3 py-1 border-none bg-white dark:bg-zinc-900",
                     item?.type === "lost"
-                      ? "bg-red-600 text-white"
-                      : "bg-emerald-500 text-white",
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-emerald-600 dark:text-emerald-400",
                   )}
                 >
                   {item?.type === "lost" ? t("lost") : t("found")}
@@ -476,19 +476,19 @@ export default function ItemDetailsClient({
             <div className="flex justify-between items-center mb-5">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-zinc-200 shadow-sm">
+                  <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-zinc-200">
                     <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
                     <AvatarFallback className="bg-zinc-50 dark:bg-zinc-900">
                       <User className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 text-zinc-400" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <p className="font-black text-sm min-[1084px]:text-base min-[1920px]:text-lg leading-tight flex items-center gap-1">
+                    <p className="font-semibold text-base min-[1084px]:text-lg min-[1920px]:text-xl leading-tight flex items-center gap-1">
                       {item.profiles?.first_name || t("user")}
                       {item.profiles?.is_verified && <VerifiedBadge />}
                     </p>
                     {item.profiles?.last_name && (
-                      <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs text-zinc-500 font-bold tracking-tight">
+                      <p className="text-xs min-[1084px]:text-[13px] min-[1920px]:text-sm text-zinc-500 font-medium tracking-tight">
                         {item.profiles.last_name}
                       </p>
                     )}
@@ -504,7 +504,7 @@ export default function ItemDetailsClient({
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 text-zinc-500 text-xs min-[1084px]:text-sm font-black">
+                <div className="flex items-center gap-1.5 text-zinc-500 text-xs min-[1084px]:text-sm font-medium">
                   <Eye className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" /> {item?.views || 0}
                 </div>
                 {isLoaded && !isOwner && userId && (
@@ -539,15 +539,15 @@ export default function ItemDetailsClient({
             </div>
 
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h1 className="min-w-0 truncate text-2xl min-[1503px]:text-3xl font-black tracking-tighter leading-none">
+              <h1 className="min-w-0 truncate text-2xl min-[1503px]:text-3xl font-bold tracking-tighter leading-none">
                 {item?.title}
               </h1>
               <Badge
                 className={cn(
-                  "shrink-0 font-black rounded-md px-3 py-1 shadow-md border-none text-sm",
+                  "shrink-0 font-semibold rounded-md px-3 py-1 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700",
                   item?.type === "lost"
-                    ? "bg-red-600 text-white"
-                    : "bg-emerald-500 text-white",
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-emerald-600 dark:text-emerald-400",
                 )}
               >
                 {item?.type === "lost" ? t("lost") : t("found")}
@@ -556,11 +556,11 @@ export default function ItemDetailsClient({
 
             <div className="mb-5">
               <div className="flex items-center justify-between gap-3 mb-2">
-                <h2 className="font-black text-base min-[1084px]:text-lg min-[1503px]:text-xl text-zinc-500">
+                <h2 className="font-semibold text-base min-[1084px]:text-lg min-[1503px]:text-xl text-zinc-500">
                   {t("description")}
                 </h2>
                 {item?.type === "lost" && item.reward && (
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-sm min-[1503px]:text-base font-black shadow-md">
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-emerald-700 dark:text-emerald-400 text-sm min-[1503px]:text-base font-semibold">
                     {item.reward === UNSPECIFIED_REWARD
                       ? t("reward_unspecified_viewer")
                       : `${t("reward_gives_viewer")} ${item.reward} TJS`}
@@ -579,7 +579,7 @@ export default function ItemDetailsClient({
                     variant="secondary"
                     size="icon"
                     aria-label={t("edit")}
-                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 shadow-md"
+                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800"
                     asChild
                   >
                     <Link href={`/items/${id}/edit`}>
@@ -590,7 +590,7 @@ export default function ItemDetailsClient({
                     variant="secondary"
                     size="icon"
                     aria-label={t("delete")}
-                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 shadow-md"
+                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isActionLoading}
                   >
@@ -602,7 +602,7 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={t("share")}
-                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 shadow-md"
+                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
                 onClick={handleShare}
               >
                 <Share2 className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
@@ -611,7 +611,7 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={isSaved ? t("removedFromSaved") : t("addedToSaved")}
-                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 shadow-md transition-all"
+                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 transition-all"
                 onClick={toggleSave}
                 disabled={isToggling}
               >
@@ -628,7 +628,7 @@ export default function ItemDetailsClient({
               {isLoaded && isOwner ? (
                 <Button
                   size="lg"
-                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
+                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
                   onClick={() => setShowResolvedConfirm(true)}
                   disabled={isActionLoading}
                 >
@@ -638,7 +638,7 @@ export default function ItemDetailsClient({
               ) : item?.phone_number ? (
                 <Button
                   size="lg"
-                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
+                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
                   asChild
                 >
                   <a href={`tel:${item.phone_number}`}>
@@ -646,7 +646,7 @@ export default function ItemDetailsClient({
                   </a>
                 </Button>
               ) : (
-                <div className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 text-zinc-400 font-bold text-sm min-[1503px]:text-base text-center px-4">
+                <div className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 text-zinc-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
                   <Phone className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0" /> {t("phoneNotAvailable")}
                 </div>
               )}
@@ -657,7 +657,7 @@ export default function ItemDetailsClient({
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
           <DialogContent className="rounded-3xl border-none shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-red-600 font-black">
+              <DialogTitle className="text-red-600 font-bold">
                 {t("deleteConfirm")}
               </DialogTitle>
             </DialogHeader>
@@ -688,7 +688,7 @@ export default function ItemDetailsClient({
         >
           <DialogContent className="rounded-3xl border-none shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-emerald-600 font-black">
+              <DialogTitle className="text-emerald-600 font-bold">
                 {t("resolved")}?
               </DialogTitle>
             </DialogHeader>
@@ -717,24 +717,24 @@ export default function ItemDetailsClient({
           </DialogContent>
         </Dialog>
         <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
-          <DialogContent className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl">
+          <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
             <DialogHeader className="space-y-2.5">
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
                 <ShieldAlert className="w-5 h-5" />
               </div>
-              <DialogTitle className="text-lg font-black tracking-tight text-red-600 leading-snug">
+              <DialogTitle className="text-lg font-bold tracking-tight text-red-600 leading-snug">
                 {item?.moderation_result?.startsWith("mod_offensive_text")
                   ? t("textBlockedTitle")
                   : t("imageBlockedTitle")}
               </DialogTitle>
-              <div className="text-zinc-500 font-bold text-sm leading-relaxed">
+              <div className="text-zinc-500 font-medium text-sm leading-relaxed">
                 <p className="mb-4">
                   {item?.moderation_result?.startsWith("mod_offensive_text")
                     ? t("textBlockedDesc")
                     : t("imageBlockedDesc")}
                 </p>
                 {item?.moderation_result && (
-                  <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-black text-xs italic">
+                  <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium text-xs italic">
                     {item.moderation_result.includes(":") ? (
                       <p>
                         {t(item.moderation_result.split(":")[0])}:{" "}
@@ -752,7 +752,7 @@ export default function ItemDetailsClient({
             <DialogFooter className="pt-2">
               <Button
                 type="button"
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="w-full h-12 rounded-xl font-semibold tracking-widest text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white"
                 onClick={() => setShowBlockedInfo(false)}
               >
                 {t("ok")}
@@ -770,12 +770,12 @@ export default function ItemDetailsClient({
             }
           }}
         >
-          <DialogContent className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl">
+          <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
             <DialogHeader className="space-y-2.5">
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
                 <Flag className="w-5 h-5" />
               </div>
-              <DialogTitle className="text-lg font-black tracking-tight leading-snug">
+              <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
                 {t("reportItem")}
               </DialogTitle>
             </DialogHeader>
@@ -786,7 +786,7 @@ export default function ItemDetailsClient({
                   type="button"
                   onClick={() => setReportReason(reason)}
                   className={cn(
-                    "text-left px-4 py-3 rounded-xl border text-sm font-bold transition-all",
+                    "text-left px-4 py-3 rounded-xl border text-sm font-semibold transition-all",
                     reportReason === reason
                       ? "border-red-500 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400"
                       : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-zinc-300",
@@ -808,7 +808,7 @@ export default function ItemDetailsClient({
                 type="button"
                 disabled={!reportReason || reportSubmitting}
                 onClick={handleSubmitReport}
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-red-600 hover:bg-red-700 text-white"
+                className="w-full h-12 rounded-xl font-semibold tracking-widest text-[10px] bg-red-600 hover:bg-red-700 text-white"
               >
                 {reportSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -824,12 +824,12 @@ export default function ItemDetailsClient({
           open={showBlockUserConfirm}
           onOpenChange={(open) => !blockSubmitting && setShowBlockUserConfirm(open)}
         >
-          <DialogContent className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl">
+          <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
             <DialogHeader className="space-y-2.5">
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
                 <UserX className="w-5 h-5" />
               </div>
-              <DialogTitle className="text-lg font-black tracking-tight leading-snug">
+              <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
                 {t("blockUserConfirmTitle")}
               </DialogTitle>
               <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
@@ -840,7 +840,7 @@ export default function ItemDetailsClient({
               <Button
                 type="button"
                 variant="destructive"
-                className="flex-1 h-12 rounded-xl font-black tracking-widest text-[10px] text-white"
+                className="flex-1 h-12 rounded-xl font-semibold tracking-widest text-[10px] text-white"
                 onClick={handleBlockUser}
                 disabled={blockSubmitting}
               >
@@ -853,7 +853,7 @@ export default function ItemDetailsClient({
               <Button
                 type="button"
                 variant="outline"
-                className="flex-1 h-12 rounded-xl font-black tracking-widest text-[10px] border-zinc-200"
+                className="flex-1 h-12 rounded-xl font-semibold tracking-widest text-[10px] border-zinc-200"
                 onClick={() => setShowBlockUserConfirm(false)}
                 disabled={blockSubmitting}
               >

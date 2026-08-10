@@ -8,7 +8,7 @@ export function UserQrStats({ profile }: { profile: AdminUserDetail["profile"] }
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <QrCode className="w-4 h-4 text-zinc-400" />
-          <span className="text-sm font-black text-zinc-900">Ҳолати QR-код</span>
+          <span className="text-sm font-bold text-zinc-900">Ҳолати QR-код</span>
         </div>
         <StatusPill
           status={profile.is_qr_active ? "approved" : "deleted"}
@@ -22,7 +22,7 @@ export function UserQrStats({ profile }: { profile: AdminUserDetail["profile"] }
             <Zap className="w-4 h-4" />
             <span className="text-xs font-bold">Чанд бор насб кардааст</span>
           </div>
-          <p className="text-2xl font-black text-blue-900 mt-2">{profile.qr_activation_count}</p>
+          <p className="text-2xl font-bold text-blue-900 mt-2">{profile.qr_activation_count}</p>
         </div>
 
         <div className="rounded-xl bg-emerald-50 p-4">
@@ -30,7 +30,7 @@ export function UserQrStats({ profile }: { profile: AdminUserDetail["profile"] }
             <ScanLine className="w-4 h-4" />
             <span className="text-xs font-bold">Чанд бор scan шудааст</span>
           </div>
-          <p className="text-2xl font-black text-emerald-900 mt-2">{profile.qr_scan_count}</p>
+          <p className="text-2xl font-bold text-emerald-900 mt-2">{profile.qr_scan_count}</p>
         </div>
       </div>
     </div>

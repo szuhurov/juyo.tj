@@ -106,7 +106,7 @@ export function MandatoryPhoneModal() {
   return (
     <Dialog open={showModal} onOpenChange={() => {}}>
       <DialogContent 
-        className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[6000] max-h-[98vh] overflow-hidden flex flex-col [&>button]:hidden" 
+        className="sm:max-w-md rounded-3xl p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[6000] max-h-[98vh] overflow-hidden flex flex-col [&>button]:hidden" 
         onPointerDownOutside={(e) => e.preventDefault()} 
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
@@ -124,7 +124,7 @@ export function MandatoryPhoneModal() {
                 setLocale(lang.code as Locale);
               }}
               className={cn(
-                "px-3 py-2 rounded-xl text-[9px] font-black transition-all duration-300 flex-1 max-w-[100px]",
+                "px-3 py-2 rounded-xl text-[9px] font-bold transition-all duration-300 flex-1 max-w-[100px]",
                 locale === lang.code 
                   ? "bg-emerald-500 text-white shadow-md scale-105" 
                   : "bg-zinc-100 dark:bg-zinc-900 text-zinc-400 hover:text-zinc-600"
@@ -136,12 +136,12 @@ export function MandatoryPhoneModal() {
         </div>
 
         <div className="overflow-y-auto flex-1 px-8 pt-6 pb-4 space-y-4 text-center">
-          <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1">
+          <div className="w-14 h-14 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-1">
             <Phone className="w-7 h-7 text-emerald-500" />
           </div>
           
           <DialogHeader className="space-y-1">
-            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
               {t('phoneRequiredTitle')}
             </DialogTitle>
             <p className="text-zinc-400 font-bold text-[10px] tracking-widest leading-none">
@@ -152,13 +152,13 @@ export function MandatoryPhoneModal() {
           <form onSubmit={handleSaveData} id="mandatory-form" className="space-y-4 text-left">
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label className="text-[8px] font-black text-zinc-400 tracking-widest ml-2">
+                <Label className="text-[8px] font-bold text-zinc-400 tracking-widest ml-2">
                   {t('phoneLabel')}
                 </Label>
                 <Input 
                   name="phone" 
                   placeholder="XXXXXXXXX" 
-                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
+                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-bold text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
                   required 
                   inputMode="numeric"
                   onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
@@ -181,7 +181,7 @@ export function MandatoryPhoneModal() {
                   </Label>
                   <button 
                     type="button"
-                    className="text-[9px] font-black tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
+                    className="text-[9px] font-bold tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
                     onClick={() => setShowTermsDetails(true)}
                   >
                     {t('terms.link')}
@@ -196,7 +196,7 @@ export function MandatoryPhoneModal() {
         <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
           <DialogContent className="sm:max-w-[400px] rounded-[2rem] p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
             <DialogHeader className="space-y-3">
-              <DialogTitle className="text-lg font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+              <DialogTitle className="text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                 {t('terms.link')}
               </DialogTitle>
             </DialogHeader>
@@ -207,7 +207,7 @@ export function MandatoryPhoneModal() {
             </div>
             <Button 
               onClick={() => setShowTermsDetails(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+              className="w-full h-12 rounded-xl font-bold tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
             >
               {t('ok')}
             </Button>
@@ -218,7 +218,7 @@ export function MandatoryPhoneModal() {
           <Button 
             type="submit" 
             form="mandatory-form"
-            className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all disabled:opacity-50 border-none"
+            className="w-full h-14 rounded-2xl font-bold tracking-[0.2em] text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all disabled:opacity-50 border-none"
             disabled={loading || !acceptedTerms}
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('savePhone')}
@@ -230,7 +230,7 @@ export function MandatoryPhoneModal() {
               setShowModal(false);
               await signOut();
             }}
-            className="w-full mt-4 text-[8px] font-black tracking-[0.3em] text-red-500 hover:text-red-600 transition-colors"
+            className="w-full mt-4 text-[8px] font-bold tracking-[0.3em] text-red-500 hover:text-red-600 transition-colors"
           >
             {t('signOut')}
           </button>

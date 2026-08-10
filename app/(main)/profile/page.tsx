@@ -27,6 +27,7 @@ import {
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
 import {
   User,
+  Settings,
   Bookmark,
   LogOut,
   ChevronRight,
@@ -45,7 +46,6 @@ import {
   RefreshCw,
   Palette,
   Search,
-  HelpCircle,
   KeyRound,
   MousePointerClick,
   UserX,
@@ -360,6 +360,10 @@ function ProfileContent() {
     token,
   );
   const [infoSubmitting, setInfoSubmitting] = useState(false);
+  // Табҳои "Танзимот" ба сабки рӯйхати iOS сохта шудаанд — маълумоти шахсӣ
+  // ва рӯйхати корбарони басташуда ба ҷои ҳамеша кушода будан, бо клик
+  // ба сатри худашон боз/пӯшида мешаванд.
+  const [openSetting, setOpenSetting] = useState<"profile" | "blocked" | null>(null);
 
   // Синхронизатсия кардани таби фаъол бо URL
   useEffect(() => {
@@ -405,41 +409,43 @@ function ProfileContent() {
     { code: "en", label: "English" },
   ];
 
+  // Ҳамаи icon-ҳои меню як ранг (emerald) доранд — рангҳои гуногун
+  // (кабуд/бунафш/индиго) маънои алоҳида надоштанд ва танҳо оройиш буданд.
   const menuItems = [
     {
       id: "posts",
       title: t("myPosts"),
       icon: LayoutGrid,
-      color: "text-blue-600",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
+      color: "text-zinc-500",
+      bg: "bg-white dark:bg-zinc-900",
     },
     {
       id: "info",
-      title: t("personalInfo"),
-      icon: User,
-      color: "text-indigo-600",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      title: t("settings"),
+      icon: Settings,
+      color: "text-zinc-500",
+      bg: "bg-white dark:bg-zinc-900",
     },
     {
       id: "qr",
       title: t("qrMyCode"),
       icon: QrCode,
-      color: "text-purple-600",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
+      color: "text-zinc-500",
+      bg: "bg-white dark:bg-zinc-900",
     },
     {
       id: "saved",
       title: t("savedItems"),
       icon: Bookmark,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50 dark:bg-emerald-950/20",
+      color: "text-zinc-500",
+      bg: "bg-white dark:bg-zinc-900",
     },
     {
       id: "guide",
       title: t("aboutApp"),
       icon: MenuIcon,
-      color: "text-zinc-600",
-      bg: "bg-zinc-50 dark:bg-zinc-900/20",
+      color: "text-zinc-500",
+      bg: "bg-white dark:bg-zinc-900",
     },
   ];
 
@@ -698,32 +704,12 @@ function ProfileContent() {
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
-                <div className="flex flex-col sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  {/* Тугмаҳои амалиёт - дар болои QR */}
-                  <div className="flex justify-between gap-1.5 mb-2 sm:mb-6 w-full">
-                    <Button
-                      onClick={() => setShowWhyQRModal(true)}
-                      className="flex-1 h-9 min-[768px]:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-lg bg-emerald-500 text-white border-none font-black text-[8px] min-[768px]:text-[9px] min-[1084px]:text-[10px] min-[1503px]:text-[11px] tracking-widest hover:bg-emerald-600 transition-all gap-1.5 px-2 min-[1084px]:px-3 shadow-sm"
-                    >
-                      <HelpCircle className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
-                      {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
-                    </Button>
-                    <Button
-                      onClick={handleDownloadQR}
-                      disabled={isDownloading}
-                      className="flex-1 h-9 min-[768px]:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-lg bg-emerald-500 text-white border-none font-black text-[8px] min-[768px]:text-[9px] min-[1084px]:text-[10px] min-[1503px]:text-[11px] tracking-widest hover:opacity-90 transition-all gap-1.5 px-2 min-[1084px]:px-3 shadow-sm"
-                    >
-                      {isDownloading ? (
-                        <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
-                      ) : (
-                        <Download className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
-                      )}
-                      {t("download")}
-                    </Button>
-                  </div>
-
-                  <div className="relative group bg-transparent sm:bg-zinc-100 sm:dark:bg-zinc-900 rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-[0.9] min-[768px]:scale-100 min-[1084px]:scale-105 min-[1503px]:scale-110 min-[1920px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
+                {/* Сутуни пешнамоиш. Танҳо ХУДИ QR sticky аст — корти
+                    статус, тугмаҳо ва танзимот аз таги он мегузаранд. */}
+                <div className="flex flex-col">
+                <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                  <div className="relative group bg-transparent sm:bg-canvas rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
+                    <div className="scale-[0.78] min-[768px]:scale-90 min-[1084px]:scale-100 min-[1503px]:scale-105 origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
                         settings={{
@@ -743,19 +729,21 @@ function ProfileContent() {
                       />
                     </div>
                   </div>
+                </div>
 
-                  {/* Статус — акнун зери QR, бо ҳамон паҳно ва ранги
-                      рамзи шахсӣ, дар ҳама андоза намоён. */}
-                  <div className="mt-4 w-full">
-                    <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 p-4 min-[1084px]:p-5 rounded-2xl flex items-center justify-between">
+                {/* Статус ва тугмаҳо — берун аз sticky, то бо танзимоти
+                    поён якҷоя аз таги QR гузаранд. px-1 = ҳамон падинги
+                    сутуни танзимот, то паҳноияшон баробар бошад. */}
+                <div className="mt-4 w-full px-1">
+                    <div className="bg-white dark:bg-zinc-900 border-none shadow-none p-4 min-[1084px]:p-5 rounded-2xl flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="flex flex-col">
-                          <span className="text-[10px] min-[1084px]:text-xs min-[1503px]:text-sm font-black tracking-widest text-zinc-900 dark:text-white">
+                          <span className="text-xs min-[1084px]:text-sm font-bold tracking-wide text-zinc-900 dark:text-white">
                             {t("qrStatus")}
                           </span>
                           <button
                             onClick={() => setShowSecurityModal(true)}
-                            className="text-[9px] min-[1084px]:text-[10px] min-[1503px]:text-[11px] font-bold text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                            className="text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
                           >
                             {t("qrSecurityStatusWhy") ||
                               "Барои чӣ QR-код статус лозим?"}
@@ -824,6 +812,28 @@ function ProfileContent() {
                       </button>
                     </div>
                   </div>
+
+                {/* Тугмаҳои амалиёт — низ берун аз sticky */}
+                <div className="grid grid-cols-2 gap-3 mt-3 w-full px-1">
+                  <Button
+                    onClick={() => setShowWhyQRModal(true)}
+                    className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all gap-1.5 px-2.5"
+                  >
+                    {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
+                  </Button>
+                  <Button
+                    onClick={handleDownloadQR}
+                    disabled={isDownloading}
+                    className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all gap-1.5 px-2.5"
+                  >
+                    {isDownloading ? (
+                      <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
+                    ) : (
+                      <Download className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px] text-emerald-500" />
+                    )}
+                    {t("download")}
+                  </Button>
+                </div>
                 </div>
 
                 {/* Панели танзимоти QR - Full Width ва Compact */}
@@ -843,7 +853,7 @@ function ProfileContent() {
                           setQrSettings({ ...qrSettings, dotsType: val as DotType })
                         }
                       >
-                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-sm font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
+                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
@@ -887,7 +897,7 @@ function ProfileContent() {
                           });
                         }}
                       >
-                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-sm font-bold px-4 shadow-sm hover:bg-zinc-50 transition-all">
+                        <SelectTrigger className="h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
@@ -919,10 +929,10 @@ function ProfileContent() {
                           e.stopPropagation();
                           setActivePicker(activePicker === "qr" ? null : "qr");
                         }}
-                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all color-trigger px-2 shadow-sm hover:bg-zinc-50"
+                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
                       >
                         <div
-                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
+                          className="w-7 h-7 rounded-xl border border-black/10"
                           style={{ backgroundColor: qrSettings.qrColor }}
                         />
                         <span className="font-mono text-xs font-bold text-zinc-500">
@@ -940,10 +950,10 @@ function ProfileContent() {
                           e.stopPropagation();
                           setActivePicker(activePicker === "bg" ? null : "bg");
                         }}
-                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 p-1 flex items-center gap-3 transition-all color-trigger px-2 shadow-sm hover:bg-zinc-50"
+                        className="w-full h-11 rounded-2xl bg-white dark:bg-zinc-900 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
                       >
                         <div
-                          className="w-7 h-7 rounded-xl shadow-sm border border-black/5"
+                          className="w-7 h-7 rounded-xl border border-black/10"
                           style={{ backgroundColor: qrSettings.bgColor }}
                         />
                         <span className="font-mono text-xs font-bold text-zinc-500">
@@ -986,7 +996,7 @@ function ProfileContent() {
                         </div>
                         <div className="p-4 bg-zinc-50 dark:bg-zinc-900/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
                           <Button
-                            className="w-full h-12 sm:h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg transition-all"
+                            className="w-full h-12 sm:h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
                             onClick={() => setActivePicker(null)}
                           >
                             {t("done")}
@@ -998,7 +1008,7 @@ function ProfileContent() {
 
                   {/* Текст */}
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] font-black text-zinc-400 tracking-widest ml-1">
+                    <Label className="text-[11px] font-bold text-zinc-400 tracking-widest ml-1">
                       {t("qrFooterText")}
                     </Label>
                     <Input
@@ -1009,7 +1019,7 @@ function ProfileContent() {
                           text: e.target.value,
                         })
                       }
-                      className="h-12 rounded-xl bg-zinc-50 dark:bg-zinc-900 border-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
+                      className="h-12 rounded-xl bg-white dark:bg-zinc-900 border-none shadow-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
                       placeholder={t("qrInputPlaceholder")}
                     />
                   </div>
@@ -1022,8 +1032,8 @@ function ProfileContent() {
       case "guide":
         return (
           <div className="space-y-8 pb-20">
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-black tracking-tight">
+            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4">
+              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                 {t("aboutApp") || "Оид ба JUYU"}
               </h3>
             </div>
@@ -1031,9 +1041,9 @@ function ProfileContent() {
             <div className="space-y-10 px-2">
               {/* Mission */}
               <section className="space-y-6">
-                <div className="bg-zinc-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+                <div className="bg-zinc-900 text-white p-8 rounded-3xl relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full -mr-16 -mt-16" />
-                  <h4 className="text-2xl font-black tracking-tight mb-4 relative z-10">
+                  <h4 className="text-2xl font-bold tracking-tight mb-4 relative z-10">
                     {t("guide.problemTitle")}
                   </h4>
                   <div className="text-zinc-400 font-bold leading-relaxed relative z-10 space-y-4">
@@ -1044,7 +1054,7 @@ function ProfileContent() {
 
               {/* Solution */}
               <section className="space-y-6">
-                <h4 className="text-2xl font-black tracking-tight px-4">
+                <h4 className="text-2xl font-bold tracking-tight px-4">
                   {t("guide.solutionTitle")}
                 </h4>
                 <div className="bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 p-8 rounded-3xl space-y-4">
@@ -1065,10 +1075,10 @@ function ProfileContent() {
               {/* How it works */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="p-8 rounded-3xl bg-zinc-50/60 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-800 space-y-4">
-                  <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center">
                     <PackageSearch className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <h5 className="font-black text-sm tracking-wider">
+                  <h5 className="font-bold text-sm tracking-wider">
                     {t("guide.foundTitle")}
                   </h5>
                   <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
@@ -1082,7 +1092,7 @@ function ProfileContent() {
                   <div className="w-12 h-12 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
                     <Search className="w-6 h-6 text-red-600" />
                   </div>
-                  <h5 className="font-black text-sm tracking-wider">
+                  <h5 className="font-bold text-sm tracking-wider">
                     {t("guide.lostTitle")}
                   </h5>
                   <ol className="text-[12px] text-zinc-500 font-medium leading-relaxed space-y-2 list-decimal list-inside">
@@ -1095,9 +1105,9 @@ function ProfileContent() {
 
               {/* QR System */}
               <section className="space-y-6">
-                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full -mr-32 -mt-32" />
-                  <h4 className="text-2xl font-black tracking-tight mb-4 relative z-10">
+                <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-8 rounded-3xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-3xl rounded-full -mr-32 -mt-32" />
+                  <h4 className="text-2xl font-bold tracking-tight mb-4 relative z-10">
                     {t("guide.qrSystemTitle")}
                   </h4>
                   <p className="text-zinc-400 font-bold mb-8 relative z-10">
@@ -1110,7 +1120,7 @@ function ProfileContent() {
                         key={i}
                         className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl text-center border border-white/10"
                       >
-                        <p className="text-[10px] font-black tracking-widest text-zinc-300">
+                        <p className="text-[10px] font-bold tracking-widest text-zinc-300">
                           {item}
                         </p>
                       </div>
@@ -1118,27 +1128,27 @@ function ProfileContent() {
                   </div>
 
                   <div className="mt-12 p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4 relative z-10">
-                    <h5 className="font-black text-xs tracking-[0.2em] text-emerald-400">
+                    <h5 className="font-bold text-xs tracking-[0.2em] text-emerald-400">
                       {t("guide.qrHowTitle")}
                     </h5>
                     <ul className="space-y-3">
                       <li className="flex gap-3 text-sm text-zinc-300 font-medium">
-                        <span className="text-emerald-500 font-black">1.</span>
+                        <span className="text-emerald-500 font-bold">1.</span>
                         {t("guide.qrHowStep1")}
                       </li>
                       <li className="flex gap-3 text-sm text-zinc-300 font-medium">
-                        <span className="text-emerald-500 font-black">2.</span>
+                        <span className="text-emerald-500 font-bold">2.</span>
                         {t("guide.qrHowStep2")}
                       </li>
                       <li className="flex gap-3 text-sm text-zinc-300 font-medium">
-                        <span className="text-emerald-500 font-black">3.</span>
+                        <span className="text-emerald-500 font-bold">3.</span>
                         {t("guide.qrHowStep3")}
                       </li>
                     </ul>
                   </div>
 
                   <div className="mt-6 flex justify-center relative z-10">
-                    <div className="bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-2xl border border-emerald-500/20 font-black text-[10px] tracking-widest">
+                    <div className="bg-emerald-500/20 text-emerald-400 px-6 py-3 rounded-2xl border border-emerald-500/20 font-bold text-[10px] tracking-widest">
                       {t("guide.qrAdvantage")}
                     </div>
                   </div>
@@ -1147,8 +1157,8 @@ function ProfileContent() {
 
               {/* Goal */}
               <div className="grid grid-cols-1 gap-6 pb-12">
-                <div className="p-8 rounded-3xl bg-zinc-900 text-white space-y-4 shadow-xl">
-                  <h5 className="font-black text-sm tracking-wider text-emerald-400">
+                <div className="p-8 rounded-3xl bg-zinc-900 text-white space-y-4">
+                  <h5 className="font-bold text-sm tracking-wider text-emerald-400">
                     {t("guide.mainGoalTitle")}
                   </h5>
                   <p className="text-sm text-zinc-400 font-bold leading-relaxed">
@@ -1162,54 +1172,83 @@ function ProfileContent() {
 
       case "info":
         return (
-          <div className="space-y-12 pb-20">
-            {/* Сарлавҳаи таби Маълумоти шахсӣ */}
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
-              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-black tracking-tight">
-                {t("personalInfo")}
+          <div className="pb-20">
+            {/* Сарлавҳаи таби Танзимот */}
+            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-4 mb-4 -mx-4">
+              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
+                {t("settings")}
               </h3>
             </div>
 
-            <div className="max-w-2xl px-2 space-y-12">
-              {/* Бахши Аватар ва Ному насаб */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <User className="w-4 h-4 text-zinc-400" />
-                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
-                    {t("avatarAndName")}
-                  </h4>
-                </div>
-                <div className="flex flex-col sm:flex-row items-center gap-8 bg-zinc-50 dark:bg-zinc-900/30 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-900">
-                  <div className="relative group shrink-0">
-                    <Avatar className="w-24 h-24 border-4 border-white dark:border-zinc-800 shadow-xl rounded-2xl overflow-hidden">
-                      <AvatarImage src={user?.imageUrl} />
-                      <AvatarFallback className="bg-zinc-900 text-white text-3xl font-black">
-                        {user?.firstName?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-800 flex items-center justify-center cursor-pointer shadow-md">
-                      <Pencil className="w-3.5 h-3.5 text-white" />
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            try {
-                              toast.loading(t("uploading"));
-                              await user?.setProfileImage({ file });
-                              toast.dismiss();
-                              toast.success(t("photoUpdated"));
-                            } catch {
-                              toast.dismiss();
-                              toast.error(t("error"));
-                            }
+            <div className="max-w-2xl px-2 space-y-6">
+              {/* Корти профил — аватар, ном, почта */}
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl p-4 flex items-center gap-4">
+                <div className="relative shrink-0">
+                  <Avatar className="w-14 h-14 rounded-full overflow-hidden">
+                    <AvatarImage src={user?.imageUrl} />
+                    <AvatarFallback className="bg-zinc-900 text-white text-xl font-bold">
+                      {user?.firstName?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <label className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white dark:border-zinc-900 flex items-center justify-center cursor-pointer">
+                    <Pencil className="w-3 h-3 text-white" />
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            toast.loading(t("uploading"));
+                            await user?.setProfileImage({ file });
+                            toast.dismiss();
+                            toast.success(t("photoUpdated"));
+                          } catch {
+                            toast.dismiss();
+                            toast.error(t("error"));
                           }
-                        }}
-                      />
-                    </label>
-                  </div>
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-base text-zinc-900 dark:text-zinc-100 truncate">
+                    {user?.firstName} {user?.lastName}
+                  </p>
+                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                    {user?.primaryEmailAddress?.emailAddress}
+                  </p>
+                </div>
+              </div>
+
+              {/* Гурӯҳи "Ҳисоб" */}
+              <div className="space-y-2">
+                <p className="text-[11px] font-bold tracking-wider text-zinc-400 px-4">
+                  {t("account")}
+                </p>
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
+                  {/* Маълумоти шахсӣ — сатри кушодашаванда */}
+                  <button
+                    type="button"
+                    onClick={() => setOpenSetting(openSetting === "profile" ? null : "profile")}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                  >
+                    <User className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                      {t("personalInfo")}
+                    </span>
+                    <ChevronRight
+                      className={cn(
+                        "w-4 h-4 text-zinc-400 shrink-0 transition-transform",
+                        openSetting === "profile" && "rotate-90",
+                      )}
+                    />
+                  </button>
+
+                  {openSetting === "profile" && (
+                  <div className="px-4 py-4">
                   {/* Формаи таҳрири маълумоти профил */}
                   <form
                     key={profile?.id || "new"}
@@ -1258,7 +1297,7 @@ function ProfileContent() {
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                           {t("firstName")}
                         </Label>
                         <Input
@@ -1268,7 +1307,7 @@ function ProfileContent() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                           {t("lastName")}
                         </Label>
                         <Input
@@ -1281,7 +1320,7 @@ function ProfileContent() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                           {t("phoneLabel")}
                         </Label>
                         <div className="relative">
@@ -1303,7 +1342,7 @@ function ProfileContent() {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                           {t("phoneSecondaryLabel")}
                         </Label>
                         <div className="relative">
@@ -1330,7 +1369,7 @@ function ProfileContent() {
                       type="submit"
                       size="sm"
                       disabled={infoSubmitting}
-                      className="rounded-lg bg-emerald-500 text-white font-black text-[9px] tracking-widest px-6 w-full sm:w-auto"
+                      className="rounded-lg bg-emerald-500 text-white font-bold text-[9px] tracking-widest px-6 w-full sm:w-auto"
                     >
                       {infoSubmitting ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -1339,158 +1378,150 @@ function ProfileContent() {
                       )}
                     </Button>
                   </form>
-                </div>
-              </section>
+                  </div>
+                  )}
 
-              {/* Бахши Почтаи электронӣ (Email) */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Mail className="w-4 h-4 text-zinc-400" />
-                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
-                    {t("email")}
-                  </h4>
+                  {/* Почтаи электронӣ */}
+                  <button
+                    type="button"
+                    onClick={() => setShowEmailChangeModal(true)}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                  >
+                    <Mail className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                      {t("email")}
+                    </span>
+                    <span className="max-w-[45%] truncate text-xs font-medium text-zinc-400">
+                      {user?.primaryEmailAddress?.emailAddress}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                  </button>
+
+                  {/* Рамз */}
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePasswordModal(true)}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                  >
+                    <KeyRound className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                      {t("changePassword")}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                  </button>
                 </div>
-                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-900 space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
-                      {t("currentEmail")}
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <div className="h-10 flex-1 flex items-center px-4 rounded-xl bg-zinc-100/50 dark:bg-zinc-900/50 text-zinc-500 font-bold text-sm truncate">
-                        {user?.primaryEmailAddress?.emailAddress}
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowEmailChangeModal(true)}
-                        className="h-10 rounded-xl font-black text-[9px] tracking-widest gap-1.5 shrink-0"
-                      >
-                        <Pencil className="w-3 h-3" />
-                        {t("changeEmail")}
-                      </Button>
+              </div>
+
+              {/* Гурӯҳи "Афзалиятҳо" */}
+              <div className="space-y-2">
+                <p className="text-[11px] font-bold tracking-wider text-zinc-400 px-4">
+                  {t("preferences")}
+                </p>
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
+                  {/* Забон — арзиши ҷорӣ дар тарафи рост, мисли намунаи iOS */}
+                  <div className="px-4 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <Globe className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                      <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        {t("language") || "Забон"}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      {LANGUAGES.map((lang) => (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          onClick={() => setLocale(lang.code)}
+                          className={cn(
+                            "flex-1 h-9 rounded-xl font-bold text-[11px] tracking-wide transition-all cursor-pointer",
+                            locale === lang.code
+                              ? "bg-emerald-500 text-white"
+                              : "bg-canvas dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400",
+                          )}
+                        >
+                          {lang.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                </div>
-              </section>
 
-              {/* Бахши Рамз (Password) */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <KeyRound className="w-4 h-4 text-zinc-400" />
-                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
-                    {t("clerk.signInPasswordLabel")}
-                  </h4>
-                </div>
-                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
-                    {t("changePasswordDesc")}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowChangePasswordModal(true)}
-                    className="h-10 rounded-xl font-black text-[9px] tracking-widest gap-1.5 shrink-0"
-                  >
-                    <KeyRound className="w-3.5 h-3.5" />
-                    {t("changePassword")}
-                  </Button>
-                </div>
-              </section>
-
-              {/* Корбарони block-шуда */}
-              {blockedUsers.length > 0 && (
-                <section className="space-y-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <UserX className="w-4 h-4 text-zinc-400" />
-                    <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
-                      {t("blockedUsers")}
-                    </h4>
-                  </div>
-                  <div className="bg-zinc-50 dark:bg-zinc-900/30 rounded-3xl border border-zinc-100 dark:border-zinc-900 divide-y divide-zinc-100 dark:divide-zinc-900">
-                    {blockedUsers.map((u) => (
-                      <div key={u.user_id} className="p-4 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="w-9 h-9 border border-zinc-200 dark:border-zinc-800">
-                            <AvatarImage src={u.avatar_url ?? undefined} />
-                            <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-xs">
-                              <User className="w-4 h-4 text-zinc-400" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <p className="font-bold text-sm truncate">
-                            {u.first_name || t("user")} {u.last_name || ""}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={unblockingId === u.user_id}
-                          onClick={() => handleUnblockUser(u.user_id)}
-                          className="h-9 rounded-lg font-black text-[9px] tracking-widest shrink-0"
-                        >
-                          {unblockingId === u.user_id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            t("unblockUser")
+                  {/* Корбарони басташуда — танҳо агар мавҷуд бошанд */}
+                  {blockedUsers.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setOpenSetting(openSetting === "blocked" ? null : "blocked")}
+                        className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                      >
+                        <UserX className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                        <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                          {t("blockedUsers")}
+                        </span>
+                        <span className="text-xs font-medium text-zinc-400">
+                          {blockedUsers.length}
+                        </span>
+                        <ChevronRight
+                          className={cn(
+                            "w-4 h-4 text-zinc-400 shrink-0 transition-transform",
+                            openSetting === "blocked" && "rotate-90",
                           )}
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
+                        />
+                      </button>
+                      {openSetting === "blocked" &&
+                        blockedUsers.map((u) => (
+                          <div key={u.user_id} className="px-4 py-3 flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <Avatar className="w-9 h-9">
+                                <AvatarImage src={u.avatar_url ?? undefined} />
+                                <AvatarFallback className="bg-canvas dark:bg-zinc-800 text-xs">
+                                  <User className="w-4 h-4 text-zinc-400" />
+                                </AvatarFallback>
+                              </Avatar>
+                              <p className="font-medium text-sm truncate">
+                                {u.first_name || t("user")} {u.last_name || ""}
+                              </p>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={unblockingId === u.user_id}
+                              onClick={() => handleUnblockUser(u.user_id)}
+                              className="h-9 rounded-lg border-none shadow-none bg-canvas dark:bg-zinc-800 font-bold text-[9px] tracking-widest shrink-0"
+                            >
+                              {unblockingId === u.user_id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                t("unblockUser")
+                              )}
+                            </Button>
+                          </div>
+                        ))}
+                    </>
+                  )}
+                </div>
+              </div>
 
-              {/* Забони интерфейс */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Globe className="w-4 h-4 text-zinc-400" />
-                  <h4 className="font-black text-[10px] tracking-[0.2em] text-zinc-400">
-                    {t("language") || "Забон"}
-                  </h4>
-                </div>
-                <div className="bg-zinc-50 dark:bg-zinc-900/30 p-6 rounded-3xl border border-zinc-100 dark:border-zinc-900 flex flex-wrap gap-2">
-                  {LANGUAGES.map((lang) => (
-                    <button
-                      key={lang.code}
-                      type="button"
-                      onClick={() => setLocale(lang.code)}
-                      className={cn(
-                        "h-10 px-4 rounded-xl font-black text-[11px] tracking-wide transition-all cursor-pointer border",
-                        locale === lang.code
-                          ? "bg-emerald-500 border-emerald-500 text-white shadow-sm"
-                          : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700",
-                      )}
-                    >
-                      {lang.label}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              {/* Минтақаи хатарнок (Danger Zone) */}
-              <section className="space-y-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <AlertTriangle className="w-4 h-4 text-red-400" />
-                  <h4 className="font-black text-[10px] tracking-[0.2em] text-red-400">
-                    {t("dangerZone")}
-                  </h4>
-                </div>
-                <div className="bg-red-50/50 dark:bg-red-950/10 p-6 rounded-3xl border border-red-100 dark:border-red-900/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 max-w-md">
-                    {t("deleteAccountDesc")}
-                  </p>
-                  <Button
+              {/* Нест кардани ҳисоб — гурӯҳи алоҳида, то бо танзимоти
+                  муқаррарӣ омехта нашавад (амали бебозгашт). */}
+              <div className="space-y-2">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden">
+                  <button
                     type="button"
-                    variant="outline"
                     onClick={() => setShowDeleteAccountModal(true)}
-                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-100 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-950/30 font-black text-[10px] tracking-widest gap-2 shrink-0"
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    {t("deleteAccount")}
-                  </Button>
+                    <Trash2 className="w-[18px] h-[18px] text-red-600 shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-red-600">
+                      {t("deleteAccount")}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-red-300 shrink-0" />
+                  </button>
                 </div>
-              </section>
+                <p className="text-[11px] font-medium text-zinc-400 px-4 leading-relaxed">
+                  {t("deleteAccountDesc")}
+                </p>
+              </div>
             </div>
           </div>
         );
@@ -1499,9 +1530,9 @@ function ProfileContent() {
         return (
           <div className="space-y-6">
             {/* Сарлавҳаи таби Захирашудаҳо */}
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4 border-b border-zinc-100 dark:border-zinc-900">
+            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-black tracking-tight">
+                <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                   {t("savedItems")}
                 </h3>
                 <div className="px-2 min-[1084px]:px-2.5 py-0.5 rounded text-[10px] min-[1084px]:text-xs min-[1503px]:text-sm font-bold bg-zinc-900 text-white">
@@ -1533,7 +1564,7 @@ function ProfileContent() {
                   <Button
                     asChild
                     size="sm"
-                    className="mt-6 rounded-md font-black text-[10px] min-[1084px]:text-[11px] tracking-wider"
+                    className="mt-6 rounded-md font-bold text-[10px] min-[1084px]:text-[11px] tracking-wider"
                   >
                     <Link href="/">{t("home")}</Link>
                   </Button>
@@ -1553,20 +1584,20 @@ function ProfileContent() {
       <div className="w-full px-3 sm:px-4 py-0 sm:py-8 min-h-[90vh]">
         {/* Mobile Profile Header (Instagram Style) */}
         {activeTab === "posts" && (
-          <div className="block lg:hidden border-b border-zinc-100 dark:border-zinc-900 bg-white dark:bg-zinc-950 px-4 pt-6 pb-8">
+          <div className="block lg:hidden rounded-3xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 pt-6 pb-6 mt-4 mb-4">
             <div className="flex items-center gap-6 mb-6">
               <Avatar className="w-20 h-20 min-[768px]:w-24 min-[768px]:h-24 border-2 border-zinc-100 dark:border-zinc-800 p-0.5">
                 <AvatarImage
                   src={user?.imageUrl}
                   className="rounded-full object-cover"
                 />
-                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-xl min-[768px]:text-2xl font-black">
+                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-xl min-[768px]:text-2xl font-bold">
                   {user?.firstName?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1 flex flex-col gap-1">
-                <h2 className="text-xl min-[768px]:text-2xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-none flex items-center gap-1.5">
+                <h2 className="text-xl min-[768px]:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none flex items-center gap-1.5">
                   {user?.firstName} {user?.lastName}
                   {profile?.is_verified && <VerifiedBadge />}
                 </h2>
@@ -1579,15 +1610,15 @@ function ProfileContent() {
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => handleTabChange("info")}
-                className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-zinc-500 dark:text-zinc-400 font-black text-[10px] min-[768px]:text-[11px] tracking-wider border-none shadow-none"
+                className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] min-[768px]:text-[11px] tracking-wider shadow-none"
               >
-                <Pencil className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 mr-2 text-emerald-500" />
+                <Pencil className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 mr-2 text-zinc-500" />
                 {t("edit") || "Edit"}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 text-zinc-500 dark:text-zinc-400 font-black text-[10px] min-[768px]:text-[11px] tracking-wider border-none shadow-none gap-2">
-                    <MenuIcon className="w-4 h-4 min-[768px]:w-[18px] min-[768px]:h-[18px] text-emerald-500" />
+                  <Button className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] min-[768px]:text-[11px] tracking-wider shadow-none gap-2">
+                    <MenuIcon className="w-4 h-4 min-[768px]:w-[18px] min-[768px]:h-[18px] text-zinc-500" />
                     {t("settings") || "Settings"}
                   </Button>
                 </DropdownMenuTrigger>
@@ -1599,12 +1630,7 @@ function ProfileContent() {
                     <DropdownMenuItem
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
-                      className={cn(
-                        "flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider",
-                        activeTab === item.id
-                          ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                          : "text-zinc-500",
-                      )}
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                     >
                       <div
                         className={cn("p-1.5 rounded-md", item.bg, item.color)}
@@ -1617,9 +1643,9 @@ function ProfileContent() {
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                     >
-                      <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                      <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                         <UserCog className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                       </div>
                       {t("adminPanel")}
@@ -1627,8 +1653,8 @@ function ProfileContent() {
                   )}
                   <DropdownMenuItem className="p-0">
                     <SignOutButton>
-                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-zinc-500 font-bold text-[11px] tracking-wider">
-                        <div className="p-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800">
+                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 font-bold text-[11px] tracking-wider">
+                        <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                           <LogOut className="w-3.5 h-3.5" />
                         </div>
                         {t("signOut")}
@@ -1668,7 +1694,7 @@ function ProfileContent() {
                       >
                         <item.icon className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 min-[1920px]:w-[22px] min-[1920px]:h-[22px]" />
                       </div>
-                      <span className="font-black text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-wider">
+                      <span className="font-bold text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-wider">
                         {item.title}
                       </span>
                     </div>
@@ -1689,7 +1715,7 @@ function ProfileContent() {
                 <SignOutButton>
                   <Button
                     variant="ghost"
-                    className="w-full h-11 min-[1084px]:h-12 min-[1503px]:h-[52px] rounded-xl font-black text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4"
+                    className="w-full h-11 min-[1084px]:h-12 min-[1503px]:h-[52px] rounded-xl font-bold text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4"
                   >
                     <LogOut className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5" />
                     {t("signOut")}
@@ -1713,9 +1739,9 @@ function ProfileContent() {
           !open && setConfirmDialog((prev) => ({ ...prev, open: false }))
         }
       >
-        <DialogContent className="sm:max-w-md rounded-[1.75rem] p-6 gap-5 border-none shadow-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
           <DialogHeader className="space-y-2">
-            <DialogTitle className="text-lg font-black tracking-tight leading-snug">
+            <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
               {confirmDialog.title}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
@@ -1726,7 +1752,7 @@ function ProfileContent() {
             <Button
               type="button"
               className={cn(
-                "flex-1 h-12 rounded-xl font-black tracking-widest text-[10px]",
+                "flex-1 h-12 rounded-xl font-bold tracking-widest text-[10px]",
                 confirmDialog.variant === "destructive"
                   ? "bg-red-600 hover:bg-red-700 text-white"
                   : "bg-emerald-500 hover:bg-emerald-600 text-white",
@@ -1745,7 +1771,7 @@ function ProfileContent() {
             <Button
               type="button"
               variant="outline"
-              className="flex-1 h-12 rounded-xl font-black tracking-widest text-[10px] border-zinc-200"
+              className="flex-1 h-12 rounded-xl font-bold tracking-widest text-[10px] border-zinc-200"
               onClick={() =>
                 setConfirmDialog((prev) => ({ ...prev, open: false }))
               }
@@ -1761,14 +1787,14 @@ function ProfileContent() {
         open={showSecondaryPhoneModal}
         onOpenChange={setShowSecondaryPhoneModal}
       >
-        <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-md rounded-3xl p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
           <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
-            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center mx-auto mb-1">
-              <ShieldCheck className="w-8 h-8 text-emerald-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-1">
+              <ShieldCheck className="w-8 h-8 text-zinc-500" />
             </div>
 
             <DialogHeader className="space-y-2">
-              <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+              <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
                 {t("qrSecondaryModal.title")}
               </DialogTitle>
               <DialogDescription className="text-zinc-500 font-bold text-[11px] leading-relaxed">
@@ -1785,14 +1811,14 @@ function ProfileContent() {
                 {/* Рақами асосӣ (агар набошад) */}
                 {(!profile?.phone || profile.phone.trim() === "") && (
                   <div className="space-y-1.5">
-                    <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                    <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                       {t("phoneLabel")}
                     </Label>
                     <div className="relative">
                       <Input
                         name="phone"
                         placeholder="XXXXXXXXX"
-                        className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                        className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-bold text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
                         required
                         inputMode="numeric"
                         onChange={(e) =>
@@ -1811,14 +1837,14 @@ function ProfileContent() {
                   !profile?.secondary_phone_type) && (
                   <>
                     <div className="space-y-1.5">
-                      <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                      <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.label")}
                       </Label>
                       <div className="relative">
                         <Input
                           name="secondary_phone"
                           placeholder={t("qrSecondaryModal.placeholder")}
-                          className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-black text-lg tracking-wider text-emerald-600 dark:text-emerald-400 border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                          className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-bold text-lg tracking-wider text-emerald-600 dark:text-emerald-400 border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
                           required
                           inputMode="numeric"
                           onChange={(e) =>
@@ -1836,7 +1862,7 @@ function ProfileContent() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                      <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.ownerQuestion")}
                       </Label>
                       <div className="grid grid-cols-2 gap-2">
@@ -1852,7 +1878,7 @@ function ProfileContent() {
                             type="button"
                             onClick={() => setSecondaryType(type)}
                             className={cn(
-                              "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-black text-[10px] tracking-wider",
+                              "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-bold text-[10px] tracking-wider",
                               secondaryType === type
                                 ? "bg-emerald-500 text-white shadow-md scale-[1.02]"
                                 : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200",
@@ -1886,7 +1912,7 @@ function ProfileContent() {
                       </Label>
                       <button
                         type="button"
-                        className="text-[9px] font-black tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
+                        className="text-[9px] font-bold tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
                         onClick={() => setShowTermsDetails(true)}
                       >
                         {t("terms.link")}
@@ -1902,7 +1928,7 @@ function ProfileContent() {
             <Button
               type="submit"
               form="secondary-phone-form"
-              className="w-full h-14 rounded-2xl font-black tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/10 transition-all disabled:opacity-50 border-none"
+              className="w-full h-14 rounded-2xl font-bold tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all disabled:opacity-50 border-none"
               disabled={
                 secondaryLoading ||
                 ((!profile?.secondary_phone ||
@@ -1920,7 +1946,7 @@ function ProfileContent() {
             <Button
               variant="ghost"
               onClick={() => setShowSecondaryPhoneModal(false)}
-              className="w-full mt-2 text-[9px] font-black tracking-widest text-zinc-400"
+              className="w-full mt-2 text-[9px] font-bold tracking-widest text-zinc-400"
             >
               {t("cancel")}
             </Button>
@@ -1932,7 +1958,7 @@ function ProfileContent() {
       <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
         <DialogContent className="w-[96%] sm:max-w-[400px] rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="text-lg font-black tracking-tight text-emerald-600 dark:text-emerald-400">
+            <DialogTitle className="text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
               {t("terms.link")}
             </DialogTitle>
           </DialogHeader>
@@ -1943,7 +1969,7 @@ function ProfileContent() {
           </div>
           <Button
             onClick={() => setShowTermsDetails(false)}
-            className="w-full h-12 rounded-xl font-black tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+            className="w-full h-12 rounded-xl font-bold tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
           >
             {t("ok")}
           </Button>
@@ -1953,10 +1979,10 @@ function ProfileContent() {
       <Dialog open={showWhyQRModal} onOpenChange={setShowWhyQRModal}>
         <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <QrCode className="w-8 h-8 text-emerald-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <QrCode className="w-8 h-8 text-zinc-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("qrWhyGuideTitle") || "Чӣ тавр QR-код ба шумо кӯмак мекунад?"}
             </DialogTitle>
             <DialogDescription asChild>
@@ -1970,12 +1996,12 @@ function ProfileContent() {
                   {/* Step 1 */}
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-black text-zinc-900 dark:text-white text-xs">
+                      <span className="font-bold text-zinc-900 dark:text-white text-xs">
                         1
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <h5 className="font-bold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep1Title") || "Дизайн ва скачат кунед"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
@@ -1988,12 +2014,12 @@ function ProfileContent() {
                   {/* Step 2 */}
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-black text-zinc-900 dark:text-white text-xs">
+                      <span className="font-bold text-zinc-900 dark:text-white text-xs">
                         2
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <h5 className="font-bold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep2Title") || "Ёбанда скан мекунад"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
@@ -2006,12 +2032,12 @@ function ProfileContent() {
                   {/* Step 3 */}
                   <div className="flex gap-4">
                     <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-black text-zinc-900 dark:text-white text-xs">
+                      <span className="font-bold text-zinc-900 dark:text-white text-xs">
                         3
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-black text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <h5 className="font-bold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep3Title") || "Алоқаи фаврӣ ва бехатар"}
                       </h5>
                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
@@ -2027,7 +2053,7 @@ function ProfileContent() {
           <div className="mt-8 flex flex-col gap-2">
             <Button
               onClick={() => setShowWhyQRModal(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all"
+              className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2039,30 +2065,23 @@ function ProfileContent() {
       <Dialog open={showSecurityModal} onOpenChange={setShowSecurityModal}>
         <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <ShieldCheck className="w-8 h-8 text-emerald-500" />
-            </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("qrSecurityTitle") || "Реҷаи амниятӣ"}
             </DialogTitle>
             <DialogDescription asChild>
-              <div className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed space-y-4 text-left mt-4">
-                <div className="bg-emerald-50 dark:bg-emerald-900/10 p-6 rounded-3xl border border-emerald-100/50 dark:border-emerald-900/20">
-                  <p className="text-[12px] text-emerald-700 dark:text-emerald-400 leading-relaxed font-medium">
+              <div className="text-zinc-500 dark:text-zinc-400 font-medium text-sm leading-relaxed space-y-4 text-left mt-4">
+                <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl">
+                  <p className="text-[12px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
                     {t("qrSecurityLong")}
                   </p>
                 </div>
-                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 text-center px-2">
-                  {t("qrSecurityQuestionDescription") ||
-                    "Ин тугма танҳо барои он лозим аст, ки маълумоти шуморо ҳангоми зарурат муҳофизат кунад."}
-                </p>
               </div>
             </DialogDescription>
           </DialogHeader>
           <div className="mt-8">
             <Button
               onClick={() => setShowSecurityModal(false)}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all"
+              className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2082,7 +2101,7 @@ function ProfileContent() {
             <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
               <Trash2 className="w-8 h-8 text-red-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("deleteAccountConfirmTitle")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
@@ -2093,7 +2112,7 @@ function ProfileContent() {
             <Button
               onClick={handleDeleteAccount}
               disabled={deletingAccount}
-              className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all"
+              className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 transition-all"
             >
               {deletingAccount ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -2105,7 +2124,7 @@ function ProfileContent() {
               variant="ghost"
               disabled={deletingAccount}
               onClick={() => setShowDeleteAccountModal(false)}
-              className="w-full h-11 rounded-xl font-black tracking-widest text-[10px] text-zinc-500"
+              className="w-full h-11 rounded-xl font-bold tracking-widest text-[10px] text-zinc-500"
             >
               {t("cancel")}
             </Button>
@@ -2117,10 +2136,10 @@ function ProfileContent() {
       <Dialog open={showChangePasswordModal} onOpenChange={setShowChangePasswordModal}>
         <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-violet-50 dark:bg-violet-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <KeyRound className="w-8 h-8 text-violet-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <KeyRound className="w-8 h-8 text-zinc-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("changePassword")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
@@ -2131,7 +2150,7 @@ function ProfileContent() {
           {/* Мисоли аксӣ — саҳифаи воридшавӣ бо ишора ба "Рамзро фаромӯш кардед?" */}
           <div className="mt-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/40 p-4 space-y-2.5">
             <div className="text-center space-y-0.5 mb-2">
-              <p className="font-black text-[11px] text-zinc-900 dark:text-white">
+              <p className="font-bold text-[11px] text-zinc-900 dark:text-white">
                 {t("clerk.signInTitle")}
               </p>
               <p className="text-[8px] font-bold text-zinc-400">
@@ -2151,7 +2170,7 @@ function ProfileContent() {
             <div className="space-y-1">
               <div className="flex items-center justify-between ml-1">
                 <span className="text-[8px] font-bold text-zinc-400">{t("clerk.signInPasswordLabel")}</span>
-                <span className="relative text-[8px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md ring-2 ring-emerald-400">
+                <span className="relative text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-zinc-900 px-2 py-0.5 rounded-md ring-2 ring-emerald-400">
                   {t("clerk.forgotPasswordLabel")}
                   <MousePointerClick className="w-3.5 h-3.5 absolute -bottom-3.5 -right-2.5 text-emerald-500 rotate-[-8deg]" />
                 </span>
@@ -2163,7 +2182,7 @@ function ProfileContent() {
 
           <div className="mt-8">
             <SignOutButton>
-              <Button className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all gap-2">
+              <Button className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 transition-all gap-2">
                 <LogOut className="w-4 h-4" />
                 {t("signOutToChangePassword")}
               </Button>
@@ -2172,7 +2191,7 @@ function ProfileContent() {
           <Button
             variant="ghost"
             onClick={() => setShowChangePasswordModal(false)}
-            className="w-full h-11 rounded-xl font-black tracking-widest text-[10px] text-zinc-500 mt-2"
+            className="w-full h-11 rounded-xl font-bold tracking-widest text-[10px] text-zinc-500 mt-2"
           >
             {t("cancel")}
           </Button>
@@ -2194,10 +2213,10 @@ function ProfileContent() {
       >
         <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <Mail className="w-8 h-8 text-blue-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-3xl flex items-center justify-center mx-auto mb-2">
+              <Mail className="w-8 h-8 text-zinc-500" />
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("changeEmail")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
@@ -2210,7 +2229,7 @@ function ProfileContent() {
           {emailStep === "input" ? (
             <div className="mt-6 space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                   {t("newEmail")}
                 </Label>
                 <Input
@@ -2225,7 +2244,7 @@ function ProfileContent() {
               <Button
                 onClick={handleStartEmailChange}
                 disabled={emailSubmitting || !newEmailInput}
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg transition-all"
+                className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
               >
                 {emailSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -2237,7 +2256,7 @@ function ProfileContent() {
           ) : (
             <div className="mt-6 space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-[9px] font-black text-zinc-400 tracking-widest ml-1">
+                <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                   {t("verificationCode")}
                 </Label>
                 <Input
@@ -2266,7 +2285,7 @@ function ProfileContent() {
                     type="button"
                     onClick={handleResendCode}
                     disabled={resendSubmitting}
-                    className="text-[11px] font-black text-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                    className="text-[11px] font-bold text-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
                     {resendSubmitting && <Loader2 className="w-3 h-3 animate-spin" />}
                     {t("resendCodeAction")}
@@ -2276,7 +2295,7 @@ function ProfileContent() {
               <Button
                 onClick={handleVerifyEmailChange}
                 disabled={emailSubmitting || emailCodeInput.length < 6}
-                className="w-full h-12 rounded-xl font-black tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all"
+                className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
               >
                 {emailSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -2290,7 +2309,7 @@ function ProfileContent() {
             variant="ghost"
             disabled={emailSubmitting}
             onClick={resetEmailModal}
-            className="w-full h-11 rounded-xl font-black tracking-widest text-[10px] text-zinc-500 mt-2"
+            className="w-full h-11 rounded-xl font-bold tracking-widest text-[10px] text-zinc-500 mt-2"
           >
             {t("cancel")}
           </Button>

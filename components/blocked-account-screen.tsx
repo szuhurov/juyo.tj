@@ -12,7 +12,7 @@ export function BlockedAccountScreen() {
           <ShieldAlert className="w-7 h-7 text-rose-500" />
         </div>
         <div>
-          <h1 className="text-lg font-black tracking-tight text-zinc-900">Ҳисоби шумо блок шудааст</h1>
+          <h1 className="text-lg font-bold tracking-tight text-zinc-900">Ҳисоби шумо блок шудааст</h1>
           <p className="text-sm font-medium text-zinc-500 mt-2">
             Дастрасии шумо ба juyo.tj маҳдуд карда шудааст. Агар фикр мекунед ин хатост, лутфан бо мо тамос гиред.
           </p>

@@ -36,7 +36,7 @@ export function AiModerationToggle() {
           {enabled ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-black text-zinc-900">AI Moderation</h3>
+          <h3 className="text-sm font-bold text-zinc-900">AI Moderation</h3>
           <p className="text-[11px] font-bold text-zinc-400 truncate">
             {enabled
               ? "Эълонҳои нав худкор бо AI санҷида ва тасдиқ мешаванд"

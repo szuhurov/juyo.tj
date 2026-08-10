@@ -24,7 +24,7 @@ function isActive(pathname: string, href: string) {
 function PendingBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
-    <span className="ml-auto shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">
+    <span className="ml-auto shrink-0 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
       {count > 99 ? "99+" : count}
     </span>
   );
@@ -75,7 +75,7 @@ export function AdminSidebar() {
   return (
     <aside className="hidden md:flex md:w-64 shrink-0 flex-col bg-white border-r border-zinc-100">
       <div className="h-20 flex items-center px-8 shrink-0">
-        <span className="text-lg font-black tracking-tight text-blue-600">Administration</span>
+        <span className="text-lg font-bold tracking-tight text-blue-600">Administration</span>
       </div>
 
       <nav className="flex-1 px-5 py-2 space-y-1.5">

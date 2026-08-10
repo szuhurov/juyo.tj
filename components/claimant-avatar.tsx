@@ -45,7 +45,7 @@ export function ClaimantAvatar({
   return (
     <div
       className={cn(
-        "rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-black text-zinc-400 shrink-0",
+        "rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-zinc-400 shrink-0",
         className,
       )}
     >

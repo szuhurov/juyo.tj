@@ -10,6 +10,8 @@ export const translations: Record<string, TranslationDict> = {
     menu: "Меню",
     menuDescription: "Менюи пайвандҳо",
     settings: "Танзимот",
+    account: "Ҳисоб",
+    preferences: "Афзалиятҳо",
     personalInfo: "Маълумоти шахсӣ",
     personalInfoDesc: "Таҳрири ном ва сурат",
     savedItems: "Захирашуда",
@@ -287,7 +289,6 @@ export const translations: Record<string, TranslationDict> = {
     connectivityRestored: "Пайвастшавӣ барқарор шуд",
 
     // Scanner
-    scannerTitle: "Сканнери JUYO",
     scannerInstruction: "QR-коди JUYO-ро дар дохили чорчӯба ҷойгир кунед",
     unknownQrTitle: "QR-коди номаълум",
     unknownQrDesc:
@@ -728,6 +729,8 @@ export const translations: Record<string, TranslationDict> = {
   },
   ru: {
     settings: "Настройки",
+    account: "Аккаунт",
+    preferences: "Предпочтения",
     personalInfo: "Личная информация",
     personalInfoDesc: "Изменить имя и фото",
     savedItems: "Сохраненные",
@@ -1020,7 +1023,6 @@ export const translations: Record<string, TranslationDict> = {
     connectivityRestored: "Соединение восстановлено",
 
     // Scanner
-    scannerTitle: "Сканер JUYO",
     scannerInstruction: "Поместите QR-код JUYO в рамку",
     unknownQrTitle: "Неизвестный QR-код",
     unknownQrDesc:
@@ -1441,6 +1443,8 @@ export const translations: Record<string, TranslationDict> = {
   },
   en: {
     settings: "Settings",
+    account: "Account",
+    preferences: "Preferences",
     personalInfo: "Personal Information",
     personalInfoDesc: "Edit name and photo",
     savedItems: "Saved Items",
@@ -1712,7 +1716,6 @@ export const translations: Record<string, TranslationDict> = {
     connectivityRestored: "Internet connection restored",
 
     // Scanner
-    scannerTitle: "JUYO Scanner",
     scannerInstruction: "Place the JUYO QR code inside the frame",
     unknownQrTitle: "Unknown QR Code",
     unknownQrDesc:

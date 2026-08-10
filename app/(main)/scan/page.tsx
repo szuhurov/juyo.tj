@@ -210,16 +210,16 @@ export default function ScanPage() {
 
       {/* Loader */}
       {isInitializing && !error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white gap-4 z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-canvas gap-4 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-          <p className="text-[10px] font-black tracking-widest text-zinc-400">{t('loading')}</p>
+          <p className="text-[10px] font-bold tracking-widest text-zinc-400">{t('loading')}</p>
         </div>
       )}
 
       {/* Error */}
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white p-6 text-center gap-8 z-10">
-          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-canvas p-6 text-center gap-8 z-10">
+          <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center">
             <Camera className="w-10 h-10 text-red-400" />
           </div>
           <p className="text-sm font-bold text-zinc-600 leading-relaxed max-w-xs">
@@ -228,7 +228,7 @@ export default function ScanPage() {
           {!isBlocked && (
             <Button
               onClick={handlePermissionClick}
-              className="bg-emerald-500 text-white font-black text-[10px] tracking-widest px-12 h-14 rounded-2xl transition-all border-none"
+              className="bg-emerald-500 text-white font-bold text-[10px] tracking-widest px-12 h-14 rounded-2xl transition-all border-none"
             >
               {t('permissionGrant') || 'Иҷозат додан'}
             </Button>
@@ -240,16 +240,15 @@ export default function ScanPage() {
       {isScanning && <ScanOverlay size={SCAN_SIZE} />}
 
       {/* Header */}
-      <div className={`absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-12 pb-4 z-20 ${isScanning ? 'bg-gradient-to-b from-black/70 to-transparent' : 'bg-white border-b border-zinc-100'}`}>
+      <div className={`absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-12 pb-4 z-20 ${isScanning ? 'bg-gradient-to-b from-black/70 to-transparent' : 'bg-canvas'}`}>
         <Button
           variant="ghost"
           size="icon"
           onClick={handleBack}
-          className={`rounded-full border ${isScanning ? 'bg-black/40 hover:bg-black/60 text-white border-white/10' : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-900 border-zinc-200'}`}
+          className={`rounded-full border ${isScanning ? 'bg-black/40 hover:bg-black/60 text-white border-white/10' : 'bg-white hover:bg-zinc-50 text-zinc-900 border-none shadow-none'}`}
         >
           <ChevronLeft className="w-6 h-6" />
         </Button>
-        <h1 className={`font-black tracking-widest text-[10px] ${isScanning ? 'text-white/70' : 'text-zinc-500'}`}>{t('scannerTitle')}</h1>
         <div className="w-10" />
       </div>
 
@@ -264,13 +263,13 @@ export default function ScanPage() {
       )}
 
       <Dialog open={showUnknownQr} onOpenChange={setShowUnknownQr}>
-        <DialogContent className="sm:max-w-md rounded-[1.75rem] p-6 border-none shadow-2xl bg-white outline-none">
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 border-none shadow-2xl bg-white outline-none">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
           <DialogHeader className="space-y-3 text-center">
             <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-1">
               <QrCode className="w-7 h-7 text-red-500" />
             </div>
-            <DialogTitle className="text-lg font-black tracking-tight text-zinc-900 leading-snug">
+            <DialogTitle className="text-lg font-bold tracking-tight text-zinc-900 leading-snug">
               {t('unknownQrTitle')}
             </DialogTitle>
             <DialogDescription className="text-zinc-600 font-bold text-sm leading-relaxed">
@@ -288,7 +287,7 @@ export default function ScanPage() {
                   setError(err instanceof Error ? err.message : "error");
                 }
               }}
-              className="w-full h-14 rounded-2xl bg-emerald-500 text-white font-black tracking-widest text-xs hover:bg-emerald-600 transition-all"
+              className="w-full h-14 rounded-2xl bg-emerald-500 text-white font-bold tracking-widest text-xs hover:bg-emerald-600 transition-all"
             >
               {t('confirm') || 'OK'}
             </Button>

@@ -8,7 +8,6 @@
 import { useState, useRef, Suspense, useEffect, useMemo } from "react";
 import { CATEGORIES, type Item } from "@/lib/services/item-service";
 import { ItemFeedCard } from "@/components/item-feed-card";
-import { CATEGORY_ICONS } from "@/lib/category-icons";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,7 +18,6 @@ import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
 import {
   X,
-  Package,
   CalendarDays,
   Car,
   Plane,
@@ -35,11 +33,11 @@ import { Button } from "@/components/ui/button";
 // корбарон аст, аз рӯи посух ба саволи wizard-и items/add. "all" маънии
 // location_type-и нест дорад — тугмаи тоза кардани ин филтр, на филтри воқеӣ.
 const QUICK_ACTIONS = [
-  { value: "all", icon: LayoutGrid, tint: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300" },
-  { value: "taxi", icon: Car, tint: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" },
-  { value: "hotel_restaurant", icon: Hotel, tint: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400" },
-  { value: "airport", icon: Plane, tint: "bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400" },
-  { value: "public_place", icon: Landmark, tint: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400" },
+  { value: "all", icon: LayoutGrid },
+  { value: "taxi", icon: Car },
+  { value: "hotel_restaurant", icon: Hotel },
+  { value: "airport", icon: Plane },
+  { value: "public_place", icon: Landmark },
 ] as const;
 
 function HomeContent({ initialItems }: { initialItems?: Item[] }) {
@@ -195,9 +193,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const showTopSections = !visualSearchResults && !searchQuery;
 
   return (
-    <div className="pb-18 min-h-screen bg-white dark:bg-zinc-950">
+    <div className="pb-18 min-h-screen bg-canvas">
       {/* Қисмати Филтрҳо (Header/Filters) */}
-      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-white dark:bg-zinc-950">
+      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-canvas">
         <div className="w-full pl-3 sm:pl-4">
           <div className="w-full py-1.5">
           <div
@@ -211,7 +209,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   variant="outline"
                   size="sm"
                   onClick={() => setVisualSearchResults(null)}
-                  className="rounded-full h-8 text-[10px] font-black tracking-widest border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:border-emerald-900 dark:text-emerald-400"
+                  className="rounded-full h-8 text-[10px] font-bold tracking-widest border-none bg-white text-emerald-700 dark:bg-zinc-900 dark:text-emerald-400"
                 >
                   <X className="h-3.5 w-3.5 mr-2" />
                   {t("clearResults")}
@@ -221,29 +219,27 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   <button
                     onClick={() => setCategory("All")}
                     className={cn(
-                      "shrink-0 px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer whitespace-nowrap border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                      "shrink-0 px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer whitespace-nowrap",
                       category === "All"
-                        ? "bg-emerald-500 border-emerald-500 text-white"
-                        : "bg-white dark:bg-zinc-900 border-transparent text-zinc-700 dark:text-zinc-300 hover:border-zinc-200 dark:hover:border-zinc-700",
+                        ? "bg-emerald-500 text-white"
+                        : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
                     )}
                   >
                     {t("all")}
                   </button>
                   {CATEGORIES.map((cat) => {
                     const active = category === cat.name;
-                    const Icon = CATEGORY_ICONS[cat.name] ?? Package;
                     return (
                       <button
                         key={cat.id}
                         onClick={() => setCategory(cat.name)}
                         className={cn(
-                          "shrink-0 px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center gap-1.5 cursor-pointer whitespace-nowrap border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                          "shrink-0 px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
                           active
-                            ? "bg-emerald-500 border-emerald-500 text-white"
-                            : "bg-white dark:bg-zinc-900 border-transparent text-zinc-700 dark:text-zinc-300 hover:border-zinc-200 dark:hover:border-zinc-700",
+                            ? "bg-emerald-500 text-white"
+                            : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
                         )}
                       >
-                        <Icon className={cn("w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5 min-[1920px]:w-[21px] min-[1920px]:h-[21px]", active ? "text-white" : "text-emerald-500")} />
                         {t(`categories.${cat.id}`)}
                       </button>
                     );
@@ -254,14 +250,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
           {/* Интихоби навъ: Гумшуда ё Ёфтшуда — қатори алоҳида, бе swipe (адади ками tugma) */}
           {!visualSearchResults && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-3">
+            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                 <button
                   onClick={() => setItemType(null)}
                   className={cn(
-                    "px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                    "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
                     itemType === null
-                      ? "bg-emerald-500 border-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-900 border-transparent text-zinc-700 dark:text-zinc-300 hover:border-zinc-200 dark:hover:border-zinc-700",
+                      ? "bg-emerald-500 text-white"
+                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
                   )}
                 >
                   {t("all")}
@@ -269,10 +265,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 <button
                   onClick={() => setItemType("lost")}
                   className={cn(
-                    "px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                    "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
                     itemType === "lost"
-                      ? "bg-red-600 border-red-600 text-white"
-                      : "bg-white dark:bg-zinc-900 border-transparent text-red-600 dark:text-red-500",
+                      ? "bg-emerald-500 text-white"
+                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
                   )}
                 >
                   {t("filterLost")}
@@ -280,10 +276,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 <button
                   onClick={() => setItemType("found")}
                   className={cn(
-                    "px-3.5 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-8 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer border shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                    "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
                     itemType === "found"
-                      ? "bg-emerald-500 border-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-900 border-emerald-100 dark:border-emerald-950/50 text-emerald-700 dark:text-emerald-500 hover:border-emerald-200",
+                      ? "bg-emerald-500 text-white"
+                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
                   )}
                 >
                   {t("filterFound")}
@@ -296,13 +292,13 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={openDatePicker}
                     aria-label={t("filterByDate")}
                     className={cn(
-                      "h-8 w-8 min-[768px]:h-9 min-[768px]:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-full border cursor-pointer shadow-[0_2px_8px_rgba(5,150,105,0.22),0_1px_2px_rgba(5,150,105,0.12)]",
+                      "h-7 w-7 min-[768px]:h-9 min-[768px]:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-full cursor-pointer",
                       dateFrom || dateTo
-                        ? "bg-emerald-500 text-white border-emerald-500"
-                        : "bg-emerald-50 dark:bg-zinc-900 border-emerald-100 dark:border-emerald-900/50 text-emerald-500 dark:text-emerald-400 hover:border-emerald-200 dark:hover:border-emerald-800",
+                        ? "bg-emerald-500 text-white"
+                        : "bg-white dark:bg-zinc-900 text-emerald-500 dark:text-emerald-400",
                     )}
                   >
-                    <CalendarDays className="w-[18px] h-[18px] min-[768px]:w-5 min-[768px]:h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
+                    <CalendarDays className="w-4 h-4 min-[768px]:w-5 min-[768px]:h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
                   </button>
 
                   {showDatePicker && (
@@ -358,9 +354,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               (филтрҳо + quick actions) ҳангоми scroll асло аз ҷояш начунбад —
               танҳо рӯйхати элонҳо аз таги он мегузарад. */}
           {showTopSections && (
-            <div className="mt-2 mb-3">
+            <div className="mt-1.5 mb-2">
             <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5">
-              {QUICK_ACTIONS.map(({ value, icon: Icon, tint }) => {
+              {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
                 const active = value === "all" ? locationType === null : locationType === value;
                 return (
                   <button
@@ -369,16 +365,16 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       value === "all" ? setLocationType(null) : toggleLocationType(value)
                     }
                     className={cn(
-                      "shrink-0 snap-start w-40 min-[1503px]:w-44 min-[1920px]:w-[188px] flex items-center justify-between gap-1.5 pl-3 pr-3 py-3 min-[1503px]:py-3.5 min-[1920px]:py-[15px] rounded-2xl border text-left cursor-pointer shadow-[0_5px_20px_rgba(5,150,105,0.24),0_1px_3px_rgba(5,150,105,0.13)]",
+                      "shrink-0 snap-start w-40 min-[1503px]:w-44 min-[1920px]:w-[188px] flex items-center justify-between gap-1.5 pl-3 pr-3 py-3 min-[1503px]:py-3.5 min-[1920px]:py-[15px] rounded-2xl text-left cursor-pointer",
                       active
-                        ? "bg-emerald-500 border-emerald-500"
-                        : cn(tint, "border-transparent"),
+                        ? "bg-emerald-500"
+                        : "bg-white dark:bg-zinc-900",
                     )}
                   >
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <span
                         className={cn(
-                          "font-extrabold text-[13px] min-[1503px]:text-sm min-[1920px]:text-[15px] leading-tight tracking-wide truncate",
+                          "font-bold text-[13px] min-[1503px]:text-sm min-[1920px]:text-[15px] leading-tight tracking-wide truncate",
                           active
                             ? "text-white"
                             : "text-zinc-900 dark:text-zinc-100",
@@ -400,7 +396,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     <Icon
                       className={cn(
                         "w-9 h-9 min-[1503px]:w-10 min-[1503px]:h-10 min-[1920px]:w-[42px] min-[1920px]:h-[42px] shrink-0",
-                        active && "text-white",
+                        active ? "text-white" : "text-emerald-500 dark:text-emerald-400",
                       )}
                     />
                   </button>
@@ -415,10 +411,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
       <div
         className={cn(
-          "w-full px-3 sm:px-4 touch-pan-y",
+          "w-full px-3 sm:px-4 min-[1084px]:px-5 touch-pan-y",
           visualSearchResults
             ? "pt-[64px] min-[768px]:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
-            : "pt-[181px] min-[768px]:pt-[189px] min-[1084px]:pt-[197px] min-[1503px]:pt-[205px] min-[1920px]:pt-[213px]",
+            : "pt-[161px] min-[768px]:pt-[177px] min-[1084px]:pt-[185px] min-[1503px]:pt-[193px] min-[1920px]:pt-[201px]",
         )}
       >
         {isLoading &&
@@ -427,14 +423,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         category === "All" &&
         itemType === null &&
         !isSearchTyping ? (
-          <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-3 sm:gap-4 min-[1084px]:gap-5">
             {[...Array(8)].map((_, i) => (
               <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
             ))}
           </div>
         ) : displayedItems.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-3 sm:gap-4 min-[1084px]:gap-5">
               {displayedItems.map((item) => (
                 <ItemFeedCard key={item.id} item={item} />
               ))}
@@ -456,7 +452,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           </>
         ) : (
           <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
-            <h2 className="text-xl font-black tracking-tight flex items-center justify-center gap-1">
+            <h2 className="text-xl font-bold tracking-tight flex items-center justify-center gap-1">
               {isLoading || isFetching || isSearchTyping ? (
                 <>
                   {t("search")}
@@ -484,8 +480,8 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
 function HomeSkeleton() {
   return (
-    <div className="w-full px-3 sm:px-4 pt-[181px] min-[768px]:pt-[189px] min-[1084px]:pt-[197px] min-[1503px]:pt-[205px] min-[1920px]:pt-[213px]">
-      <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-2 sm:gap-3">
+    <div className="w-full px-3 sm:px-4 min-[1084px]:px-5 pt-[161px] min-[768px]:pt-[177px] min-[1084px]:pt-[185px] min-[1503px]:pt-[193px] min-[1920px]:pt-[201px]">
+      <div className="grid grid-cols-2 min-[855px]:grid-cols-3 min-[1084px]:grid-cols-4 min-[1503px]:grid-cols-5 min-[1920px]:grid-cols-6 gap-3 sm:gap-4 min-[1084px]:gap-5">
         {[...Array(8)].map((_, i) => (
           <Skeleton key={i} className="h-48 sm:h-56 w-full rounded-2xl" />
         ))}

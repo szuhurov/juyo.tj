@@ -51,7 +51,7 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-black text-zinc-900 tracking-tight">{name}</h1>
+              <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{name}</h1>
               <StatusPill status="deleted" />
             </div>
             <p className="text-xs font-medium text-zinc-400 mt-0.5">

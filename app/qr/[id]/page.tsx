@@ -98,7 +98,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-white dark:bg-zinc-950">
         <div className="max-w-md min-[1084px]:max-w-lg space-y-8">
-          <h1 className="text-xl min-[1084px]:text-2xl min-[1920px]:text-[1.75rem] font-black tracking-[0.1em] text-emerald-600 dark:text-emerald-400 leading-tight">
+          <h1 className="text-xl min-[1084px]:text-2xl min-[1920px]:text-[1.75rem] font-bold tracking-[0.1em] text-emerald-600 dark:text-emerald-400 leading-tight">
             {t("qrProfileInactive").replace(
               "%{name}",
               `${profile.first_name} ${profile.last_name}`,
@@ -106,7 +106,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
           </h1>
           <Button
             asChild
-            className="rounded-2xl font-black tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-base h-14 min-[1084px]:h-[60px] min-[1920px]:h-16 px-10 min-[1084px]:px-11 min-[1920px]:px-12 bg-emerald-500 text-white shadow-xl hover:bg-emerald-600 transition-all"
+            className="rounded-2xl font-bold tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-base h-14 min-[1084px]:h-[60px] min-[1920px]:h-16 px-10 min-[1084px]:px-11 min-[1920px]:px-12 bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
           >
             <Link href="/">{t("home")}</Link>
           </Button>
@@ -120,7 +120,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
       {/* Селектори забон - Дизайни аслӣ */}
       <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center px-4 sm:px-8">
-        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 shadow-xl border border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 border border-zinc-200 dark:border-zinc-800">
           {[
             { id: "tg", label: "Тоҷикӣ" },
             { id: "ru", label: "Русский" },
@@ -130,9 +130,9 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
               key={lang.id}
               href={`/qr/${id}?lang=${lang.id}`}
               className={cn(
-                "px-4 min-[1084px]:px-5 min-[1920px]:px-6 py-2 min-[1084px]:py-2.5 rounded-full text-sm min-[1084px]:text-base min-[1920px]:text-lg font-black tracking-wider transition-all duration-300",
+                "px-4 min-[1084px]:px-5 min-[1920px]:px-6 py-2 min-[1084px]:py-2.5 rounded-full text-sm min-[1084px]:text-base min-[1920px]:text-lg font-bold tracking-wider transition-all duration-300",
                 locale === lang.id
-                  ? "bg-emerald-500 text-white shadow-lg scale-105"
+                  ? "bg-emerald-500 text-white scale-105"
                   : "bg-transparent text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
               )}
             >
@@ -155,17 +155,17 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
                   alt="Avatar"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-zinc-300">
+                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-zinc-300">
                   {profile.first_name?.charAt(0)}
                 </div>
               )}
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-emerald-700 text-white p-2 rounded-2xl shadow-lg border-4 border-white dark:border-zinc-900">
+            <div className="absolute -bottom-2 -right-2 bg-emerald-700 text-white p-2 rounded-2xl border-4 border-white dark:border-zinc-900">
               <ShieldCheck className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7" />
             </div>
           </div>
 
-          <h1 className="text-3xl min-[1084px]:text-4xl min-[1920px]:text-[2.5rem] font-black tracking-tighter mb-2 dark:text-white flex items-center justify-center gap-2">
+          <h1 className="text-3xl min-[1084px]:text-4xl min-[1920px]:text-[2.5rem] font-bold tracking-tighter mb-2 dark:text-white flex items-center justify-center gap-2">
             {profile.first_name} {profile.last_name}
             {profile.is_verified && <VerifiedBadge className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8" />}
           </h1>
@@ -180,7 +180,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
             {profile.phone ? (
               <Button
                 size="lg"
-                className="w-full max-w-xs min-[1084px]:max-w-sm h-16 min-[1084px]:h-[70px] min-[1920px]:h-[76px] px-10 min-[1084px]:px-11 min-[1920px]:px-12 rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 font-black tracking-widest text-base min-[1084px]:text-lg min-[1920px]:text-xl gap-3 shadow-xl transition-all"
+                className="w-full max-w-xs min-[1084px]:max-w-sm h-16 min-[1084px]:h-[70px] min-[1920px]:h-[76px] px-10 min-[1084px]:px-11 min-[1920px]:px-12 rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 font-bold tracking-widest text-base min-[1084px]:text-lg min-[1920px]:text-xl gap-3 transition-all"
                 asChild
               >
                 <a href={`tel:${profile.phone}`}>
@@ -198,7 +198,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full max-w-xs min-[1084px]:max-w-sm h-14 min-[1084px]:h-[60px] min-[1920px]:h-16 px-10 min-[1084px]:px-11 min-[1920px]:px-12 rounded-2xl border-2 border-zinc-900 dark:border-zinc-100 font-black tracking-widest text-sm min-[1084px]:text-base min-[1920px]:text-lg gap-3 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
+                className="w-full max-w-xs min-[1084px]:max-w-sm h-14 min-[1084px]:h-[60px] min-[1920px]:h-16 px-10 min-[1084px]:px-11 min-[1920px]:px-12 rounded-2xl border-2 border-zinc-900 dark:border-zinc-100 font-bold tracking-widest text-sm min-[1084px]:text-base min-[1920px]:text-lg gap-3 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
                 asChild
               >
                 <a href={`tel:${profile.secondary_phone}`}>

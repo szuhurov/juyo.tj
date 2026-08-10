@@ -80,7 +80,7 @@ export default async function MainLayout({
 
   return (
     <HomeProvider>
-    <div className="flex flex-col min-h-screen bg-white dark:bg-zinc-950">
+    <div className="flex flex-col min-h-screen bg-canvas">
       {/* Ҳедери сайт (Шапка) - Persistent UI */}
       <Header isAdmin={isAdmin} />
 

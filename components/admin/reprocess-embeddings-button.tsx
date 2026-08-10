@@ -36,7 +36,7 @@ export function ReprocessEmbeddingsButton() {
           <ImageOff className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-black text-zinc-900">Коркарди embedding-ҳо</h3>
+          <h3 className="text-sm font-bold text-zinc-900">Коркарди embedding-ҳо</h3>
           <p className="text-[11px] font-bold text-zinc-400 truncate">
             {missingCount > 0
               ? `${missingCount} ашё бе embedding — дар ҷустуҷӯи аксӣ пайдо намешаванд`
@@ -48,7 +48,7 @@ export function ReprocessEmbeddingsButton() {
         type="button"
         onClick={handleReprocess}
         disabled={isPending || missingCount === 0}
-        className="shrink-0 h-9 px-4 rounded-xl bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+        className="shrink-0 h-9 px-4 rounded-xl bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
         Пур кардан

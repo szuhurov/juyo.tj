@@ -164,7 +164,7 @@ function PostAsUserContent() {
 
       {/* Интихоби корбар */}
       <div className="space-y-2">
-        <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">
+        <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">
           КОРБАР
         </Label>
         {loadingPreset ? (
@@ -217,19 +217,19 @@ function PostAsUserContent() {
 
       {/* Унвон */}
       <div className="space-y-1.5">
-        <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">УНВОН</Label>
+        <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">УНВОН</Label>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-xl h-11 min-[1084px]:h-12" />
       </div>
 
       {/* Тавсиф */}
       <div className="space-y-1.5">
-        <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">ТАВСИФ</Label>
+        <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">ТАВСИФ</Label>
         <Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-xl min-h-24" />
       </div>
 
       {/* Категория */}
       <div className="space-y-2">
-        <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">КАТЕГОРИЯ</Label>
+        <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">КАТЕГОРИЯ</Label>
         <div className="grid grid-cols-4 gap-1.5">
           {CATEGORIES.map((cat) => (
             <button
@@ -256,7 +256,7 @@ function PostAsUserContent() {
             type="button"
             onClick={() => setType(tp)}
             className={cn(
-              "flex-1 h-11 min-[1084px]:h-12 rounded-xl border-2 font-black text-xs min-[1084px]:text-sm",
+              "flex-1 h-11 min-[1084px]:h-12 rounded-xl border-2 font-bold text-xs min-[1084px]:text-sm",
               type === tp ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-100 text-zinc-500",
             )}
           >
@@ -268,18 +268,18 @@ function PostAsUserContent() {
       {/* Телефон / мукофот */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">ТЕЛЕФОН</Label>
+          <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">ТЕЛЕФОН</Label>
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} className="rounded-xl h-11 min-[1084px]:h-12" />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">МУКОФОТ (агар бошад)</Label>
+          <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">МУКОФОТ (агар бошад)</Label>
           <Input value={reward} onChange={(e) => setReward(e.target.value)} className="rounded-xl h-11 min-[1084px]:h-12" />
         </div>
       </div>
 
       {/* Аксҳо */}
       <div className="space-y-2">
-        <Label className="text-[10px] font-black tracking-widest text-zinc-400 ml-1">АКСҲО</Label>
+        <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">АКСҲО</Label>
         <input type="file" accept="image/*" multiple onChange={handleFiles} className="text-xs" />
         {images.length > 0 && (
           <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-3">
@@ -297,7 +297,7 @@ function PostAsUserContent() {
         type="button"
         disabled={submitting}
         onClick={handleSubmit}
-        className="w-full h-12 min-[1084px]:h-[52px] rounded-xl font-black text-sm min-[1084px]:text-base bg-emerald-500 hover:bg-emerald-600 text-white"
+        className="w-full h-12 min-[1084px]:h-[52px] rounded-xl font-bold text-sm min-[1084px]:text-base bg-emerald-500 hover:bg-emerald-600 text-white"
       >
         {submitting ? <Loader2 className="w-4 h-4 min-[1084px]:w-5 min-[1084px]:h-5 animate-spin" /> : "Сабт кардан"}
       </Button>

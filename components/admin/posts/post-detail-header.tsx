@@ -88,7 +88,7 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
       </div>
 
       <div>
-        <h1 className="text-lg font-black text-zinc-900 tracking-tight">{item.title}</h1>
+        <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{item.title}</h1>
         <p className="text-sm font-medium text-zinc-500 mt-1">{item.description}</p>
       </div>
 

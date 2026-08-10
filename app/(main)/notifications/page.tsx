@@ -108,7 +108,7 @@ function NotificationRow({
           !isDragging && "transition-[transform,opacity] duration-200",
           selected && "ring-2 ring-emerald-500",
           unread
-            ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/50"
+            ? "bg-white dark:bg-zinc-900 border-emerald-200 dark:border-emerald-900/50"
             : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800",
         )}
       >
@@ -131,10 +131,10 @@ function NotificationRow({
             {item.itemType && (
               <span
                 className={cn(
-                  "shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-black",
+                  "shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700",
                   item.itemType === "lost"
-                    ? "bg-red-600 text-white"
-                    : "bg-emerald-700 text-white",
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-emerald-600 dark:text-emerald-400",
                 )}
               >
                 {item.itemType === "lost" ? t("lost") : t("found")}
@@ -169,7 +169,7 @@ function NotificationRow({
           <div className="flex items-center gap-2">
             <Link
               href={`/items/${item.itemId}`}
-              className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-xl bg-emerald-500 text-white font-black text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
+              className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-xl bg-emerald-500 text-white font-bold text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
             >
               {item.itemTitle}
               <ArrowRight className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
@@ -226,9 +226,9 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
-      <div className="sticky top-12 sm:top-16 z-30 bg-white dark:bg-zinc-950 py-3 mb-4 flex items-center gap-1 border-b border-zinc-100 dark:border-zinc-800">
-        <Bell className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-emerald-600 dark:text-emerald-400 shrink-0" />
-        <h1 className="flex-1 text-base min-[1084px]:text-lg min-[1920px]:text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400 ml-1">
+      <div className="sticky top-12 sm:top-16 z-30 bg-canvas py-3 mb-4 flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800">
+        <Bell className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-zinc-500 dark:text-zinc-400 shrink-0" />
+        <h1 className="flex-1 text-base min-[1084px]:text-lg min-[1920px]:text-xl font-bold tracking-tight text-zinc-500 dark:text-zinc-400 ml-1">
           {t("notifPageTitle")}
         </h1>
         {items.length > 0 && !selectMode && (
@@ -274,9 +274,9 @@ export default function NotificationsPage() {
       </div>
 
       {status !== "unsupported" && (
-        <div className="flex items-center gap-3 rounded-2xl p-4 mb-5 bg-emerald-50 dark:bg-emerald-950/20">
-          <BellRing className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-emerald-600 shrink-0" />
-          <span className="flex-1 text-sm min-[1084px]:text-base min-[1920px]:text-[17px] font-bold text-emerald-700 dark:text-emerald-400">
+        <div className="flex items-center gap-3 rounded-2xl p-4 mb-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
+          <BellRing className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-zinc-500 dark:text-zinc-400 shrink-0" />
+          <span className="flex-1 text-sm min-[1084px]:text-base min-[1920px]:text-[17px] font-bold text-zinc-500 dark:text-zinc-400">
             {t("verifyEnablePush")}
           </span>
           <Switch

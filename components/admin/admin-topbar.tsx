@@ -60,7 +60,7 @@ export function AdminTopbar() {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 p-0 flex flex-col">
           <SheetHeader className="h-16 flex-row items-center px-6 border-b border-zinc-100 space-y-0">
-            <SheetTitle className="text-sm font-black tracking-tight text-blue-600">Administration</SheetTitle>
+            <SheetTitle className="text-sm font-bold tracking-tight text-blue-600">Administration</SheetTitle>
           </SheetHeader>
           <AdminNavLinks onNavigate={() => setMobileOpen(false)} />
         </SheetContent>

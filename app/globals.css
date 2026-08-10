@@ -4,7 +4,14 @@
    scrollbar нест) — бе ин, пайдо/нопадид шудани scrollbar (~15-17px)
    васеъгии CSS-и саҳифаро тағйир медиҳад ва breakpoint-ҳои дақиқи grid-ро
    (масалан min-[2023px]) ноустувор мекунад. */
-html { scrollbar-gutter: stable; }
+html {
+  scrollbar-gutter: stable;
+  /* Chrome-и Android баъзан матн/андозаро худкор "boost" мекунад (барои
+     хониш осонтар) — ҳамин боис буд, ки ҳамон CSS дар Android калонтар аз
+     iPhone (Safari, ки чунин "boost" надорад) ба назар мерасид. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 * { -webkit-tap-highlight-color: transparent; }
 .no-flicker { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
@@ -23,6 +30,7 @@ html { scrollbar-gutter: stable; }
   /* Пеш аз ин ба Inter ишора мекард. Nunito-и воқеан боршуда
      (app/layout.tsx, next/font/google) инҷо мустақим васл шуд, то
      font-sans (body-и layout) ниҳоят Nunito-ро истифода барад. */
+  --color-canvas: var(--canvas);
   --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
   --color-card: var(--card);
@@ -58,8 +66,9 @@ html { scrollbar-gutter: stable; }
   --radius-control: 0.875rem; /* 14px — тугма, input, pill-набуда */
   --radius-card: 1.25rem; /* 20px — card, sheet/dialog content */
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
-  --shadow-2: 0 1px 2px rgba(5, 150, 105, 0.09), 0 9px 20px rgba(5, 150, 105, 0.16),
-    0 18px 36px -14px rgba(5, 150, 105, 0.21); /* тобиши сабз (emerald-600) */
+  /* Соя-и корт: бетараф (slate), на тобиши сабз — тобиши рангаи пешина
+     дар заминаи хокистарии нав (bg-slate-100) "ифлос" ба назар мерасид. */
+  --shadow-2: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
   --shadow-3: 0 8px 30px rgba(0, 0, 0, 0.18); /* floating — modal/sheet/FAB */
   --ease-spring: cubic-bezier(0.32, 0.72, 0, 1); /* хамон curve-и sheet-и iOS */
 
@@ -117,9 +126,16 @@ html { scrollbar-gutter: stable; }
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.625rem;
+
+  /* Заминаи асосии сайт (canvas). Аз сафед ба қадри кофӣ фарқ мекунад,
+     то корт/филтр/navbar-и СAФЕД бе соя ва бе border ҳам аниқ ҷудо шаванд
+     — маҳз ҳамин ягона воситаи ҷудокунӣ боқӣ мондааст. Дар ин ҷо танзим
+     кун, на дар компонентҳо: `bg-canvas` дар ҳама ҷо ба ҳамин ишора мекунад. */
+  --canvas: #f1f5f9;
 }
 
 .dark {
+  --canvas: #09090b; /* zinc-950 */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.145 0 0);
@@ -155,11 +171,12 @@ html { scrollbar-gutter: stable; }
     scroll-behavior: auto;
     -webkit-overflow-scrolling: touch;
     height: 100%;
-    /* Фикс барои Desktop PWA: заминаи сиёҳ дар берун аз ҳудуди сайт */
-    background: white;
+    /* Фикс барои Desktop PWA: заминаи сиёҳ дар берун аз ҳудуди сайт —
+       ҳамон canvas, то дар PWA берун аз ҳудуди мӯҳтаво ранг напарад. */
+    background: var(--canvas);
   }
   body {
-    @apply bg-white text-foreground antialiased;
+    @apply bg-canvas text-foreground antialiased;
     text-rendering: optimizeLegibility;
     min-height: 100%;
     display: flex;

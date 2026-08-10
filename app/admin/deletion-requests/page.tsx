@@ -23,7 +23,7 @@ export default function AdminDeletionRequestsPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <UserXIcon className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-rose-500" />
-        <h1 className="text-lg min-[1084px]:text-xl font-black text-zinc-900">Дархостҳои нест кардани ҳисоб</h1>
+        <h1 className="text-lg min-[1084px]:text-xl font-bold text-zinc-900">Дархостҳои нест кардани ҳисоб</h1>
       </div>
 
       <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm space-y-4">
@@ -77,7 +77,7 @@ export default function AdminDeletionRequestsPage() {
                       variant="outline"
                       disabled={updateRequest.isPending}
                       onClick={() => updateRequest.mutate({ id: r.id, status: "rejected" })}
-                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-bold text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5"
                     >
                       <XIcon className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Радд
@@ -90,7 +90,7 @@ export default function AdminDeletionRequestsPage() {
                           updateRequest.mutate({ id: r.id, status: "processed" });
                         }
                       }}
-                      className="h-9 min-[1084px]:h-10 rounded-lg font-black text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5 bg-emerald-500 hover:bg-emerald-600"
+                      className="h-9 min-[1084px]:h-10 rounded-lg font-bold text-[9px] min-[1084px]:text-[10px] tracking-widest gap-1.5 bg-emerald-500 hover:bg-emerald-600"
                     >
                       <CheckIcon className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4" />
                       Тасдиқ ва нест кардан

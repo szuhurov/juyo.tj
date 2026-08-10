@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ItemDetailsLoading() {
   return (
-    <div className="mx-auto max-w-6xl md:pt-8 md:px-4">
+    <div className="min-h-screen bg-white dark:bg-zinc-950 mx-auto max-w-6xl md:pt-8 md:px-4 -mb-20 pb-20 md:mb-0 md:pb-0">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12 items-start relative">
         <div className="sticky top-0 md:top-24 z-0 w-full p-0">
           <Skeleton className="aspect-square w-full rounded-none md:rounded-[32px]" />

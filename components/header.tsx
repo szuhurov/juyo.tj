@@ -230,7 +230,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
     <TooltipProvider>
       <header
         data-nosnippet
-        className="fixed top-0 left-0 right-0 z-50 w-full bg-white dark:bg-zinc-950"
+        className="fixed top-0 left-0 right-0 z-50 w-full bg-canvas"
       >
         <div className="w-full flex h-12 sm:h-16 items-center px-3 sm:px-4 gap-2 sm:gap-4">
           {/* Қисми чап: Логотип ва Паймоиш */}
@@ -248,7 +248,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 }
               }}
             >
-              <span className="hidden sm:inline text-2xl font-black tracking-[-0.1em] text-zinc-900 dark:text-zinc-100">
+              <span className="hidden sm:inline text-2xl font-bold tracking-[-0.1em] text-zinc-900 dark:text-zinc-100">
                 JUYO
               </span>
             </Link>
@@ -297,7 +297,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                       onClick={handleNavClick}
                       className={`gap-2 rounded-md font-bold text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
                         isActive
-                          ? "bg-white shadow-sm text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                          ? "bg-white text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                           : "text-zinc-500 hover:text-zinc-900 border-transparent focus:outline-none"
                       }`}
                     >
@@ -311,10 +311,10 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
           {/* Қисми миёна: Сатри ҷустуҷӯ (Марказонидашуда) */}
           <div className="flex-[2] sm:flex-[1.5] max-w-xl relative block">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 min-[1084px]:h-4 min-[1084px]:w-4 text-emerald-500" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 min-[1084px]:h-4 min-[1084px]:w-4 text-zinc-400" />
             <Input
               placeholder={t("search")}
-              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
+              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-xl bg-white dark:bg-zinc-900 border-none shadow-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
@@ -323,7 +323,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 <button
                   onClick={() => setSearchValue("")}
                   aria-label={t("clearFilter") || "Тоза кардан"}
-                  className="p-1.5 text-emerald-500 hover:text-emerald-700 transition-colors"
+                  className="p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -331,7 +331,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
               <button
                 onClick={() => setShowPhotoChoice(true)}
                 className={cn(
-                  "p-1.5 text-emerald-500 hover:text-emerald-700 transition-colors",
+                  "p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors",
                   !aiEnabled && "hidden",
                 )}
                 title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
@@ -352,7 +352,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    className="rounded-lg font-black text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-md h-10 px-4"
+                    className="rounded-lg font-bold text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4"
                     asChild
                   >
                     <Link href="/items/add">
@@ -363,7 +363,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border border-zinc-200 dark:border-zinc-800 rounded-md bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100"
+                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border-none rounded-md bg-white dark:bg-zinc-900 hover:bg-zinc-100"
                     asChild
                   >
                     <Link href="/sign-in">{t("login")}</Link>
@@ -382,7 +382,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
-                        className="rounded-lg font-black text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white shadow-md h-10 px-4"
+                        className="rounded-lg font-bold text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4"
                         asChild
                       >
                         <Link href="/items/add">
@@ -399,7 +399,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
-                        className="relative h-10 w-10 rounded-full border-2 border-primary/20 shadow-sm p-0"
+                        className="relative h-10 w-10 rounded-full border-2 border-primary/20 p-0"
                       >
                         <Avatar className="h-full w-full rounded-full">
                           <AvatarImage
@@ -427,7 +427,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col space-y-0.5 overflow-hidden">
-                          <p className="text-sm font-black truncate text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                          <p className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
                             <span className="truncate">{user?.fullName}</span>
                             {ownProfile?.is_verified && <VerifiedBadge />}
                           </p>
@@ -453,7 +453,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                         >
                           <Settings className="mr-3 h-4 w-4 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
                           <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                            {t("personalInfo")}
+                            {t("settings")}
                           </span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2" />
@@ -490,9 +490,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     variant="secondary"
                     size="sm"
                     aria-label={t("menu")}
-                    className="sm:hidden h-9 w-9 p-0 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
+                    className="sm:hidden h-9 w-9 p-0 rounded-md border-none shadow-none bg-white dark:bg-zinc-900"
                   >
-                    <Menu className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                    <Menu className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -501,9 +501,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 >
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=posts")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                       <LayoutGrid className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("myPosts")}
@@ -511,19 +511,19 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=info")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600">
-                      <User className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+                      <Settings className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
-                    {t("personalInfo")}
+                    {t("settings")}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=qr")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-600">
+                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                       <QrCode className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("qrMyCode")}
@@ -531,9 +531,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=saved")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600">
+                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                       <Bookmark className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("savedItems")}
@@ -541,9 +541,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=guide")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                       <Menu className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("aboutApp")}
@@ -552,9 +552,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                     >
-                      <div className="p-1.5 rounded-md bg-blue-50 dark:bg-blue-900/20 text-blue-600">
+                      <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                         <UserCog className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                       </div>
                       {t("adminPanel")}
@@ -563,9 +563,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => signOut(() => router.push("/"))}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-500"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-zinc-100 dark:bg-zinc-800">
+                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
                       <LogOut className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("signOut")}
@@ -598,40 +598,40 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
           />
 
           <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
-            <DialogContent className="max-w-[320px] rounded-[1.5rem] p-5 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
+            <DialogContent className="max-w-[320px] rounded-[1.5rem] p-5 pt-11 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
               <DialogHeader className="mb-2">
-                <DialogTitle className="text-lg font-black tracking-tight text-center text-emerald-600">
+                <DialogTitle className="text-lg font-bold tracking-tight text-center text-emerald-600">
                   {t("choose_photo_method")}
                 </DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
-                  className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-blue-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                   onClick={() => {
                     setShowPhotoChoice(false);
                     setShowCameraCapture(true);
                   }}
                 >
-                  <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all shadow-sm">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all">
                     <Camera className="w-5 h-5" />
                   </div>
-                  <span className="text-[9px] font-black tracking-widest text-blue-700">
+                  <span className="text-[11px] font-bold tracking-wide text-zinc-500">
                     {t("camera")}
                   </span>
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex flex-col gap-2 h-24 rounded-[1.2rem] border-none bg-orange-50/30 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                   onClick={() => {
                     setShowPhotoChoice(false);
                     galleryInputRef.current?.click();
                   }}
                 >
-                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all shadow-sm">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all">
                     <ImageIcon className="w-5 h-5" />
                   </div>
-                  <span className="text-[9px] font-black tracking-widest text-orange-700">
+                  <span className="text-[11px] font-bold tracking-wide text-zinc-500">
                     {t("gallery")}
                   </span>
                 </Button>

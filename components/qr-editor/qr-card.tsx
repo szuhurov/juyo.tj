@@ -174,7 +174,7 @@ export const QRCard: React.FC<QRCardProps> = ({
         {text && (
           <div className="relative z-10 text-center px-1 mt-1 max-w-[210px]">
             <p
-              className="font-black tracking-widest text-[11px] break-words leading-tight"
+              className="font-bold tracking-widest text-[11px] break-words leading-tight"
               style={{ color: qrColor }}
             >
               {text}

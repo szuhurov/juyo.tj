@@ -31,7 +31,7 @@ export function UserEditForm({ profile }: { profile: AdminUserDetail["profile"] 
 
   return (
     <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
-      <h3 className="text-sm font-black text-zinc-900">Маълумоти профил</h3>
+      <h3 className="text-sm font-bold text-zinc-900">Маълумоти профил</h3>
 
       <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-100 p-3 text-[11px] font-medium text-amber-700">
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />

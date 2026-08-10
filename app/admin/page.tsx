@@ -61,7 +61,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-black text-zinc-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">
             Салом, {firstName}! 👋
           </h1>
           <p className="text-sm font-medium text-zinc-400 mt-1">
@@ -103,7 +103,7 @@ export default function AdminDashboardPage() {
 
       <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-black text-zinc-900">Афзоиши корбарон</h3>
+          <h3 className="text-sm font-bold text-zinc-900">Афзоиши корбарон</h3>
           <span className="text-[11px] font-bold text-zinc-400">{PERIOD_LABELS[period]}</span>
         </div>
         <DashboardLineChart data={stats.signupsByDay} granularity={stats.signupsGranularity} />
@@ -111,7 +111,7 @@ export default function AdminDashboardPage() {
 
       <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-black text-zinc-900">Эълонҳо аз рӯи категория</h3>
+          <h3 className="text-sm font-bold text-zinc-900">Эълонҳо аз рӯи категория</h3>
         </div>
         <DashboardCategoryChart data={stats.itemsByCategory} />
       </div>

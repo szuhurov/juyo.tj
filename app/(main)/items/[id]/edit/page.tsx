@@ -566,7 +566,7 @@ export default function EditItemPage({
             <div className="space-y-6">
               <div className="relative group w-full aspect-square max-w-[220px] sm:max-w-[280px] lg:max-w-[220px] mx-auto">
                 <div className="absolute -inset-4 bg-emerald-500/10 rounded-[3rem] blur-2xl opacity-50 animate-pulse"></div>
-                <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden border border-zinc-100 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
+                <div className="relative h-full w-full rounded-3xl overflow-hidden border border-zinc-100 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
                   <div className="relative h-full w-full">
                     {previews[activeImageIndex] && (
                       <>
@@ -598,7 +598,7 @@ export default function EditItemPage({
                     />
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] font-black text-white tracking-widest">
+                      <span className="text-[10px] font-bold text-white tracking-widest">
                         {elapsedSeconds}с / 60с
                       </span>
                     </div>
@@ -607,7 +607,7 @@ export default function EditItemPage({
               </div>
               <div className="h-6 flex items-center justify-center">
                 <p
-                  className="text-emerald-600 font-black text-xs tracking-[0.2em]"
+                  className="text-emerald-600 font-bold text-xs tracking-[0.2em]"
                   key={scanMessage}
                 >
                   {scanMessage}
@@ -622,7 +622,7 @@ export default function EditItemPage({
                 <ShieldAlert className="w-10 h-10 text-red-500" />
               </div>
               <div className="space-y-3">
-                <h2 className="text-xl font-black tracking-tight text-red-600">
+                <h2 className="text-xl font-bold tracking-tight text-red-600">
                   {t("ai_steps.step5_failed")}
                 </h2>
                 <div className="bg-red-50/50 p-6 rounded-2xl border border-red-100">
@@ -674,10 +674,10 @@ export default function EditItemPage({
   return (
     <TooltipProvider>
       <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card className="rounded-2xl overflow-hidden border shadow-xl">
+        <Card className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_-2px_rgba(15,23,42,0.08)] dark:shadow-none">
           {/* Сарлавҳаи форма */}
           <CardHeader className="bg-emerald-600 text-white p-6">
-            <CardTitle className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-black tracking-tight">
+            <CardTitle className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-bold tracking-tight">
               {t("editItemTitle")}
             </CardTitle>
           </CardHeader>
@@ -685,7 +685,7 @@ export default function EditItemPage({
             <form onSubmit={onSubmit} className="space-y-6">
               {/* Интихоби навъи эълон (Радио-кнопкаҳо) */}
               <div className="space-y-3">
-                <Label className="text-sm min-[1084px]:text-base font-black tracking-wider text-zinc-400">
+                <Label className="text-sm min-[1084px]:text-base font-bold tracking-wider text-zinc-400">
                   {t("what_happened")}
                 </Label>
                 <RadioGroup
@@ -715,7 +715,7 @@ export default function EditItemPage({
                     />
                     <Label
                       htmlFor="found"
-                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-emerald-50 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-white cursor-pointer transition-all"
                     >
                       <span className="text-2xl min-[1084px]:text-3xl mb-1">🎁</span>
                       <span className="font-bold text-sm min-[1084px]:text-base">{t("found")}</span>
@@ -942,7 +942,7 @@ export default function EditItemPage({
               <Button
                 type="submit"
                 size="lg"
-                className="w-full h-12 min-[1084px]:h-14 rounded-lg text-base min-[1084px]:text-lg font-black bg-emerald-500 hover:bg-emerald-600 mt-4 tracking-wider text-white"
+                className="w-full h-12 min-[1084px]:h-14 rounded-lg text-base min-[1084px]:text-lg font-bold bg-emerald-500 hover:bg-emerald-600 mt-4 tracking-wider text-white"
                 disabled={saving}
               >
                 {saving ? (
