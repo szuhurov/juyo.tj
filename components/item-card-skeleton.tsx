@@ -21,9 +21,11 @@ export function ItemCardSkeleton({
   return (
     <div
       className={cn(
-        "flex flex-col gap-0 bg-white dark:bg-zinc-900 overflow-hidden",
+        // САФЕД НЕ: корти сафеди холӣ дар заминаи canvas "шикаста" менамуд.
+        // Шакли корт аз СОЯ меояд, на аз пуркунии сафед.
+        "flex flex-col gap-0 bg-zinc-100 dark:bg-zinc-900 overflow-hidden",
         feed ? "rounded-[1.125rem]" : "rounded-3xl",
-        "shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none",
+        "shadow-[0_1px_3px_rgba(15,23,42,0.06),0_6px_14px_-4px_rgba(15,23,42,0.10),0_14px_28px_-14px_rgba(15,23,42,0.12)] dark:shadow-none",
       )}
     >
       {/* Акс — ҳамон aspect ва ҳамон мудаввари болоӣ */}

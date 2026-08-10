@@ -536,7 +536,7 @@ function AddItemForm() {
   };
 
   return (
-    <div className="container mx-auto px-0 sm:px-0 py-0 sm:py-0 max-w-none h-[calc(100dvh-144px)] sm:h-[calc(100dvh-64px)] flex flex-col">
+    <div className="container mx-auto px-0 sm:px-0 py-0 sm:py-0 max-w-none h-[calc(100dvh-128px)] sm:h-[calc(100dvh-64px)] flex flex-col">
       <Card className="flex-1 rounded-none overflow-hidden border-none shadow-none flex flex-col bg-canvas">
         {/* Step Indicator */}
         {/* Тартиби воқеии қадамҳо аз рӯи навигатсия 1→2→3→4→5 НЕСТ — қадами
@@ -688,9 +688,9 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="lost"
-                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3 min-[1084px]:p-3.5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-2.5 rounded-xl bg-white dark:bg-zinc-900 p-2.5 min-[1084px]:p-3 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-10 h-10 min-[1084px]:w-11 min-[1084px]:h-11 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-lg min-[1084px]:text-xl shrink-0">
+                    <div className="w-9 h-9 min-[1084px]:w-10 min-[1084px]:h-10 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-base min-[1084px]:text-lg shrink-0">
                       🔍
                     </div>
                     <div className="flex-1">
@@ -711,9 +711,9 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="found"
-                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3 min-[1084px]:p-3.5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-2.5 rounded-xl bg-white dark:bg-zinc-900 p-2.5 min-[1084px]:p-3 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-10 h-10 min-[1084px]:w-11 min-[1084px]:h-11 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-lg min-[1084px]:text-xl shrink-0">
+                    <div className="w-9 h-9 min-[1084px]:w-10 min-[1084px]:h-10 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-base min-[1084px]:text-lg shrink-0">
                       🎁
                     </div>
                     <div className="flex-1">
@@ -773,12 +773,12 @@ function AddItemForm() {
                   <div key={opt.value} className="relative">
                     <Label
                       htmlFor={`loc-${opt.value}`}
-                      className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-900 p-3 min-[1084px]:p-3.5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                      className="flex items-center gap-2.5 rounded-xl bg-white dark:bg-zinc-900 p-2.5 min-[1084px]:p-3 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                     >
-                      <div className="w-10 h-10 min-[1084px]:w-11 min-[1084px]:h-11 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-lg min-[1084px]:text-xl shrink-0">
+                      <div className="w-9 h-9 min-[1084px]:w-10 min-[1084px]:h-10 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-base min-[1084px]:text-lg shrink-0">
                         {opt.emoji}
                       </div>
-                      <span className="flex-1 font-bold text-sm min-[1084px]:text-base leading-snug">
+                      <span className="flex-1 font-bold text-[13px] min-[1084px]:text-sm leading-snug">
                         {opt.value === "none"
                           ? t("addItemLocationStep.notSpecified")
                           : t(`addItemLocationStep.${opt.value}`)}
@@ -1117,7 +1117,7 @@ function AddItemForm() {
         </CardContent>
 
         {/* Navigation Footer */}
-        <div className="p-4 sm:p-10 bg-canvas shrink-0">
+        <div className="px-4 pt-3 pb-0 sm:px-10 sm:pt-8 sm:pb-2 bg-canvas shrink-0">
           <div className="flex gap-3 sm:gap-4 items-center max-w-6xl mx-auto w-full">
             {step > 1 && step !== 3 && (
               <Button

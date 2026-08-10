@@ -6,9 +6,10 @@ function Skeleton({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      // bg-canvas = ҳамон заминаи асосии сайт. Пештар `bg-muted` буд, ки
-      // аз заминаи нав фарқ мекард ва skeleton-ҳо "ҷудо" ба назар мерасиданд.
-      className={cn("animate-pulse rounded-md bg-canvas dark:bg-zinc-800", className)}
+      // zinc-200 — на сафед ва на canvas: сафед дар заминаи canvas "холӣ"
+      // менамуд, canvas бошад аз замина фарқ намекард. Ин ранг ягона
+      // вариантест, ки дар ҳарду ҳолат намоён мемонад.
+      className={cn("animate-pulse rounded-md bg-zinc-200 dark:bg-zinc-800", className)}
       {...props}
     />
   )

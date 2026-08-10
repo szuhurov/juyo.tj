@@ -299,7 +299,7 @@ export default function NotificationsPage() {
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 flex items-center gap-3"
+              className="rounded-2xl bg-zinc-100 dark:bg-zinc-900 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_6px_14px_-4px_rgba(15,23,42,0.10)] dark:shadow-none p-4 flex items-center gap-3"
             >
               <Skeleton className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full shrink-0" />
               <div className="min-w-0 flex-1 space-y-2">
