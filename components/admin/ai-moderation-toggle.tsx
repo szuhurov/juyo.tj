@@ -25,18 +25,18 @@ export function AiModerationToggle() {
   if (isLoading) return null;
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm flex items-center justify-between gap-4">
+    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3 min-w-0">
         <div
           className={cn(
             "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
-            enabled ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600",
+            enabled ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
           )}
         >
           {enabled ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-zinc-900">AI Moderation</h3>
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">AI Moderation</h3>
           <p className="text-[11px] font-bold text-zinc-400 truncate">
             {enabled
               ? "Эълонҳои нав худкор бо AI санҷида ва тасдиқ мешаванд"
@@ -55,7 +55,7 @@ export function AiModerationToggle() {
       >
         <span
           className={cn(
-            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+            "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-zinc-800 shadow ring-0 transition duration-200 ease-in-out",
             enabled ? "translate-x-5" : "translate-x-0",
           )}
         />

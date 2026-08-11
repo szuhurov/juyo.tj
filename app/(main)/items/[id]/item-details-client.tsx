@@ -380,6 +380,8 @@ export default function ItemDetailsClient({
                         фазои холии canorho (агар нисбати акс мувофиқ
                         набошад) бо контексти рангии худи акс пур шавад,
                         на бо ранги ҳамвор (мисли Instagram Stories). */}
+                    {/* Қабати таг — то ҳангоми боршавии акс слайд холӣ намонад. */}
+                    <ImagePlaceholder />
                     <Image
                       src={img.image_url}
                       alt=""

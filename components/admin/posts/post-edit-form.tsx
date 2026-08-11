@@ -34,8 +34,8 @@ export function PostEditForm({ item }: { item: AdminPostDetail["item"] }) {
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
-      <h3 className="text-sm font-bold text-zinc-900">Таҳрир кардан</h3>
+    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 space-y-4">
+      <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Таҳрир кардан</h3>
 
       <div className="space-y-1.5">
         <Label>Сарлавҳа</Label>
@@ -98,7 +98,7 @@ export function PostEditForm({ item }: { item: AdminPostDetail["item"] }) {
           checked={form.is_resolved}
           onCheckedChange={(checked) => setForm({ ...form, is_resolved: checked === true })}
         />
-        <span className="text-sm font-bold text-zinc-700">Ҳалшуда ҳисоб карда шавад</span>
+        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">Ҳалшуда ҳисоб карда шавад</span>
       </label>
 
       <Button onClick={handleSave} disabled={isPending} className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">

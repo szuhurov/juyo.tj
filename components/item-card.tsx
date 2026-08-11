@@ -142,7 +142,10 @@ export function ItemCard({
         className="flex flex-col gap-0 rounded-3xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
       >
         <div className="relative aspect-[4/3] -mb-px rounded-t-3xl bg-zinc-100 dark:bg-zinc-700">
-          {thumb && !imgFailed ? (
+          {/* Placeholder ҲАМЕША дар таг — ниг. ItemFeedCard: бе ин дар
+              лаҳзаи боршавии акс ҷои он холӣ мемонад. */}
+          <ImagePlaceholder className="rounded-t-3xl" />
+          {thumb && !imgFailed && (
             <Image
               src={thumb}
               alt={item.title}
@@ -155,8 +158,6 @@ export function ItemCard({
               )}
               onError={() => setImgFailed(true)}
             />
-          ) : (
-            <ImagePlaceholder className="rounded-t-3xl" />
           )}
 
           <span

@@ -22,7 +22,7 @@ export default function DeletedPostDetailPage({ params }: { params: Promise<{ id
   }
 
   if (error) {
-    return <p className="text-sm font-bold text-red-600">Сабт ёфт нашуд</p>;
+    return <p className="text-sm font-bold text-red-600 dark:text-red-400">Сабт ёфт нашуд</p>;
   }
 
   const s = data.entry.item_snapshot;
@@ -30,21 +30,21 @@ export default function DeletedPostDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <StatusPill status={s.type} />
             <StatusPill status={s.moderation_status} />
             {s.is_resolved && <StatusPill status="resolved" />}
           </div>
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold">
             <Archive className="w-4 h-4" />
             Пурра нест шуд: {format(new Date(data.entry.deleted_at), "d MMM yyyy, HH:mm")}
           </div>
         </div>
 
         <div>
-          <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{s.title}</h1>
+          <h1 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">{s.title}</h1>
         </div>
 
         {s.images?.length > 0 && (
@@ -52,7 +52,7 @@ export default function DeletedPostDetailPage({ params }: { params: Promise<{ id
             {s.images.map((img) => (
               <div
                 key={img.image_url}
-                className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0"
+                className="relative w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0"
               >
                 <Image src={img.image_url} alt={s.title} fill sizes="96px" className="object-cover" />
               </div>
@@ -60,7 +60,7 @@ export default function DeletedPostDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-bold text-zinc-500 pt-2 border-t border-zinc-100">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 pt-2 border-t border-zinc-100 dark:border-zinc-800">
           <span className="flex items-center gap-1.5">
             <Package className="w-3.5 h-3.5" /> {s.category}
           </span>

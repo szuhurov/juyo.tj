@@ -52,16 +52,16 @@ export function DeletedAccountsArchive() {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-100 shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
       <div className="divide-y divide-zinc-50 p-1.5 space-y-1">
         {rows.map((row) => (
           <div
             key={row.key}
             onClick={() => router.push(row.href)}
-            className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 hover:shadow-[0_4px_16px_-4px_rgba(37,99,235,0.4)] transition-all"
+            className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-all"
           >
             <div className="min-w-0">
-              <p className="font-bold text-zinc-700 group-hover:text-white text-sm truncate">{row.name}</p>
+              <p className="font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-white text-sm truncate">{row.name}</p>
               <p className="text-[11px] font-medium text-zinc-400 group-hover:text-blue-100 truncate">{row.subtitle}</p>
             </div>
             <div className="flex items-center gap-3 shrink-0">

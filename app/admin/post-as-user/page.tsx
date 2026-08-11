@@ -152,7 +152,7 @@ function PostAsUserContent() {
 
   return (
     <div className="max-w-xl min-[1084px]:max-w-2xl mx-auto space-y-5 pb-20">
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs min-[1084px]:text-sm font-bold text-amber-800 flex gap-2">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-500/10 p-4 text-xs min-[1084px]:text-sm font-bold text-amber-800 flex gap-2">
         <ShieldCheck className="w-4 h-4 min-[1084px]:w-5 min-[1084px]:h-5 shrink-0 mt-0.5" />
         <span>
           Ин восита санҷиши AI-ро гузаронда мешавад. Ҳимояи махфият ФАҚАТ ба
@@ -170,15 +170,15 @@ function PostAsUserContent() {
         {loadingPreset ? (
           <Skeleton className="h-12 w-full rounded-xl" />
         ) : selectedUser ? (
-          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-500/10 p-3">
             <div className="text-sm font-bold text-emerald-800">
               {selectedUser.first_name} {selectedUser.last_name}{" "}
-              <span className="text-emerald-600 font-medium">
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                 {selectedUser.phone || selectedUser.email}
               </span>
             </div>
             <button onClick={() => setSelectedUser(null)} type="button">
-              <X className="w-4 h-4 text-emerald-700" />
+              <X className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
             </button>
           </div>
         ) : (
@@ -192,7 +192,7 @@ function PostAsUserContent() {
             />
             {searching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-zinc-400" />}
             {results.length > 0 && (
-              <div className="mt-1 rounded-xl border border-zinc-200 bg-white shadow-lg overflow-hidden">
+              <div className="mt-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 overflow-hidden">
                 {results.map((u) => (
                   <button
                     key={u.id}
@@ -201,7 +201,7 @@ function PostAsUserContent() {
                       setSelectedUser(u);
                       setResults([]);
                     }}
-                    className="w-full text-left px-3 py-2.5 hover:bg-zinc-50 border-b border-zinc-100 last:border-0"
+                    className="w-full text-left px-3 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-800 last:border-0"
                   >
                     <div className="text-sm font-bold">
                       {u.first_name} {u.last_name}
@@ -238,7 +238,7 @@ function PostAsUserContent() {
               onClick={() => setCategory(cat.name)}
               className={cn(
                 "flex flex-col items-center gap-1 p-2 rounded-lg border-2 text-[10px] font-bold",
-                category === cat.name ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-100 text-zinc-600",
+                category === cat.name ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-zinc-100 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300",
               )}
             >
               <span>{cat.icon}</span>
@@ -257,7 +257,7 @@ function PostAsUserContent() {
             onClick={() => setType(tp)}
             className={cn(
               "flex-1 h-11 min-[1084px]:h-12 rounded-xl border-2 font-bold text-xs min-[1084px]:text-sm",
-              type === tp ? "border-emerald-500 bg-emerald-50 text-emerald-700" : "border-zinc-100 text-zinc-500",
+              type === tp ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400",
             )}
           >
             {tp === "lost" ? "ГУМШУДА" : "ЁФТШУДА"}
@@ -282,7 +282,7 @@ function PostAsUserContent() {
         <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">АКСҲО</Label>
         <input type="file" accept="image/*" multiple onChange={handleFiles} className="text-xs" />
         {images.length > 0 && (
-          <div className="flex items-center justify-between rounded-xl border border-zinc-200 p-3">
+          <div className="flex items-center justify-between rounded-xl border border-zinc-200 dark:border-zinc-800 p-3">
             <span className="text-xs font-bold">
               {images.length} акс {blurredDone ? "— мозаика шуд ✅" : "— мозаика НАШУДААСТ"}
             </span>

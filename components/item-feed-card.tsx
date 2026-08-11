@@ -32,7 +32,11 @@ export function ItemFeedCard({ item }: { item: Item }) {
       className="flex flex-col gap-0 rounded-[1.125rem] bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
     >
       <div className="relative aspect-[4/3] -mb-px rounded-t-[1.125rem] bg-zinc-100 dark:bg-zinc-700">
-        {thumb && !imgFailed ? (
+        {/* Placeholder ҲАМЕША дар таг аст, акс болои он мебарояд.
+            Пеш аз ин он танҳо ҳангоми набудан/хатои акс нишон дода мешавад
+            ва дар лаҳзаи БОРШАВӢ ҷои акс холии хокистарӣ мемонд. */}
+        <ImagePlaceholder className="rounded-t-[1.125rem]" />
+        {thumb && !imgFailed && (
           <Image
             src={thumb}
             alt={item.title}
@@ -41,8 +45,6 @@ export function ItemFeedCard({ item }: { item: Item }) {
             className="object-cover rounded-t-[1.125rem]"
             onError={() => setImgFailed(true)}
           />
-        ) : (
-          <ImagePlaceholder className="rounded-t-[1.125rem]" />
         )}
         <span
           className={cn(

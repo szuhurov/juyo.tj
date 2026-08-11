@@ -23,7 +23,7 @@ export function DashboardCategoryChart({ data }: { data: { category: string; cou
           return (
             <div key={entry.category} className="flex items-center gap-2 text-xs">
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-              <span className="text-zinc-500 font-medium truncate flex-1">{entry.category}</span>
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium truncate flex-1">{entry.category}</span>
               <span className="text-zinc-400 font-bold">{pct}%</span>
             </div>
           );

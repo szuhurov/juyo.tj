@@ -4,11 +4,11 @@ import type { AdminUserDetail } from "@/lib/hooks/use-admin-users";
 
 export function UserQrStats({ profile }: { profile: AdminUserDetail["profile"] }) {
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
+    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <QrCode className="w-4 h-4 text-zinc-400" />
-          <span className="text-sm font-bold text-zinc-900">Ҳолати QR-код</span>
+          <span className="text-sm font-bold text-zinc-900 dark:text-white">Ҳолати QR-код</span>
         </div>
         <StatusPill
           status={profile.is_qr_active ? "approved" : "deleted"}
@@ -17,20 +17,20 @@ export function UserQrStats({ profile }: { profile: AdminUserDetail["profile"] }
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-blue-50 p-4">
-          <div className="flex items-center gap-2 text-blue-600">
+        <div className="rounded-xl bg-blue-50 dark:bg-blue-500/10 p-4">
+          <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
             <Zap className="w-4 h-4" />
             <span className="text-xs font-bold">Чанд бор насб кардааст</span>
           </div>
-          <p className="text-2xl font-bold text-blue-900 mt-2">{profile.qr_activation_count}</p>
+          <p className="text-2xl font-bold text-blue-900 dark:text-blue-200 mt-2">{profile.qr_activation_count}</p>
         </div>
 
-        <div className="rounded-xl bg-emerald-50 p-4">
-          <div className="flex items-center gap-2 text-emerald-600">
+        <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-4">
+          <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
             <ScanLine className="w-4 h-4" />
             <span className="text-xs font-bold">Чанд бор scan шудааст</span>
           </div>
-          <p className="text-2xl font-bold text-emerald-900 mt-2">{profile.qr_scan_count}</p>
+          <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-200 mt-2">{profile.qr_scan_count}</p>
         </div>
       </div>
     </div>

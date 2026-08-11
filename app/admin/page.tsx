@@ -61,7 +61,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">
             Салом, {firstName}! 👋
           </h1>
           <p className="text-sm font-medium text-zinc-400 mt-1">
@@ -69,7 +69,7 @@ export default function AdminDashboardPage() {
           </p>
         </div>
         <Select value={period} onValueChange={(v) => setPeriod(v as StatsPeriod)}>
-          <SelectTrigger className="w-40 h-10 rounded-full border-zinc-100 bg-white shadow-sm font-bold text-zinc-700">
+          <SelectTrigger className="w-40 h-10 rounded-full border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 font-bold text-zinc-700 dark:text-zinc-300">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -101,17 +101,17 @@ export default function AdminDashboardPage() {
         <StatCard icon={BellRing} label="Push фаъол" value={stats.totalPushEnabledUsers} accent="sky" />
       </div>
 
-      <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-bold text-zinc-900">Афзоиши корбарон</h3>
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Афзоиши корбарон</h3>
           <span className="text-[11px] font-bold text-zinc-400">{PERIOD_LABELS[period]}</span>
         </div>
         <DashboardLineChart data={stats.signupsByDay} granularity={stats.signupsGranularity} />
       </div>
 
-      <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm">
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-zinc-900">Эълонҳо аз рӯи категория</h3>
+          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Эълонҳо аз рӯи категория</h3>
         </div>
         <DashboardCategoryChart data={stats.itemsByCategory} />
       </div>

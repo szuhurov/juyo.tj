@@ -30,7 +30,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
   }
 
   if (error) {
-    return <p className="text-sm font-bold text-red-600">Корбар ёфт нашуд</p>;
+    return <p className="text-sm font-bold text-red-600 dark:text-red-400">Корбар ёфт нашуд</p>;
   }
 
   const items = data.items ?? [];
@@ -64,8 +64,8 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
             className={cn(
               "px-4 py-2 rounded-full text-xs font-bold transition-colors border",
               tab === t.key
-                ? "bg-blue-50 border-blue-100 text-blue-600"
-                : "bg-white border-zinc-100 text-zinc-500 hover:bg-zinc-50",
+                ? "bg-blue-50 dark:bg-blue-500/10 border-blue-100 text-blue-600 dark:text-blue-400"
+                : "bg-white dark:bg-zinc-800 border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800",
             )}
           >
             {t.label}

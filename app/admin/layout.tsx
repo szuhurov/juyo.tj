@@ -16,8 +16,11 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen md:h-screen bg-white md:bg-zinc-100 md:p-4">
-      <div className="flex flex-col md:flex-row min-h-screen md:h-full bg-white md:rounded-[28px] md:shadow-sm md:overflow-hidden">
+    // bg-canvas — ҳамон токене, ки тамоми сайт истифода мебарад (равшан
+    // #f1f5f9, торик сиёҳ). Пеш аз ин панел `bg-zinc-100`-и собит дошт ва
+    // дар реҷаи торик сафеди кӯркунанда мемонд.
+    <div className="min-h-screen md:h-screen bg-white dark:bg-zinc-900 md:bg-canvas md:p-4">
+      <div className="flex flex-col md:flex-row min-h-screen md:h-full bg-white dark:bg-zinc-900 md:rounded-[28px] md:border md:border-zinc-200 md:dark:border-zinc-800 md:overflow-hidden">
         <AdminSidebar />
         <AdminSearchProvider>
           <div className="flex-1 min-w-0 flex flex-col md:overflow-hidden">

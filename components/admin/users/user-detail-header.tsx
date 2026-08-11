@@ -74,7 +74,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-4">
         <button
           type="button"
@@ -82,9 +82,9 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
           disabled={uploading}
           className="relative w-14 h-14 rounded-full group shrink-0"
         >
-          <Avatar className="w-14 h-14 border border-zinc-100">
+          <Avatar className="w-14 h-14 border border-zinc-100 dark:border-zinc-800">
             <AvatarImage src={profile.avatar_url ?? undefined} alt={name} />
-            <AvatarFallback className="bg-zinc-100 text-zinc-500 font-bold text-lg">
+            <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-bold text-lg">
               {name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -99,7 +99,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
         </button>
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{name}</h1>
+            <h1 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">{name}</h1>
             {profile.is_verified && <VerifiedBadge />}
             <StatusPill status={profile.status ?? "active"} />
           </div>

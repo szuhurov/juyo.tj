@@ -62,16 +62,16 @@ export function DeletedPostsArchive({ userId }: { userId?: string } = {}) {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-100 shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
       <div className="divide-y divide-zinc-50 p-1.5 space-y-1">
         {rows.map((row) => (
           <div
             key={row.key}
             onClick={() => router.push(row.href)}
-            className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 hover:shadow-[0_4px_16px_-4px_rgba(37,99,235,0.4)] transition-all"
+            className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-all"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
                 {row.thumb ? (
                   <Image src={row.thumb} alt={row.title} width={40} height={40} className="object-cover w-full h-full" />
                 ) : (
@@ -79,7 +79,7 @@ export function DeletedPostsArchive({ userId }: { userId?: string } = {}) {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-zinc-800 group-hover:text-white truncate">{row.title}</p>
+                <p className="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-white truncate">{row.title}</p>
                 <p className="text-[11px] font-medium text-zinc-400 group-hover:text-blue-100 truncate">{row.subtitle}</p>
               </div>
             </div>

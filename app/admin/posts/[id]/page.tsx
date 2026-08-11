@@ -20,7 +20,7 @@ export default function AdminPostDetailPage({ params }: { params: Promise<{ id: 
   }
 
   if (error) {
-    return <p className="text-sm font-bold text-red-600">Эълон ёфт нашуд</p>;
+    return <p className="text-sm font-bold text-red-600 dark:text-red-400">Эълон ёфт нашуд</p>;
   }
 
   return (

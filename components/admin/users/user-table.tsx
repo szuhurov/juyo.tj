@@ -25,10 +25,10 @@ export function UserTable({ rows }: { rows: AdminUserRow[] }) {
   };
 
   return (
-    <div className="rounded-xl border border-zinc-100 shadow-sm overflow-x-auto">
+    <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-x-auto">
       <div className="min-w-[800px]">
       <div
-        className="grid gap-5 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100"
+        className="grid gap-5 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 dark:border-zinc-800"
         style={{ gridTemplateColumns: GRID_COLS }}
       >
         <span>Id</span>
@@ -47,7 +47,7 @@ export function UserTable({ rows }: { rows: AdminUserRow[] }) {
           return (
             <div
               key={user.id}
-              className="group grid gap-5 items-center px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 hover:shadow-[0_4px_16px_-4px_rgba(37,99,235,0.4)] transition-all"
+              className="group grid gap-5 items-center px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-all"
               style={{ gridTemplateColumns: GRID_COLS }}
               onClick={() => router.push(`/admin/users/${user.id}`)}
             >
@@ -60,34 +60,34 @@ export function UserTable({ rows }: { rows: AdminUserRow[] }) {
               </span>
 
               <div className="flex items-center gap-3 min-w-0">
-                <Avatar className="w-9 h-9 border border-zinc-100 group-hover:border-white/30 shrink-0">
+                <Avatar className="w-9 h-9 border border-zinc-100 dark:border-zinc-800 group-hover:border-white/30 shrink-0">
                   <AvatarImage src={user.avatar_url ?? undefined} alt={name} />
-                  <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-bold">
+                  <AvatarFallback className="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
                     {name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <p className="font-bold text-zinc-800 group-hover:text-white truncate min-w-0 flex items-center gap-1">
+                <p className="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-white truncate min-w-0 flex items-center gap-1">
                   <span className="truncate">{name}</span>
                   {user.is_verified && <VerifiedBadge className="group-hover:stroke-blue-600" />}
                 </p>
               </div>
 
-              <span className="text-zinc-500 group-hover:text-blue-100 font-medium truncate">
+              <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium truncate">
                 {user.email ?? "—"}
               </span>
 
-              <span className="text-zinc-500 group-hover:text-blue-100 font-medium truncate">
+              <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium truncate">
                 {user.phone ?? "—"}
               </span>
 
-              <span className="text-zinc-500 group-hover:text-blue-100 font-medium">
+              <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium">
                 {format(new Date(user.created_at), "d MMM yyyy")}
               </span>
 
-              <span className="text-zinc-500 group-hover:text-blue-100 font-medium">
+              <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium">
                 {user.itemsCount}
                 {user.resolvedCount > 0 && (
-                  <span className="text-emerald-600 group-hover:text-emerald-200 font-bold"> ({user.resolvedCount} ҳалшуда)</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-200 font-bold"> ({user.resolvedCount} ҳалшуда)</span>
                 )}
               </span>
 

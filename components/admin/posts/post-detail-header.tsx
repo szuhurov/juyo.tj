@@ -54,7 +54,7 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm space-y-4">
+    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <StatusPill status={item.type} />
@@ -88,15 +88,15 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
       </div>
 
       <div>
-        <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{item.title}</h1>
-        <p className="text-sm font-medium text-zinc-500 mt-1">{item.description}</p>
+        <h1 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">{item.title}</h1>
+        <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">{item.description}</p>
       </div>
 
       {item.images.length > 0 && (
         <div className="space-y-2">
           <div className="flex gap-2 overflow-x-auto">
             {item.images.map((img) => (
-              <div key={img.image_url} className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 shrink-0">
+              <div key={img.image_url} className="w-24 h-24 rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 shrink-0">
                 <Image src={img.image_url} alt={item.title} width={96} height={96} className="object-cover w-full h-full" />
               </div>
             ))}
@@ -105,14 +105,14 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-bold text-zinc-500 pt-2 border-t border-zinc-100">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-bold text-zinc-500 dark:text-zinc-400 pt-2 border-t border-zinc-100 dark:border-zinc-800">
         <span className="flex items-center gap-1.5">
           <Package className="w-3.5 h-3.5" /> {item.category}
         </span>
         <span className="flex items-center gap-1.5">
           <Eye className="w-3.5 h-3.5" /> {item.views} назар
         </span>
-        <Link href={`/admin/users/${item.user_id}`} className="text-blue-600 hover:underline">
+        <Link href={`/admin/users/${item.user_id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
           Соҳиб: {ownerName}
         </Link>
       </div>

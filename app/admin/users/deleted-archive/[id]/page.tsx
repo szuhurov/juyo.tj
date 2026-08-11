@@ -27,7 +27,7 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
   }
 
   if (error) {
-    return <p className="text-sm font-bold text-red-600">Сабт ёфт нашуд</p>;
+    return <p className="text-sm font-bold text-red-600 dark:text-red-400">Сабт ёфт нашуд</p>;
   }
 
   const snapshot = normalizeDeletedAccountSnapshot(data.entry);
@@ -41,17 +41,17 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Avatar className="w-14 h-14 border border-zinc-100 grayscale opacity-70">
+          <Avatar className="w-14 h-14 border border-zinc-100 dark:border-zinc-800 grayscale opacity-70">
             <AvatarImage src={profile.avatar_url ?? undefined} alt={name} />
-            <AvatarFallback className="bg-zinc-100 text-zinc-500 font-bold text-lg">
+            <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-bold text-lg">
               {name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-zinc-900 tracking-tight">{name}</h1>
+              <h1 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">{name}</h1>
               <StatusPill status="deleted" />
             </div>
             <p className="text-xs font-medium text-zinc-400 mt-0.5">
@@ -61,7 +61,7 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold">
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold">
           <Archive className="w-4 h-4" />
           Пурра нест шуд: {format(new Date(data.entry.deleted_at), "d MMM yyyy, HH:mm")}
         </div>
@@ -81,8 +81,8 @@ export default function DeletedAccountDetailPage({ params }: { params: Promise<{
             className={cn(
               "px-4 py-2 rounded-full text-xs font-bold transition-colors border",
               tab === t.key
-                ? "bg-blue-50 border-blue-100 text-blue-600"
-                : "bg-white border-zinc-100 text-zinc-500 hover:bg-zinc-50",
+                ? "bg-blue-50 dark:bg-blue-500/10 border-blue-100 text-blue-600 dark:text-blue-400"
+                : "bg-white dark:bg-zinc-800 border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800",
             )}
           >
             {t.label}
@@ -141,12 +141,12 @@ function ReadOnlyList({
   }
 
   return (
-    <div className="rounded-xl border border-zinc-100 shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
       <div className="divide-y divide-zinc-50 p-1.5 space-y-1">
         {rows.map((row) => (
           <div key={row.key} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="relative w-10 h-10 rounded-xl bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="relative w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
                 {row.thumb ? (
                   <Image src={row.thumb} alt={row.title} fill sizes="40px" className="object-cover" />
                 ) : (
@@ -154,7 +154,7 @@ function ReadOnlyList({
                 )}
               </div>
               <div className="min-w-0">
-                <p className="font-bold text-zinc-800 truncate">{row.title}</p>
+                <p className="font-bold text-zinc-800 dark:text-zinc-100 truncate">{row.title}</p>
                 <p className="text-[11px] font-medium text-zinc-400 truncate">{row.subtitle}</p>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { PackageSearch, PackageCheck, Clock, CheckCircle2 } from "lucide-react";
 import { useAdminPosts } from "@/lib/hooks/use-admin-posts";
 import { useAdminStats } from "@/lib/hooks/use-admin-stats";
@@ -14,21 +14,40 @@ import { StatCardGrid } from "@/components/admin/stat-card-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminSearch } from "@/lib/admin-search-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { useUrlFilters } from "@/lib/hooks/use-url-filters";
 
 const PAGE_SIZE = 20;
+const POST_FILTER_KEYS = [
+  "type",
+  "category",
+  "moderation_status",
+  "resolved",
+  "status",
+  "dateFrom",
+  "dateTo",
+  "page",
+  "archive",
+] as const;
 
 export default function AdminPostsPage() {
   const { query } = useAdminSearch();
   const search = useDebouncedValue(query, 250);
-  const [filters, setFilters] = useState<AdminPostFilters>({ page: 0, pageSize: PAGE_SIZE });
-  const [archiveView, setArchiveView] = useState(false);
+  const { filters, setFilters } = useUrlFilters<AdminPostFilters & { archive?: string }>({
+    keys: POST_FILTER_KEYS,
+    numericKeys: ["page"],
+    defaults: { page: 0, pageSize: PAGE_SIZE },
+  });
+  const archiveView = filters.archive === "1";
   const { data, isLoading, isError, error } = useAdminPosts({ ...filters, search: search || undefined });
   const { data: stats } = useAdminStats();
 
   useEffect(() => {
     // Бознишонии саҳифа ба 0 ҳангоми иваз шудани ҷустуҷӯ (сигнали берунӣ).
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setFilters((f) => ({ ...f, page: 0 }));
+    if (!filters.page) return;
+    setFilters({ ...filters, page: 0 });
+    // Танҳо ба `search` вокуниш нишон медиҳем — иловаи `filters` ин ҷо
+    // ҳалқа месозад, чунки худи setFilters онро иваз мекунад.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
   return (
@@ -42,18 +61,20 @@ export default function AdminPostsPage() {
         </StatCardGrid>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
         <PostFilterBar
           filters={filters}
           onChange={setFilters}
           archiveView={archiveView}
-          onArchiveViewChange={setArchiveView}
+          onArchiveViewChange={(next) =>
+            setFilters({ ...filters, archive: next ? "1" : undefined, page: 0 })
+          }
         />
 
         {archiveView ? (
           <DeletedPostsArchive />
         ) : isError ? (
-          <p className="py-16 text-center text-sm font-bold text-rose-500">
+          <p className="py-16 text-center text-sm font-bold text-rose-500 dark:text-rose-400">
             Хатогӣ ҳангоми боркунӣ: {error instanceof Error ? error.message : "номаълум"}
           </p>
         ) : isLoading || !data ? (

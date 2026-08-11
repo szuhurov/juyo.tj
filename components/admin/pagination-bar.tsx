@@ -38,7 +38,7 @@ export function PaginationBar({
           type="button"
           disabled={!hasPrev}
           onClick={() => onPageChange(page - 1)}
-          className="flex items-center justify-center w-8 h-8 rounded-full border border-zinc-100 text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-full border border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
@@ -55,7 +55,7 @@ export function PaginationBar({
               onClick={() => onPageChange(p)}
               className={cn(
                 "w-8 h-8 rounded-full text-xs font-bold transition-colors",
-                p === page ? "bg-blue-600 text-white shadow-sm" : "text-zinc-500 hover:bg-zinc-50",
+                p === page ? "bg-blue-600 text-white" : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800",
               )}
             >
               {p + 1}
@@ -67,7 +67,7 @@ export function PaginationBar({
           type="button"
           disabled={!hasNext}
           onClick={() => onPageChange(page + 1)}
-          className="flex items-center justify-center w-8 h-8 rounded-full border border-zinc-100 text-zinc-500 hover:bg-zinc-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-full border border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
         >
           <ChevronRight className="w-4 h-4" />
         </button>

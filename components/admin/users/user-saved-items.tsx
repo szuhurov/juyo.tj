@@ -18,10 +18,10 @@ export function UserSavedItems({ savedItems }: { savedItems: AdminUserDetail["sa
   }
 
   return (
-    <div className="rounded-xl border border-zinc-100 shadow-sm overflow-x-auto">
+    <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-x-auto">
       <div className="min-w-[630px]">
       <div
-        className="grid gap-5 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100"
+        className="grid gap-5 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-zinc-400 border-b border-zinc-100 dark:border-zinc-800"
         style={{ gridTemplateColumns: GRID_COLS }}
       >
         <span>Id</span>
@@ -39,14 +39,14 @@ export function UserSavedItems({ savedItems }: { savedItems: AdminUserDetail["sa
           return (
             <div
               key={item.id}
-              className="group grid gap-5 items-center px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 hover:shadow-[0_4px_16px_-4px_rgba(37,99,235,0.4)] transition-all"
+              className="group grid gap-5 items-center px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-all"
               style={{ gridTemplateColumns: GRID_COLS }}
               onClick={() => router.push(`/admin/posts/${item.id}`)}
             >
               <span className="text-zinc-400 font-bold group-hover:text-blue-100">#{item.id.slice(-4)}</span>
 
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-zinc-100 overflow-hidden shrink-0 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
                   {thumb ? (
                     <Image src={thumb} alt={item.title} width={40} height={40} className="object-cover w-full h-full" />
                   ) : (
@@ -54,14 +54,14 @@ export function UserSavedItems({ savedItems }: { savedItems: AdminUserDetail["sa
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-zinc-800 group-hover:text-white truncate">{item.title}</p>
+                  <p className="font-bold text-zinc-800 dark:text-zinc-100 group-hover:text-white truncate">{item.title}</p>
                   <p className="text-[11px] font-medium text-zinc-400 group-hover:text-blue-100 truncate">{item.category}</p>
                 </div>
               </div>
 
               <StatusPill status={item.type} />
 
-              <span className="text-zinc-500 group-hover:text-blue-100 font-medium whitespace-nowrap">
+              <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium whitespace-nowrap">
                 {format(new Date(saved.created_at), "d MMM yyyy")}
               </span>
 

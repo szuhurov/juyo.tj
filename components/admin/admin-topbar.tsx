@@ -44,7 +44,7 @@ export function AdminTopbar() {
   };
 
   return (
-    <header className="h-20 border-b border-zinc-100 bg-white sticky top-0 z-30 flex items-center gap-3 px-4 lg:px-8">
+    <header className="h-20 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-30 flex items-center gap-3 px-4 lg:px-8">
       <Button
         variant="ghost"
         size="icon"
@@ -53,14 +53,14 @@ export function AdminTopbar() {
       >
         <Menu className="w-5 h-5" />
         {pendingCount > 0 && (
-          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white" />
+          <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-zinc-900" />
         )}
       </Button>
 
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 p-0 flex flex-col">
-          <SheetHeader className="h-16 flex-row items-center px-6 border-b border-zinc-100 space-y-0">
-            <SheetTitle className="text-sm font-bold tracking-tight text-blue-600">Administration</SheetTitle>
+          <SheetHeader className="h-16 flex-row items-center px-6 border-b border-zinc-100 dark:border-zinc-800 space-y-0">
+            <SheetTitle className="text-sm font-bold tracking-tight text-blue-600 dark:text-blue-400">Administration</SheetTitle>
           </SheetHeader>
           <AdminNavLinks onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
@@ -77,13 +77,13 @@ export function AdminTopbar() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="h-9 rounded-full border-none bg-zinc-50 text-sm shadow-none outline-none ring-0 focus-visible:ring-0 focus-visible:border-none pr-8"
+                className="h-9 rounded-full border-none bg-zinc-50 dark:bg-zinc-800 text-sm shadow-none outline-none ring-0 focus-visible:ring-0 focus-visible:border-none pr-8"
               />
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -92,7 +92,7 @@ export function AdminTopbar() {
             <button
               type="button"
               onClick={() => (searchOpen ? closeSearch() : setSearchOpen(true))}
-              className="flex items-center justify-center w-9 h-9 rounded-full text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 transition-colors shrink-0"
+              className="flex items-center justify-center w-9 h-9 rounded-full text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors shrink-0"
             >
               <Search className="w-4 h-4" />
             </button>
@@ -101,8 +101,8 @@ export function AdminTopbar() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1.5 rounded-full pl-1 pr-1.5 hover:bg-zinc-50 transition-colors shrink-0">
-              <Avatar className="w-9 h-9 border border-zinc-100">
+            <button className="flex items-center gap-1.5 rounded-full pl-1 pr-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shrink-0">
+              <Avatar className="w-9 h-9 border border-zinc-100 dark:border-zinc-800">
                 <AvatarImage src={user?.imageUrl} alt={name} />
                 <AvatarFallback className="bg-blue-600 text-white font-bold text-sm">
                   {initial}

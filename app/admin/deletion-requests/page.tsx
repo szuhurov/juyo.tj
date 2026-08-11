@@ -22,11 +22,11 @@ export default function AdminDeletionRequestsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <UserXIcon className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-rose-500" />
-        <h1 className="text-lg min-[1084px]:text-xl font-bold text-zinc-900">Дархостҳои нест кардани ҳисоб</h1>
+        <UserXIcon className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-rose-500 dark:text-rose-400" />
+        <h1 className="text-lg min-[1084px]:text-xl font-bold text-zinc-900 dark:text-white">Дархостҳои нест кардани ҳисоб</h1>
       </div>
 
-      <div className="rounded-2xl border border-zinc-100 bg-white p-4 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
         <div className="flex bg-zinc-100/60 p-0.5 rounded-lg border border-zinc-200/50 w-fit">
           {STATUS_TABS.map((tab) => (
             <button
@@ -35,8 +35,8 @@ export default function AdminDeletionRequestsPage() {
               className={cn(
                 "px-4 min-[1084px]:px-5 h-9 min-[1084px]:h-10 rounded-lg font-bold text-[11px] min-[1084px]:text-xs tracking-wider transition-all",
                 status === tab.id
-                  ? "bg-emerald-500 text-white shadow-md"
-                  : "text-zinc-500 hover:text-zinc-900",
+                  ? "bg-emerald-500 text-white"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900",
               )}
             >
               {tab.label}
@@ -45,7 +45,7 @@ export default function AdminDeletionRequestsPage() {
         </div>
 
         {isError ? (
-          <p className="py-16 text-center text-sm font-bold text-rose-500">Хатогӣ ҳангоми боркунӣ</p>
+          <p className="py-16 text-center text-sm font-bold text-rose-500 dark:text-rose-400">Хатогӣ ҳангоми боркунӣ</p>
         ) : isLoading || !data ? (
           <div className="space-y-2">
             {[...Array(4)].map((_, i) => (
@@ -59,15 +59,15 @@ export default function AdminDeletionRequestsPage() {
             {data.requests.map((r) => (
               <div
                 key={r.id}
-                className="p-4 rounded-xl border border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                className="p-4 rounded-xl border border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
                 <div className="min-w-0 space-y-1">
-                  <p className="font-bold text-sm min-[1084px]:text-base text-zinc-900">{r.email}</p>
-                  <p className="text-xs min-[1084px]:text-[13px] text-zinc-500">
+                  <p className="font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">{r.email}</p>
+                  <p className="text-xs min-[1084px]:text-[13px] text-zinc-500 dark:text-zinc-400">
                     {new Date(r.created_at).toLocaleDateString("tg-TJ")}
                   </p>
                   {r.note && (
-                    <p className="text-xs min-[1084px]:text-[13px] text-zinc-600 italic max-w-xl">&ldquo;{r.note}&rdquo;</p>
+                    <p className="text-xs min-[1084px]:text-[13px] text-zinc-600 dark:text-zinc-300 italic max-w-xl">&ldquo;{r.note}&rdquo;</p>
                   )}
                 </div>
                 {r.status === "pending" && (
