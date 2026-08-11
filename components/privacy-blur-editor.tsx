@@ -9,6 +9,11 @@
  * кунад. Ҳама минтақа pixelate (мозаика, на blur-и оддӣ — зеро blur
  * баъзан баргардонида мешавад, pixelation не) мешавад.
  *
+ * Минтақаҳои AI низ ПУРРА қобили таҳриранд. Пеш аз ин онҳо қулф буданд,
+ * вале координатаи модели vision лағжиш дорад — дар як паспорти воқеӣ
+ * қуттӣ аз худи рақам ба тарафи рост лағжид ва корбар онро дида, вале
+ * ислоҳ карда наметавонист.
+ *
  * Якчанд акс якҷоя: ҳама аксҳо дар ҳамин ЯК тиреза бо тугмаҳои чап/рост
  * тафтиш мешаванд (на як-як дар тирезаҳои алоҳида) — то корбар озодона
  * байни аксҳо гузарад ва ба акси қаблӣ баргардад, пеш аз тасдиқи ниҳоӣ.
@@ -42,9 +47,9 @@ interface EditableRegion {
   y: number; // 0-1
   width: number; // 0-1
   height: number; // 0-1
-  rotation: number; // дараҷа, 0-360 — танҳо барои минтақаҳои "user"
-  /** "ai" — пешниҳоди AI, қулфшуда (корбар тағйир дода наметавонад).
-   *  "user" — бо қалам кашидашуда, пурра қобили таҳрир ва гардиш. */
+  rotation: number; // дараҷа, 0-360
+  /** Танҳо барои намуди канора — ҳарду навъ баробар қобили таҳриранд.
+   *  "ai" — пешниҳоди AI (канораш хатчадор). "user" — бо қалам кашидашуда. */
   origin: "ai" | "user";
 }
 
@@ -76,34 +81,78 @@ interface DragState {
 const MAX_WORKING_WIDTH = 1400;
 const MIN_SIZE = 0.03; // Ҳадди ақали минтақа — то каши хеле хурд/тасодуфӣ намонад
 const PEN_PADDING = 0.02; // Изофаи атрофи роҳи қалам, то мукаммал пӯшад
-const AI_REGION_PADDING = 0.02; // Изофаи атрофи ҳар минтақаи пешниҳодкардаи AI
 const AI_REGION_MAX_AREA = 0.25; // Ҳадди ақсои масоҳати як минтақаи AI (аз масоҳати умумии акс) — агар AI хато карда, минтақаи аз ҳад калон дода бошад (масалан қариб тамоми ҳуҷҷат), ба ин андоза кам мешавад.
+
+// Изофаи минтақаҳои AI. Моделҳои vision координатаро ДАҚИҚ намедиҳанд —
+// қуттӣ одатан 3-8% лағжиш дорад. Изофаи собити 2% ин лағжишро намепӯшид:
+// дар як паспорти воқеӣ қуттии рақам ба тарафи рост лағжид ва худи рақам
+// кушода монд. Ҳоло изофа МУТАНОСИБ аст — қуттии хурд нисбатан бештар
+// изофа мегирад, чунки маҳз дар қуттиҳои хурд лағжиш ҳалокатбор аст.
+const AI_PAD_MIN = 0.02;
+const AI_PAD_X_RATIO = 0.18;
+const AI_PAD_Y_RATIO = 0.55;
+
+// MRZ (сатрҳои мошинхонии поёни паспорт/ID) — ин ягона майдонест, ки
+// сохтори он ПЕШАКӢ маълум аст: ҳамеша тасмаи ПУРРАИ паҳнои ҳуҷҷат, 2-3
+// сатри monospace дар поён. Модел бошад, онро ҳамчун қуттии хурд медиҳад
+// ва танҳо як пораашро мепӯшонад. Бинобар ин барои MRZ ба координатаи
+// модел такя намекунем: паҳноро ба 100% мекушоем ва баландиро ба тамоми
+// тасма мерасонем.
+const MRZ_MIN_HEIGHT = 0.1;
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
 }
 
+function isMrzLabel(label?: string) {
+  return !!label && /mrz|machine[\s_-]?readable/i.test(label);
+}
+
 function initialRegionsFor(suggested: PrivacyRegion[] | undefined): EditableRegion[] {
   return (suggested ?? []).map((r, i) => {
-    let x = Math.max(0, r.x - AI_REGION_PADDING);
-    let y = Math.max(0, r.y - AI_REGION_PADDING);
-    let width = Math.min(1 - x, r.width + AI_REGION_PADDING * 2);
-    let height = Math.min(1 - y, r.height + AI_REGION_PADDING * 2);
+    const mrz = isMrzLabel(r.label);
 
-    // Агар AI минтақаи хеле калон пешниҳод кунад (масалан аз хатои
-    // рамзкушоӣ), онро ба маркази худаш нигоҳ дошта, то ҳадди ақсои
-    // масоҳат хурд мекунем — то ҳеҷ гоҳ тамоми ҳуҷҷат пӯшида нашавад.
-    if (width * height > AI_REGION_MAX_AREA) {
-      const scale = Math.sqrt(AI_REGION_MAX_AREA / (width * height));
-      const cx = x + width / 2;
-      const cy = y + height / 2;
-      width *= scale;
-      height *= scale;
-      x = clamp01(cx - width / 2);
-      y = clamp01(cy - height / 2);
+    let x: number, y: number, width: number, height: number;
+
+    if (mrz) {
+      const centerY = r.y + r.height / 2;
+      height = Math.min(1, Math.max(r.height, MRZ_MIN_HEIGHT) + AI_PAD_MIN * 2);
+      x = 0;
+      width = 1;
+      y = clamp01(centerY - height / 2);
+      height = Math.min(1 - y, height);
+    } else {
+      const padX = Math.max(AI_PAD_MIN, r.width * AI_PAD_X_RATIO);
+      const padY = Math.max(AI_PAD_MIN, r.height * AI_PAD_Y_RATIO);
+      x = Math.max(0, r.x - padX);
+      y = Math.max(0, r.y - padY);
+      width = Math.min(1 - x, r.width + padX * 2);
+      height = Math.min(1 - y, r.height + padY * 2);
+
+      // Агар AI минтақаи хеле калон пешниҳод кунад (масалан аз хатои
+      // рамзкушоӣ), онро ба маркази худаш нигоҳ дошта, то ҳадди ақсои
+      // масоҳат хурд мекунем — то ҳеҷ гоҳ тамоми ҳуҷҷат пӯшида нашавад.
+      // MRZ аз ин қоида озод аст — тасмаи пурра қасдан калон аст.
+      if (width * height > AI_REGION_MAX_AREA) {
+        const scale = Math.sqrt(AI_REGION_MAX_AREA / (width * height));
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+        width *= scale;
+        height *= scale;
+        x = clamp01(cx - width / 2);
+        y = clamp01(cy - height / 2);
+      }
     }
 
-    return { id: `ai-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`, x, y, width, height, rotation: 0, origin: "ai" as const };
+    return {
+      id: `ai-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      x,
+      y,
+      width,
+      height,
+      rotation: 0,
+      origin: "ai" as const,
+    };
   });
 }
 
@@ -421,8 +470,11 @@ export function PrivacyBlurEditor({
 
     if (role === "handle" && regionId) {
       const region = regions.find((r) => r.id === regionId);
-      // AI-и минтақаҳо қулфшуда — корбар онҳоро тағйир дода наметавонад.
-      if (!region || region.origin !== "user") return;
+      // Минтақаҳои AI низ қобили таҳриранд. Пеш аз ин онҳо қулф буданд —
+      // вале координатаи модел лағжиш дорад, ва корбар хатогиро медид,
+      // аммо ислоҳ карда наметавонист: қуттии лағжида ҳамчун мозаикаи
+      // бефоида боқӣ мемонд ва худи рақам кушода.
+      if (!region) return;
       setSelectedId(regionId);
       dragRef.current = {
         kind: "resize",
@@ -436,7 +488,7 @@ export function PrivacyBlurEditor({
     }
     if (role === "rotate" && regionId) {
       const region = regions.find((r) => r.id === regionId);
-      if (!region || region.origin !== "user") return;
+      if (!region) return;
       setSelectedId(regionId);
       dragRef.current = {
         kind: "rotate",
@@ -449,7 +501,7 @@ export function PrivacyBlurEditor({
     }
     if (role === "body" && regionId) {
       const region = regions.find((r) => r.id === regionId);
-      if (!region || region.origin !== "user") return;
+      if (!region) return;
       setSelectedId(regionId);
       dragRef.current = {
         kind: "move",
@@ -669,7 +721,7 @@ export function PrivacyBlurEditor({
                   {t("privacyReviewTitle")}
                 </DialogTitle>
                 {slots.length > 1 && (
-                  <span className="shrink-0 text-[10px] font-bold tracking-widest text-zinc-400 bg-zinc-100 dark:bg-zinc-800 rounded-full px-2 py-0.5">
+                  <span className="shrink-0 text-[10px] font-bold tracking-widest text-zinc-400 bg-zinc-100 dark:bg-zinc-700 rounded-full px-2 py-0.5">
                     {currentIndex + 1}/{slots.length}
                   </span>
                 )}
@@ -692,7 +744,7 @@ export function PrivacyBlurEditor({
         <div className="px-6 flex-1 min-h-0 flex flex-col overflow-y-auto">
           <div
             ref={wrapRef}
-            className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 touch-none flex items-center justify-center flex-1 min-h-[200px]"
+            className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 touch-none flex items-center justify-center flex-1 min-h-[200px]"
             style={{
               cursor: "crosshair",
             }}
@@ -702,7 +754,7 @@ export function PrivacyBlurEditor({
             onPointerCancel={handleWrapPointerUp}
           >
             {!ready ? (
-              <div className="w-full aspect-square animate-pulse bg-zinc-200 dark:bg-zinc-800" />
+              <div className="w-full aspect-square animate-pulse bg-zinc-200 dark:bg-zinc-700" />
             ) : (
               <div
                 style={{
@@ -714,22 +766,22 @@ export function PrivacyBlurEditor({
                 <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
                 {regions.map((r) => {
                   const selected = r.id === selectedId;
-                  const locked = r.origin === "ai";
+                  // Хатчаи канора танҳо аломати пайдоиш аст (AI ё қалам) —
+                  // ҳарду навъ баробар қобили ҳаракат, андоза ва несткунӣ.
+                  const fromAi = r.origin === "ai";
                   return (
                     <div key={r.id}>
                       <div
-                        data-role={locked ? undefined : "body"}
-                        data-region-id={locked ? undefined : r.id}
+                        data-role="body"
+                        data-region-id={r.id}
                         className={cn(
-                          "absolute border-2",
-                          locked
-                            ? "border-dashed border-emerald-400/70 pointer-events-none"
-                            : cn(
-                                "cursor-move",
-                                selected
-                                  ? "border-emerald-500 bg-emerald-500/10"
-                                  : "border-white/80 hover:border-emerald-400",
-                              ),
+                          "absolute border-2 cursor-move",
+                          fromAi && !selected && "border-dashed",
+                          selected
+                            ? "border-emerald-500 bg-emerald-500/10"
+                            : fromAi
+                              ? "border-emerald-400/70 hover:border-emerald-400"
+                              : "border-white/80 hover:border-emerald-400",
                         )}
                         style={{
                           left: `${r.x * 100}%`,
@@ -739,7 +791,7 @@ export function PrivacyBlurEditor({
                           transform: r.rotation ? `rotate(${r.rotation}deg)` : undefined,
                         }}
                       >
-                        {!locked && selected && (
+                        {selected && (
                           <div
                             data-role="rotate"
                             data-region-id={r.id}
@@ -755,7 +807,7 @@ export function PrivacyBlurEditor({
                           </div>
                         )}
                       </div>
-                      {!locked && selected && (
+                      {selected && (
                         <>
                           {r.rotation === 0 &&
                             (["nw", "ne", "sw", "se"] as Corner[]).map((corner) => (

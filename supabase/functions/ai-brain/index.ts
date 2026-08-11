@@ -124,9 +124,25 @@ STRICT RULES:
    - A hand or body part visibly holding/wearing the lost/found item is fine.
 2. PROHIBITED: 18+, extreme violence, illegal weapons, or a selfie/full-body/portrait photo where a PERSON (not the item) is the main subject.
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly.
-IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Each box must be a SMALL, TIGHT box around ONLY that one specific number/code field — never a large region that sweeps across nearby text too. A small margin around the field is fine, but do not enlarge the box beyond what is needed to fully cover that field's text.
+IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner of the box, measured from the top-left corner of the WHOLE IMAGE including any background/margin around the document, not from the corner of the document itself).
 
-CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable. If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
+COORDINATE ACCURACY — read this carefully, it is the part that goes wrong most:
+- Before returning each box, re-check it against the image: the box must actually sit ON the digits you are hiding. A box that lands next to the number instead of on it is a total failure — the number stays public.
+- ALWAYS ERR LARGER. If you are not certain of the exact position, widen and heighten the box. An oversized mosaic is harmless; one visible digit is not.
+- Extend each box at least half a character-height above and below the text line, and at least one character-width to the left and right of the number.
+- "label" MUST be one of exactly: "mrz", "document_number", "card_number", "cvv", "iban", "barcode", "qr", "other_number". The client relies on this exact wording.
+
+MRZ IS SPECIAL — never return a small box for it:
+- The MRZ is the block of 2 or 3 monospace lines full of "<<<" characters at the BOTTOM of a passport/ID.
+- It always spans the ENTIRE width of the document, and ALL of its lines are sensitive.
+- Return exactly ONE region with label "mrz" covering ALL MRZ lines together as one band: x = 0, width = 1, y = just above the FIRST MRZ line, height = down to just below the LAST MRZ line.
+- Do NOT return a box around a single word or a single line of the MRZ. Do NOT return several MRZ boxes.
+
+For every OTHER field, keep the box tight around only that one number/code field — never a large region that sweeps across nearby unrelated text.
+
+CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable.
+THE ONLY EXCEPTION IS THE MRZ: the MRZ band also contains the name in machine-readable form, and that is fine — cover the whole MRZ band anyway. The name stays readable in the normal printed fields above, so nothing is lost. Never shrink the MRZ band to try to spare the name inside it.
+If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
 ${DOCUMENT_TEXT_RULES}
 Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
 
@@ -185,12 +201,39 @@ If the text is not already in {{LANG}}, still judge it, but write "reason" in {{
 If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", quoting the exact original text if it's a text violation. ALSO set "violation_source" to "image" if the image(s) caused the rejection, "text" if only the title/description did, or "both" if both did. If is_safe is true, violation_source must be null.
 
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly — this is independent of is_safe.
-IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner). Each box must be a SMALL, TIGHT box around ONLY that one specific number/code field — never a large region that sweeps across nearby text too. A small margin around the field is fine, but do not enlarge the box beyond what is needed to fully cover that field's text.
+IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner of the box, measured from the top-left corner of the WHOLE IMAGE including any background/margin around the document, not from the corner of the document itself).
 
-CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable. If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
+COORDINATE ACCURACY — read this carefully, it is the part that goes wrong most:
+- Before returning each box, re-check it against the image: the box must actually sit ON the digits you are hiding. A box that lands next to the number instead of on it is a total failure — the number stays public.
+- ALWAYS ERR LARGER. If you are not certain of the exact position, widen and heighten the box. An oversized mosaic is harmless; one visible digit is not.
+- Extend each box at least half a character-height above and below the text line, and at least one character-width to the left and right of the number.
+- "label" MUST be one of exactly: "mrz", "document_number", "card_number", "cvv", "iban", "barcode", "qr", "other_number". The client relies on this exact wording.
+
+MRZ IS SPECIAL — never return a small box for it:
+- The MRZ is the block of 2 or 3 monospace lines full of "<<<" characters at the BOTTOM of a passport/ID.
+- It always spans the ENTIRE width of the document, and ALL of its lines are sensitive.
+- Return exactly ONE region with label "mrz" covering ALL MRZ lines together as one band: x = 0, width = 1, y = just above the FIRST MRZ line, height = down to just below the LAST MRZ line.
+- Do NOT return a box around a single word or a single line of the MRZ. Do NOT return several MRZ boxes.
+
+For every OTHER field, keep the box tight around only that one number/code field — never a large region that sweeps across nearby unrelated text.
+
+CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partially with: the person's PHOTO, their FULL NAME / SURNAME / FATHER'S NAME (in every alphabet it is printed in — e.g. both Cyrillic and Latin rows), or their DATE OF BIRTH. These identify the item so its rightful owner can recognize it and must always stay fully readable.
+THE ONLY EXCEPTION IS THE MRZ: the MRZ band also contains the name in machine-readable form, and that is fine — cover the whole MRZ band anyway. The name stays readable in the normal printed fields above, so nothing is lost. Never shrink the MRZ band to try to spare the name inside it.
+If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
 ${DOCUMENT_TEXT_RULES}
 
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "violation_source": "image"/"text"/"both"/null, "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
+POLISH (always, whenever is_safe is true) — the user types in a hurry. CLEAN UP their text; do NOT rewrite it into a different text.
+This is a light copy-edit, not a re-authoring. The user does not see the result until after publishing, so it must stay faithful to what they meant.
+- polished_description: MUST BE IN {{LANG}}. Fix spelling, grammar, punctuation and word order. Make unclear wording clear and readable. Keep the user's own meaning, facts, details and tone.
+- Keep it roughly the same length as the original. If the original is one sentence, the result is one sentence. Never expand a short text into a long one.
+- NEVER add anything that is not in the user's text: no place, no time, no colour, no brand, no reward, no phone number, no detail read off the image, no filler sentence. Adding invented facts to a lost-and-found listing is a serious error.
+- NEVER delete a fact the user did give.
+- If the user's text is already correct and clear, return it UNCHANGED.
+- polished_title: MUST BE IN {{LANG}}. ONE word if at all possible, at most two — just the object itself (e.g. "Паспорт", "iPhone", "Калид"). No verbs, no place, no "lost"/"found", no punctuation. Derive it from what the user wrote.
+- DOCUMENT RULE: if is_document is true, polished_title must be the document type plus the owner's name found on it, and polished_description must keep that name. Names always stay.
+- If is_document is true, polished_title and polished_description must ALREADY have any raw document/passport/ID/card number removed, exactly per the redaction rules above.
+
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "violation_source": "image"/"text"/"both"/null, "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "...", "polished_title": "...", "polished_description": "..."}`;
 
     let promptToUse = MASTER_PROMPT;
     if (mode === 'moderation_only') {
@@ -275,13 +318,29 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
             })
         : [];
       const isDocument = !!result.is_document;
+
+      // polished_* танҳо дар final_check бармегардад — он ҳамон гузариши
+      // moderation-ро истифода мебарад (мисли privacy_regions), пас ягон
+      // занги иловагии AI ва ягон таъхири нав нест.
+      //
+      // Агар модел ҷавоби нодуруст диҳад, матни худи корбар боқӣ мемонад —
+      // эълон ҳаргиз бе матн намемонад.
+      const rawTitle = String(formData.get('title') || '');
+      const rawDescription = String(formData.get('description') || '');
+      const polish = (value: unknown, fallback: string) => {
+        const text = typeof value === "string" ? value.trim() : "";
+        return text ? text : fallback;
+      };
+
       return new Response(
         JSON.stringify({
           is_safe: true,
           is_document: isDocument,
           privacy_regions: privacyRegions,
-          redacted_title: typeof result.redacted_title === "string" ? result.redacted_title : String(formData.get('title') || ''),
-          redacted_description: typeof result.redacted_description === "string" ? result.redacted_description : String(formData.get('description') || ''),
+          redacted_title: typeof result.redacted_title === "string" ? result.redacted_title : rawTitle,
+          redacted_description: typeof result.redacted_description === "string" ? result.redacted_description : rawDescription,
+          polished_title: polish(result.polished_title, rawTitle),
+          polished_description: polish(result.polished_description, rawDescription),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );

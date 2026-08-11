@@ -254,7 +254,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
             </Link>
 
             {/* Паймоиши асосӣ барои Desktop */}
-            <nav className="hidden lg:flex items-center space-x-1 bg-zinc-100/50 dark:bg-zinc-900/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
+            <nav className="hidden lg:flex items-center space-x-1 bg-zinc-100/50 dark:bg-zinc-800/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
               {mounted &&
                 navLinks.map((link) => {
                   const isQrTab = searchParams.get("tab") === "qr";
@@ -297,8 +297,8 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                       onClick={handleNavClick}
                       className={`gap-2 rounded-md font-bold text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
                         isActive
-                          ? "bg-white text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                          : "text-zinc-500 hover:text-zinc-900 border-transparent focus:outline-none"
+                          ? "bg-white text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 border-transparent focus:outline-none"
                       }`}
                     >
                       <link.icon className="h-4 w-4 min-[1503px]:h-[18px] min-[1503px]:w-[18px]" />
@@ -314,7 +314,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 min-[1084px]:h-4 min-[1084px]:w-4 text-zinc-400" />
             <Input
               placeholder={t("search")}
-              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-xl bg-white dark:bg-zinc-900 border-none shadow-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
+              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-xl bg-white dark:bg-zinc-800 border-none shadow-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />
@@ -363,7 +363,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border-none rounded-md bg-white dark:bg-zinc-900 hover:bg-zinc-100"
+                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border-none rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100"
                     asChild
                   >
                     <Link href="/sign-in">{t("login")}</Link>
@@ -421,7 +421,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                       <div className="flex items-center gap-3 p-3 mb-1">
                         <Avatar className="h-10 w-10 rounded-full border border-zinc-100 dark:border-zinc-800">
                           <AvatarImage src={user?.imageUrl} />
-                          <AvatarFallback className="rounded-full font-bold text-xs bg-zinc-100 dark:bg-zinc-800">
+                          <AvatarFallback className="rounded-full font-bold text-xs bg-zinc-100 dark:bg-zinc-700">
                             {user?.firstName?.charAt(0)}
                             {user?.lastName?.charAt(0)}
                           </AvatarFallback>
@@ -436,7 +436,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                           </p>
                         </div>
                       </div>
-                      <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2" />
+                      <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-700 mx-2" />
                       <div className="p-1 space-y-1">
                         <DropdownMenuItem
                           onClick={() => router.push("/profile")}
@@ -456,7 +456,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                             {t("settings")}
                           </span>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-800 mx-2" />
+                        <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-700 mx-2" />
                         <DropdownMenuItem
                           onClick={() => signOut(() => router.push("/"))}
                           className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-red-50 dark:focus:bg-red-950/30 transition-colors group"
@@ -490,20 +490,20 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                     variant="secondary"
                     size="sm"
                     aria-label={t("menu")}
-                    className="sm:hidden h-9 w-9 p-0 rounded-md border-none shadow-none bg-white dark:bg-zinc-900"
+                    className="sm:hidden h-9 w-9 p-0 rounded-md border-none shadow-none bg-white dark:bg-zinc-800"
                   >
                     <Menu className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 min-[768px]:w-60 rounded-xl shadow-xl p-2 border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-950"
+                  className="w-56 min-[768px]:w-60 rounded-xl shadow-xl p-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
                 >
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=posts")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
                       <LayoutGrid className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("myPosts")}
@@ -511,9 +511,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=info")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
                       <Settings className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("settings")}
@@ -521,9 +521,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=qr")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
                       <QrCode className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("qrMyCode")}
@@ -531,9 +531,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=saved")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
                       <Bookmark className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("savedItems")}
@@ -542,9 +542,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                     >
-                      <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+                      <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
                         <UserCog className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                       </div>
                       {t("adminPanel")}
@@ -553,9 +553,9 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => signOut(() => router.push("/"))}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
-                    <div className="p-1.5 rounded-md bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400">
+                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
                       <LogOut className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
                     </div>
                     {t("signOut")}
@@ -597,7 +597,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
               <div className="grid grid-cols-2 gap-3">
                 <Button
                   variant="outline"
-                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                   onClick={() => {
                     setShowPhotoChoice(false);
                     setShowCameraCapture(true);
@@ -612,7 +612,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                   onClick={() => {
                     setShowPhotoChoice(false);
                     galleryInputRef.current?.click();

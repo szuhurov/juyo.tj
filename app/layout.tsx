@@ -13,6 +13,7 @@ import { Analytics } from "@vercel/analytics/react"; // Барои ҷамъов�
 import { SpeedInsights } from "@vercel/speed-insights/next"; // Барои назорати суръати кори сайт
 import { ClerkLocalizationProvider } from "@/components/clerk-localization-provider";
 import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
+import { ThemeProvider } from "@/components/theme-provider"; // Равшан / торик / система
 import { AdsenseScript } from "@/components/adsense-script";
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
@@ -125,9 +126,12 @@ export const viewport: Viewport = {
   // кунанд). Ҳадди 5x кофист барои пешгирии зуми тасодуфӣ, вале ҳамзамон
   // ба талаботи дастрасӣ ҷавобгӯ мебошад.
   maximumScale: 5,
+  // Ранги навори системавии браузер/PWA. Пештар ҳарду сафед буданд —
+  // дар реҷаи торик навор сафед мемонд ва бо сайт номувофиқ буд.
+  // Арзишҳо = --canvas дар ҳар мавзӯъ.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: light)", color: "#f1f5f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
@@ -189,7 +193,8 @@ export default async function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-white dark:bg-zinc-950 font-sans">
+      <body className="min-h-screen bg-canvas font-sans">
+        <ThemeProvider>
         <LanguageProvider initialLocale={locale as Locale}>
           <ClerkLocalizationProvider>
             {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад.
@@ -215,6 +220,7 @@ export default async function RootLayout({
             </QueryProvider>
           </ClerkLocalizationProvider>
         </LanguageProvider>
+        </ThemeProvider>
         {process.env.NODE_ENV === "production" ? (
           <Script
             id="sw-register"

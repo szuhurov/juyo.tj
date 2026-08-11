@@ -82,7 +82,17 @@ export async function POST(req: NextRequest) {
       const { error: imgError } = await supabaseAdmin
         .from("item_images")
         .insert(imageUrls.map((url) => ({ item_id: item.id, image_url: url })));
-      if (imgError) console.error("item_images навишта нашуд:", imgError.message);
+      if (imgError) {
+        console.error("item_images навишта нашуд:", imgError.message);
+      } else {
+        // Бе ин занг эълони admin-сабтшуда ҳеҷ вектор намегирифт ва дар
+        // ҷустуҷӯи аксӣ тамоман пайдо намешуд — ҳол он ки маҳз ҳамин
+        // эълонҳо аз Telegram/Instagram меоянд.
+        const { error: embError } = await supabaseAdmin.functions.invoke("generate-embedding", {
+          body: { item_id: item.id, text: `${title} ${description}` },
+        });
+        if (embError) console.error("generate-embedding ноком шуд:", embError.message);
+      }
     }
 
     return NextResponse.json({ ok: true, id: item.id });

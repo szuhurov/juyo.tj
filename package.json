@@ -14,6 +14,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
+    "embeddings:rebuild": "tsx --env-file=.env.local scripts/rebuild-embeddings.ts",
+    "embeddings:rebuild:dry": "tsx --env-file=.env.local scripts/rebuild-embeddings.ts --dry-run",
     "somon:import": "tsx --env-file=.env.local scripts/somon-import/run-once.ts",
     "somon:import:dry": "tsx --env-file=.env.local scripts/somon-import/run-once.ts --dry-run",
     "somon:scheduler": "tsx --env-file=.env.local scripts/somon-import/scheduler.ts",

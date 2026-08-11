@@ -219,7 +219,7 @@ export default function ScanPage() {
       {/* Error */}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-canvas p-6 text-center gap-8 z-10">
-          <div className="w-20 h-20 bg-white dark:bg-zinc-900 rounded-full flex items-center justify-center">
+          <div className="w-20 h-20 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center">
             <Camera className="w-10 h-10 text-red-400" />
           </div>
           <p className="text-sm font-bold text-zinc-600 leading-relaxed max-w-xs">
@@ -245,7 +245,7 @@ export default function ScanPage() {
           variant="ghost"
           size="icon"
           onClick={handleBack}
-          className={`rounded-full border ${isScanning ? 'bg-black/40 hover:bg-black/60 text-white border-white/10' : 'bg-white hover:bg-zinc-50 text-zinc-900 border-none shadow-none'}`}
+          className={`rounded-full border ${isScanning ? 'bg-black/40 hover:bg-black/60 text-white border-white/10' : 'bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-900 dark:text-zinc-100 border-none shadow-none'}`}
         >
           <ChevronLeft className="w-6 h-6" />
         </Button>
@@ -263,13 +263,13 @@ export default function ScanPage() {
       )}
 
       <Dialog open={showUnknownQr} onOpenChange={setShowUnknownQr}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 border-none shadow-2xl bg-white outline-none">
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 border-none shadow-2xl bg-white dark:bg-zinc-800 outline-none">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
           <DialogHeader className="space-y-3 text-center">
             <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-1">
               <QrCode className="w-7 h-7 text-red-500" />
             </div>
-            <DialogTitle className="text-lg font-bold tracking-tight text-zinc-900 leading-snug">
+            <DialogTitle className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-snug">
               {t('unknownQrTitle')}
             </DialogTitle>
             <DialogDescription className="text-zinc-600 font-bold text-sm leading-relaxed">

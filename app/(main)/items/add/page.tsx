@@ -3,7 +3,7 @@
  * Дар ин ҷо мо формаро ба чанд қадам (steps) ҷудо кардем, то ки истифодааш осон ва зебо бошад.
  */ "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
@@ -36,8 +36,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
-import { useRef } from "react";
+import { cn, stripDocumentNumbers } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Dialog,
@@ -47,6 +46,11 @@ import {
 } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
+import {
+  JUST_PUBLISHED_EVENT,
+  JUST_PUBLISHED_KEY,
+  type JustPublishedState,
+} from "@/lib/ui-constants";
 
 // Ин ду компонент (муҳаррири canvas-и privacy blur, модали камера) вазнин
 // ва танҳо дар ҳолатҳои хос (ҳуҷҷат ошкор шуд / камера кушода шуд) лозиманд
@@ -360,17 +364,31 @@ function AddItemForm() {
           return;
         }
 
+        // 1.4 ТОЗАКУНИИ МАТН — ваъдаи placeholder-и "AI онро дуруст мекунад".
+        // Корбар метавонад шитобон ва бо хатоҳо нависад; AI онро ба тавсифи
+        // хонданбоб табдил медиҳад ва унвонро ба як калима кӯтоҳ мекунад.
+        //
+        // Ин занги АЛОҲИДА нест — ҳамон санҷиши final_check-и боло ҳарду
+        // натиҷаро якҷоя бармегардонад (мисли privacy_regions), пас ягон
+        // таъхири нав ба вуҷуд намеояд.
+        finalTitle = checkData?.polished_title || formData.title;
+        finalDescription = checkData?.polished_description || formData.description;
+
         // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
         // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар
         // минтақаҳои пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам
         // иваз/илова кунад пеш аз тасдиқ. Экрани "муваффақият" танҳо БАЪД аз
         // тамом шудани ҳамаи блурҳо нишон дода мешавад — на пеш аз он.
         if (checkData?.is_document) {
-          // Матни ниҳоӣ — рақами ҳуҷҷат/шиноснома аз матн нест карда шуд (AI),
-          // ном/насаб бетағйир мемонад. Категория маҷбуран "Ҳуҷҷатҳо" мешавад,
-          // новобаста аз он ки корбар кадом категорияро интихоб карда буд.
-          finalTitle = checkData.redacted_title || formData.title;
-          finalDescription = checkData.redacted_description || formData.description;
+          // Рақами ҳуҷҷат/шиноснома аз матн нест карда мешавад, ном/насаб
+          // бетағйир мемонад. Prompt аз AI талаб мекунад, ки polished_* низ
+          // аллакай бе рақам бошад — `stripDocumentNumbers` танҳо панҷараи
+          // эҳтиётист, агар модел онро сар диҳад. Ин ҷо хато қиммати баланд
+          // дорад: рақами шиносномаи як одами воқеӣ ошкор мешавад.
+          finalTitle = stripDocumentNumbers(finalTitle);
+          finalDescription = stripDocumentNumbers(finalDescription);
+          // Категория маҷбуран "Ҳуҷҷатҳо" мешавад, новобаста аз он ки корбар
+          // кадом категорияро интихоб карда буд.
           finalCategory = "Documents";
 
           setModerationStatus("idle");
@@ -428,6 +446,36 @@ function AddItemForm() {
     setPostSuccessRedirect("/profile?tab=posts");
     setModerationStatus("passed");
 
+    // "Тамом" интизор намешавад — корбар метавонад аллакай дар саҳифаи
+    // профил бошад, вақте ки сабт тамом мешавад. Пас ҳам event (агар
+    // рӯйхат кушода бошад), ҳам sessionStorage (агар баъдтар кушода
+    // шавад) лозим аст.
+    //
+    // `startedAt` ҲОЗИР гирифта мешавад, на баъд аз сабт: боркунии аксҳо
+    // 3-5 сония мегирад ва бе ин ҳисобкунак дар корт аз нав аз 10 сар
+    // мешуд, дар ҳоле ки санҷиш аллакай оғоз шудааст.
+    const startedAt = Date.now();
+    const announce = (id?: string) => {
+      const state: JustPublishedState = { id, startedAt };
+      try {
+        sessionStorage.setItem(JUST_PUBLISHED_KEY, JSON.stringify(state));
+      } catch {
+        // Safari-и private mode — event худаш кифоя аст.
+      }
+      window.dispatchEvent(
+        new CustomEvent(JUST_PUBLISHED_EVENT, { detail: state }),
+      );
+    };
+
+    // Фавран, пеш аз боркунӣ — то ҳисобкунак аз ҳамин лаҳза ҳисоб шавад.
+    announce();
+
+    const announcePublished = (id: string) => {
+      announce(id);
+      queryClient.invalidateQueries({ queryKey: ITEM_KEYS.user() });
+      window.dispatchEvent(new Event("items-updated"));
+    };
+
     const publishWork = async () => {
       const token = await getToken({ template: "supabase" });
       if (!token) throw new Error("Authentication token missing");
@@ -476,6 +524,9 @@ function AddItemForm() {
         .single();
       if (itemError) throw itemError;
 
+      // Эълони беакс — аксҳо интизор карда намешаванд.
+      if (imageUrls.length === 0) announcePublished(item.id);
+
       if (imageUrls.length > 0) {
         const imageRecords = imageUrls.map((url) => ({
           item_id: item.id,
@@ -487,6 +538,10 @@ function AddItemForm() {
           .from("item_images")
           .insert(imageRecords);
 
+        // Аз ҳамин лаҳза эълон бо аксаш дар рӯйхат намоён аст. Сохтани
+        // вектор (поён) дар паси парда мемонад ва рӯйхатро нигоҳ намедорад.
+        announcePublished(item.id);
+
         if (imagesError) {
           console.error("DATABASE ERROR:", imagesError.message);
         } else {
@@ -495,13 +550,28 @@ function AddItemForm() {
           // ноком шавад; агар боз ҳам ноком шавад, эълон аллакай нашр
           // шудааст (маводи АСОСӢ дар хатар нест), танҳо ҷустуҷӯи аксӣ
           // барои ин ашё кор намекунад — корбарро бо огоҳии мулоим хабар медиҳем.
-          const embeddingText = `${itemData.title} ${itemData.description}`;
+          // МУҲИМ: вектор бояд аз АКС сохта шавад, на аз матни хом.
+          //
+          // visual-search дархостро ҳамчун "forensic description"-и англисӣ
+          // аз акс месозад (ниг. supabase/functions/visual-search). Агар
+          // вектори захирашуда аз `title + description`-и кӯтоҳи тоҷикӣ
+          // сохта шавад, ду вектор дар фазоҳои тамоман гуногун меафтанд —
+          // ашёи дуруст ҳаргиз ёфт намешавад, ба ҷои он ашёи тасодуфӣ
+          // мебарояд.
+          //
+          // generate-embedding аксҳоро ХУДАШ аз item_images мегирад (ҳамаро,
+          // на танҳо аввалинро), пас ин ҷо `image_url` фиристода намешавад.
+          // `text` ба модели vision ҳамчун контекст дода мешавад, то ба
+          // ҳамон тавсифи англисӣ ҳамроҳ гардад.
           let embeddingOk = false;
           for (let attempt = 0; attempt < 2 && !embeddingOk; attempt++) {
             const { error: embError } = await supabase.functions.invoke(
               "generate-embedding",
               {
-                body: { item_id: item.id, text: embeddingText },
+                body: {
+                  item_id: item.id,
+                  text: `${itemData.title} ${itemData.description}`,
+                },
               },
             );
             if (!embError) embeddingOk = true;
@@ -545,7 +615,7 @@ function AddItemForm() {
             step > i+1 нодуруст буд — вақте ки step=3 мешуд, қадамҳои 4 ва 5
             (ки аллакай гузашта буданд) хато холӣ (khokistarranga) нишон
             дода мешуданд. */}
-        <div className="w-full flex h-1.5 gap-1 bg-white dark:bg-zinc-900 overflow-hidden shrink-0">
+        <div className="w-full flex h-1.5 gap-1 bg-white dark:bg-zinc-800 overflow-hidden shrink-0">
           {stepOrder.map((s, i) => (
             <div
               key={s}
@@ -555,7 +625,7 @@ function AddItemForm() {
                   ? "bg-emerald-500"
                   : stepIndex === i
                     ? "bg-emerald-400"
-                    : "bg-zinc-100 dark:bg-zinc-800",
+                    : "bg-zinc-100 dark:bg-zinc-700",
               )}
             />
           ))}
@@ -574,9 +644,9 @@ function AddItemForm() {
                 {images.length < 5 && (
                   <div
                     onClick={() => setShowPhotoChoice(true)}
-                    className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-900 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 transition-all group order-first"
+                    className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 transition-all group order-first"
                   >
-                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full bg-canvas dark:bg-zinc-800 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full bg-canvas dark:bg-zinc-700 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
                       <Plus className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6" strokeWidth={3} />
                     </div>
                   </div>
@@ -584,7 +654,7 @@ function AddItemForm() {
                 {previews.map((src, i) => (
                   <div
                     key={i}
-                    className="relative aspect-square rounded-xl overflow-hidden group bg-white dark:bg-zinc-900"
+                    className="relative aspect-square rounded-xl overflow-hidden group bg-white dark:bg-zinc-800"
                   >
                     <Image
                       src={src}
@@ -627,7 +697,7 @@ function AddItemForm() {
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       variant="outline"
-                      className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                      className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                       onClick={() => {
                         setShowPhotoChoice(false);
                         setShowCameraCapture(true);
@@ -642,7 +712,7 @@ function AddItemForm() {
                     </Button>
                     <Button
                       variant="outline"
-                      className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+                      className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
                       onClick={() => {
                         setShowPhotoChoice(false);
                         galleryInputRef.current?.click();
@@ -688,46 +758,46 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="lost"
-                    className="flex items-center gap-2.5 rounded-xl bg-white dark:bg-zinc-900 p-2.5 min-[1084px]:p-3 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-9 h-9 min-[1084px]:w-10 min-[1084px]:h-10 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-base min-[1084px]:text-lg shrink-0">
+                    <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                       🔍
                     </div>
                     <div className="flex-1">
                       <span className="block font-bold text-base min-[1084px]:text-lg leading-snug text-red-600 dark:text-red-500">
                         {t("lost")}
                       </span>
-                      <span className="text-zinc-400 text-xs min-[1084px]:text-[13px] font-medium">
+                      <span className="text-zinc-400 text-[13px] min-[1084px]:text-sm font-medium">
                         {t("lost_desc")}
                       </span>
                     </div>
                     <RadioGroupItem
                       value="lost"
                       id="lost"
-                      className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
                     />
                   </Label>
                 </div>
                 <div className="relative">
                   <Label
                     htmlFor="found"
-                    className="flex items-center gap-2.5 rounded-xl bg-white dark:bg-zinc-900 p-2.5 min-[1084px]:p-3 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                   >
-                    <div className="w-9 h-9 min-[1084px]:w-10 min-[1084px]:h-10 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-base min-[1084px]:text-lg shrink-0">
+                    <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                       🎁
                     </div>
                     <div className="flex-1">
                       <span className="block font-bold text-base min-[1084px]:text-lg leading-snug text-emerald-600 dark:text-emerald-500">
                         {t("found")}
                       </span>
-                      <span className="text-zinc-400 text-xs min-[1084px]:text-[13px] font-medium">
+                      <span className="text-zinc-400 text-[13px] min-[1084px]:text-sm font-medium">
                         {t("found_desc")}
                       </span>
                     </div>
                     <RadioGroupItem
                       value="found"
                       id="found"
-                      className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
                     />
                   </Label>
                 </div>
@@ -773,12 +843,12 @@ function AddItemForm() {
                   <div key={opt.value} className="relative">
                     <Label
                       htmlFor={`loc-${opt.value}`}
-                      className="flex items-center gap-2.5 rounded-xl bg-white dark:bg-zinc-900 p-2.5 min-[1084px]:p-3 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                      className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
                     >
-                      <div className="w-9 h-9 min-[1084px]:w-10 min-[1084px]:h-10 rounded-lg bg-canvas dark:bg-zinc-800 flex items-center justify-center text-base min-[1084px]:text-lg shrink-0">
+                      <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                         {opt.emoji}
                       </div>
-                      <span className="flex-1 font-bold text-[13px] min-[1084px]:text-sm leading-snug">
+                      <span className="flex-1 font-bold text-base min-[1084px]:text-lg leading-snug">
                         {opt.value === "none"
                           ? t("addItemLocationStep.notSpecified")
                           : t(`addItemLocationStep.${opt.value}`)}
@@ -786,7 +856,7 @@ function AddItemForm() {
                       <RadioGroupItem
                         value={opt.value}
                         id={`loc-${opt.value}`}
-                        className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-zinc-200 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
                       />
                     </Label>
                   </div>
@@ -874,15 +944,15 @@ function AddItemForm() {
 
               {/* Failed State UI (White Theme) */}
               {moderationStatus === "failed" && (
-                <div className="space-y-6 text-center max-w-md mx-auto p-6 bg-white dark:bg-zinc-900 rounded-3xl">
-                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-800 flex items-center justify-center mx-auto">
+                <div className="space-y-6 text-center max-w-md mx-auto p-6 bg-white dark:bg-zinc-800 rounded-3xl">
+                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
                     <ShieldAlert className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-red-500" />
                   </div>
                   <div className="space-y-3">
                     <h2 className="text-xl min-[1503px]:text-2xl min-[1920px]:text-[26px] font-bold tracking-tight text-red-600">
                       {t("ai_steps.step5_failed")}
                     </h2>
-                    <div className="bg-canvas dark:bg-zinc-800 p-4 rounded-2xl">
+                    <div className="bg-canvas dark:bg-zinc-700 p-4 rounded-2xl">
                       <p className="text-red-700 font-bold text-sm leading-relaxed">
                         {moderationError || t("error")}
                       </p>
@@ -924,7 +994,7 @@ function AddItemForm() {
                   нанамояд. */}
               {moderationStatus === "passed" && (
                 <div className="space-y-6 max-w-sm mx-auto w-full">
-                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-800 flex items-center justify-center mx-auto">
+                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-emerald-500" />
                   </div>
                   <div className="space-y-2">
@@ -948,7 +1018,7 @@ function AddItemForm() {
                   боз аст) ё AI натиҷаро аллакай пеш аз боркунии ниҳоӣ дод. */}
               {moderationStatus === "idle" && (
                 <div className="space-y-4">
-                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-800 flex items-center justify-center mx-auto">
+                  <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
                     <Loader2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-emerald-500 animate-spin" />
                   </div>
                 </div>
@@ -965,7 +1035,10 @@ function AddItemForm() {
                 </Label>
                 <Input
                   placeholder={t("titleLabel")}
-                  className="rounded-xl h-11 min-[1084px]:h-12 bg-white border-none text-sm min-[1084px]:text-base font-bold shadow-none"
+                  // placeholder:font-medium — худи унвон ғафс мемонад, вале
+                  // placeholder бо ҳамон вазни placeholder-и тавсиф, вагарна
+                  // ғафсӣ онро серангтар нишон медиҳад.
+                  className="rounded-xl h-11 min-[1084px]:h-12 bg-white dark:bg-zinc-800 border-none text-sm min-[1084px]:text-base font-bold placeholder:font-medium shadow-none"
                   value={formData.title}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -992,9 +1065,9 @@ function AddItemForm() {
                         }))
                       }
                       className={cn(
-                        "flex flex-col items-center gap-1 p-2 min-[1084px]:p-2.5 rounded-xl bg-white ring-2 ring-transparent transition-all text-center",
+                        "flex flex-col items-center gap-1 p-2 min-[1084px]:p-2.5 rounded-xl bg-white dark:bg-zinc-800 ring-2 ring-transparent transition-all text-center",
                         formData.category === cat.name
-                          ? "ring-2 ring-emerald-500 bg-white text-emerald-700"
+                          ? "ring-2 ring-emerald-500 bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400"
                           : "text-zinc-600",
                       )}
                     >
@@ -1021,8 +1094,16 @@ function AddItemForm() {
                   {t("description")}
                 </Label>
                 <Textarea
-                  placeholder={t("description")}
-                  className="rounded-xl min-h-[88px] min-[1084px]:min-h-[104px] bg-white border-none text-sm min-[1084px]:text-base font-medium shadow-none resize-none"
+                  // Ваъдаи ин placeholder воқеӣ аст: вақте AI фаъол бошад,
+                  // final_check матнро тоза мекунад (polished_description).
+                  // Вақте хомӯш бошад, ҳеҷ кас онро дуруст намекунад — пас
+                  // аз корбар матни пурраро мепурсем.
+                  placeholder={
+                    aiModerationEnabled
+                      ? t("descPlaceholderAi")
+                      : t("descPlaceholderManual")
+                  }
+                  className="rounded-xl min-h-[88px] min-[1084px]:min-h-[104px] bg-white dark:bg-zinc-800 border-none text-sm min-[1084px]:text-base font-medium shadow-none resize-none"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -1050,7 +1131,7 @@ function AddItemForm() {
                   </Label>
                   <Input
                     placeholder={t("phoneLabel")}
-                    className="rounded-xl h-13 min-[1084px]:h-14 bg-white border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 px-5 transition-all"
+                    className="rounded-xl h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 px-5 transition-all"
                     value={formData.phone}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -1064,7 +1145,7 @@ function AddItemForm() {
                 </div>
                 {formData.type === "lost" && (
                   <div className="space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer select-none rounded-xl bg-white dark:bg-zinc-900 px-4 py-3">
+                    <label className="flex items-center gap-3 cursor-pointer select-none rounded-xl bg-white dark:bg-zinc-800 px-4 py-3">
                       <Checkbox
                         checked={rewardEnabled}
                         className="w-5 h-5 rounded-md border-zinc-200 shrink-0"
@@ -1091,7 +1172,7 @@ function AddItemForm() {
                           </span>
                           <Input
                             placeholder={t("reward_gives_input")}
-                            className="rounded-xl h-13 min-[1084px]:h-14 bg-white border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 pr-14 pl-5 transition-all"
+                            className="rounded-xl h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 pr-14 pl-5 transition-all"
                             value={formData.reward}
                             onChange={(e) => {
                               const digits = e.target.value
@@ -1124,7 +1205,7 @@ function AddItemForm() {
                 variant="outline"
                 size="lg"
                 onClick={prevStep}
-                className="flex-1 rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] border-none shadow-none bg-white font-medium tracking-normal text-sm min-[1084px]:text-base text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all"
+                className="flex-1 rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] border-none shadow-none bg-white dark:bg-zinc-800 font-medium tracking-normal text-sm min-[1084px]:text-base text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all"
               >
                 <ArrowLeft className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5 mr-2" />
                 {t("back")}
@@ -1134,7 +1215,7 @@ function AddItemForm() {
               <Button
                 size="lg"
                 onClick={nextStep}
-                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] bg-emerald-500 hover:bg-emerald-600 transition-all"
+                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all"
               >
                 {t("next")}
               </Button>
@@ -1143,7 +1224,7 @@ function AddItemForm() {
               <Button
                 onClick={nextStep}
                 disabled={loading}
-                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] bg-emerald-500 hover:bg-emerald-600 font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] transition-all"
+                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] bg-emerald-500 hover:bg-emerald-600 text-white font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] transition-all"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 animate-spin" />

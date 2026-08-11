@@ -58,6 +58,13 @@ npm run somon:scheduler
 npm run telegram:import[:dry]   # Telegram channel import (scripts/telegram-import/)
 npm run telegram:scheduler
 npm run telegram:login          # generates TELEGRAM_SESSION
+
+npm run embeddings:rebuild[:dry]  # rebuilds every item_images.embedding via the
+                                  # generate-embedding edge function (costs OpenAI
+                                  # calls). Needed whenever the embedding model or
+                                  # the forensic prompt changes — old vectors stop
+                                  # being comparable to new query vectors.
+                                  # `--missing` limits it to images with no vector.
 ```
 
 `scripts/**` and edge functions under `supabase/functions/**` are excluded from the app's ESLint/TS config — they run under `tsx`/Deno respectively, not the Next.js bundler.
@@ -86,6 +93,7 @@ Per user preference (as of 2026-07-15): verify changes locally (lint/build/tests
 - `lib/services/*.ts` — the query/mutation layer (`item-service.ts`, `profile-service.ts`, `item-deletion.ts`, `account-deletion.ts`, `admin-service.ts`, `stats-service.ts`). Functions optionally accept a `SupabaseClient` param so callers can pass an authenticated client instead of the default anon one.
 - `lib/hooks/use-*.ts` — React Query hooks wrapping the services (`use-items`, `use-profile`, `use-notifications`, `use-admin-*`, `use-web-push`, etc.).
 - Search (`ItemService.getItems`) goes through the `search_items` Postgres RPC (see `supabase/migrations/`), not a plain `.ilike()` query — it ranks exact-title matches first. When touching search behavior, check the matching migration rather than assuming a simple filter.
+- **Visual search** is a pgvector pipeline with a strict symmetry requirement: `generate-embedding` (indexing) and `visual-search` (querying) must use the *same* embedding model, the same `dimensions`, and the same forensic prompt — both currently `text-embedding-3-large` @ 1536 dims with `gpt-4o-mini` vision. If either side changes, every stored vector must be rebuilt (`npm run embeddings:rebuild`) or search silently returns wrong items rather than erroring. `generate-embedding` embeds *every* image of an item; `match_item_images` returns only the best-matching image per item so one listing can't fill the results.
 - Items support soft-delete (`status` column) and a separate hard-delete path (`lib/services/item-deletion.ts`, used by `app/api/items/[id]/delete`) distinct from `ItemService.deleteItem`'s soft-delete-as-"resolved" flow — don't conflate the two.
 - Migrations live in `supabase/migrations/` (timestamp-prefixed SQL, applied via Supabase CLI/dashboard — no ORM). `schema.sql` and `rls_policies.sql` at the repo root are older reference snapshots, not the source of truth for current schema — treat `supabase/migrations/` as authoritative.
 

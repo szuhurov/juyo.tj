@@ -136,7 +136,7 @@ export default function MyPostsPage() {
         </div>
       ) : (
         /* Агар ягон эълон набошад */
-        <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+        <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
           <PackageSearch className="w-16 h-16 min-[1084px]:w-20 min-[1084px]:h-20 min-[1920px]:w-24 min-[1920px]:h-24 text-zinc-300 mx-auto mb-4" />
           <h2 className="text-xl min-[1084px]:text-2xl min-[1920px]:text-[28px] font-bold mb-2">{t('noItemsFound')}</h2>
           <Button asChild className="rounded-md font-bold text-xs min-[1084px]:text-sm min-[1920px]:text-base min-[1084px]:h-10 min-[1920px]:h-11 min-[1084px]:px-5 min-[1920px]:px-6">

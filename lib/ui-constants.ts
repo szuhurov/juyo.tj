@@ -41,3 +41,29 @@ export const HOME_GRID_CLASS =
 export const HOME_CONTENT_PT =
   "pt-[161px] min-[768px]:pt-[177px] min-[1084px]:pt-[185px] " +
   "min-[1503px]:pt-[193px] min-[1920px]:pt-[201px]";
+
+/**
+ * Алоқа байни саҳифаи илова ва рӯйхати эълонҳо.
+ *
+ * "Тамом" ФАВРАН ба профил мегузарад — сабти эълон дар паси парда идома
+ * меёбад ва метавонад баъд аз гузариш тамом шавад. Пас id-и эълони нав
+ * бо event эълон карда мешавад (агар рӯйхат аллакай кушода бошад) ва
+ * ҳамзамон дар sessionStorage навишта мешавад (агар рӯйхат баъдтар
+ * кушода шавад). Рӯйхат онро гирифта, дар болои ҳамон корт ҳисобкунаки
+ * санҷишро нишон медиҳад.
+ */
+export const JUST_PUBLISHED_EVENT = "juyo-item-published";
+export const JUST_PUBLISHED_KEY = "juyo-just-published";
+
+/** Ҳисобкунак ба `startedAt` баста мешавад, на ба лаҳзаи пайдо шудани
+ *  корт — вагарна он баъд аз боркунии аксҳо (3-5 сония) аз нав аз 10
+ *  сар мешуд, дар ҳоле ки санҷиш аллакай кайҳо оғоз шудааст. */
+export const PUBLISH_COUNTDOWN_SECONDS = 10;
+export const PUBLISH_COUNTDOWN_MS = PUBLISH_COUNTDOWN_SECONDS * 1000;
+
+export interface JustPublishedState {
+  /** То тамом шудани сабт маълум нест. */
+  id?: string;
+  /** Лаҳзаи пахши "Нашр" (Date.now()). */
+  startedAt: number;
+}

@@ -71,7 +71,7 @@ export function MobileNavbar() {
     // мешавад, то дар iPhone мӯҳтаво ба хати home ламс накунад.
     <nav
       data-nosnippet
-      className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800"
+      className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden bg-white dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-800"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div>
@@ -128,7 +128,7 @@ export function MobileNavbar() {
                       <AvatarImage src={user?.imageUrl} />
                       <AvatarFallback className={cn(
                         "text-[10px]",
-                        isActive ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-800"
+                        isActive ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-700"
                       )}>
                         {user?.firstName?.charAt(0) || <User className="h-4 w-4" />}
                       </AvatarFallback>

@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useState, useRef, Suspense, useEffect, useMemo } from "react";
+import { useState, useRef, Suspense, useEffect, useMemo, useCallback } from "react";
 import { CATEGORIES, type Item } from "@/lib/services/item-service";
 import { ItemFeedCard } from "@/components/item-feed-card";
 import { useLanguage } from "@/lib/language-context";
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import { HomeFiltersSkeleton } from "@/components/home-filters-skeleton";
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useItems } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
@@ -56,11 +56,52 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     setVisualSearchResults,
   } = useHomeState();
 
-  const [category, setCategory] = useState("All");
-  const [itemType, setItemType] = useState<"lost" | "found" | null>(null);
-  const [locationType, setLocationType] = useState<string | null>(null);
-  const [dateFrom, setDateFrom] = useState<string | undefined>(undefined);
-  const [dateTo, setDateTo] = useState<string | undefined>(undefined);
+  // Филтрҳо дар URL нигоҳ дошта мешаванд, на дар useState.
+  //
+  // САБАБ: пеш аз ин онҳо ҳолати локалӣ буданд — корбар филтр мекард,
+  // ба эълон медаромад ва ҳангоми бозгашт компонент аз нав сохта мешуд,
+  // яъне ҳамаи филтрҳо ба "Ҳама" бармегаштанд ва scroll ба боло меафтод.
+  // Бо URL ҳолат ба худи таърихи браузер тааллуқ дорад: бозгашт онро
+  // худкор барқарор мекунад, ва ҳамзамон рӯйхати филтршуда пайванди
+  // мубодилашаванда мешавад.
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const category = searchParams.get("cat") || "All";
+  const itemType = (searchParams.get("type") as "lost" | "found" | null) || null;
+  const locationType = searchParams.get("loc") || null;
+  const dateFrom = searchParams.get("from") || undefined;
+  const dateTo = searchParams.get("to") || undefined;
+
+  // `replace` (на `push`) — вагарна ҳар як зеркунии филтр як қадами
+  // таърих месозад ва тугмаи "қафо" корбарро аз байни даҳҳо ҳолати
+  // филтр мегузаронад, ба ҷои он ки ба саҳифаи қаблӣ барад.
+  const setFilterParams = useCallback(
+    (updates: Record<string, string | null | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(updates)) {
+        if (!value) params.delete(key);
+        else params.set(key, value);
+      }
+      const qs = params.toString();
+
+      // ҲАЛҚАИ БЕПОЁН — муҳофизати ҳатмӣ.
+      // `router.replace` объекти НАВи searchParams месозад → `useCallback`
+      // аз нав эҷод мешавад → ҳар effect-е, ки ба он вобаста аст, дубора
+      // кор мекунад → боз `replace`… Агар URL воқеан тағйир наёбад,
+      // умуман navigation накун.
+      if (qs === searchParams.toString()) return;
+
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, router, pathname],
+  );
+
+  const setCategory = (value: string) =>
+    setFilterParams({ cat: value === "All" ? null : value });
+  const setItemType = (value: "lost" | "found" | null) =>
+    setFilterParams({ type: value });
+
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [draftFrom, setDraftFrom] = useState("");
   const [draftTo, setDraftTo] = useState("");
@@ -78,9 +119,17 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     [category, itemType, searchQuery, dateFrom, dateTo, locationType],
   );
 
-  const toggleLocationType = (value: string) => {
-    setLocationType((v) => (v === value ? null : value));
-  };
+  const setLocationType = (value: string | null) =>
+    setFilterParams({ loc: value });
+
+  const toggleLocationType = (value: string) =>
+    setFilterParams({ loc: locationType === value ? null : value });
+
+  // Тоза кардани ҳамаи филтрҳо — дар як навсозии URL, то ду render-и
+  // пайдарпай нашавад.
+  const clearAllFilters = useCallback(() => {
+    setFilterParams({ cat: null, type: null, loc: null, from: null, to: null });
+  }, [setFilterParams]);
 
   // initialItems танҳо барои filters-и пешфарз (яъне ҳамон чизе, ки дар
   // сервер гирифта шуда буд) амал мекунад — фарқи filters аз пешфарз
@@ -117,33 +166,31 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     };
   }, [queryClient]);
 
-  // Reset filters when visual search results arrive
+  // Reset filters when visual search results arrive.
+  // `handledVisualRef` кафолат медиҳад, ки бадан як бор ба ҳар натиҷаи
+  // НАВ иҷро шавад — на ҳар дафъае, ки шахсияти `clearAllFilters` иваз
+  // мешавад (он аз searchParams вобаста аст ва пас аз ҳар navigation нав
+  // мешавад).
+  const handledVisualRef = useRef<unknown>(null);
   useEffect(() => {
-    // Синхронизатсия бо натиҷаи ҷустуҷӯи визуалӣ (сигнали берунӣ аз context).
-    if (visualSearchResults) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCategory("All");
-      setItemType(null);
-      setDateFrom(undefined);
-      setDateTo(undefined);
-      setLocationType(null);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+    if (!visualSearchResults) {
+      handledVisualRef.current = null;
+      return;
     }
-  }, [visualSearchResults]);
+    if (handledVisualRef.current === visualSearchResults) return;
+    handledVisualRef.current = visualSearchResults;
+    clearAllFilters();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [visualSearchResults, clearAllFilters]);
 
   // Reset everything when user clicks the home logo
   useEffect(() => {
     // Синхронизатсия бо сигнали берунӣ (goHomeSignal аз context).
     if (goHomeSignal === 0) return;
     setVisualSearchResults(null);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCategory("All");
-    setItemType(null);
-    setDateFrom(undefined);
-    setDateTo(undefined);
-    setLocationType(null);
+    clearAllFilters();
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [goHomeSignal, setVisualSearchResults]);
+  }, [goHomeSignal, setVisualSearchResults, clearAllFilters]);
 
   // Пӯшидани попапи филтри сана ҳангоми клик берун аз он
   useEffect(() => {
@@ -164,14 +211,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   };
 
   const applyDateFilter = () => {
-    setDateFrom(draftFrom || undefined);
-    setDateTo(draftTo || undefined);
+    setFilterParams({ from: draftFrom || null, to: draftTo || null });
     setShowDatePicker(false);
   };
 
   const clearDateFilter = () => {
-    setDateFrom(undefined);
-    setDateTo(undefined);
+    setFilterParams({ from: null, to: null });
     setDraftFrom("");
     setDraftTo("");
     setShowDatePicker(false);
@@ -188,11 +233,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     return allItems;
   }, [allItems, visualSearchResults]);
 
-  // Carousel-и "имрӯз" ва тугмаҳои амали зуд танҳо дар ҳолати "тамошои
-  // озод" маъно доранд — вақте ки корбар аллакай ҷустуҷӯ мекунад ё
-  // натиҷаи ҷустуҷӯи визуалӣ мебинад, ин рӯйхат намефорояд (мисли навори
-  // категорияҳо, ки дар ҳамин ҳолатҳо ба тугмаи "тоза кардан" иваз мешавад).
-  const showTopSections = !visualSearchResults && !searchQuery;
+  // Тугмаҳои амали зуд ҳангоми ҶУСТУҶӮИ МАТНӢ низ намоён мемонанд.
+  // Пештар онҳо бо `!searchQuery` пинҳон мешуданд, вале падинги мӯҳтаво
+  // (HOME_CONTENT_PT) баландии ҳар СЕ қатори филтрбари fixed-ро ҳисоб
+  // мекунад — дар натиҷа зери филтрҳо як холигии калон мемонд.
+  // Ҳангоми ҷустуҷӯи ВИЗУАЛӢ ин қатор ҳамоно пинҳон мешавад, чунки он ҷо
+  // тамоми навор ба тугмаи "тоза кардани натиҷа" иваз мешавад ва падинг
+  // низ дигар аст (pt-[64px]).
+  const showTopSections = !visualSearchResults;
 
   return (
     <div className="pb-18 min-h-screen bg-canvas">
@@ -211,7 +259,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   variant="outline"
                   size="sm"
                   onClick={() => setVisualSearchResults(null)}
-                  className="rounded-full h-8 text-[10px] font-bold tracking-widest border-none bg-white text-emerald-700 dark:bg-zinc-900 dark:text-emerald-400"
+                  className="rounded-full h-8 text-[10px] font-bold tracking-widest border-none bg-white text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400"
                 >
                   <X className="h-3.5 w-3.5 mr-2" />
                   {t("clearResults")}
@@ -224,7 +272,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       "shrink-0 px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer whitespace-nowrap",
                       category === "All"
                         ? "bg-emerald-500 text-white"
-                        : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
+                        : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
                     )}
                   >
                     {t("all")}
@@ -239,7 +287,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                           "shrink-0 px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
                           active
                             ? "bg-emerald-500 text-white"
-                            : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
+                            : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
                         )}
                       >
                         {t(`categories.${cat.id}`)}
@@ -259,7 +307,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
                     itemType === null
                       ? "bg-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
+                      : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
                   )}
                 >
                   {t("all")}
@@ -270,7 +318,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
                     itemType === "lost"
                       ? "bg-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
+                      : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
                   )}
                 >
                   {t("filterLost")}
@@ -281,7 +329,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
                     itemType === "found"
                       ? "bg-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300",
+                      : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
                   )}
                 >
                   {t("filterFound")}
@@ -297,14 +345,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       "h-7 w-7 min-[768px]:h-9 min-[768px]:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-full cursor-pointer",
                       dateFrom || dateTo
                         ? "bg-emerald-500 text-white"
-                        : "bg-white dark:bg-zinc-900 text-emerald-500 dark:text-emerald-400",
+                        : "bg-white dark:bg-zinc-800 text-emerald-500 dark:text-emerald-400",
                     )}
                   >
                     <CalendarDays className="w-4 h-4 min-[768px]:w-5 min-[768px]:h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
                   </button>
 
                   {showDatePicker && (
-                    <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg p-3 space-y-2.5">
+                    <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 shadow-lg p-3 space-y-2.5">
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
                           {t("dateFrom")}
@@ -370,7 +418,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       "shrink-0 snap-start w-[42%] min-[480px]:w-40 min-[1503px]:w-44 min-[1920px]:w-[188px] flex items-center justify-between gap-1.5 pl-3 pr-3 py-3 min-[1503px]:py-3.5 min-[1920px]:py-[15px] rounded-2xl text-left cursor-pointer",
                       active
                         ? "bg-emerald-500"
-                        : "bg-white dark:bg-zinc-900",
+                        : "bg-white dark:bg-zinc-800",
                     )}
                   >
                     <div className="flex flex-col gap-0.5 min-w-0">
@@ -451,9 +499,21 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 </div>
               )}
             </div>
+
+            {/* Анҷоми рӯйхат. Матн вобаста ба ҳолат фарқ мекунад: агар
+                филтр/ҷустуҷӯ фаъол бошад, корбар бояд бифаҳмад, ки ин
+                анҷоми ҲАМИН натиҷа аст, на анҷоми ҳамаи эълонҳо —
+                вагарна метавонад фикр кунад, ки дар сайт чизи дигаре
+                нест. Барои натиҷаи ҷустуҷӯи визуалӣ pagination нест,
+                бинобар ин он ҷо ин матн намоиш дода намешавад. */}
+            {!visualSearchResults && !hasNextPage && !isFetchingNextPage && (
+              <p className="pb-6 text-center text-xs min-[1084px]:text-[13px] font-medium text-zinc-400 dark:text-zinc-500">
+                {isDefaultFilters ? t("endOfListAll") : t("endOfListFiltered")}
+              </p>
+            )}
           </>
         ) : (
-          <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+          <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-800/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
             <h2 className="text-xl font-bold tracking-tight flex items-center justify-center gap-1">
               {isLoading || isFetching || isSearchTyping ? (
                 <>

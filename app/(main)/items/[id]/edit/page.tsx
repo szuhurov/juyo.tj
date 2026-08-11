@@ -513,16 +513,16 @@ export default function EditItemPage({
       }
 
       // 4. ТАҶДИДИ ВЕКТОРИ ҶУСТУҶӮ (Vector/Embedding Update)
-      // Ҳамеша embedding-ро аз нав месозем, то visual search кор кунад
-      // image_url истифода мешавад барои forensic description (мувофиқтар бо visual search)
-      const firstImageUrl = finalImageUrls[0];
+      // Ҳамеша embedding-ро аз нав месозем, то visual search кор кунад.
+      // generate-embedding аксҳоро ХУДАШ аз item_images мегирад (ҳамаро).
+      // `force` лозим аст, чунки агар корбар танҳо унвон/тавсифро иваз
+      // карда бошад, сатрҳои акс нав нашудаанд ва вектори кӯҳна боқӣ мемонад.
       supabase.functions
         .invoke("generate-embedding", {
           body: {
             item_id: id,
-            ...(firstImageUrl
-              ? { image_url: firstImageUrl }
-              : { text: `${finalTitle} ${finalDescription}` }),
+            text: `${finalTitle} ${finalDescription}`,
+            force: true,
           },
         })
         .catch((err) =>
@@ -560,7 +560,7 @@ export default function EditItemPage({
   // Агар дар ҳолати скан кардан бошад, интерфейси Step 3-ро нишон медиҳем
   if (moderationStatus !== "idle") {
     return (
-      <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-start pt-10 sm:pt-16 px-4">
+      <div className="fixed inset-0 z-50 bg-canvas flex flex-col items-center justify-start pt-10 sm:pt-16 px-4">
         <div className="w-full max-w-lg space-y-6 text-center">
           {moderationStatus === "checking" && (
             <div className="space-y-6">
@@ -715,7 +715,7 @@ export default function EditItemPage({
                     />
                     <Label
                       htmlFor="found"
-                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-white cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-between rounded-xl border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-white dark:peer-data-[state=checked]:bg-zinc-900 cursor-pointer transition-all"
                     >
                       <span className="text-2xl min-[1084px]:text-3xl mb-1">🎁</span>
                       <span className="font-bold text-sm min-[1084px]:text-base">{t("found")}</span>

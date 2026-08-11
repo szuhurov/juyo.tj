@@ -54,6 +54,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useItemDetails } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 import { VerifiedBadge } from "@/components/verified-badge";
+import { ImagePlaceholder } from "@/components/image-placeholder";
 
 const REPORT_REASONS = ["spam", "inappropriate", "fake", "offensive", "other"] as const;
 type ReportReason = (typeof REPORT_REASONS)[number];
@@ -123,16 +124,10 @@ export default function ItemDetailsClient({
   };
 
   // Агар маълумот дар кэш бошад (аз саҳифаи асосӣ), онро фавран истифода мебарем
-  const images =
-    item?.images && item.images.length > 0
-      ? item.images
-      : item
-        ? [
-            {
-              image_url: "https://placehold.co/600x600/e2e8f0/64748b?text=JUYO",
-            },
-          ]
-        : [];
+  // Бе акс: ба ҷои URL-и берунии placehold.co (дархости шабакавии зиёдатӣ
+  // ва вобастагӣ ба хидмати бегона) рӯйхат холӣ мемонад ва дар render
+  // ҷойгузини маҳаллӣ (ImagePlaceholder) нишон дода мешавад.
+  const images = item?.images && item.images.length > 0 ? item.images : [];
 
   // Эффект барои автоматикӣ иваз шудани суратҳо
   useEffect(() => {
@@ -371,6 +366,11 @@ export default function ItemDetailsClient({
                   setIsAutoPlaying(false);
                 }}
               >
+                {images.length === 0 && !loading && (
+                  <div className="h-full w-full shrink-0 relative">
+                    <ImagePlaceholder />
+                  </div>
+                )}
                 {images.map((img, index) => (
                   <div
                     key={index}
@@ -455,7 +455,7 @@ export default function ItemDetailsClient({
                 </button>
                 <Badge
                   className={cn(
-                    "font-semibold rounded-md px-3 py-1 border-none bg-white dark:bg-zinc-900",
+                    "font-semibold rounded-md px-3 py-1 border-none bg-white dark:bg-zinc-800",
                     item?.type === "lost"
                       ? "text-red-600 dark:text-red-400"
                       : "text-emerald-600 dark:text-emerald-400",
@@ -478,7 +478,7 @@ export default function ItemDetailsClient({
                 <div className="flex items-center gap-3">
                   <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-zinc-200">
                     <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
-                    <AvatarFallback className="bg-zinc-50 dark:bg-zinc-900">
+                    <AvatarFallback className="bg-zinc-50 dark:bg-zinc-800">
                       <User className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 text-zinc-400" />
                     </AvatarFallback>
                   </Avatar>
@@ -544,7 +544,7 @@ export default function ItemDetailsClient({
               </h1>
               <Badge
                 className={cn(
-                  "shrink-0 font-semibold rounded-md px-3 py-1 text-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700",
+                  "shrink-0 font-semibold rounded-md px-3 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                   item?.type === "lost"
                     ? "text-red-600 dark:text-red-400"
                     : "text-emerald-600 dark:text-emerald-400",
@@ -560,7 +560,7 @@ export default function ItemDetailsClient({
                   {t("description")}
                 </h2>
                 {item?.type === "lost" && item.reward && (
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-emerald-700 dark:text-emerald-400 text-sm min-[1503px]:text-base font-semibold">
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-emerald-700 dark:text-emerald-400 text-sm min-[1503px]:text-base font-semibold">
                     {item.reward === UNSPECIFIED_REWARD
                       ? t("reward_unspecified_viewer")
                       : `${t("reward_gives_viewer")} ${item.reward} TJS`}
@@ -579,7 +579,7 @@ export default function ItemDetailsClient({
                     variant="secondary"
                     size="icon"
                     aria-label={t("edit")}
-                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800"
+                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800"
                     asChild
                   >
                     <Link href={`/items/${id}/edit`}>
@@ -602,7 +602,7 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={t("share")}
-                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
                 onClick={handleShare}
               >
                 <Share2 className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
@@ -611,7 +611,7 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={isSaved ? t("removedFromSaved") : t("addedToSaved")}
-                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 transition-all"
+                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 transition-all"
                 onClick={toggleSave}
                 disabled={isToggling}
               >
@@ -646,7 +646,7 @@ export default function ItemDetailsClient({
                   </a>
                 </Button>
               ) : (
-                <div className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center gap-2 text-zinc-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
+                <div className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center gap-2 text-zinc-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
                   <Phone className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0" /> {t("phoneNotAvailable")}
                 </div>
               )}
@@ -704,7 +704,7 @@ export default function ItemDetailsClient({
                 {t("cancel")}
               </Button>
               <Button
-                className="bg-emerald-500 hover:bg-emerald-600"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white"
                 onClick={handleResolved}
                 disabled={isActionLoading}
               >
@@ -734,7 +734,7 @@ export default function ItemDetailsClient({
                     : t("imageBlockedDesc")}
                 </p>
                 {item?.moderation_result && (
-                  <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium text-xs italic">
+                  <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium text-xs italic">
                     {item.moderation_result.includes(":") ? (
                       <p>
                         {t(item.moderation_result.split(":")[0])}:{" "}

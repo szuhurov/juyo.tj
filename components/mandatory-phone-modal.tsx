@@ -127,7 +127,7 @@ export function MandatoryPhoneModal() {
                 "px-3 py-2 rounded-xl text-[9px] font-bold transition-all duration-300 flex-1 max-w-[100px]",
                 locale === lang.code 
                   ? "bg-emerald-500 text-white shadow-md scale-105" 
-                  : "bg-zinc-100 dark:bg-zinc-900 text-zinc-400 hover:text-zinc-600"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:text-zinc-600"
               )}
             >
               {lang.label}
@@ -136,7 +136,7 @@ export function MandatoryPhoneModal() {
         </div>
 
         <div className="overflow-y-auto flex-1 px-8 pt-6 pb-4 space-y-4 text-center">
-          <div className="w-14 h-14 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center mx-auto mb-1">
+          <div className="w-14 h-14 bg-white dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-1">
             <Phone className="w-7 h-7 text-emerald-500" />
           </div>
           
@@ -158,7 +158,7 @@ export function MandatoryPhoneModal() {
                 <Input 
                   name="phone" 
                   placeholder="XXXXXXXXX" 
-                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-900 font-bold text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
+                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-800 font-bold text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
                   required 
                   inputMode="numeric"
                   onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}

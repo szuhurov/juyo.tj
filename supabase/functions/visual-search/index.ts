@@ -10,6 +10,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// МОДЕЛҲО — бояд бо supabase/functions/generate-embedding АЙНАН ЯКХЕЛА бошанд.
+// Вектори дархост ва вектори захирашуда танҳо дар сурате муқоисашаванда
+// мебошанд, ки аз як модел ва бо як андоза сохта шуда бошанд.
+const EMBEDDING_MODEL = "text-embedding-3-large"
+const EMBEDDING_DIMENSIONS = 1536
+const VISION_MODEL = "gpt-4o-mini"
+
 // MASTER FORENSIC PROMPT (Identical to generate-embedding for 100% Match)
 const MASTER_FORENSIC_PROMPT = `You are an elite forensic AI expert specialized in object identification for a lost-and-found platform.
 Analyze the image with extreme precision to find unique identifiers. Identify ALL of the following, if visible:
@@ -17,6 +24,13 @@ Analyze the image with extreme precision to find unique identifiers. Identify AL
 - Shape, form factor, and style
 - Condition/state (new, used, worn, damaged, scratches, dents, stickers)
 - ANY visible text, printed or handwritten: names, numbers, serial numbers, document fields, license plate numbers, labels, logos — transcribe exactly as seen, do not translate or normalize
+
+IMPORTANT — the input may be a SCREENSHOT of a listing inside an app, not a direct photo:
+- Ignore all app interface elements: status bar, buttons, icons, arrows, card borders, tabs, navigation bars, badges such as "Гумшудааст"/"Ёфтшудааст"/"Lost"/"Found", and dates.
+- Describe ONLY the real-world object shown in the photo inside that screenshot.
+- BUT still transcribe any listing title and description text visible in the screenshot, because it names the same object.
+If the image is a normal photo, just describe the object as usual.
+
 Return JSON: {
   "description_en": "EXHAUSTIVE forensic technical string in English for 100% vector matching, including all transcribed text verbatim"
 }`;
@@ -41,7 +55,7 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: VISION_MODEL,
         messages: [
           { role: "system", content: MASTER_FORENSIC_PROMPT },
           { role: "user", content: [{ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}`, detail: "high" } }] }
@@ -64,7 +78,8 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "text-embedding-3-small",
+        model: EMBEDDING_MODEL,
+        dimensions: EMBEDDING_DIMENSIONS,
         input: forensicResult.description_en,
       }),
     });
@@ -78,29 +93,21 @@ Deno.serve(async (req) => {
 
     const embedding = embData.data[0].embedding;
 
-    // 3. GLOBAL VECTOR SEARCH — search across both lost and found items
-    // p_type must match the ENUM values in schema: 'lost' | 'found'
-    // We run two searches and merge results for global coverage
-    const [lostResults, foundResults] = await Promise.all([
-      supabase.rpc('match_item_images', {
-        query_embedding: embedding,
-        match_threshold: 0.35,
-        match_count: 15,
-        p_type: 'lost',
-      }),
-      supabase.rpc('match_item_images', {
-        query_embedding: embedding,
-        match_threshold: 0.35,
-        match_count: 15,
-        p_type: 'found',
-      }),
-    ]);
-
-    const searchError = lostResults.error || foundResults.error;
-    const similarItems = [
-      ...(lostResults.data || []),
-      ...(foundResults.data || []),
-    ].sort((a: any, b: any) => b.similarity - a.similarity).slice(0, 20);
+    // 3. GLOBAL VECTOR SEARCH
+    //
+    // Як занги ягона бо p_type='all' — пеш аз ин ду занги алоҳида
+    // (lost/found) бо ҳадди 15-тоӣ буд, ки тақсимоти сунъӣ месохт:
+    // агар ҳамаи 20 мувофиқати беҳтарин 'lost' мебуданд, панҷтоаш
+    // партофта мешуд, то ҷой ба 'found'-и заифтар дода шавад.
+    //
+    // match_item_images аз ҳар ашё танҳо БЕҲТАРИН аксашро бармегардонад,
+    // вагарна ашёи серакс якчанд бор дар натиҷа такрор мешуд.
+    const { data: similarItems, error: searchError } = await supabase.rpc('match_item_images', {
+      query_embedding: embedding,
+      match_threshold: 0.35,
+      match_count: 20,
+      p_type: 'all',
+    });
 
     if (searchError) throw searchError;
 

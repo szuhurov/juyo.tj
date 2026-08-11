@@ -108,8 +108,8 @@ function NotificationRow({
           !isDragging && "transition-[transform,opacity] duration-200",
           selected && "ring-2 ring-emerald-500",
           unread
-            ? "bg-white dark:bg-zinc-900 border-emerald-200 dark:border-emerald-900/50"
-            : "bg-white dark:bg-zinc-900 border-zinc-100 dark:border-zinc-800",
+            ? "bg-white dark:bg-zinc-800 border-emerald-200 dark:border-emerald-900/50"
+            : "bg-white dark:bg-zinc-800 border-zinc-100 dark:border-zinc-800",
         )}
       >
         <button
@@ -120,7 +120,7 @@ function NotificationRow({
         <div className="relative shrink-0">
           <ClaimantAvatar url={item.posterAvatar ?? null} name={item.posterName ?? null} className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 text-sm min-[1084px]:text-base" />
           {selected && (
-            <CheckCircle2 className="absolute -bottom-1 -right-1 w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-emerald-500 bg-white dark:bg-zinc-900 rounded-full" />
+            <CheckCircle2 className="absolute -bottom-1 -right-1 w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-emerald-500 bg-white dark:bg-zinc-800 rounded-full" />
           )}
         </div>
         <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ function NotificationRow({
             {item.itemType && (
               <span
                 className={cn(
-                  "shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700",
+                  "shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-bold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
                   item.itemType === "lost"
                     ? "text-red-600 dark:text-red-400"
                     : "text-emerald-600 dark:text-emerald-400",
@@ -237,7 +237,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={markAllOpened}
               aria-label={t("notifMarkAllRead")}
-              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               <CheckCheck className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
             </button>
@@ -245,7 +245,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={() => setSelectMode(true)}
               aria-label={t("notifSelectAll")}
-              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               <CheckSquare className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
             </button>
@@ -257,7 +257,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={() => setSelectMode(false)}
               aria-label={t("notifCancelSelect")}
-              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               <X className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
             </button>
@@ -274,7 +274,7 @@ export default function NotificationsPage() {
       </div>
 
       {status !== "unsupported" && (
-        <div className="flex items-center gap-3 rounded-2xl p-4 mb-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
+        <div className="flex items-center gap-3 rounded-2xl p-4 mb-5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
           <BellRing className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-zinc-500 dark:text-zinc-400 shrink-0" />
           <span className="flex-1 text-sm min-[1084px]:text-base min-[1920px]:text-[17px] font-bold text-zinc-500 dark:text-zinc-400">
             {t("verifyEnablePush")}
@@ -299,7 +299,7 @@ export default function NotificationsPage() {
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-zinc-100 dark:bg-zinc-900 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_6px_14px_-4px_rgba(15,23,42,0.10)] dark:shadow-none p-4 flex items-center gap-3"
+              className="rounded-2xl bg-zinc-100 dark:bg-zinc-800 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_6px_14px_-4px_rgba(15,23,42,0.10)] dark:shadow-none p-4 flex items-center gap-3"
             >
               <Skeleton className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full shrink-0" />
               <div className="min-w-0 flex-1 space-y-2">

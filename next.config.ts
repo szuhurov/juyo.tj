@@ -54,6 +54,12 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
+  // Нишондиҳандаи "Compiling…"-и Next.js дар кунҷи чапи поён. Он танҳо
+  // дар режими dev вуҷуд дорад (дар production ҳаргиз намоён нест), вале
+  // дар мобилӣ маҳз болои navbar меафтад ва санҷиши намуди зоҳириро
+  // халалдор мекунад — бинобар ин хомӯш карда шуд.
+  devIndicators: false,
+
   experimental: {
     // Танҳо icon-ҳои воқеан истифодашударо bundle мекунад (на тамоми
     // китобхонаро) — lucide-react ва radix дар тамоми барнома васеъ
