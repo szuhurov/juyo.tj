@@ -14,7 +14,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next"; // Барои на�
 import { ClerkLocalizationProvider } from "@/components/clerk-localization-provider";
 import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
 import { ThemeProvider } from "@/components/theme-provider"; // Равшан / торик / система
-import { AdsenseScript } from "@/components/adsense-script";
 import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
 import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
 import Script from "next/script";
@@ -67,7 +66,6 @@ export async function generateMetadata() {
     verification: {
       google: "OlHxk_CFMu0ekUQbcbj9aaTRk4bn_kCIoR_7PCNO8L4",
     },
-    other: { "google-adsense-account": "ca-pub-2002195129032167" },
     metadataBase: new URL("https://juyo.tj"),
     alternates: {
       canonical: "/",
@@ -241,7 +239,6 @@ export default async function RootLayout({
             }}
           />
         )}
-        <AdsenseScript />
       </body>
     </html>
   );
