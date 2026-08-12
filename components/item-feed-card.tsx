@@ -14,6 +14,7 @@ import { type Item } from "@/lib/services/item-service";
 import { useLanguage } from "@/lib/language-context";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function ItemFeedCard({ item }: { item: Item }) {
   const { t } = useLanguage();
@@ -59,7 +60,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
           <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
             {item.title || item.category}
           </h3>
-          <span className="shrink-0 text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 dark:text-zinc-400">
+          <span className="shrink-0 text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 dark:text-zinc-500">
             {exactDate}
           </span>
         </div>
@@ -72,11 +73,21 @@ export function ItemFeedCard({ item }: { item: Item }) {
             (`pb-2.5`-и контейнер) қасдан БАРОБАР нигоҳ дошта мешаванд.
             Соя дар доираи тирча аст, на дар худи тугма. */}
         <span className="mt-1.5 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
-          <span className="min-w-0 truncate text-[13px] min-[1084px]:text-sm font-bold text-zinc-600 dark:text-zinc-300">
+          {/* Ранги навъ — сер, на хира: «Гумшуда» ва «Ёфтшуда» бояд аз як
+              назар фарқ кунанд. Тобишҳои 700 дар заминаи `--canvas`
+              контрасти WCAG AA-ро мегузаранд (500/600 не). */}
+          <span
+            className={cn(
+              "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-bold",
+              item.type === "lost"
+                ? "text-rose-700 dark:text-rose-400"
+                : "text-emerald-700 dark:text-emerald-400",
+            )}
+          >
             {item.type === "lost" ? t("lost") : t("found")}
           </span>
-          <span className="shrink-0 grid place-items-center size-8 min-[1084px]:size-9 rounded-full bg-emerald-500 shadow-[0_2px_8px_-2px_rgba(16,185,129,0.55)] dark:shadow-none">
-            <ArrowRight className="w-[19px] h-[19px] min-[1084px]:w-[21px] min-[1084px]:h-[21px] text-white" />
+          <span className="shrink-0 grid place-items-center size-7 min-[1084px]:size-8 rounded-full bg-emerald-500 shadow-[0_2px_8px_-2px_rgba(16,185,129,0.55)] dark:shadow-none">
+            <ArrowRight className="w-[17px] h-[17px] min-[1084px]:w-[19px] min-[1084px]:h-[19px] text-white" />
           </span>
         </span>
       </div>
