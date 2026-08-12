@@ -139,12 +139,14 @@ export function ItemCard({
       <Link
         href={`/items/${item.id}`}
         prefetch
-        className="flex flex-col gap-0 rounded-3xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+        className="group flex flex-col gap-0 rounded-3xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
       >
-        <div className="relative aspect-[4/3] -mb-px rounded-t-3xl bg-zinc-100 dark:bg-zinc-700">
+        {/* Акс аз ҳар чор тараф мудаввар — нишони навъ ба тугмаи поёнӣ
+            кӯчид, пас mask ва `-mb-px` дигар лозим нестанд. */}
+        <div className="relative aspect-[4/3] rounded-3xl bg-zinc-100 dark:bg-zinc-700">
           {/* Placeholder ҲАМЕША дар таг — ниг. ItemFeedCard: бе ин дар
               лаҳзаи боршавии акс ҷои он холӣ мемонад. */}
-          <ImagePlaceholder className="rounded-t-3xl" />
+          <ImagePlaceholder className="rounded-3xl" />
           {thumb && !imgFailed && (
             <Image
               src={thumb}
@@ -153,34 +155,12 @@ export function ItemCard({
               sizes="(max-width: 640px) 50vw, 25vw"
               quality={75}
               className={cn(
-                "object-cover rounded-t-3xl",
+                "object-cover rounded-3xl",
                 item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
               )}
               onError={() => setImgFailed(true)}
             />
           )}
-
-          <span
-            className={cn(
-              "absolute -bottom-1.5 right-0 z-20 inline-flex items-end leading-none rounded-none rounded-tl-lg px-3 pt-1.5 pb-0 text-xs min-[1084px]:text-sm font-bold bg-white dark:bg-zinc-800",
-              item.type === "lost"
-                ? "text-rose-700 dark:text-rose-400"
-                : "text-green-700 dark:text-green-400",
-            )}
-          >
-            {/* Кунҷи БОТИНӢ (concave) дар чапи badge — ниг. ItemFeedCard */}
-            <span
-              aria-hidden
-              className="pointer-events-none absolute bottom-0 right-[calc(100%-1px)] h-6 w-6 bg-white dark:bg-zinc-800"
-              style={{
-                WebkitMaskImage:
-                  "radial-gradient(circle at 0 0, transparent 23px, black 25px)",
-                maskImage:
-                  "radial-gradient(circle at 0 0, transparent 23px, black 25px)",
-              }}
-            />
-            {item.type === "lost" ? t("lost") : t("found")}
-          </span>
 
           {item.similarity_score !== undefined && (
             <span className="absolute top-2 left-2 mt-8 inline-flex items-center rounded-full px-2.5 py-1 text-[9px] font-bold bg-emerald-600 text-white">
@@ -291,26 +271,37 @@ export function ItemCard({
           )}
         </div>
 
-        <div className="px-3.5 pt-2 pb-3.5 flex flex-col flex-1">
+        <div className="px-3.5 pt-2 pb-2.5 flex flex-col flex-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
               {item.title || item.category}
             </h3>
-            <span className="shrink-0 text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 dark:text-zinc-400">
+            <span className="shrink-0 text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 dark:text-zinc-500">
               {exactDate}
             </span>
           </div>
 
-          {item.description && (
-            <div className="relative mt-auto min-h-7 min-[1084px]:min-h-8">
-              <p className="text-[11px] min-[1084px]:text-xs text-zinc-400 dark:text-zinc-400 line-clamp-2 leading-snug pr-8">
-                {item.description}
-              </p>
-              <span className="absolute bottom-0 right-0 w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 flex items-center justify-center rounded-full bg-emerald-500">
-                <ArrowRight className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] text-white" />
-              </span>
-            </div>
-          )}
+          {/* Ба ҷои тавсиф — навъи ашё ва тирча ҳамчун ЯК тугма
+              (ниг. ItemFeedCard — ҳарду корт як хел мемонанд). */}
+          {/* Ниг. ItemFeedCard — ҳамон тугма: 4px васеътар, `-mb-[7px]` поён,
+              соя дар доираи тирча. */}
+          <span className="mt-1.5 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
+            {/* Ранги навъ — ниг. ItemFeedCard: тобишҳои 700, то «Гумшуда» ва
+                «Ёфтшуда» аз як назар фарқ кунанд ва хонда шаванд. */}
+            <span
+              className={cn(
+                "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-bold",
+                item.type === "lost"
+                  ? "text-rose-700 dark:text-rose-400"
+                  : "text-emerald-700 dark:text-emerald-400",
+              )}
+            >
+              {item.type === "lost" ? t("lost") : t("found")}
+            </span>
+            <span className="shrink-0 grid place-items-center size-7 min-[1084px]:size-8 rounded-full bg-emerald-500 shadow-[0_2px_8px_-2px_rgba(16,185,129,0.55)] dark:shadow-none">
+              <ArrowRight className="w-[17px] h-[17px] min-[1084px]:w-[19px] min-[1084px]:h-[19px] text-white" />
+            </span>
+          </span>
         </div>
       </Link>
 
