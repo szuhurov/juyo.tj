@@ -23,17 +23,17 @@ export function HomeFiltersSkeleton() {
             {CATEGORY_WIDTHS.map((w, i) => (
               <Skeleton
                 key={i}
-                className={`shrink-0 ${w} h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full`}
+                className={`shrink-0 ${w} h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full`}
               />
             ))}
           </div>
 
           {/* Қатори навъ (Ҳама / Гумшуда / Ёфтшуда) + тугмаи сана */}
           <div className="flex items-center gap-1.5 mt-1.5">
-            <Skeleton className="w-16 h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
-            <Skeleton className="w-24 h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
-            <Skeleton className="w-24 h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
-            <Skeleton className="ml-auto mr-2 h-7 w-7 min-[768px]:h-9 min-[768px]:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] rounded-full" />
+            <Skeleton className="w-16 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
+            <Skeleton className="w-24 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
+            <Skeleton className="w-24 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
+            <Skeleton className="ml-auto mr-2 h-7 w-7 md:h-9 md:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] rounded-full" />
           </div>
 
           {/* Тайлҳои амали зуд */}

@@ -551,7 +551,7 @@ export default function EditItemPage({
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[50vh]">
+      <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-4 py-8 flex items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-zinc-400" />
       </div>
     );
@@ -673,7 +673,7 @@ export default function EditItemPage({
 
   return (
     <TooltipProvider>
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-4 py-8 max-w-2xl">
         <Card className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_-2px_rgba(15,23,42,0.08)] dark:shadow-none">
           {/* Сарлавҳаи форма */}
           <CardHeader className="bg-emerald-600 text-white p-6">

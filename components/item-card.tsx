@@ -271,7 +271,7 @@ export function ItemCard({
           )}
         </div>
 
-        <div className="px-3.5 pt-2 pb-2.5 flex flex-col flex-1">
+        <div className="px-3.5 pt-1.5 pb-2 flex flex-col flex-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
               {item.title || item.category}
@@ -281,11 +281,18 @@ export function ItemCard({
             </span>
           </div>
 
-          {/* Ба ҷои тавсиф — навъи ашё ва тирча ҳамчун ЯК тугма
+          {/* Тавсиф — як сатр, ниг. ItemFeedCard (ҳарду корт як хел мемонанд). */}
+          {item.description && (
+            <p className="mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
+              {item.description}
+            </p>
+          )}
+
+          {/* Навъи ашё ва тирча ҳамчун ЯК тугма
               (ниг. ItemFeedCard — ҳарду корт як хел мемонанд). */}
           {/* Ниг. ItemFeedCard — ҳамон тугма: 4px васеътар, `-mb-[7px]` поён,
               соя дар доираи тирча. */}
-          <span className="mt-1.5 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
+          <span className="mt-1 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
             {/* Ранги навъ — ниг. ItemFeedCard: тобишҳои 700, то «Гумшуда» ва
                 «Ёфтшуда» аз як назар фарқ кунанд ва хонда шаванд. */}
             <span

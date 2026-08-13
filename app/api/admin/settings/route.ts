@@ -31,6 +31,19 @@ export async function PATCH(req: NextRequest) {
   if (typeof body.ai_moderation_enabled === "boolean") {
     updates.ai_moderation_enabled = body.ai_moderation_enabled;
   }
+  // Мӯҳлати зиндагии эълон бо рӯз. Маҳдудият ҳатмист: 0 маънои "ҳамаро
+  // фардо нест кун"-ро медод, рақами бемаънӣ бошад ҷадвали cron-ро вайрон
+  // мекард. 7 рӯз то 10 сол — доираи оқилона.
+  if (body.post_lifetime_days !== undefined) {
+    const days = Number(body.post_lifetime_days);
+    if (!Number.isInteger(days) || days < 7 || days > 3650) {
+      return NextResponse.json(
+        { error: "post_lifetime_days бояд адади бутуни байни 7 ва 3650 бошад" },
+        { status: 400 },
+      );
+    }
+    updates.post_lifetime_days = days;
+  }
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "Ягон майдони муҷоз нест" }, { status: 400 });
   }

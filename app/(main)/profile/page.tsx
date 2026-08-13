@@ -50,13 +50,18 @@ import {
   QrCode,
   Menu as MenuIcon,
   Download,
-  RefreshCw,
   Palette,
   KeyRound,
   MousePointerClick,
   UserX,
   Globe,
   UserCog,
+  HelpCircle,
+  Grid2x2,
+  Scan,
+  Droplet,
+  Type,
+  type LucideIcon,
 } from "lucide-react";
 // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
@@ -121,6 +126,34 @@ function getClerkErrorMessage(err: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+/** Барчаспи майдонҳои танзимоти QR — панҷ майдон пештар се услуби гуногун
+ *  доштанд (яке бе иконка, дигаре бо андоза ва ранги дигар). Як компонент
+ *  кафолат медиҳад, ки ҳамаашон якхела монанд. */
+function QrFieldLabel({
+  icon: Icon,
+  children,
+}: {
+  icon: LucideIcon;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 ml-1">
+      <Icon className="w-3.5 h-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
+      <Label className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
+        {children}
+      </Label>
+    </div>
+  );
+}
+
+/** Сатҳи ягонаи ҳамаи идоракунандаҳои QR (Select ва тугмаҳои ранг), то
+ *  баландӣ, кунҷ ва рафтори hover дар ҳарду режим якхела бошанд. Пештар
+ *  `hover:bg-zinc-50` варианти `dark:` надошт — дар режими торик ҳангоми
+ *  hover майдон сафед мешуд. */
+const QR_CONTROL_CLASS =
+  "h-11 w-full rounded-xl bg-white dark:bg-zinc-800 border-none shadow-none " +
+  "hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors";
 
 function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
@@ -772,9 +805,9 @@ function ProfileContent() {
                 {/* Сутуни пешнамоиш. Танҳо ХУДИ QR sticky аст — корти
                     статус, тугмаҳо ва танзимот аз таги он мегузаранд. */}
                 <div className="flex flex-col">
-                <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   <div className="relative group bg-transparent sm:bg-canvas rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
-                    <div className="scale-95 min-[768px]:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
+                    <div className="scale-95 md:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
                         settings={{
@@ -879,17 +912,23 @@ function ProfileContent() {
                   </div>
 
                 {/* Тугмаҳои амалиёт — низ берун аз sticky */}
-                <div className="grid grid-cols-2 gap-3 mt-5 w-full px-1">
+                {/* Тугмаи «Барои чӣ лозим?» танҳо иконка аст (мураббаи 44px —
+                    ҳадди ақали ламси мобилӣ), пас `aria-label` ҲАТМӢ мешавад:
+                    бе он барои screen reader ин тугма беном мемонад.
+                    Тугмаи боргирӣ бо `flex-1` тамоми ҷои боқимондаро мегирад. */}
+                <div className="flex items-center gap-3 mt-5 w-full px-1">
                   <Button
                     onClick={() => setShowWhyQRModal(true)}
-                    className="h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all gap-1.5 px-2.5"
+                    aria-label={t("qrSecurityQuestion") || "Барои чӣ лозим?"}
+                    title={t("qrSecurityQuestion") || "Барои чӣ лозим?"}
+                    className="shrink-0 size-11 p-0 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all"
                   >
-                    {t("qrSecurityQuestion") || "Барои чӣ лозим?"}
+                    <HelpCircle className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
                   </Button>
                   <Button
                     onClick={handleDownloadQR}
                     disabled={isDownloading}
-                    className="h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all gap-1.5 px-2.5"
+                    className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all gap-1.5 px-2.5"
                   >
                     {isDownloading ? (
                       <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
@@ -906,19 +945,16 @@ function ProfileContent() {
                   {/* Стил ва Шаклҳо */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <LayoutGrid className="w-3 h-3 text-zinc-400" />
-                        <Label className="text-xs font-bold text-zinc-500">
-                          {t("qrDotsStyle") || "Нуқтаҳо"}
-                        </Label>
-                      </div>
+                      <QrFieldLabel icon={Grid2x2}>
+                        {t("qrDotsStyle") || "Нуқтаҳо"}
+                      </QrFieldLabel>
                       <Select
                         value={qrSettings.dotsType}
                         onValueChange={(val) =>
                           setQrSettings({ ...qrSettings, dotsType: val as DotType })
                         }
                       >
-                        <SelectTrigger className="h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
+                        <SelectTrigger className={cn(QR_CONTROL_CLASS, "text-sm font-bold px-3.5 text-zinc-600 dark:text-zinc-300")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
@@ -943,12 +979,12 @@ function ProfileContent() {
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <RefreshCw className="w-3 h-3 text-zinc-400" />
-                        <Label className="text-xs font-bold text-zinc-500">
-                          {t("qrCornersStyle") || "Кунҷҳо"}
-                        </Label>
-                      </div>
+                      {/* Пештар ин ҷо `RefreshCw` (тирҳои навкунӣ) буд — ба
+                          «шакли кунҷҳо» ҳеҷ рабте надошт ва хонандаро гумроҳ
+                          мекард. `Scan` маҳз кунҷҳои QR-ро нишон медиҳад. */}
+                      <QrFieldLabel icon={Scan}>
+                        {t("qrCornersStyle") || "Кунҷҳо"}
+                      </QrFieldLabel>
                       <Select
                         value={qrSettings.cornersSquareType}
                         onValueChange={(val) => {
@@ -962,7 +998,7 @@ function ProfileContent() {
                           });
                         }}
                       >
-                        <SelectTrigger className="h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-sm font-bold px-3.5 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 transition-all">
+                        <SelectTrigger className={cn(QR_CONTROL_CLASS, "text-sm font-bold px-3.5 text-zinc-600 dark:text-zinc-300")}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
@@ -983,45 +1019,49 @@ function ProfileContent() {
                   {/* Рангҳо */}
                   <div className="grid grid-cols-2 gap-3 relative">
                     <div className="space-y-2 relative">
-                      <div className="flex items-center gap-1.5 ml-1">
-                        <Palette className="w-3 h-3 text-zinc-400" />
-                        <Label className="text-xs font-bold text-zinc-500">
-                          {t("qrColorLabel")}
-                        </Label>
-                      </div>
+                      <QrFieldLabel icon={Palette}>
+                        {t("qrColorLabel")}
+                      </QrFieldLabel>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setActivePicker(activePicker === "qr" ? null : "qr");
                         }}
-                        className="w-full h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
+                        aria-label={t("qrColorLabel")}
+                        className={cn(QR_CONTROL_CLASS, "flex items-center gap-2.5 px-2.5 color-trigger")}
                       >
-                        <div
-                          className="w-7 h-7 rounded-xl border border-black/10"
+                        {/* `rounded-md`, на `rounded-xl`: дар андозаи 28px
+                            кунҷи 12px намунаро қариб доира мекард ва он ба
+                            ранги QR (мураббаъ) шабоҳат надошт. */}
+                        <span
+                          className="size-7 shrink-0 rounded-md border border-black/10 dark:border-white/15"
                           style={{ backgroundColor: qrSettings.qrColor }}
                         />
-                        <span className="font-mono text-xs font-bold text-zinc-500">
+                        <span className="font-mono text-xs font-bold uppercase text-zinc-600 dark:text-zinc-300">
                           {qrSettings.qrColor}
                         </span>
                       </button>
                     </div>
 
                     <div className="space-y-2 relative">
-                      <Label className="text-xs font-bold text-zinc-500 ml-1">
+                      {/* Пештар ин ягона барчаспи бе иконка буд — аз ҷуфти
+                          худ (Ранги QR) фарқ мекард ва сатр каҷ менамуд. */}
+                      <QrFieldLabel icon={Droplet}>
                         {t("qrBgLabel")}
-                      </Label>
+                      </QrFieldLabel>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setActivePicker(activePicker === "bg" ? null : "bg");
                         }}
-                        className="w-full h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none p-1 flex items-center gap-3 transition-all color-trigger px-2 hover:bg-zinc-50"
+                        aria-label={t("qrBgLabel")}
+                        className={cn(QR_CONTROL_CLASS, "flex items-center gap-2.5 px-2.5 color-trigger")}
                       >
-                        <div
-                          className="w-7 h-7 rounded-xl border border-black/10"
+                        <span
+                          className="size-7 shrink-0 rounded-md border border-black/10 dark:border-white/15"
                           style={{ backgroundColor: qrSettings.bgColor }}
                         />
-                        <span className="font-mono text-xs font-bold text-zinc-500">
+                        <span className="font-mono text-xs font-bold uppercase text-zinc-600 dark:text-zinc-300">
                           {qrSettings.bgColor}
                         </span>
                       </button>
@@ -1072,10 +1112,8 @@ function ProfileContent() {
                   </div>
 
                   {/* Текст */}
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] font-bold text-zinc-400 tracking-widest ml-1">
-                      {t("qrFooterText")}
-                    </Label>
+                  <div className="space-y-2">
+                    <QrFieldLabel icon={Type}>{t("qrFooterText")}</QrFieldLabel>
                     <Input
                       value={qrSettings.text}
                       onChange={(e) =>
@@ -1084,7 +1122,7 @@ function ProfileContent() {
                           text: e.target.value,
                         })
                       }
-                      className="h-12 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none font-bold text-sm focus-visible:ring-2 focus-visible:ring-zinc-200"
+                      className={cn(QR_CONTROL_CLASS, "px-3.5 font-bold text-sm text-zinc-600 dark:text-zinc-300 focus-visible:ring-2 focus-visible:ring-emerald-500/25")}
                       placeholder={t("qrInputPlaceholder")}
                     />
                   </div>
@@ -1098,7 +1136,11 @@ function ProfileContent() {
         return (
           <div className="pb-20">
             {/* Сарлавҳаи таби Танзимот */}
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-4 mb-4 -mx-4">
+            {/* Full-bleed: `-mx-*` шофияи волидро мекашад ва `px-*` онро
+                дубора медиҳад — бинобар ин ҳарду бояд БАЙНИ breakpoint-ҳо
+                бо шофияи волид (`px-2 sm:px-4`) баробар монанд, вагарна
+                банд аз экран мебарояд ва scroll-и уфуқӣ пайдо мешавад. */}
+            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-4">
               <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                 {t("settings")}
               </h3>
@@ -1483,7 +1525,7 @@ function ProfileContent() {
         return (
           <div className="space-y-6">
             {/* Сарлавҳаи таби Захирашудаҳо */}
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-4 mb-6 -mx-4">
+            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-6">
               <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                 {t("savedItems")}
               </h3>
@@ -1529,27 +1571,27 @@ function ProfileContent() {
 
   return (
     <TooltipProvider>
-      <div className="w-full px-3 sm:px-4 py-0 sm:py-8 min-h-[90vh]">
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 py-0 sm:py-8 min-h-[90vh]">
         {/* Mobile Profile Header (Instagram Style) */}
         {activeTab === "posts" && (
           <div className="block lg:hidden rounded-3xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 pt-6 pb-6 mt-4 mb-4">
             <div className="flex items-center gap-6 mb-6">
-              <Avatar className="w-20 h-20 min-[768px]:w-24 min-[768px]:h-24 border-2 border-zinc-100 dark:border-zinc-800 p-0.5">
+              <Avatar className="w-20 h-20 md:w-24 md:h-24 border-2 border-zinc-100 dark:border-zinc-800 p-0.5">
                 <AvatarImage
                   src={user?.imageUrl}
                   className="rounded-full object-cover"
                 />
-                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-700 text-xl min-[768px]:text-2xl font-bold">
+                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-700 text-xl md:text-2xl font-bold">
                   {user?.firstName?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1 flex flex-col gap-1">
-                <h2 className="text-xl min-[768px]:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none flex items-center gap-1.5">
+                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none flex items-center gap-1.5">
                   {user?.firstName} {user?.lastName}
                   {profile?.is_verified && <VerifiedBadge />}
                 </h2>
-                <p className="text-xs min-[768px]:text-sm font-bold text-zinc-500 truncate max-w-[200px] min-[768px]:max-w-[260px]">
+                <p className="text-xs md:text-sm font-bold text-zinc-500 truncate max-w-[200px] md:max-w-[260px]">
                   {user?.primaryEmailAddress?.emailAddress}
                 </p>
               </div>
@@ -1558,32 +1600,32 @@ function ProfileContent() {
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => handleTabChange("info")}
-                className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] min-[768px]:text-[11px] tracking-wider shadow-none"
+                className="flex-1 h-9 md:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] md:text-[11px] tracking-wider shadow-none"
               >
-                <Pencil className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4 mr-2 text-zinc-500" />
+                <Pencil className="w-3.5 h-3.5 md:w-4 md:h-4 mr-2 text-zinc-500" />
                 {t("edit") || "Edit"}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex-1 h-9 min-[768px]:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] min-[768px]:text-[11px] tracking-wider shadow-none gap-2">
-                    <MenuIcon className="w-4 h-4 min-[768px]:w-[18px] min-[768px]:h-[18px] text-zinc-500" />
+                  <Button className="flex-1 h-9 md:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] md:text-[11px] tracking-wider shadow-none gap-2">
+                    <MenuIcon className="w-4 h-4 md:w-[18px] md:h-[18px] text-zinc-500" />
                     {t("settings") || "Settings"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 min-[768px]:w-60 rounded-xl shadow-xl p-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+                  className="w-56 md:w-60 rounded-xl shadow-xl p-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
                 >
                   {menuItems.map((item) => (
                     <DropdownMenuItem
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                     >
                       <div
                         className={cn("p-1.5 rounded-md", item.bg, item.color)}
                       >
-                        <item.icon className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                        <item.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </div>
                       {item.title}
                     </DropdownMenuItem>
@@ -1591,10 +1633,10 @@ function ProfileContent() {
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                     >
                       <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                        <UserCog className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                        <UserCog className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </div>
                       {t("adminPanel")}
                     </DropdownMenuItem>

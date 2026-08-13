@@ -99,7 +99,7 @@ export default function MyPostsPage() {
   };
 
   return (
-    <div className="w-full px-2 sm:px-4 py-8">
+    <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 py-8">
       {/* Сарлавҳаи саҳифа */}
       <div className="flex items-center gap-4 mb-8 px-2 sm:px-0">
         <h1 className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-bold tracking-tight">{t('myPosts')}</h1>

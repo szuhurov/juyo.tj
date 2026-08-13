@@ -7,7 +7,7 @@
  */
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -32,6 +32,8 @@ function NotificationRow({
   onToggle,
   onDelete,
   onDeleteClick,
+  onExpiryRespond,
+  responding,
   t,
 }: {
   item: NotificationItem;
@@ -41,14 +43,43 @@ function NotificationRow({
   onToggle: () => void;
   onDelete: () => void;
   onDeleteClick: () => void;
+  onExpiryRespond: (action: "keep" | "delete") => void;
+  responding: boolean;
   t: (key: string) => string;
 }) {
+  const isExpiry = item.kind === "expiry_confirm";
+  // Вақти ҷорӣ дар effect гирифта мешавад, на дар render: ҳам `Date.now()`
+  // дар render функсияи нопок аст, ҳам вақти сервер бо вақти браузер
+  // мувофиқ намеояд ва ҳангоми hydration номутобиқатӣ медод. `null` то
+  // mount — дар ин лаҳза сатри вақт умуман нишон дода намешавад.
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isExpiry) return;
+    // Синхронизатсия бо соати браузер (системаи берун аз React) — ҳамон
+    // намунаи `mounted` дар components/header.tsx.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNowMs(Date.now());
+    const id = setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, [isExpiry]);
+
+  const hoursLeft =
+    nowMs === null
+      ? null
+      : Math.max(
+          0,
+          Math.ceil((new Date(item.expiryDeadline ?? item.createdAt).getTime() - nowMs) / 3_600_000),
+        );
+
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef<number | null>(null);
   const draggedRef = useRef(false);
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    // Огоҳии мӯҳлатро бо swipe пинҳон кардан мумкин нест — пинҳон шуданаш
+    // эълонро наҷот намедиҳад, cron ба ҳар ҳол онро нест мекунад.
+    if (isExpiry) return;
     startXRef.current = e.clientX;
     draggedRef.current = false;
   };
@@ -107,9 +138,14 @@ function NotificationRow({
           "relative z-10 rounded-2xl border overflow-hidden touch-pan-y",
           !isDragging && "transition-[transform,opacity] duration-200",
           selected && "ring-2 ring-emerald-500",
-          unread
-            ? "bg-white dark:bg-zinc-800 border-emerald-200 dark:border-emerald-900/50"
-            : "bg-white dark:bg-zinc-800 border-zinc-100 dark:border-zinc-800",
+          // Огоҳии мӯҳлат ранги ҳушдор мегирад — он вақти маҳдуд дорад ва
+          // бе ҷавоб эълон нест мешавад, пас набояд бо огоҳиномаҳои
+          // муқаррарӣ омехта шавад.
+          isExpiry
+            ? "bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-900/60"
+            : unread
+              ? "bg-white dark:bg-zinc-800 border-emerald-200 dark:border-emerald-900/50"
+              : "bg-white dark:bg-zinc-800 border-zinc-100 dark:border-zinc-800",
         )}
       >
         <button
@@ -141,9 +177,15 @@ function NotificationRow({
               </span>
             )}
           </div>
-          <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-1">
-            {format(new Date(item.createdAt), "dd.MM.yyyy HH:mm")}
-          </p>
+          {isExpiry ? (
+            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-bold mt-1 text-amber-700 dark:text-amber-500">
+              {hoursLeft === null ? " " : t("expiryNotice").replace("%{hours}", String(hoursLeft))}
+            </p>
+          ) : (
+            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-1">
+              {format(new Date(item.createdAt), "dd.MM.yyyy HH:mm")}
+            </p>
+          )}
         </div>
         {unread && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
         <ChevronDown
@@ -166,25 +208,62 @@ function NotificationRow({
               />
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/items/${item.itemId}`}
-              className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-xl bg-emerald-500 text-white font-bold text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
-            >
-              {item.itemTitle}
-              <ArrowRight className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
-            </Link>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteClick();
-              }}
-              className="h-11 w-11 min-[1084px]:h-12 min-[1084px]:w-12 min-[1920px]:h-[52px] min-[1920px]:w-[52px] shrink-0 flex items-center justify-center rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-            >
-              <Trash2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" />
-            </button>
-          </div>
+          {isExpiry ? (
+            /* Ду интихоби возеҳ. Тугмаи «нест кардан» ба ҷои `onDeleteClick`
+               (пинҳон кардани огоҳинома) эълони ВОҚЕИРО нест мекунад — пас
+               ранги сурх ва матни он бояд ҳамин маъноро диҳад. */
+            <>
+              <p className="mb-3 text-xs min-[1084px]:text-sm font-medium text-zinc-600 dark:text-zinc-300 leading-relaxed">
+                {t("expiryQuestion")}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={responding}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onExpiryRespond("keep");
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 rounded-xl bg-emerald-500 text-white font-bold text-xs min-[1084px]:text-sm disabled:opacity-60 transition-all"
+                >
+                  <CheckCircle2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
+                  {t("expiryKeep")}
+                </button>
+                <button
+                  type="button"
+                  disabled={responding}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onExpiryRespond("delete");
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100/50 dark:border-red-900/20 font-bold text-xs min-[1084px]:text-sm disabled:opacity-60 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
+                  {t("expiryDelete")}
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/items/${item.itemId}`}
+                className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-xl bg-emerald-500 text-white font-bold text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
+              >
+                {item.itemTitle}
+                <ArrowRight className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
+              </Link>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteClick();
+                }}
+                className="h-11 w-11 min-[1084px]:h-12 min-[1084px]:w-12 min-[1920px]:h-[52px] min-[1920px]:w-[52px] shrink-0 flex items-center justify-center rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <Trash2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
       </div>
@@ -194,12 +273,26 @@ function NotificationRow({
 
 export default function NotificationsPage() {
   const { t } = useLanguage();
-  const { items, loading, markOpened, markAllOpened, isOpened, dismissNotification } = useNotifications({
-    categoryLimit: 100,
-  });
+  const { items, loading, markOpened, markAllOpened, isOpened, dismissNotification, respondToExpiry } =
+    useNotifications({ categoryLimit: 100 });
   const { status, subscribed, subscribe, unsubscribe } = useWebPush();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
+  // Кадом эълон ҳозир ҷавоб мефиристад — то тугмаҳо ду бор зада нашаванд.
+  const [respondingId, setRespondingId] = useState<string | null>(null);
+
+  const handleExpiryRespond = async (item: NotificationItem, action: "keep" | "delete") => {
+    if (respondingId) return;
+    setRespondingId(item.id);
+    try {
+      await respondToExpiry(item, action);
+      toast.success(action === "keep" ? t("expiryKeptToast") : t("success"));
+    } catch {
+      toast.error(t("error"));
+    } finally {
+      setRespondingId(null);
+    }
+  };
 
   const handleDelete = async (item: NotificationItem) => {
     try {
@@ -225,7 +318,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+    <div className="max-w-2xl mx-auto px-2.5 sm:px-4 py-6 sm:py-8">
       <div className="sticky top-12 sm:top-16 z-30 bg-canvas py-3 mb-4 flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800">
         <Bell className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-zinc-500 dark:text-zinc-400 shrink-0" />
         <h1 className="flex-1 text-base min-[1084px]:text-lg min-[1920px]:text-xl font-bold tracking-tight text-zinc-500 dark:text-zinc-400 ml-1">
@@ -324,6 +417,8 @@ export default function NotificationsPage() {
               onToggle={() => toggleExpand(item)}
               onDelete={() => handleDelete(item)}
               onDeleteClick={() => handleDelete(item)}
+              onExpiryRespond={(action) => handleExpiryRespond(item, action)}
+              responding={respondingId === item.id}
               t={t}
             />
           ))}

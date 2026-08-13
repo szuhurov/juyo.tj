@@ -68,7 +68,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const pathname = usePathname();
 
   const category = searchParams.get("cat") || "All";
-  const itemType = (searchParams.get("type") as "lost" | "found" | null) || null;
+  // Пешфарз — «Ёфтшуда»: одам аввал чизи ёфтшударо мебинад. Ҳолати «Ҳама»
+  // дигар нест, пас `type`-и холӣ маънои «Ёфтшуда»-ро дорад ва URL-и
+  // саҳифаи асосӣ тоза мемонад (`?type=` танҳо барои «Гумшуда» пайдо мешавад).
+  const itemType = (searchParams.get("type") as "lost" | "found") || "found";
   const locationType = searchParams.get("loc") || null;
   const dateFrom = searchParams.get("from") || undefined;
   const dateTo = searchParams.get("to") || undefined;
@@ -99,8 +102,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
   const setCategory = (value: string) =>
     setFilterParams({ cat: value === "All" ? null : value });
-  const setItemType = (value: "lost" | "found" | null) =>
-    setFilterParams({ type: value });
+  // «Ёфтшуда» пешфарз аст — онро аз URL мебарорем, то суроға тоза монад
+  // (ҳамон мантиқи `setCategory` бо "All").
+  const setItemType = (value: "lost" | "found") =>
+    setFilterParams({ type: value === "found" ? null : value });
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [draftFrom, setDraftFrom] = useState("");
@@ -134,8 +139,13 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // initialItems танҳо барои filters-и пешфарз (яъне ҳамон чизе, ки дар
   // сервер гирифта шуда буд) амал мекунад — фарқи filters аз пешфарз
   // маънои онро дорад, ки корбар аллакай филтреро иваз кардааст.
+  // `type === "found"` ПЕШФАРЗ аст, на филтри интихобкардаи корбар — пас он
+  // ҳолати пешфарз ба ҳисоб меравад. Вагарна `isDefaultFilters` ҳамеша
+  // `false` мешуд, `initialItems`-и сервер ҳеҷ гоҳ истифода намешуд ва ҳар
+  // боркунӣ як fetch-и зиёдатии клиентӣ медод (ниг. page.tsx — он низ маҳз
+  // ҳамин филтрро мегирад).
   const isDefaultFilters =
-    !filters.category && !filters.type && !filters.search && !filters.dateFrom && !filters.dateTo && !filters.locationType;
+    !filters.category && filters.type === "found" && !filters.search && !filters.dateFrom && !filters.dateTo && !filters.locationType;
 
   const {
     data,
@@ -184,9 +194,20 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   }, [visualSearchResults, clearAllFilters]);
 
   // Reset everything when user clicks the home logo
+  //
+  // `handledGoHomeRef` ҲАТМӢ аст — худи ҳамон муҳофизат, ки дар effect-и
+  // болоӣ (`handledVisualRef`) ҳаст. Бе он effect ба ҲАР тағйири URL кор
+  // мекард, зеро `clearAllFilters` аз `searchParams` вобаста аст ва баъд аз
+  // ҳар navigation шахсияти нав мегирад. Натиҷа: агар корбар як бор
+  // тугмаи «Home»-ро аз саҳифаи дигар зада бошад (goHomeSignal ≠ 0), пас
+  // ҳар зеркунии филтр фавран бекор мешуд — тугма ба ҳолати пештара
+  // бармегашт ва URL тоза мемонд.
+  const handledGoHomeRef = useRef(0);
   useEffect(() => {
     // Синхронизатсия бо сигнали берунӣ (goHomeSignal аз context).
     if (goHomeSignal === 0) return;
+    if (handledGoHomeRef.current === goHomeSignal) return;
+    handledGoHomeRef.current = goHomeSignal;
     setVisualSearchResults(null);
     clearAllFilters();
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -246,8 +267,15 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     <div className="pb-18 min-h-screen bg-canvas">
       {/* Қисмати Филтрҳо (Header/Filters) */}
       <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-canvas">
-        <div className="w-full pl-3 sm:pl-4">
-          <div className="w-full py-1.5">
+        <div className="w-full max-w-7xl mx-auto pl-2.5 sm:pl-4">
+          {/* Худи header аллакай 6px зери майдони ҷустуҷӯ мемонад, пас `pt-0.5`
+              фосиларо ба 8px мебарорад — каме калонтар аз 6px-и байни қаторҳои
+              филтр, то ҷустуҷӯ аз онҳо ҷудо ба назар расад. `py-1.5`-и пештара
+              12px медод, ки аз ҳад зиёд буд.
+              ДИҚҚАТ: ҳар тағйири ин рақам баландии бари fixed-ро иваз мекунад —
+              `HOME_CONTENT_PT` бояд ҳамон қадар иваз шавад, вагарна зери бар
+              холигӣ мемонад ё кортҳо зери он медароянд. */}
+          <div className="w-full pt-0.5 pb-1.5">
           <div
             className={cn(
               "flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-2.5 -my-2.5",
@@ -269,7 +297,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   <button
                     onClick={() => setCategory("All")}
                     className={cn(
-                      "shrink-0 px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer whitespace-nowrap",
+                      "shrink-0 px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer whitespace-nowrap",
                       category === "All"
                         ? "bg-emerald-500 text-white"
                         : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
@@ -284,7 +312,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                         key={cat.id}
                         onClick={() => setCategory(cat.name)}
                         className={cn(
-                          "shrink-0 px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
+                          "shrink-0 px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
                           active
                             ? "bg-emerald-500 text-white"
                             : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
@@ -301,39 +329,27 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           {/* Интихоби навъ: Гумшуда ё Ёфтшуда — қатори алоҳида, бе swipe (адади ками tugma) */}
           {!visualSearchResults && (
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                <button
-                  onClick={() => setItemType(null)}
-                  className={cn(
-                    "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
-                    itemType === null
-                      ? "bg-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-                  )}
-                >
-                  {t("all")}
-                </button>
-                <button
-                  onClick={() => setItemType("lost")}
-                  className={cn(
-                    "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
-                    itemType === "lost"
-                      ? "bg-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-                  )}
-                >
-                  {t("filterLost")}
-                </button>
-                <button
-                  onClick={() => setItemType("found")}
-                  className={cn(
-                    "px-3 min-[768px]:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 min-[768px]:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
-                    itemType === "found"
-                      ? "bg-emerald-500 text-white"
-                      : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-                  )}
-                >
-                  {t("filterFound")}
-                </button>
+                {/* Ранг ҳамон забони кортҳост: ёфтшуда сабз, гумшуда сурх.
+                    Ҳангоми ғайрифаъол ранг дар МАТН аст, ҳангоми фаъол дар
+                    ЗАМИНА — вагарна матни сурх дар заминаи сабз меафтод. */}
+                {(
+                  [
+                    { value: "found", label: t("filterFound"), on: "bg-emerald-500 text-white", off: "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400" },
+                    { value: "lost", label: t("filterLost"), on: "bg-rose-500 text-white", off: "bg-white dark:bg-zinc-800 text-rose-700 dark:text-rose-400" },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setItemType(opt.value)}
+                    aria-pressed={itemType === opt.value}
+                    className={cn(
+                      "px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
+                      itemType === opt.value ? opt.on : opt.off,
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
 
                 {/* Филтри бозаи сана (Аз/То) — то лаби рости қатор тела дода мешавад (ml-auto) */}
                 <div className="relative ml-auto mr-2" ref={datePickerRef}>
@@ -342,13 +358,13 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={openDatePicker}
                     aria-label={t("filterByDate")}
                     className={cn(
-                      "h-7 w-7 min-[768px]:h-9 min-[768px]:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-full cursor-pointer",
+                      "h-7 w-7 md:h-9 md:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-full cursor-pointer",
                       dateFrom || dateTo
                         ? "bg-emerald-500 text-white"
                         : "bg-white dark:bg-zinc-800 text-emerald-500 dark:text-emerald-400",
                     )}
                   >
-                    <CalendarDays className="w-4 h-4 min-[768px]:w-5 min-[768px]:h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
+                    <CalendarDays className="w-4 h-4 md:w-5 md:h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
                   </button>
 
                   {showDatePicker && (
@@ -402,9 +418,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
           {/* Тугмаҳои амали зуд — дар ДОХИЛИ filter bar-и fixed, то ин қисм
               (филтрҳо + quick actions) ҳангоми scroll асло аз ҷояш начунбад —
-              танҳо рӯйхати элонҳо аз таги он мегузарад. */}
+              танҳо рӯйхати элонҳо аз таги он мегузарад.
+
+              Бе `mt-`: контейнери дарунӣ бо `py-5 -my-5` (ҷой барои соя, то
+              он бурида нашавад) аллакай ~6px ба поён тела медиҳад. Бо
+              `mt-1.5` фосила 12px мешуд — ду баробари фосилаи байни қатори
+              катигория ва навъ. Ченкардашуда, на тахминӣ. */}
           {showTopSections && (
-            <div className="mt-1.5 mb-2">
+            <div className="mb-2">
             <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5">
               {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
                 const active = value === "all" ? locationType === null : locationType === value;
@@ -461,9 +482,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
       {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
       <div
         className={cn(
-          "w-full px-3 sm:px-4 min-[1084px]:px-5 touch-pan-y",
+          "w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5 touch-pan-y",
           visualSearchResults
-            ? "pt-[64px] min-[768px]:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
+            ? "pt-[64px] md:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
             : HOME_CONTENT_PT,
         )}
       >
@@ -471,7 +492,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         allItems.length === 0 &&
         !searchQuery &&
         category === "All" &&
-        itemType === null &&
+        itemType === "found" &&
         !isSearchTyping ? (
           <div className={HOME_GRID_CLASS}>
             {[...Array(8)].map((_, i) => (
@@ -544,7 +565,7 @@ function HomeSkeleton() {
   return (
     <div className="pb-18 min-h-screen bg-canvas">
       <HomeFiltersSkeleton />
-      <div className={cn("w-full px-3 sm:px-4 min-[1084px]:px-5", HOME_CONTENT_PT)}>
+      <div className={cn("w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5", HOME_CONTENT_PT)}>
         <div className={HOME_GRID_CLASS}>
           {[...Array(8)].map((_, i) => (
             <ItemCardSkeleton key={i} />

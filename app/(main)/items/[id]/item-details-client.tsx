@@ -320,7 +320,7 @@ export default function ItemDetailsClient({
     // Skeleton нишон медиҳем агар: auth ҳанӯз муайян нашудааст ё query кор мекунад
     if (token === undefined || loading) {
       return (
-        <div className="mx-auto max-w-6xl md:pt-8 px-4 py-4 md:px-4">
+        <div className="mx-auto max-w-6xl md:pt-8 px-2.5 py-4 md:px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
             <Skeleton className="w-full aspect-square rounded-[32px]" />
             <div className="space-y-6 pt-10 md:pt-0">
@@ -338,7 +338,7 @@ export default function ItemDetailsClient({
     }
     // Танҳо пас аз тайёр шудани auth ва анҷоми query"ёфт нашуд"нишон медиҳем
     return (
-      <div className="container mx-auto px-4 py-20 text-center">
+      <div className="container mx-auto px-2.5 sm:px-4 py-20 text-center">
         <h1 className="text-2xl font-bold">{t("itemNotFound")}</h1>
       </div>
     );
@@ -581,22 +581,22 @@ export default function ItemDetailsClient({
                     variant="secondary"
                     size="icon"
                     aria-label={t("edit")}
-                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800"
+                    className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800"
                     asChild
                   >
                     <Link href={`/items/${id}/edit`}>
-                      <Pencil className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
+                      <Pencil className="w-5 h-5 md:w-7 md:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
                     </Link>
                   </Button>
                   <Button
                     variant="secondary"
                     size="icon"
                     aria-label={t("delete")}
-                    className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50"
+                    className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isActionLoading}
                   >
-                    <Trash2 className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
+                    <Trash2 className="w-5 h-5 md:w-7 md:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
                   </Button>
                 </>
               )}
@@ -604,22 +604,22 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={t("share")}
-                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
                 onClick={handleShare}
               >
-                <Share2 className="w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
+                <Share2 className="w-5 h-5 md:w-7 md:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
               </Button>
               <Button
                 variant="secondary"
                 size="icon"
                 aria-label={isSaved ? t("removedFromSaved") : t("addedToSaved")}
-                className="flex-1 h-12 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 transition-all"
+                className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 transition-all"
                 onClick={toggleSave}
                 disabled={isToggling}
               >
                 <Bookmark
                   className={cn(
-                    "w-5 h-5 min-[768px]:w-7 min-[768px]:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9",
+                    "w-5 h-5 md:w-7 md:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9",
                     isSaved && "fill-emerald-600",
                   )}
                 />
@@ -630,25 +630,25 @@ export default function ItemDetailsClient({
               {isLoaded && isOwner ? (
                 <Button
                   size="lg"
-                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
                   onClick={() => setShowResolvedConfirm(true)}
                   disabled={isActionLoading}
                 >
-                  <CheckCircle2 className="w-5 h-5 min-[768px]:w-6 min-[768px]:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" />{" "}
+                  <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" />{" "}
                   {t("resolved")}?
                 </Button>
               ) : item?.phone_number ? (
                 <Button
                   size="lg"
-                  className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
                   asChild
                 >
                   <a href={`tel:${item.phone_number}`}>
-                    <Phone className="w-5 h-5 min-[768px]:w-6 min-[768px]:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" /> {t("call")}
+                    <Phone className="w-5 h-5 md:w-6 md:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" /> {t("call")}
                   </a>
                 </Button>
               ) : (
-                <div className="h-14 min-[768px]:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center gap-2 text-zinc-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
+                <div className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center gap-2 text-zinc-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
                   <Phone className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0" /> {t("phoneNotAvailable")}
                 </div>
               )}

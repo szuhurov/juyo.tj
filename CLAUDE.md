@@ -25,6 +25,11 @@ This file is the entry point. The details live under `.claude/` — see [docs/ai
 
 **Skills** (`.claude/skills/`) — auto-discovered, no install step. `juyo-nextjs`, `juyo-api-contract`, `juyo-test-writer`, `juyo-git-workflow`, `juyo-clerk-auth`, `juyo-supabase-data`, `juyo-supabase-storage`, `juyo-i18n`, `juyo-e2e-playwright`, `juyo-seo-pwa`.
 
+Clerk's own skills (`clerk-cli`, `clerk-nextjs-patterns`, `clerk-expo`, …) come from
+`npx skills add clerk/skills` — recorded in `skills-lock.json`, but git-ignored,
+because the content lives in `.agents/` and `.claude/skills/clerk*` are symlinks
+that do not survive a clone on Windows. Run the command to restore them.
+
 **Subagents** (`.claude/agents/`) — the main session is always the orchestrator; these are delegable roles. Reviewers (`code-reviewer`, `security-reviewer`, `api-contract-reviewer`, `qa-verifier`) are read-only by their `tools:` frontmatter. Write-workers (`nextjs-worker`, `server-worker`, `test-worker`, `data-storage-worker`, `e2e-worker`, `i18n-worker`) require an explicit, non-overlapping write scope from the orchestrator.
 
 **Claims** (`.claude/claims/`, git-ignored) — before writing files, run `git status --short` and check for another session's `status: active` claim covering the same paths. A SessionStart hook prints active claims. Never edit or close someone else's claim.

@@ -143,7 +143,7 @@ export const AdminService = {
   getSettings() {
     return adminFetch("/api/admin/settings");
   },
-  updateSettings(updates: { ai_moderation_enabled?: boolean }) {
+  updateSettings(updates: { ai_moderation_enabled?: boolean; post_lifetime_days?: number }) {
     return adminFetch("/api/admin/settings", {
       method: "PATCH",
       body: JSON.stringify(updates),

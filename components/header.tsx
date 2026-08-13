@@ -232,9 +232,13 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
         data-nosnippet
         className="fixed top-0 left-0 right-0 z-50 w-full bg-canvas"
       >
-        <div className="w-full flex h-12 sm:h-16 items-center px-3 sm:px-4 gap-2 sm:gap-4">
-          {/* Қисми чап: Логотип ва Паймоиш */}
-          <div className="flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
+        <div className="w-full max-w-7xl mx-auto flex h-12 sm:h-16 items-center px-2.5 sm:px-4 gap-2 sm:gap-4">
+          {/* Қисми чап: Логотип ва Паймоиш.
+              `hidden sm:flex`: дар мобил мазмуни он холист (матни логотип
+              `hidden sm:inline` аст, паймоиш desktop-ӣ), вале ҳамчун элементи
+              flex ҳанӯз як `gap` (8px) мегирифт — аз ин сабаб майдони ҷустуҷӯ
+              дар 18px меистод, дар ҳоле ки шофияи кортҳо 10px аст. */}
+          <div className="hidden sm:flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
             <Link
               href="/"
               aria-label="JUYO"
@@ -497,44 +501,44 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 min-[768px]:w-60 rounded-xl shadow-xl p-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+                  className="w-56 md:w-60 rounded-xl shadow-xl p-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
                 >
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=posts")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
                     <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <LayoutGrid className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                      <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     {t("myPosts")}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=info")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
                     <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <Settings className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                      <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     {t("settings")}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=qr")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
                     <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <QrCode className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                      <QrCode className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     {t("qrMyCode")}
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
                     onClick={() => router.push("/profile?tab=saved")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
                     <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <Bookmark className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                      <Bookmark className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     {t("savedItems")}
                   </DropdownMenuItem>
@@ -542,10 +546,10 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                     >
                       <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                        <UserCog className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                        <UserCog className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </div>
                       {t("adminPanel")}
                     </DropdownMenuItem>
@@ -553,10 +557,10 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
                   <DropdownMenuItem
                     onClick={() => signOut(() => router.push("/"))}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] min-[768px]:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                   >
                     <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <LogOut className="w-3.5 h-3.5 min-[768px]:w-4 min-[768px]:h-4" />
+                      <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </div>
                     {t("signOut")}
                   </DropdownMenuItem>

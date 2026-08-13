@@ -121,7 +121,7 @@ export function PrivacyContent() {
   const currentContent = content[locale as keyof typeof content] || content.en;
 
   return (
-    <div className="max-w-3xl mx-auto my-6 px-5 sm:px-8 py-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+    <div className="max-w-3xl mx-auto my-6 px-4 sm:px-8 py-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
       <h1 className="text-3xl font-bold mb-4">{currentContent.title}</h1>
       <p className="text-sm text-zinc-500 mb-8">{currentContent.lastUpdated}</p>
 

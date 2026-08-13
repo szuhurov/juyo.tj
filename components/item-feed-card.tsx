@@ -55,7 +55,10 @@ export function ItemFeedCard({ item }: { item: Item }) {
         )}
       </div>
 
-      <div className="px-3 pt-2 pb-2.5 flex flex-col flex-1">
+      {/* `pt`/`pb` ва `mt`-и тугма ҳамзамон 2px кам шуданд — баландии корт
+          кам мешавад, вале мувозинати боло/поёни тугма нигоҳ дошта мешавад.
+          Акс даст нахӯрд: `aspect-[4/3]` бетағйир аст. */}
+      <div className="px-3 pt-1.5 pb-2 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
             {item.title || item.category}
@@ -65,14 +68,26 @@ export function ItemFeedCard({ item }: { item: Item }) {
           </span>
         </div>
 
+        {/* Тавсиф — ЯК сатр, хокистарӣ ва хурдтар аз унвон, то иерархия
+            вайрон нашавад. `truncate` ҳатмист: баландии корт дар grid бояд
+            новобаста аз дарозии матн якхела монад. Матн ҳангоми нашр аллакай
+            аз рақамҳои ҳуҷҷат тоза шудааст (`stripDocumentNumbers` дар
+            саҳифаи `items/add`), пас ин ҷо филтр лозим нест. */}
+        {item.description && (
+          <p className="mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            {item.description}
+          </p>
+        )}
+
         {/* Ба ҷои тавсиф — навъи ашё ва тирча ҳамчун ЯК тугма.
             `span` аст, на `button`: тамоми корт аллакай `<a>` мебошад ва
             тугма дар дохили пайванд HTML-и нодуруст медиҳад. */}
         {/* Тугма аз ҳар чор тараф мудаввар, аз контент 4px васеътар (`-mx-1`),
-            заминааш ҳамон фони барнома. Фосилаи болои он (`mt-1.5`) ва поёни он
-            (`pb-2.5`-и контейнер) қасдан БАРОБАР нигоҳ дошта мешаванд.
+            заминааш ҳамон фони барнома. Фосилаи болои он (`mt-1`) ва поёни он
+            (`pb-2`-и контейнер) қасдан БАРОБАР нигоҳ дошта мешаванд — агар
+            яке тағйир ёбад, дигаре низ бояд ҳамон қадар тағйир ёбад.
             Соя дар доираи тирча аст, на дар худи тугма. */}
-        <span className="mt-1.5 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
+        <span className="mt-1 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
           {/* Ранги навъ — сер, на хира: «Гумшуда» ва «Ёфтшуда» бояд аз як
               назар фарқ кунанд. Тобишҳои 700 дар заминаи `--canvas`
               контрасти WCAG AA-ро мегузаранд (500/600 не). */}

@@ -5,11 +5,19 @@
  * "меҷаҳад" (layout shift), ки маҳз ҳамон чизест, ки skeleton бояд
  * пешгирӣ кунад.
  *
+ * САФЕД ҲАРГИЗ. Пештар контейнер `bg-zinc-100` (#f4f4f5) буд, ки дар
+ * заминаи canvas амалан сафед менамуд. Ҳоло тамоми корт як сояи хокистарӣ
+ * аст: сатҳ равшантар, блокҳо торектар — то он «шабаҳи» корт бошад, на
+ * корти сафеди холӣ.
+ *
  * `variant`: feed → саҳифаи асосӣ (rounded-[1.125rem], px-3),
  *            profile → ItemCard дар профил (rounded-3xl, px-3.5).
  */
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+
+/** Блокҳои дохилӣ аз сатҳи корт як зина торектаранд — вагарна дар як ранг
+ *  ғарқ мешуданд ва шакли корт хонда намешуд. */
+const BLOCK = "animate-pulse bg-zinc-300/80 dark:bg-zinc-700";
 
 export function ItemCardSkeleton({
   variant = "feed",
@@ -17,38 +25,45 @@ export function ItemCardSkeleton({
   variant?: "feed" | "profile";
 }) {
   const feed = variant === "feed";
+  const radius = feed ? "rounded-[1.125rem]" : "rounded-3xl";
 
   return (
     <div
       className={cn(
-        // САФЕД НЕ: корти сафеди холӣ дар заминаи canvas "шикаста" менамуд.
-        // Шакли корт аз СОЯ меояд, на аз пуркунии сафед.
-        "flex flex-col gap-0 bg-zinc-100 dark:bg-zinc-800 overflow-hidden",
-        feed ? "rounded-[1.125rem]" : "rounded-3xl",
-        "shadow-[0_1px_3px_rgba(15,23,42,0.06),0_6px_14px_-4px_rgba(15,23,42,0.10),0_14px_28px_-14px_rgba(15,23,42,0.12)] dark:shadow-none",
+        "flex flex-col gap-0 overflow-hidden bg-zinc-200/70 dark:bg-zinc-800",
+        radius,
       )}
     >
-      {/* Акс — ҳамон aspect ва ҳамон мудаввари болоӣ */}
-      <Skeleton
-        className={cn(
-          "aspect-[4/3] w-full -mb-px rounded-none",
-          feed ? "rounded-t-[1.125rem]" : "rounded-t-3xl",
-        )}
-      />
+      {/* Акс — дар корти воқеӣ аз ҳар ЧОР тараф мудаввар аст, на танҳо аз боло */}
+      <div className={cn("aspect-[4/3] w-full", radius, BLOCK)} />
 
-      <div className={cn("flex flex-col flex-1 pt-2 pb-3", feed ? "px-3" : "px-3.5")}>
+      {/* Падингҳо ва фосилаҳо айнан аз ItemFeedCard: pt-1.5 / mt-0.5 / mt-1 / pb-2.
+          Баландии ҲАР сатр низ ба line-box-и воқеии матн баста шудааст —
+          ченкардашуда, на тахминӣ:
+
+            сатри унвон  20px → 24px аз min-[1084px]  (text-sm → text-base)
+            тавсиф       16.5px → 16px               (text-[11px] → text-xs)
+            тугма        32px → 36px                 (p-0.5 + size-7 → size-8)
+
+          Ҷамъ: 88.5px дар мобилӣ, 96px дар min-[1084px] — айнан мисли корт.
+          Агар ин рақамҳо аз ҳам ҷудо шаванд, ҳангоми омадани маълумот
+          тарҳбандӣ меҷаҳад, ки маҳз ҳамон чизест, ки skeleton пешгирӣ мекунад. */}
+      <div className={cn("flex flex-1 flex-col pt-1.5 pb-2", feed ? "px-3" : "px-3.5")}>
         {/* Сатри унвон + сана */}
-        <div className="flex items-center justify-between gap-2">
-          <Skeleton className="h-4 min-[1084px]:h-[18px] w-2/3 rounded" />
-          <Skeleton className="h-3 min-[1084px]:h-3.5 w-14 shrink-0 rounded" />
+        <div className="flex h-5 min-[1084px]:h-6 items-center justify-between gap-2">
+          <div className={cn("h-3.5 min-[1084px]:h-4 w-2/3 rounded", BLOCK)} />
+          <div className={cn("h-3 w-12 shrink-0 rounded", BLOCK)} />
         </div>
 
-        {/* Тавсиф (2 сатр) + доираи тир — ҳамон min-h, то корт нахезад */}
-        <div className="relative mt-auto min-h-7 min-[1084px]:min-h-8 pt-1.5">
-          <Skeleton className="h-2.5 min-[1084px]:h-3 w-full rounded" />
-          <Skeleton className="mt-1.5 h-2.5 min-[1084px]:h-3 w-1/2 rounded" />
-          <Skeleton className="absolute bottom-0 right-0 w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 rounded-full" />
+        {/* Тавсиф — ЯК сатр (корт низ `truncate` дорад, на ду сатр) */}
+        <div className="mt-0.5 flex h-[16.5px] min-[1084px]:h-4 items-center">
+          <div className={cn("h-2.5 w-4/5 rounded", BLOCK)} />
         </div>
+
+        {/* Тугмаи навъ — ЯК навори яклухт. Доираи тир қасдан НЕСТ: он дар
+            skeleton заминаи сабзи худро талаб мекунад ва ҳамчун унсури
+            аллакай "тайёр" ба назар мерасид, дар ҳоле ки корт ҳанӯз бор мешавад. */}
+        <div className={cn("mt-1 -mx-1 h-8 min-[1084px]:h-9 rounded-full", BLOCK)} />
       </div>
     </div>
   );

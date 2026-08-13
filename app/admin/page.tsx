@@ -7,6 +7,7 @@ import { Users, Package, CheckCircle2, BellRing } from "lucide-react";
 import { useAdminStats, type StatsPeriod } from "@/lib/hooks/use-admin-stats";
 import { StatCard } from "@/components/admin/stat-card";
 import { AiModerationToggle } from "@/components/admin/ai-moderation-toggle";
+import { PostExpiryPanel } from "@/components/admin/post-expiry-panel";
 import { ReprocessEmbeddingsButton } from "@/components/admin/reprocess-embeddings-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -83,6 +84,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <AiModerationToggle />
+      <PostExpiryPanel />
       <ReprocessEmbeddingsButton />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

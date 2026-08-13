@@ -18,7 +18,7 @@ export default function MainLoading() {
   return (
     <div className="pb-18 min-h-screen bg-canvas">
       <HomeFiltersSkeleton />
-      <div className={`w-full px-3 sm:px-4 min-[1084px]:px-5 ${HOME_CONTENT_PT}`}>
+      <div className={`w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5 ${HOME_CONTENT_PT}`}>
         <div className={HOME_GRID_CLASS}>
           {[...Array(8)].map((_, i) => (
             <ItemCardSkeleton key={i} />

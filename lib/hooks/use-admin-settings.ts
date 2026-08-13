@@ -5,6 +5,8 @@ import { ADMIN_KEYS } from "@/lib/hooks/admin-query-keys";
 export interface AppSettings {
   id: boolean;
   ai_moderation_enabled: boolean;
+  /** Мӯҳлати зиндагии эълон бо рӯз (пешфарз 180). */
+  post_lifetime_days: number;
   updated_at: string;
 }
 
@@ -19,7 +21,8 @@ export function useAdminSettings() {
 export function useUpdateAdminSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (updates: { ai_moderation_enabled?: boolean }) => AdminService.updateSettings(updates),
+    mutationFn: (updates: { ai_moderation_enabled?: boolean; post_lifetime_days?: number }) =>
+      AdminService.updateSettings(updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.settings() });
     },

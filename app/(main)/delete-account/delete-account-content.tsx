@@ -108,7 +108,7 @@ export function DeleteAccountContent() {
 
   if (submitted) {
     return (
-      <div className="max-w-lg mx-auto px-4 py-20 text-center">
+      <div className="max-w-lg mx-auto px-2.5 sm:px-4 py-20 text-center">
         <div className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center mx-auto mb-5">
           <CheckCircle2 className="w-7 h-7 text-emerald-600" />
         </div>
@@ -119,7 +119,7 @@ export function DeleteAccountContent() {
   }
 
   return (
-    <div className="max-w-lg mx-auto my-6 px-5 sm:px-8 py-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+    <div className="max-w-lg mx-auto my-6 px-4 sm:px-8 py-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
       <h1 className="text-3xl font-bold mb-4">{c.title}</h1>
       <p className="mb-8 text-zinc-600 dark:text-zinc-400 leading-relaxed">{c.intro}</p>
 

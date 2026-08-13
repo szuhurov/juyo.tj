@@ -13,8 +13,11 @@ const OPENED_STORAGE_KEY = "juyo_opened_notification_ids";
 const TOAST_SHOWN_STORAGE_KEY = "juyo_toast_last_shown";
 
 export interface NotificationItem {
+  /** `expiry_confirm` — то нест шудани эълони ХУДИ корбар 72 соат мондааст
+   *  ва ӯ бояд «ҳанӯз лозим» ё «не» гӯяд. Ҷадвали алоҳида надорад: мисли
+   *  `category_post` аз худи маълумот ҳисоб мешавад. */
+  kind: "category_post" | "expiry_confirm";
   id: string;
-  kind: "category_post";
   itemId: string;
   itemTitle: string;
   itemImageUrl: string | null;
@@ -22,6 +25,8 @@ export interface NotificationItem {
   createdAt: string;
   posterName?: string | null;
   posterAvatar?: string | null;
+  /** Танҳо барои `expiry_confirm` — лаҳзаи несткунӣ (`items.expires_at`). */
+  expiryDeadline?: string;
 }
 
 function loadIds(key: string): Set<string> {
@@ -102,23 +107,66 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       posterAvatar: row.poster_avatar_url ?? null,
     }));
 
+    // Эълонҳои ХУДИ корбар, ки огоҳии «72 соат мондааст» гирифтаанд ва ҳанӯз
+    // нест нашудаанд. Ду шарт ду маъно доранд:
+    //   expiry_notified_at не-холӣ  → огоҳинома рафтааст (лаҳзаи ГУЗАШТА)
+    //   expires_at > ҳозир          → ҳанӯз зинда аст (лаҳзаи ОЯНДА)
+    // RLS кифоя аст — корбар сатрҳои худро мебинад, `supabaseAdmin` лозим нест.
+    const { data: expiring } = await supabase
+      .from("items")
+      .select("id, title, expires_at, expiry_notified_at, type, item_images(image_url)")
+      .eq("user_id", userId)
+      .not("expiry_notified_at", "is", null)
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: true });
+
+    interface ExpiringRow {
+      id: string;
+      title: string | null;
+      expires_at: string;
+      expiry_notified_at: string;
+      type?: "lost" | "found" | null;
+      item_images?: { image_url: string }[] | null;
+    }
+
+    const expiryRows: NotificationItem[] = (expiring ?? []).map((row: ExpiringRow) => ({
+      id: `expiry:${row.id}`,
+      kind: "expiry_confirm" as const,
+      itemId: row.id,
+      itemTitle: row.title ?? "",
+      itemImageUrl: row.item_images?.[0]?.image_url ?? null,
+      itemType: row.type ?? null,
+      // Дар рӯйхат вақти ОМАДАНИ огоҳинома нишон дода мешавад…
+      createdAt: row.expiry_notified_at,
+      // …вале ҳисоби «чанд соат мондааст» аз лаҳзаи НЕСТКУНӢ меояд.
+      expiryDeadline: row.expires_at,
+    }));
+
+    // Огоҳии несткунӣ ҲАМЕША дар боло — вақташ маҳдуд аст (72 соат), дар ҳоле
+    // ки эълонҳои категория метавонанд интизор шаванд.
+    const merged = [...expiryRows, ...rows];
+
     // Toast барои ҳар ID танҳо якбор фавран мебарояд, баъд on то 1 соат
     // такрор намешавад — ва агар корбар аллакай онро дида бошад (seenIds),
     // дигар ҳаргиз такрор намешавад, танҳо огоҳиномаҳои воқеан НАВ мебароянд.
     const now = Date.now();
     const timestamps = toastShownAt.current;
     let timestampsChanged = false;
-    for (const r of rows) {
+    for (const r of merged) {
       if (seenIds.has(r.id)) continue;
       const lastShown = timestamps[r.id];
       if (lastShown && now - lastShown < TOAST_REMIND_MS) continue;
-      toast.info(t("categoryPostToast").replace("%{title}", r.itemTitle));
+      toast.info(
+        r.kind === "expiry_confirm"
+          ? t("expiryToast").replace("%{title}", r.itemTitle)
+          : t("categoryPostToast").replace("%{title}", r.itemTitle),
+      );
       timestamps[r.id] = now;
       timestampsChanged = true;
     }
     if (timestampsChanged) saveToastTimestamps(timestamps);
 
-    setItems(rows);
+    setItems(merged);
     setLoading(false);
   }, [userId, getToken, t, categoryLimit, seenIds]);
 
@@ -182,6 +230,11 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
   // deleted_notifications_archive (барои admin) сабт мекунад.
   const dismissNotification = useCallback(
     async (item: NotificationItem) => {
+      // Огоҳии мӯҳлатро пинҳон кардан МУМКИН НЕСТ: пинҳон шуданаш эълонро
+      // наҷот намедиҳад — cron ба ҳар ҳол баъд аз 72 соат онро нест мекунад.
+      // Корбар бояд «Истодааст» ё «Не»-ро интихоб кунад.
+      if (item.kind === "expiry_confirm") return;
+
       const token = await getToken({ template: "supabase" });
       if (!token) return;
       const supabase = createClerkSupabaseClient(token);
@@ -201,5 +254,28 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     [getToken],
   );
 
-  return { items, count, loading, refetch: fetchAll, markAllSeen, markOpened, markAllOpened, isOpened, dismissNotification };
+  /** Ҷавоби соҳиб ба огоҳии мӯҳлат. `keep` — боз як давра, `delete` — фавран
+   *  нест. Route худаш соҳибиро аз рӯи база месанҷад. */
+  const respondToExpiry = useCallback(
+    async (item: NotificationItem, action: "keep" | "delete") => {
+      const token = await getToken();
+      const res = await fetch(`/api/items/${item.itemId}/expiry`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      // Рӯйхати эълонҳо дигар шуд — саҳифаҳои кушода бояд навсозӣ шаванд.
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("items-updated"));
+      }
+    },
+    [getToken],
+  );
+
+  return { items, count, loading, refetch: fetchAll, markAllSeen, markOpened, markAllOpened, isOpened, dismissNotification, respondToExpiry };
 }

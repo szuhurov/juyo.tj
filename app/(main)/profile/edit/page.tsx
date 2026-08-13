@@ -14,7 +14,7 @@ export default function EditProfilePage() {
   const { t } = useLanguage();
   
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-2.5 sm:px-4 py-8 max-w-4xl">
       {/* Сарлавҳа */}
       <div className="flex items-center gap-4 mb-8">
         <h1 className="text-2xl font-bold tracking-tight">{t('personalInfo')}</h1>
