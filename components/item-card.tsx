@@ -139,14 +139,14 @@ export function ItemCard({
       <Link
         href={`/items/${item.id}`}
         prefetch
-        className="group flex flex-col gap-0 rounded-3xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+        className="group flex flex-col gap-0 rounded-2xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
       >
         {/* Акс аз ҳар чор тараф мудаввар — нишони навъ ба тугмаи поёнӣ
             кӯчид, пас mask ва `-mb-px` дигар лозим нестанд. */}
-        <div className="relative aspect-[4/3] rounded-3xl bg-zinc-100 dark:bg-zinc-700">
+        <div className="relative aspect-[4/3] rounded-2xl bg-zinc-100 dark:bg-zinc-700">
           {/* Placeholder ҲАМЕША дар таг — ниг. ItemFeedCard: бе ин дар
               лаҳзаи боршавии акс ҷои он холӣ мемонад. */}
-          <ImagePlaceholder className="rounded-3xl" />
+          <ImagePlaceholder className="rounded-2xl" />
           {thumb && !imgFailed && (
             <Image
               src={thumb}
@@ -155,7 +155,7 @@ export function ItemCard({
               sizes="(max-width: 640px) 50vw, 25vw"
               quality={75}
               className={cn(
-                "object-cover rounded-3xl",
+                "object-cover rounded-2xl",
                 item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
               )}
               onError={() => setImgFailed(true)}

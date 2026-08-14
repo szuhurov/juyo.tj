@@ -3,12 +3,11 @@
  * Ҳар сатр на ба саҳифаи эълон мегузарад, балки дар ҳамин ҷо кушода
  * мешавад (аксаи эълон + пайванди "Дидани эълон"). Сатрҳои нодидашуда
  * рангашон фарқ мекунад; кушодани сатр ранги ҳамон сатрро ба ҳолати одӣ мегузаронад.
- * Ҳар сатрро бо ангушт ба чап/рост кашидан пурра нест мекунад (swipe-to-delete).
+ * Нест кардан бо тугмаи сатил дар банди кушода ё интихоби гурӯҳӣ мешавад.
  */
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -22,15 +21,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 
-const SWIPE_THRESHOLD = 90;
-
 function NotificationRow({
   item,
   unread,
   expanded,
   selected,
   onToggle,
-  onDelete,
   onDeleteClick,
   onExpiryRespond,
   responding,
@@ -41,7 +37,6 @@ function NotificationRow({
   expanded: boolean;
   selected: boolean;
   onToggle: () => void;
-  onDelete: () => void;
   onDeleteClick: () => void;
   onExpiryRespond: (action: "keep" | "delete") => void;
   responding: boolean;
@@ -71,72 +66,17 @@ function NotificationRow({
           Math.ceil((new Date(item.expiryDeadline ?? item.createdAt).getTime() - nowMs) / 3_600_000),
         );
 
-  const [dragX, setDragX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const startXRef = useRef<number | null>(null);
-  const draggedRef = useRef(false);
-
-  const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    // Огоҳии мӯҳлатро бо swipe пинҳон кардан мумкин нест — пинҳон шуданаш
-    // эълонро наҷот намедиҳад, cron ба ҳар ҳол онро нест мекунад.
-    if (isExpiry) return;
-    startXRef.current = e.clientX;
-    draggedRef.current = false;
-  };
-
-  const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (startXRef.current === null) return;
-    const delta = e.clientX - startXRef.current;
-    if (Math.abs(delta) > 8) {
-      draggedRef.current = true;
-      setIsDragging(true);
-    }
-    if (draggedRef.current) setDragX(delta);
-  };
-
-  const handlePointerUp = () => {
-    if (Math.abs(dragX) > SWIPE_THRESHOLD) {
-      onDelete();
-    } else {
-      setDragX(0);
-    }
-    setIsDragging(false);
-    startXRef.current = null;
-    // draggedRef то баъд аз click-и навбатӣ true мемонад, то toggleExpand
-    // ҳангоми раҳо кардани ангушт пас аз swipe фаъол нашавад.
-    setTimeout(() => {
-      draggedRef.current = false;
-    }, 0);
-  };
-
   const handleClick = () => {
-    if (draggedRef.current) return;
     onToggle();
   };
 
   return (
     <div className="relative">
+      {/* Swipe-барои-нест-кардан бароварда шуд. Нест кардан ду роҳи возеҳ
+          дорад: тугмаи сатил дар банди кушода ва интихоби гурӯҳӣ. */}
       <div
-        className="absolute inset-0 rounded-2xl bg-red-600 flex items-center px-6 pointer-events-none"
-        style={{
-          justifyContent: dragX >= 0 ? "flex-start" : "flex-end",
-          opacity: dragX === 0 ? 0 : Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1),
-        }}
-      >
-        <Trash2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-white" />
-      </div>
-      <div
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        style={{
-          transform: `translateX(${dragX}px)`,
-          opacity: 1 - Math.min(Math.abs(dragX) / 260, 0.7),
-        }}
         className={cn(
-          "relative z-10 rounded-2xl border overflow-hidden touch-pan-y",
-          !isDragging && "transition-[transform,opacity] duration-200",
+          "relative z-10 rounded-2xl border overflow-hidden",
           selected && "ring-2 ring-emerald-500",
           // Огоҳии мӯҳлат ранги ҳушдор мегирад — он вақти маҳдуд дорад ва
           // бе ҷавоб эълон нест мешавад, пас набояд бо огоҳиномаҳои
@@ -415,7 +355,6 @@ export default function NotificationsPage() {
               expanded={expandedId === item.id}
               selected={selectMode}
               onToggle={() => toggleExpand(item)}
-              onDelete={() => handleDelete(item)}
               onDeleteClick={() => handleDelete(item)}
               onExpiryRespond={(action) => handleExpiryRespond(item, action)}
               responding={respondingId === item.id}
