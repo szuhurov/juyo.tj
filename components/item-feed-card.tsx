@@ -58,7 +58,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
       {/* `pt`/`pb` ва `mt`-и тугма ҳамзамон 2px кам шуданд — баландии корт
           кам мешавад, вале мувозинати боло/поёни тугма нигоҳ дошта мешавад.
           Акс даст нахӯрд: `aspect-[4/3]` бетағйир аст. */}
-      <div className="px-3 pt-1.5 pb-2 flex flex-col flex-1">
+      <div className="px-3 pt-1.5 pb-1.5 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
             {item.title || item.category}
@@ -74,7 +74,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
             аз рақамҳои ҳуҷҷат тоза шудааст (`stripDocumentNumbers` дар
             саҳифаи `items/add`), пас ин ҷо филтр лозим нест. */}
         {item.description && (
-          <p className="mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <p className="truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
             {item.description}
           </p>
         )}
@@ -87,13 +87,13 @@ export function ItemFeedCard({ item }: { item: Item }) {
             (`pb-2`-и контейнер) қасдан БАРОБАР нигоҳ дошта мешаванд — агар
             яке тағйир ёбад, дигаре низ бояд ҳамон қадар тағйир ёбад.
             Соя дар доираи тирча аст, на дар худи тугма. */}
-        <span className="mt-1 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
+        <span className="mt-0.5 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-2.5">
           {/* Ранги навъ — сер, на хира: «Гумшуда» ва «Ёфтшуда» бояд аз як
               назар фарқ кунанд. Тобишҳои 700 дар заминаи `--canvas`
               контрасти WCAG AA-ро мегузаранд (500/600 не). */}
           <span
             className={cn(
-              "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-bold",
+              "min-w-0 truncate text-[11px] min-[1084px]:text-xs font-bold",
               item.type === "lost"
                 ? "text-rose-700 dark:text-rose-400"
                 : "text-emerald-700 dark:text-emerald-400",
@@ -101,8 +101,8 @@ export function ItemFeedCard({ item }: { item: Item }) {
           >
             {item.type === "lost" ? t("lost") : t("found")}
           </span>
-          <span className="shrink-0 grid place-items-center size-7 min-[1084px]:size-8 rounded-full bg-emerald-500 shadow-[0_2px_8px_-2px_rgba(16,185,129,0.55)] dark:shadow-none">
-            <ArrowRight className="w-[17px] h-[17px] min-[1084px]:w-[19px] min-[1084px]:h-[19px] text-white" />
+          <span className="shrink-0 grid place-items-center size-6 min-[1084px]:size-7 rounded-full bg-emerald-500 shadow-[0_2px_8px_-2px_rgba(16,185,129,0.55)] dark:shadow-none">
+            <ArrowRight className="w-[15px] h-[15px] min-[1084px]:w-[17px] min-[1084px]:h-[17px] text-white" />
           </span>
         </span>
       </div>

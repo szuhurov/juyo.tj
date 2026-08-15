@@ -37,7 +37,7 @@ export function ItemCardSkeleton({
       {/* Акс — дар корти воқеӣ аз ҳар ЧОР тараф мудаввар аст, на танҳо аз боло */}
       <div className={cn("aspect-[4/3] w-full", radius, BLOCK)} />
 
-      {/* Падингҳо ва фосилаҳо айнан аз ItemFeedCard: pt-1.5 / mt-0.5 / mt-1 / pb-2.
+      {/* Падингҳо ва фосилаҳо айнан аз ItemFeedCard: pt-1.5 / mt-0.5 / pb-1.5.
           Баландии ҲАР сатр низ ба line-box-и воқеии матн баста шудааст —
           ченкардашуда, на тахминӣ:
 
@@ -48,7 +48,7 @@ export function ItemCardSkeleton({
           Ҷамъ: 88.5px дар мобилӣ, 96px дар min-[1084px] — айнан мисли корт.
           Агар ин рақамҳо аз ҳам ҷудо шаванд, ҳангоми омадани маълумот
           тарҳбандӣ меҷаҳад, ки маҳз ҳамон чизест, ки skeleton пешгирӣ мекунад. */}
-      <div className={cn("flex flex-1 flex-col pt-1.5 pb-2", feed ? "px-3" : "px-3.5")}>
+      <div className={cn("flex flex-1 flex-col pt-1.5 pb-1.5", feed ? "px-3" : "px-3.5")}>
         {/* Сатри унвон + сана */}
         <div className="flex h-5 min-[1084px]:h-6 items-center justify-between gap-2">
           <div className={cn("h-3.5 min-[1084px]:h-4 w-2/3 rounded", BLOCK)} />
@@ -56,14 +56,14 @@ export function ItemCardSkeleton({
         </div>
 
         {/* Тавсиф — ЯК сатр (корт низ `truncate` дорад, на ду сатр) */}
-        <div className="mt-0.5 flex h-[16.5px] min-[1084px]:h-4 items-center">
+        <div className="flex h-[16.5px] min-[1084px]:h-4 items-center">
           <div className={cn("h-2.5 w-4/5 rounded", BLOCK)} />
         </div>
 
         {/* Тугмаи навъ — ЯК навори яклухт. Доираи тир қасдан НЕСТ: он дар
             skeleton заминаи сабзи худро талаб мекунад ва ҳамчун унсури
             аллакай "тайёр" ба назар мерасид, дар ҳоле ки корт ҳанӯз бор мешавад. */}
-        <div className={cn("mt-1 -mx-1 h-8 min-[1084px]:h-9 rounded-full", BLOCK)} />
+        <div className={cn("mt-0.5 -mx-1 h-7 min-[1084px]:h-8 rounded-full", BLOCK)} />
       </div>
     </div>
   );
