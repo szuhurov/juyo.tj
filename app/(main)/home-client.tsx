@@ -414,6 +414,56 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 </div>
             </div>
           )}
+          {/* Тугмаҳои амали зуд — дар ДОХИЛИ бари fixed, то ҳангоми scroll
+                дар ҷои худ истанд ва зери филтрҳои дигар нараванд.
+  
+              `py-5 -my-5` ҷои соя аст, то соя бурида нашавад. */}
+          {showTopSections && (
+            <div className="mt-1.5">
+              <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5">
+                {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
+                  const active = value === "all" ? locationType === null : locationType === value;
+                  return (
+                    <button
+                      key={value}
+                      onClick={() =>
+                        value === "all" ? setLocationType(null) : toggleLocationType(value)
+                      }
+                      className={cn(
+                        "shrink-0 snap-start w-[37%] min-[480px]:w-36 min-[1503px]:w-40 min-[1920px]:w-[168px] flex items-center justify-between gap-1.5 px-2.5 py-2.5 min-[1503px]:py-3 rounded-xl text-left cursor-pointer",
+                        active ? "bg-emerald-500" : "bg-white dark:bg-zinc-800",
+                      )}
+                    >
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <span
+                          className={cn(
+                            "font-bold text-xs min-[1503px]:text-[13px] min-[1920px]:text-sm leading-tight tracking-wide truncate",
+                            active ? "text-white" : "text-zinc-900 dark:text-zinc-100",
+                          )}
+                        >
+                          {t(`quickActions.${value}.title`)}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-left font-semibold text-[10px] min-[1503px]:text-[11px] min-[1920px]:text-xs leading-tight tracking-wide whitespace-nowrap truncate",
+                            active ? "text-white/70" : "text-zinc-400 dark:text-zinc-500",
+                          )}
+                        >
+                          {t(`quickActions.${value}.desc`)}
+                        </span>
+                      </div>
+                      <Icon
+                        className={cn(
+                          "w-7 h-7 min-[1503px]:w-8 min-[1503px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 shrink-0",
+                          active ? "text-white" : "text-emerald-500 dark:text-emerald-400",
+                        )}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           </div>
 
         </div>
@@ -428,56 +478,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
             : HOME_CONTENT_PT,
         )}
       >
-        {/* Тугмаҳои амали зуд — дар мӯҳтавои СКРОЛЛШАВАНДА, на дар бари
-            fixed. Ҳангоми scroll онҳо боло рафта зери филтрбар пинҳон
-            мешаванд; пештар дар дохили бар буданд ва ҳаргиз намеҷунбиданд.
-            `py-5 -my-5` ҷои соя аст, то соя бурида нашавад. */}
-        {showTopSections && (
-          <div className="mb-2.5">
-            <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5">
-              {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
-                const active = value === "all" ? locationType === null : locationType === value;
-                return (
-                  <button
-                    key={value}
-                    onClick={() =>
-                      value === "all" ? setLocationType(null) : toggleLocationType(value)
-                    }
-                    className={cn(
-                      "shrink-0 snap-start w-[37%] min-[480px]:w-36 min-[1503px]:w-40 min-[1920px]:w-[168px] flex items-center justify-between gap-1.5 px-2.5 py-2.5 min-[1503px]:py-3 rounded-xl text-left cursor-pointer",
-                      active ? "bg-emerald-500" : "bg-white dark:bg-zinc-800",
-                    )}
-                  >
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span
-                        className={cn(
-                          "font-bold text-xs min-[1503px]:text-[13px] min-[1920px]:text-sm leading-tight tracking-wide truncate",
-                          active ? "text-white" : "text-zinc-900 dark:text-zinc-100",
-                        )}
-                      >
-                        {t(`quickActions.${value}.title`)}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-left font-semibold text-[10px] min-[1503px]:text-[11px] min-[1920px]:text-xs leading-tight tracking-wide whitespace-nowrap truncate",
-                          active ? "text-white/70" : "text-zinc-400 dark:text-zinc-500",
-                        )}
-                      >
-                        {t(`quickActions.${value}.desc`)}
-                      </span>
-                    </div>
-                    <Icon
-                      className={cn(
-                        "w-7 h-7 min-[1503px]:w-8 min-[1503px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 shrink-0",
-                        active ? "text-white" : "text-emerald-500 dark:text-emerald-400",
-                      )}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {isLoading &&
         allItems.length === 0 &&

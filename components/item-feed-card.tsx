@@ -29,22 +29,22 @@ export function ItemFeedCard({ item }: { item: Item }) {
     <Link
       href={`/items/${item.id}`}
       prefetch
-      className="group flex flex-col gap-0 rounded-xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+      className="group flex flex-col gap-0 rounded-lg bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
     >
       {/* Акс аз ҳар чор тараф мудаввар — нишони навъ аз ин ҷо ба тугмаи
           поёнӣ кӯчид, пас кунҷи ботинии mask ва `-mb-px` дигар лозим нест. */}
-      <div className="relative aspect-[4/3] rounded-xl bg-zinc-100 dark:bg-zinc-700">
+      <div className="relative aspect-[4/3] rounded-lg bg-zinc-100 dark:bg-zinc-700">
         {/* Placeholder ҲАМЕША дар таг аст, акс болои он мебарояд.
             Пеш аз ин он танҳо ҳангоми набудан/хатои акс нишон дода мешавад
             ва дар лаҳзаи БОРШАВӢ ҷои акс холии хокистарӣ мемонд. */}
-        <ImagePlaceholder className="rounded-xl" />
+        <ImagePlaceholder className="rounded-lg" />
         {thumb && !imgFailed && (
           <Image
             src={thumb}
             alt={item.title}
             fill
             sizes="(max-width: 640px) 50vw, 25vw"
-            className="object-cover rounded-xl"
+            className="object-cover rounded-lg"
             onError={() => setImgFailed(true)}
           />
         )}

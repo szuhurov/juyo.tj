@@ -10,8 +10,8 @@
  * аст: сатҳ равшантар, блокҳо торектар — то он «шабаҳи» корт бошад, на
  * корти сафеди холӣ.
  *
- * `variant`: feed → саҳифаи асосӣ (rounded-xl, px-3),
- *            profile → ItemCard дар профил (rounded-2xl, px-3.5).
+ * `variant`: feed → саҳифаи асосӣ (rounded-lg, px-3),
+ *            profile → ItemCard дар профил (rounded-xl, px-3.5).
  */
 import { cn } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ export function ItemCardSkeleton({
   variant?: "feed" | "profile";
 }) {
   const feed = variant === "feed";
-  const radius = feed ? "rounded-xl" : "rounded-2xl";
+  const radius = feed ? "rounded-lg" : "rounded-xl";
 
   return (
     <div

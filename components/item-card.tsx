@@ -139,14 +139,14 @@ export function ItemCard({
       <Link
         href={`/items/${item.id}`}
         prefetch
-        className="group flex flex-col gap-0 rounded-2xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+        className="group flex flex-col gap-0 rounded-xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
       >
         {/* Акс аз ҳар чор тараф мудаввар — нишони навъ ба тугмаи поёнӣ
             кӯчид, пас mask ва `-mb-px` дигар лозим нестанд. */}
-        <div className="relative aspect-[4/3] rounded-2xl bg-zinc-100 dark:bg-zinc-700">
+        <div className="relative aspect-[4/3] rounded-xl bg-zinc-100 dark:bg-zinc-700">
           {/* Placeholder ҲАМЕША дар таг — ниг. ItemFeedCard: бе ин дар
               лаҳзаи боршавии акс ҷои он холӣ мемонад. */}
-          <ImagePlaceholder className="rounded-2xl" />
+          <ImagePlaceholder className="rounded-xl" />
           {thumb && !imgFailed && (
             <Image
               src={thumb}
@@ -155,7 +155,7 @@ export function ItemCard({
               sizes="(max-width: 640px) 50vw, 25vw"
               quality={75}
               className={cn(
-                "object-cover rounded-2xl",
+                "object-cover rounded-xl",
                 item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
               )}
               onError={() => setImgFailed(true)}
@@ -317,11 +317,11 @@ export function ItemCard({
         onOpenChange={(open) => !isActionLoading && setShowDeleteConfirm(open)}
       >
         <DialogContent
-          className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl"
+          className="sm:max-w-md rounded-xl p-6 gap-5 border-none shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <DialogHeader className="space-y-2.5">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
               <Trash2 className="w-5 h-5" />
             </div>
             <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
