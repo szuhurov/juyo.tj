@@ -237,9 +237,16 @@ export const QRCard: React.FC<QRCardProps> = ({
 
         {text && (
           <div className="relative z-10 text-center px-1 mt-0.5 max-w-[223px]">
+            {/* ЯК сатр: корт андозаи САХТ дорад ва сатри дуюм аз он
+                мебарояд. `clamp` ба ҷои буридан — стикер чоп мешавад ва
+                матни нимкора дар он бемаънист. */}
             <p
-              className="font-bold tracking-widest text-[12px] break-words leading-[15px]"
-              style={{ color: qrColor }}
+              className="font-bold tracking-widest break-all leading-[15px] overflow-hidden"
+              style={{
+                color: qrColor,
+                fontSize: `clamp(7px, ${Math.min(12, (223 / Math.max(text.length, 1)) * 1.7)}px, 12px)`,
+                whiteSpace: "nowrap",
+              }}
             >
               {text}
             </p>

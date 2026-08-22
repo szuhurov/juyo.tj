@@ -158,22 +158,20 @@ function QrFieldLabel({
  *  `hover:bg-zinc-50` варианти `dark:` надошт — дар режими торик ҳангоми
  *  hover майдон сафед мешуд. */
 /**
- * Се сатҳи QR.
+ * Ду сатҳи QR.
  *
- *   basic  — QR-и стандартӣ, ҳеҷ танзимот, бепул
- *   custom — ранг/шакл/матни худӣ
- *   pro    — ҳама чизи custom + градиент
+ *   basic — QR-и стандартӣ, ҳеҷ танзимот, бепул
+ *   pro   — ранг/шакл/матни худӣ + градиент
  *
- * Дар `custom` ва `pro` худи КӮШИШИ тағйир озод аст — қулф танҳо ҳангоми
- * БОРГИРӢ меафтад. Ин қасдан аст: корбар бояд натиҷаро бинад, баъд қарор
- * кунад, ки харад ё реклама бинад.
+ * Дар `pro` худи КӮШИШИ тағйир озод аст — қулф танҳо ҳангоми БОРГИРӢ
+ * меафтад. Ин қасдан аст: корбар бояд натиҷаро бинад, баъд қарор кунад,
+ * ки харад.
  */
-type QrTier = "basic" | "custom" | "pro";
+type QrTier = "basic" | "pro";
 
-/** Тартиб, нишона ва матни ҳар сатҳ — як манбаъ барои ҳар се тугма. */
+/** Тартиб, нишона ва матни ҳар сатҳ — як манбаъ барои ҳар ду тугма. */
 const QR_TIERS = [
   { id: "basic" as const, icon: QrCode, labelKey: "qrTierBasic" },
-  { id: "custom" as const, icon: Palette, labelKey: "qrTierCustom" },
   { id: "pro" as const, icon: Sparkles, labelKey: "qrTierPro" },
 ];
 
@@ -189,8 +187,10 @@ const QR_BASIC = {
    * аслии QR аст ва ҳамеша беҳтарин сканшавандагӣ дорад.
    */
   dots: "square" as DotType,
-  /** Кунҷҳо ҲАМЕША нуқта. */
-  corners: "dot" as CornerSquareType & CornerDotType,
+  /**
+   * Кунҷҳои сатҳи БЕПУЛ мураббаъанд — ҳамон мантиқи нуқтаҳо.
+   */
+  corners: "square" as CornerSquareType & CornerDotType,
 };
 
 /**
@@ -739,8 +739,15 @@ function ProfileContent() {
     effQr.text.trim() !== t("qrScanMe") ||
     !!effGradient;
 
-  /** Боргирӣ қулф аст → ба ҷои он «Харидан» ва «Кушодан» мебароянд. */
-  const isQrLocked = !isBasicTier && isQrCustomized;
+  /**
+   * Қарори маҳсулот (муваққатӣ): «Худӣ» ҳоло РОЙГОН аст — то backend-и
+   * воқеии пардохт (SmartPay) пайваст шавад, тугмаи «Харидан» ҳоло
+   * танҳо toast бо «Ба қарибӣ дастрас мешавад» мебарорад, пас қулфи
+   * харид бе хариди воқеӣ маънои надорад. Вақте SmartPay пайваст шавад,
+   * ин байрақро `true` кунед.
+   */
+  const PAYWALL_ENABLED = false;
+  const isQrLocked = PAYWALL_ENABLED && !isBasicTier && isQrCustomized;
 
   /**
    * Функсия барои боргирии QR-код ҳамчун сурат (Download)
@@ -931,7 +938,7 @@ function ProfileContent() {
             {/* Интихоби сатҳ — болои ҳама чиз, то корбар пеш аз ҳама
                 бифаҳмад, ки кадом реҷа фаъол аст. */}
             <div className="px-2">
-              <div role="tablist" className="grid grid-cols-3 gap-3 max-w-md mx-auto">
+              <div role="tablist" className="grid grid-cols-2 gap-3 max-w-md mx-auto">
                 {QR_TIERS.map(({ id, icon: TierIcon, labelKey }) => {
                   const active = qrTier === id;
                   return (
@@ -964,7 +971,11 @@ function ProfileContent() {
                     статус, тугмаҳо ва танзимот аз таги он мегузаранд. */}
                 <div className="flex flex-col">
                 <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  <div className="relative group bg-transparent sm:bg-canvas rounded-xl md:rounded-[3rem] p-0 sm:p-8 md:p-12 flex items-center justify-center border-0 sm:border-2 sm:border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none sm:shadow-sm md:shadow-none transition-all duration-300">
+                  {/* Корти САФЕД бо хати мулоим — ҳамон намуди кортҳои
+                      профил. Пештар ин ҷо хати РЕХТА буд: он ба «ҷои холии
+                      интизорӣ» ишора мекунад, дар ҳоле ки корт мӯҳтавои
+                      пурра дорад. */}
+                  <div className="relative group bg-white dark:bg-zinc-800 rounded-3xl p-4 sm:p-8 md:p-10 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none transition-all duration-300">
                     <div className="scale-95 md:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
@@ -1097,21 +1108,12 @@ function ProfileContent() {
                     тағйирот, боргирӣ бепул мемонад. */}
                 {isQrLocked ? (
                   <div className="mt-3 w-full px-1">
-                    <div className="flex items-center gap-3">
-                      <Button
-                        onClick={() => toast.info(t("qrComingSoon"))}
-                        className="flex-1 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
-                      >
-                        {t("qrBuy")}
-                      </Button>
-                      <Button
-                        onClick={() => toast.info(t("qrComingSoon"))}
-                        variant="outline"
-                        className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
-                      >
-                        {t("qrUnlock")}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={() => toast.info(t("qrComingSoon"))}
+                      className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                    >
+                      {t("qrBuy")}
+                    </Button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3 mt-3 w-full px-1">
@@ -1134,7 +1136,7 @@ function ProfileContent() {
                 {/* Ҳама танзимот танҳо дар «Худсоз» ва «Pro».
                     Дар «Оддӣ» сутун қасдан холӣ мемонад. */}
                 {!isBasicTier && (
-                <div className="space-y-5 px-1 pb-10">
+                <div className="space-y-5 p-4 min-[1084px]:p-5 mb-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
                   {/* Стил ва Шаклҳо */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
@@ -1180,16 +1182,13 @@ function ProfileContent() {
                       </QrFieldLabel>
                       <Select
                         value={qrSettings.cornersSquareType}
-                        onValueChange={(val) => {
-                          const cornerStyle = val as CornerSquareType;
-                          const dotStyle: CornerDotType =
-                            cornerStyle === "square" ? "square" : "dot";
-                          setQrSettings({
-                            ...qrSettings,
-                            cornersSquareType: cornerStyle,
-                            cornersDotType: dotStyle,
-                          });
-                        }}
+                        // Маркази чашмак дигар аз ҳошия БАРНАМЕОЯД: он
+                        // интихоби худро дорад (қатори поён). Пештар ин ҷо
+                        // «мураббаъ → мураббаъ, вагарна нуқта» сахт навишта
+                        // шуда буд ва интихоби корбарро мешуст.
+                        onValueChange={(val) =>
+                          setQrSettings({ ...qrSettings, cornersSquareType: val as CornerSquareType })
+                        }
                       >
                         <SelectTrigger className={cn(QR_CONTROL_CLASS, "text-sm font-bold px-3.5 text-zinc-600 dark:text-zinc-300")}>
                           <SelectValue />
@@ -1204,6 +1203,31 @@ function ProfileContent() {
                           <SelectItem value="extra-rounded">
                             {t("qrCornerRounded")}
                           </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Маркази чашмак — интихоби СЕЮМИ мустақил.
+                        Пештар он аз ҳошия бармеомад ва корбар ба он даст
+                        расонда наметавонист. */}
+                    <div className="space-y-2">
+                      <QrFieldLabel icon={Scan}>
+                        {t("qrCornerCenterStyle")}
+                      </QrFieldLabel>
+                      <Select
+                        value={qrSettings.cornersDotType}
+                        onValueChange={(val) =>
+                          setQrSettings({ ...qrSettings, cornersDotType: val as CornerDotType })
+                        }
+                      >
+                        <SelectTrigger className={cn(QR_CONTROL_CLASS, "text-sm font-bold px-3.5 text-zinc-600 dark:text-zinc-300")}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
+                          <SelectItem value="square">{t("qrCornerSquare")}</SelectItem>
+                          <SelectItem value="rounded">{t("qrCornerRounded")}</SelectItem>
+                          <SelectItem value="extra-rounded">{t("qrDotExtraRounded")}</SelectItem>
+                          <SelectItem value="dot">{t("qrCornerDot")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1465,6 +1489,22 @@ function ProfileContent() {
                         return;
                       }
 
+                      /**
+                       * Шабакаҳо ҲАМЕША ҳар чор фиристода мешаванд, ҳатто
+                       * холӣ.
+                       *
+                       * Route сатри холиро ба `null` табдил медиҳад, яъне
+                       * пайвандро нест мекунад. Модали боргирӣ баръакс кор
+                       * мекунад — он танҳо майдонҳои пуршударо мефиристад
+                       * ва аз он ҷо нест кардан ғайриимкон аст.
+                       */
+                      const socialValues = Object.fromEntries(
+                        SOCIALS.map(({ key }) => [
+                          key,
+                          sanitizeSocialInput(key, ((formData.get(key) as string) || "").trim()),
+                        ]),
+                      );
+
                       setInfoSubmitting(true);
                       try {
                         // Ном/насаб ва рақамҳоро аз сервер (Backend API)
@@ -1474,7 +1514,7 @@ function ProfileContent() {
                         const res = await fetch("/api/account/update-profile", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ firstName, lastName, phone, secondaryPhone }),
+                          body: JSON.stringify({ firstName, lastName, phone, secondaryPhone, ...socialValues }),
                         });
                         if (!res.ok) throw new Error("Failed to update profile");
                         const { profile: updated } = await res.json();
@@ -1559,6 +1599,39 @@ function ProfileContent() {
                           />
                         </div>
                       </div>
+                    </div>
+
+                    {/* Шабакаҳои иҷтимоӣ. Майдони холӣ = пайванд нест
+                        мешавад. */}
+                    <div className="space-y-1.5">
+                      <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                        {t("qrSecondaryModal.socialBtn")}
+                      </Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {SOCIALS.map(({ key, Icon, label }) => (
+                          <div key={key} className="relative">
+                            <Icon
+                              size={18}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                            />
+                            <Input
+                              name={key}
+                              placeholder={label}
+                              defaultValue={(profile as Record<string, unknown> | null)?.[key] as string || ""}
+                              className="h-10 pl-10 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
+                              autoComplete="off"
+                              autoCapitalize="none"
+                              spellCheck={false}
+                              onChange={(e) => {
+                                e.target.value = sanitizeSocialInput(key, e.target.value);
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[9px] font-bold text-zinc-400 px-1 leading-snug">
+                        {t("qrSecondaryModal.socialHint")}
+                      </p>
                     </div>
 
                     <Button
@@ -2123,7 +2196,9 @@ function ProfileContent() {
                       {/* Ҳеҷ кадомашон ҳатмӣ нест — ин бояд ПЕШ аз майдонҳо
                           хонда шавад, вагарна корбар аллакай ҳар чорро пур
                           карда, баъд ишораро мебинад. */}
-                      <p className="text-[9px] font-bold text-zinc-400 px-1 pb-1 leading-snug">
+                      {/* Сабз, на хокистарӣ: ин ишора бояд ХОНДА шавад —
+                          хокистарӣ дар байни майдонҳо гум мешуд. */}
+                      <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 px-1 pb-1 leading-snug">
                         {t("qrSecondaryModal.socialPickHint")}
                       </p>
                       {SOCIALS.map(({ key, Icon, label }) => {
