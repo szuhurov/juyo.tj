@@ -368,7 +368,17 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   </button>
 
                   {showDatePicker && (
-                    <div className="absolute right-0 top-full mt-2 z-50 w-64 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 shadow-lg p-3 space-y-2.5">
+                    <>
+                      {/* Пасманзари торик — то диққат ба худи филтр равад ва
+                          зеркунии берун онро пӯшад. Пештар ин филтр як
+                          рӯйхати афтанда буд, ки дар экрани телефон ба лаби
+                          рост мечаспид ва нимаш берун мемонд. */}
+                      <div
+                        className="fixed inset-0 z-40 bg-black/50"
+                        onClick={() => setShowDatePicker(false)}
+                        aria-hidden
+                      />
+                    <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 shadow-lg p-3 space-y-2.5">
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
                           {t("dateFrom")}
@@ -410,6 +420,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                         </button>
                       </div>
                     </div>
+                    </>
                   )}
                 </div>
             </div>

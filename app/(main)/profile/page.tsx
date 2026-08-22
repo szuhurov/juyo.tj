@@ -56,10 +56,10 @@ import {
   UserX,
   Globe,
   UserCog,
-  HelpCircle,
   Grid2x2,
   Scan,
   Droplet,
+  Sparkles,
   Type,
   type LucideIcon,
 } from "lucide-react";
@@ -67,6 +67,12 @@ import {
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
 import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
 import { cn } from "@/lib/utils"; // Барои пайваст кардани классҳои CSS
+import {
+  SOCIALS,
+  socialPrefix,
+  sanitizeSocialInput,
+  type SocialKey,
+} from "@/components/social-icons"; // Нишонаҳои брендии Telegram/Instagram/WhatsApp
 import { toast } from "sonner"; // Барои нишон додани огоҳиномаҳо
 import {
   TooltipProvider,
@@ -151,6 +157,52 @@ function QrFieldLabel({
  *  баландӣ, кунҷ ва рафтори hover дар ҳарду режим якхела бошанд. Пештар
  *  `hover:bg-zinc-50` варианти `dark:` надошт — дар режими торик ҳангоми
  *  hover майдон сафед мешуд. */
+/**
+ * Се сатҳи QR.
+ *
+ *   basic  — QR-и стандартӣ, ҳеҷ танзимот, бепул
+ *   custom — ранг/шакл/матни худӣ
+ *   pro    — ҳама чизи custom + градиент
+ *
+ * Дар `custom` ва `pro` худи КӮШИШИ тағйир озод аст — қулф танҳо ҳангоми
+ * БОРГИРӢ меафтад. Ин қасдан аст: корбар бояд натиҷаро бинад, баъд қарор
+ * кунад, ки харад ё реклама бинад.
+ */
+type QrTier = "basic" | "custom" | "pro";
+
+/** Тартиб, нишона ва матни ҳар сатҳ — як манбаъ барои ҳар се тугма. */
+const QR_TIERS = [
+  { id: "basic" as const, icon: QrCode, labelKey: "qrTierBasic" },
+  { id: "custom" as const, icon: Palette, labelKey: "qrTierCustom" },
+  { id: "pro" as const, icon: Sparkles, labelKey: "qrTierPro" },
+];
+
+/** Ҳолати «Оддӣ» — нуқтаи ҳисоб барои он ки чӣ «тағйирёфта» аст. */
+const QR_BASIC = {
+  color: "#26ba90",
+  bg: "#eefbf5",
+  /**
+   * Нуқтаҳои сатҳи БЕПУЛ чоркунҷаанд.
+   *
+   * Ин ҳудуди байни бепул ва пулакиро равшан мекунад: шаклҳои мулоим ва
+   * классикӣ маҳз чизеанд, ки корбар барояшон мехарад. Мураббаъ шакли
+   * аслии QR аст ва ҳамеша беҳтарин сканшавандагӣ дорад.
+   */
+  dots: "square" as DotType,
+  /** Кунҷҳо ҲАМЕША нуқта. */
+  corners: "dot" as CornerSquareType & CornerDotType,
+};
+
+/**
+ * Рангҳои тайёри градиент.
+ *
+ * Интихобгари пурраи ранг ду сутун дорад (QR ва замина) ва барои ранги
+ * сеюм мувофиқ намеояд. Барои градиент чанд ранги омода кофист — ва
+ * онҳо махсус чунин интихоб шудаанд, ки бо ҳар ранги асосӣ мутобиқ
+ * бошанд ва контрасти QR-ро вайрон накунанд.
+ */
+const GRADIENT_PRESETS = ["#0ea5e9", "#8b5cf6", "#ec4899", "#f59e0b", "#111827"];
+
 const QR_CONTROL_CLASS =
   "h-11 w-full rounded-xl bg-white dark:bg-zinc-800 border-none shadow-none " +
   "hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors";
@@ -182,7 +234,6 @@ function ProfileContent() {
     null,
   );
   const [showWhyQRModal, setShowWhyQRModal] = useState(false);
-  const [showSecurityModal, setShowSecurityModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -324,12 +375,33 @@ function ProfileContent() {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- setter истифода мешавад, вале UI-и он (MandatoryPhoneModal) ба дарахти компонент васл нашудааст, ниг. ёддошти аудит
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showSecondaryPhoneModal, setShowSecondaryPhoneModal] = useState(false);
+  /**
+   * Кадом амал модали пуркуниро кушод.
+   *
+   * Модал акнун аз ду ҷо кушода мешавад — боргирӣ ва фаъол кардани
+   * статус — ва пас аз захира бояд маҳз ҳамон амал идома ёбад. Бе ин
+   * ҳарду роҳ ба боргирӣ мебурданд.
+   */
+  const [pendingQrAction, setPendingQrAction] =
+    useState<"download" | "activate" | null>(null);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
-  const [secondaryType, setSecondaryType] = useState<string>("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  // Шабакаҳои иҷтимоӣ — ИХТИЁРӢ, пас на ба шарти боргирӣ дохил мешаванд
+  // ва на тугмаро ғайрифаъол мекунанд. Пӯшида меоянд, то формаро дароз
+  // накунанд; корбар худаш мекушояд, агар хоҳад.
+  const [showSocial, setShowSocial] = useState(false);
+  const [social, setSocial] = useState<Record<SocialKey, string>>({
+    telegram: "",
+    instagram: "",
+    whatsapp: "",
+    facebook: "",
+  });
   const [showTermsDetails, setShowTermsDetails] = useState(false);
 
   // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва текст)
+  const [qrTier, setQrTier] = useState<QrTier>("basic");
+  // Ранги дуюми градиент — танҳо дар Pro. `null` = градиент хомӯш.
+  const [qrGradientColor, setQrGradientColor] = useState<string | null>(null);
   const [qrSettings, setQrSettings] = useState({
     qrColor: "#26ba90",
     bgColor: "#eefbf5",
@@ -615,16 +687,67 @@ function ProfileContent() {
   };
 
   /**
+   * Танзимоти ВОҚЕАН кашидашаванда.
+   *
+   * Дар «Оддӣ» ҳамеша ҳолати стандартӣ кашида мешавад, ҳатто агар корбар
+   * пештар дар «Худсоз» чизе иваз карда бошад — вагарна гузариш ба «Оддӣ»
+   * QR-и худсозро нишон медод ва маънои сатҳҳо гум мешуд. Интихоби корбар
+   * гум намешавад: он дар `qrSettings` мемонад ва ҳангоми бозгашт ба
+   * «Худсоз» барқарор мешавад.
+   */
+  /**
+   * Маълумоти ҳатмӣ пур нашудааст.
+   *
+   * Ҳам боргирӣ ва ҳам фаъол кардани статус аз ҳамин як шарт мегузаранд —
+   * вагарна ду ҷои код метавонистанд аз ҳам дур шаванд.
+   */
+  const isQrDataMissing =
+    !profile?.phone ||
+    !profile?.secondary_phone ||
+    profile?.accepted_terms !== true;
+
+  /** Калид танҳо вақте фаъол менамояд, ки QR воқеан кор карда тавонад. */
+  const qrToggleOn = !!profile?.is_qr_active && !isQrDataMissing;
+
+  const isBasicTier = qrTier === "basic";
+  const effQr = isBasicTier
+    ? {
+        qrColor: QR_BASIC.color,
+        bgColor: QR_BASIC.bg,
+        text: t("qrScanMe"),
+        dotsType: QR_BASIC.dots,
+        cornersSquareType: QR_BASIC.corners,
+        cornersDotType: QR_BASIC.corners,
+      }
+    : {
+        qrColor: qrSettings.qrColor,
+        bgColor: qrSettings.bgColor,
+        text: qrSettings.text,
+        dotsType: qrSettings.dotsType,
+        cornersSquareType: qrSettings.cornersSquareType,
+        cornersDotType: qrSettings.cornersDotType,
+      };
+  const effGradient = qrTier === "pro" ? qrGradientColor : null;
+
+  /** Оё корбар аз ҳолати стандартӣ дур рафтааст? */
+  const isQrCustomized =
+    effQr.qrColor.toLowerCase() !== QR_BASIC.color.toLowerCase() ||
+    effQr.bgColor.toLowerCase() !== QR_BASIC.bg.toLowerCase() ||
+    effQr.dotsType !== QR_BASIC.dots ||
+    effQr.cornersSquareType !== QR_BASIC.corners ||
+    effQr.cornersDotType !== QR_BASIC.corners ||
+    effQr.text.trim() !== t("qrScanMe") ||
+    !!effGradient;
+
+  /** Боргирӣ қулф аст → ба ҷои он «Харидан» ва «Кушодан» мебароянд. */
+  const isQrLocked = !isBasicTier && isQrCustomized;
+
+  /**
    * Функсия барои боргирии QR-код ҳамчун сурат (Download)
    */
   const handleDownloadQR = async () => {
-    const isMissingData =
-      !profile?.phone ||
-      !profile?.secondary_phone ||
-      !profile?.secondary_phone_type ||
-      profile?.accepted_terms !== true;
-
-    if (isMissingData) {
+    if (isQrDataMissing) {
+      setPendingQrAction("download");
       setShowSecondaryPhoneModal(true);
       return;
     }
@@ -641,17 +764,11 @@ function ProfileContent() {
     e.preventDefault();
 
     const needsPhone = !profile?.phone;
-    const needsSecondary =
-      !profile?.secondary_phone || !profile?.secondary_phone_type;
+    const needsSecondary = !profile?.secondary_phone;
     const needsTerms = profile?.accepted_terms !== true;
 
     if (needsTerms && !acceptedTerms) {
       toast.error(t("terms.error") || "Лутфан шартҳоро қабул кунед");
-      return;
-    }
-
-    if (needsSecondary && !secondaryType) {
-      toast.error(t("fillAllFields"));
       return;
     }
 
@@ -673,9 +790,12 @@ function ProfileContent() {
 
       const updates: Partial<Profile> = {};
       if (needsPhone) updates.phone = phone;
-      if (needsSecondary) {
-        updates.secondary_phone = secondary_phone;
-        updates.secondary_phone_type = secondaryType;
+      if (needsSecondary) updates.secondary_phone = secondary_phone;
+      // Шабакаҳо ихтиёрианд: танҳо онҳое, ки корбар воқеан пур кардааст,
+      // фиристода мешаванд — вагарна сатрҳои холӣ қиматҳои кӯҳнаро мепӯшонанд.
+      for (const key of SOCIALS.map((sn) => sn.key)) {
+        const v = social[key].trim();
+        if (v) updates[key] = v;
       }
       if (needsTerms) {
         updates.accepted_terms = true;
@@ -693,8 +813,18 @@ function ProfileContent() {
       setShowSecondaryPhoneModal(false);
       toast.success(t("success"));
 
-      // Пас аз захира, мустақиман боргириро иҷро мекунем бе тафтиши иловагӣ
-      await executeQRDownload();
+      // Пас аз захира ҳамон амале идома меёбад, ки модалро кушода буд.
+      const next = pendingQrAction;
+      setPendingQrAction(null);
+      if (next === "activate") {
+        const activated = await ProfileService.updateProfile(supabase, userId!, {
+          is_qr_active: true,
+        });
+        setProfile(activated);
+        toast.success(t("qrActivatedSuccess"));
+      } else {
+        await executeQRDownload();
+      }
     } catch (err) {
       console.error("Error saving profile setup:", err);
       toast.error(t("error"));
@@ -798,6 +928,34 @@ function ProfileContent() {
         }
         return (
           <div className="space-y-8 pb-32">
+            {/* Интихоби сатҳ — болои ҳама чиз, то корбар пеш аз ҳама
+                бифаҳмад, ки кадом реҷа фаъол аст. */}
+            <div className="px-2">
+              <div role="tablist" className="grid grid-cols-3 gap-3 max-w-md mx-auto">
+                {QR_TIERS.map(({ id, icon: TierIcon, labelKey }) => {
+                  const active = qrTier === id;
+                  return (
+                    <button
+                      key={id}
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => setQrTier(id)}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-colors",
+                        active
+                          ? "bg-emerald-500 text-white"
+                          // Матн ва нишона СИЁҲ, на хокистарӣ — сабки тугмаҳои Telegram.
+                          : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-700",
+                      )}
+                    >
+                      <TierIcon className="w-5 h-5" />
+                      <span className="text-[11px] font-bold">{t(labelKey)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Танзимоти намуди зоҳирии QR */}
             <div className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
@@ -810,17 +968,14 @@ function ProfileContent() {
                     <div className="scale-95 md:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
+                        qrCode={profile?.qr_code}
                         settings={{
-                          qrColor: qrSettings.qrColor,
-                          bgColor: qrSettings.bgColor,
+                          ...effQr,
                           borderRadius: "medium",
                           shadow: "soft",
                           hasBorder: false,
                           pattern: "none",
-                          text: qrSettings.text,
-                          dotsType: qrSettings.dotsType,
-                          cornersSquareType: qrSettings.cornersSquareType,
-                          cornersDotType: qrSettings.cornersDotType,
+                          gradientColor: effGradient,
                         }}
                         className="qr-card-mobile-hide-text"
                         innerRef={qrRef}
@@ -832,6 +987,9 @@ function ProfileContent() {
                 {/* Статус ва тугмаҳо — берун аз sticky, то бо танзимоти
                     поён якҷоя аз таги QR гузаранд. px-1 = ҳамон падинги
                     сутуни танзимот, то паҳноияшон баробар бошад. */}
+                {/* Статуси QR — дар ҲАР СЕ сатҳ. Он ба тарҳи стикер дахл
+                    надорад: калиди «фаъол/хомӯш» ба ҳар QR баробар тааллуқ
+                    дорад, бо кадом ранг кашида шуданаш аҳамият надорад. */}
                 <div className="mt-12 w-full px-1">
                     <div className="bg-white dark:bg-zinc-800 border-none shadow-none p-4 min-[1084px]:p-5 rounded-xl flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -839,12 +997,17 @@ function ProfileContent() {
                           <span className="text-xs min-[1084px]:text-sm font-bold tracking-wide text-zinc-900 dark:text-white">
                             {t("qrStatus")}
                           </span>
+                          {/* Ин пайванд акнун роҳнамои ПУРРАИ QR-ро мекушояд.
+                              Пештар он модали «Реҷаи амниятӣ»-ро мекушод ва
+                              роҳнамо дар паси тугмаи алоҳидаи «?» пинҳон буд —
+                              талаби корбар: як ҷои даромад, тугмаи «?» бардошта
+                              шавад. */}
                           <button
-                            onClick={() => setShowSecurityModal(true)}
-                            className="text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                            onClick={() => setShowWhyQRModal(true)}
+                            className="text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
                           >
                             {t("qrSecurityStatusWhy") ||
-                              "Барои чӣ QR-код статус лозим?"}
+                              "Барои чӣ QR-код лозим аст?"}
                           </button>
                         </div>
                       </div>
@@ -853,6 +1016,22 @@ function ProfileContent() {
                           if (!profile) return;
                           const previousState = profile.is_qr_active;
                           const newState = !previousState;
+
+                          /**
+                           * ФАЪОЛ кардан маълумоти пурра талаб мекунад.
+                           *
+                           * QR-и фаъол бе рақами телефон маънӣ надорад:
+                           * ёбанда саҳифаро мекушояд ва он ҷо ҳеҷ роҳи
+                           * тамос намебинад. Бинобар ин ба ҷои гузоштани
+                           * калид модали пуркуниро мекушоем ва баъд аз
+                           * захира худамон фаъол мекунем. ХОМӮШ кардан
+                           * ҳамеша озод аст.
+                           */
+                          if (newState && isQrDataMissing) {
+                            setPendingQrAction("activate");
+                            setShowSecondaryPhoneModal(true);
+                            return;
+                          }
 
                           // Optimistic update
                           setProfile({ ...profile, is_qr_active: newState });
@@ -894,7 +1073,7 @@ function ProfileContent() {
                         }}
                         className={cn(
                           "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                          profile?.is_qr_active
+                          qrToggleOn
                             ? "bg-emerald-500"
                             : "bg-zinc-300 dark:bg-zinc-700",
                         )}
@@ -902,7 +1081,7 @@ function ProfileContent() {
                         <span
                           className={cn(
                             "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                            profile?.is_qr_active
+                            qrToggleOn
                               ? "translate-x-5"
                               : "translate-x-0",
                           )}
@@ -911,36 +1090,50 @@ function ProfileContent() {
                     </div>
                   </div>
 
-                {/* Тугмаҳои амалиёт — низ берун аз sticky */}
-                {/* Тугмаи «Барои чӣ лозим?» танҳо иконка аст (мураббаи 44px —
-                    ҳадди ақали ламси мобилӣ), пас `aria-label` ҲАТМӢ мешавад:
-                    бе он барои screen reader ин тугма беном мемонад.
-                    Тугмаи боргирӣ бо `flex-1` тамоми ҷои боқимондаро мегирад. */}
-                <div className="flex items-center gap-3 mt-5 w-full px-1">
-                  <Button
-                    onClick={() => setShowWhyQRModal(true)}
-                    aria-label={t("qrSecurityQuestion") || "Барои чӣ лозим?"}
-                    title={t("qrSecurityQuestion") || "Барои чӣ лозим?"}
-                    className="shrink-0 size-11 p-0 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all"
-                  >
-                    <HelpCircle className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
-                  </Button>
-                  <Button
-                    onClick={handleDownloadQR}
-                    disabled={isDownloading}
-                    className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-bold text-[11px] min-[1084px]:text-xs tracking-normal hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-all gap-1.5 px-2.5"
-                  >
-                    {isDownloading ? (
-                      <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px] text-emerald-500" />
-                    )}
-                    {t("download")}
-                  </Button>
-                </div>
+
+                {/* Боргирӣ — ё озод, ё қулф.
+                    Қулф танҳо вақте меафтад, ки корбар воқеан аз ҳолати
+                    стандартӣ дур рафта бошад: дар табҳои худсоз, вале бе
+                    тағйирот, боргирӣ бепул мемонад. */}
+                {isQrLocked ? (
+                  <div className="mt-3 w-full px-1">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        onClick={() => toast.info(t("qrComingSoon"))}
+                        className="flex-1 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                      >
+                        {t("qrBuy")}
+                      </Button>
+                      <Button
+                        onClick={() => toast.info(t("qrComingSoon"))}
+                        variant="outline"
+                        className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                      >
+                        {t("qrUnlock")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 mt-3 w-full px-1">
+                    <Button
+                      onClick={handleDownloadQR}
+                      disabled={isDownloading}
+                      className="flex-1 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                    >
+                      {isDownloading ? (
+                        <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px] text-white" />
+                      )}
+                      {t("download")}
+                    </Button>
+                  </div>
+                )}
                 </div>
 
-                {/* Панели танзимоти QR - Full Width ва Compact */}
+                {/* Ҳама танзимот танҳо дар «Худсоз» ва «Pro».
+                    Дар «Оддӣ» сутун қасдан холӣ мемонад. */}
+                {!isBasicTier && (
                 <div className="space-y-5 px-1 pb-10">
                   {/* Стил ва Шаклҳо */}
                   <div className="grid grid-cols-2 gap-3">
@@ -1126,7 +1319,44 @@ function ProfileContent() {
                       placeholder={t("qrInputPlaceholder")}
                     />
                   </div>
+
+                  {/* Градиент — хосияти ЯГОНАИ Pro. */}
+                  {qrTier === "pro" && (
+                    <div className="space-y-2">
+                      <QrFieldLabel icon={Droplet}>
+                        {t("qrGradientLabel")}
+                      </QrFieldLabel>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          onClick={() => setQrGradientColor(null)}
+                          className={cn(
+                            "h-9 px-3 rounded-lg text-[11px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-2 transition-colors",
+                            qrGradientColor === null
+                              ? "border-emerald-500"
+                              : "border-transparent",
+                          )}
+                        >
+                          {t("qrGradientOff")}
+                        </button>
+                        {GRADIENT_PRESETS.map((preset) => (
+                          <button
+                            key={preset}
+                            onClick={() => setQrGradientColor(preset)}
+                            aria-label={preset}
+                            style={{ backgroundColor: preset }}
+                            className={cn(
+                              "size-9 rounded-lg border-2 transition-colors",
+                              qrGradientColor === preset
+                                ? "border-emerald-500"
+                                : "border-transparent",
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -1823,8 +2053,7 @@ function ProfileContent() {
                 )}
 
                 {/* Рақами дуюм (агар набошад) */}
-                {(!profile?.secondary_phone ||
-                  !profile?.secondary_phone_type) && (
+                {!profile?.secondary_phone && (
                   <>
                     <div className="space-y-1.5">
                       <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
@@ -1851,36 +2080,94 @@ function ProfileContent() {
                       </p>
                     </div>
 
-                    <div className="space-y-3">
-                      <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
-                        {t("qrSecondaryModal.ownerQuestion")}
-                      </Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          "father",
-                          "mother",
-                          "brother",
-                          "sister",
-                          "spouse",
-                        ].map((type) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => setSecondaryType(type)}
-                            className={cn(
-                              "flex items-center justify-center py-3 rounded-xl transition-all duration-300 font-bold text-[10px] tracking-wider",
-                              secondaryType === type
-                                ? "bg-emerald-500 text-white shadow-md scale-[1.02]"
-                                : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500 hover:bg-zinc-200",
-                            )}
-                          >
-                            {t(`phoneSecondaryTypes.${type}`)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </>
                 )}
+
+                {/* Шабакаҳои иҷтимоӣ — ИХТИЁРӢ.
+                    Пӯшида меистад, то формаи ҳатмиро дароз накунад. */}
+                <div className="space-y-1.5">
+                  <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                    {t("qrSecondaryModal.socialBtn")}
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setShowSocial((v) => !v)}
+                    aria-expanded={showSocial}
+                    aria-label={t("qrSecondaryModal.socialBtn")}
+                    className="w-full flex items-center justify-between gap-2 py-3 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                  >
+                    {/* Танҳо нишонаҳо, дар ранги брендии худ: чашм онҳоро
+                        зудтар аз матн мешиносад. */}
+                    <span className="flex items-center gap-3">
+                      {SOCIALS.map(({ key, Icon }) => (
+                        <Icon key={key} size={26} />
+                      ))}
+                    </span>
+                    <ChevronRight
+                      className={cn(
+                        "w-4 h-4 text-zinc-400 transition-transform duration-300",
+                        showSocial && "rotate-90",
+                      )}
+                    />
+                  </button>
+
+                  {showSocial && (
+                    <div
+                      className="space-y-2"
+                      // Майдонҳо дар охири формаи ғилдиракдор меафтанд ва бе
+                      // ин корбар танҳо тугмаи кушодашударо медид.
+                      ref={(el) =>
+                        el?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+                      }
+                    >
+                      {/* Ҳеҷ кадомашон ҳатмӣ нест — ин бояд ПЕШ аз майдонҳо
+                          хонда шавад, вагарна корбар аллакай ҳар чорро пур
+                          карда, баъд ишораро мебинад. */}
+                      <p className="text-[9px] font-bold text-zinc-400 px-1 pb-1 leading-snug">
+                        {t("qrSecondaryModal.socialPickHint")}
+                      </p>
+                      {SOCIALS.map(({ key, Icon, label }) => {
+                        const prefix = socialPrefix(key, social[key]);
+                        return (
+                          <div key={key} className="relative">
+                            <Icon
+                              size={16}
+                              className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                            />
+                            {/* Аломат ба қимат дохил намешавад — танҳо
+                                намоишӣ. Ҷои он ҳамеша нигоҳ дошта мешавад
+                                (`pl-[3.25rem]`), то ҳангоми пайдо шудани
+                                он матн наҷаҳад. */}
+                            <span
+                              aria-hidden
+                              className="absolute left-10 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400 pointer-events-none"
+                            >
+                              {prefix}
+                            </span>
+                            <Input
+                              value={social[key]}
+                              onChange={(e) =>
+                                setSocial((s) => ({
+                                  ...s,
+                                  [key]: sanitizeSocialInput(key, e.target.value),
+                                }))
+                              }
+                              placeholder={t(
+                                `qrSecondaryModal.${key}Placeholder`,
+                              )}
+                              aria-label={label}
+                              inputMode={key === "whatsapp" ? "numeric" : "text"}
+                              autoCapitalize="none"
+                              autoCorrect="off"
+                              spellCheck={false}
+                              className="h-12 pl-[3.75rem] pr-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 font-bold text-sm border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
 
                 {/* Қабули шартҳо (агар қабул нашуда бошад) */}
                 {profile?.accepted_terms !== true && (
@@ -1921,16 +2208,13 @@ function ProfileContent() {
               className="w-full h-14 rounded-2xl font-bold tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all disabled:opacity-50 border-none"
               disabled={
                 secondaryLoading ||
-                ((!profile?.secondary_phone ||
-                  !profile?.secondary_phone_type) &&
-                  !secondaryType) ||
                 (profile?.accepted_terms !== true && !acceptedTerms)
               }
             >
               {secondaryLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin mx-auto" />
               ) : (
-                t("saveAndDownload") || "Захира ва боргирӣ"
+                t("saveAndDownload") || "Захира"
               )}
             </Button>
             <Button
@@ -2051,33 +2335,6 @@ function ProfileContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Security Mode Modal */}
-      <Dialog open={showSecurityModal} onOpenChange={setShowSecurityModal}>
-        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
-          <DialogHeader className="space-y-4 text-center">
-            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
-              {t("qrSecurityTitle") || "Реҷаи амниятӣ"}
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div className="text-zinc-500 dark:text-zinc-400 font-medium text-sm leading-relaxed space-y-4 text-left mt-4">
-                <div className="bg-white dark:bg-zinc-800 p-6 rounded-3xl">
-                  <p className="text-[12px] text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
-                    {t("qrSecurityLong")}
-                  </p>
-                </div>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-8">
-            <Button
-              onClick={() => setShowSecurityModal(false)}
-              className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
-            >
-              {t("ok") || "Фаҳмо"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Account Confirmation Modal */}
       <Dialog

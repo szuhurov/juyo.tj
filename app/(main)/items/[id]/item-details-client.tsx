@@ -156,11 +156,14 @@ export default function ItemDetailsClient({
     if (isLoaded && item && !viewIncremented.current) {
       const isActuallyOwner = userId === item.user_id;
       if (!isActuallyOwner) {
-        const sessionKey = `viewed_${id}`;
-        if (!sessionStorage.getItem(sessionKey)) {
+        // `localStorage`, на `sessionStorage`: session бо пӯшидани таб тамом
+        // мешавад ва ҳамон одам ҳангоми боздиди дуюм боз +1 медод. Ҳисоб
+        // бояд ЯК БОР барои як шахс бошад.
+        const viewKey = `viewed_${id}`;
+        if (!localStorage.getItem(viewKey)) {
           viewIncremented.current = true;
           ItemService.incrementView(id).then(() => {
-            sessionStorage.setItem(sessionKey, "true");
+            localStorage.setItem(viewKey, "true");
             queryClient.setQueryData(["items", "detail", id], (old: Item | undefined) => {
               if (!old) return old;
               return { ...old, views: (old?.views || 0) + 1 };
@@ -475,7 +478,9 @@ export default function ItemDetailsClient({
             <div className="md:hidden flex justify-center -mt-6 mb-4">
               <div className="w-10 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
             </div>
-            <div className="flex justify-between items-center mb-5">
+            {/* Хати ҷудокунанда байни соҳиби эълон ва маълумоти ашё — он
+                ду бахши мазмунан гуногунро аз ҳам ҷудо мекунад. */}
+            <div className="flex justify-between items-center mb-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">
                   <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-zinc-200">

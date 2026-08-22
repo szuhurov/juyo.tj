@@ -12,7 +12,6 @@ import { MobileNavbar } from "@/components/mobile-navbar";
 import { HomeProvider } from "@/lib/home-context";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { BlockedAccountScreen } from "@/components/blocked-account-screen";
-import { isAdminUser } from "@/lib/admin-auth";
 
 // Ин хониш (status/phone) дар ин layout ДАР ҲАР ГУЗАРИШ (ҳатто дохили
 // ҳамин гурӯҳ, масалан хона → профил) иҷро мешуд — як дархости DB барои
@@ -39,7 +38,6 @@ export default async function MainLayout({
   children: React.ReactNode;
 }) {
   const { userId } = await auth();
-  const isAdmin = isAdminUser(userId);
   if (userId) {
     const profile = await getCachedProfileStatus(userId);
     if (profile?.status === "deleted") {
@@ -82,7 +80,7 @@ export default async function MainLayout({
     <HomeProvider>
     <div className="flex flex-col min-h-screen bg-canvas">
       {/* Ҳедери сайт (Шапка) - Persistent UI */}
-      <Header isAdmin={isAdmin} />
+      <Header />
 
       {/* Ин ҷо мӯҳтавои асосии саҳифаҳо мебарояд (Main Content) */}
       <main className="flex-1 pt-12 sm:pt-16 pb-20 md:pb-0">

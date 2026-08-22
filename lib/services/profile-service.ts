@@ -14,7 +14,15 @@ export interface Profile {
   email?: string;
   phone?: string;
   secondary_phone?: string;
-  secondary_phone_type?: string;
+  // Шабакаҳои иҷтимоӣ — ихтиёрӣ. Ҳамон чизе ки корбар навиштааст нигоҳ
+  // дошта мешавад (бе `@`, бе пайванди пурра); пайванд ҳангоми нишон
+  // додан аз `socialHref()` сохта мешавад.
+  telegram?: string;
+  instagram?: string;
+  whatsapp?: string;
+  facebook?: string;
+  /** Рамзи кӯтоҳи 6-ҳарфа барои суроғаи QR — ниг. миграцияи qr_short_code. */
+  qr_code?: string;
   is_qr_active?: boolean;
   is_verified?: boolean;
   accepted_terms?: boolean;

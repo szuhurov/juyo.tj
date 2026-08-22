@@ -97,7 +97,7 @@ function AddItemForm() {
 
   // Тартиби воқеии қадамҳо аз рӯи навигатсия — қадами 3 (санҷиши AI)
   // охирин аст, на сеюм; қадами 6 ("дар куҷо?") пас аз тафсилот ҷойгир аст.
-  const stepOrder = [1, 2, 4, 6, 5, 3];
+  const stepOrder = [1, 2, 6, 4, 5, 3];
   const stepIndex = stepOrder.indexOf(step);
 
   const [images, setImages] = useState<File[]>([]);
@@ -253,7 +253,7 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(4); // Тафсилот пеш аз "дар куҷо?"
+      setStep(6); // "Дар куҷо?" фавран пас аз навъ — ҳамон савол давом мекунад
     } else if (step === 4) {
       if (
         !formData.title.trim() ||
@@ -263,13 +263,13 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(6); // Қадами ихтиёрии "дар куҷо гум/ёфт кардед?" пас аз тафсилот
+      setStep(5); // Тафсилот → тамос
     } else if (step === 6) {
       if (!locationAnswered) {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(5); // Move to Step 5 (Phone & Reward)
+      setStep(4); // Ҷой → тафсилот
     } else if (step === 5) {
       if (!formData.phone.trim()) {
         toast.error(t("fillAllFields"));
@@ -281,12 +281,12 @@ function AddItemForm() {
 
   const prevStep = () => {
     if (step === 4) {
-      setStep(2);
+      setStep(6);
       setModerationStatus("idle");
     } else if (step === 6) {
-      setStep(4); // Back to details, not straight to Type
+      setStep(2);
     } else if (step === 5) {
-      setStep(6);
+      setStep(4);
     } else if (step > 1 && step !== 3) {
       setStep(step - 1);
       // Reset moderation if going back to edit photos or type

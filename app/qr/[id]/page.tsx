@@ -16,6 +16,7 @@ import { cookies } from "next/headers";
 import { unstable_cache } from "next/cache";
 import { translations } from "@/lib/translations";
 import { VerifiedBadge } from "@/components/verified-badge";
+import { SOCIALS, socialHref } from "@/components/social-icons";
 import { supabase } from "@/lib/supabase";
 
 interface Props {
@@ -115,6 +116,14 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     );
   }
 
+  // Танҳо шабакаҳое, ки соҳиб пур кардааст ВА пайвандашон эътибор дорад.
+  // `socialHref` барои матни нодуруст `null` бармегардонад — беҳтар аст
+  // нишона набошад, назар ба он ки ба саҳифаи вуҷуднадошта барад.
+  const socialLinks = SOCIALS.map((s) => ({
+    ...s,
+    href: socialHref(s.key, profile[s.key]),
+  })).filter((s): s is typeof s & { href: string } => s.href !== null);
+
   // Агар QR ФАЪОЛ БОШАД - САҲИФАИ ПУРРА
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
@@ -177,6 +186,30 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
           </div>
 
           <div className="flex flex-col items-center justify-center gap-4">
+            {/* Шабакаҳои иҷтимоӣ — як қатор, рост болои рақамҳо.
+                Танҳо онҳое, ки соҳиб пур кардааст ва пайвандашон эътибор
+                дорад; агар ҳеҷ кадомаш набошад, қатор тамоман намебарояд
+                ва фосилаи холӣ намемонад. */}
+            {socialLinks.length > 0 && (
+              // Паҳноӣ ҳамеша тақсими БАРОБАРИ як қатор аст: `flex-1` ба
+              // ҳар кадом. Пас 1 то → пурра, 2 то → нисф, 3 то → сеяк.
+              // Худи қатор ҳамон паҳноии тугмаи «Занг задан»-ро мегирад.
+              <div className="flex items-stretch gap-3 mb-2 w-full max-w-xs min-[1084px]:max-w-sm">
+                {socialLinks.map(({ key, Icon, label, href }) => (
+                  <a
+                    key={key}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    aria-label={label}
+                    className="flex-1 flex items-center justify-center h-14 min-[1084px]:h-[60px] rounded-2xl bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    <Icon size={22} />
+                  </a>
+                ))}
+              </div>
+            )}
+
             {profile.phone ? (
               <Button
                 size="lg"

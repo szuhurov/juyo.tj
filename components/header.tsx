@@ -19,12 +19,8 @@ import {
   QrCode,
   PlusCircle,
   Settings,
-  Menu,
-  LayoutGrid,
-  Bookmark,
   Camera,
   Image as ImageIcon,
-  UserCog,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -68,10 +64,11 @@ const CameraCaptureModal = dynamic(() =>
   import("./camera-capture-modal").then((m) => m.CameraCaptureModal),
 );
 
-export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
+export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const onQrTab = pathname === "/profile" && searchParams.get("tab") === "qr";
 
   const { userId } = useAuth();
   const { user } = useUser();
@@ -225,6 +222,18 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchValue, router, setIsSearchTyping, triggerGoHome]);
+
+  /**
+   * Дар табби QR бари болоӣ ТАМОМАН нишон дода намешавад.
+   *
+   * Он саҳифа ба ҷустуҷӯ ҳеҷ рабте надорад — он ҷо корбар стикери худро
+   * танзим мекунад. Талаби корбар: ҳам ҷустуҷӯ, ҳам занги огоҳиномаҳо
+   * бардошта шаванд, то интихобгари сатҳҳо дар сари саҳифа истад.
+   *
+   * Ҳамаи hook-ҳо БОЛОИ ин сатр меистанд — return-и барвақт пеш аз онҳо
+   * тартиби hook-ҳоро вайрон мекард.
+   */
+  if (onQrTab) return null;
 
   return (
     <TooltipProvider>
@@ -486,87 +495,7 @@ export function Header({ isAdmin = false }: { isAdmin?: boolean }) {
               >
                 <Link href="/sign-up">{t("signup")}</Link>
               </Button>
-            ) : (
-              /* Mobile Menu Button (Агар корбар ворид шуда бошад) */
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    aria-label={t("menu")}
-                    className="sm:hidden h-9 w-9 p-0 rounded-md border-none shadow-none bg-white dark:bg-zinc-800"
-                  >
-                    <Menu className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-56 md:w-60 rounded-xl shadow-xl p-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
-                >
-                  <DropdownMenuItem
-                    onClick={() => router.push("/profile?tab=posts")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <LayoutGrid className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    </div>
-                    {t("myPosts")}
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={() => router.push("/profile?tab=info")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <Settings className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    </div>
-                    {t("settings")}
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={() => router.push("/profile?tab=qr")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <QrCode className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    </div>
-                    {t("qrMyCode")}
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={() => router.push("/profile?tab=saved")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <Bookmark className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    </div>
-                    {t("savedItems")}
-                  </DropdownMenuItem>
-
-                  {isAdmin && (
-                    <DropdownMenuItem
-                      onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                    >
-                      <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                        <UserCog className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      </div>
-                      {t("adminPanel")}
-                    </DropdownMenuItem>
-                  )}
-
-                  <DropdownMenuItem
-                    onClick={() => signOut(() => router.push("/"))}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
-                      <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    </div>
-                    {t("signOut")}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            ) : null}
           </div>
         </div>
       </header>

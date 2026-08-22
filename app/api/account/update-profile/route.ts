@@ -19,7 +19,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { firstName, lastName, phone, secondaryPhone } = await req.json();
+  const body = await req.json();
+  const { firstName, lastName, phone, secondaryPhone } = body;
+
+  /**
+   * Шабакаҳои иҷтимоӣ — ихтиёрӣ ва аз клиент меоянд, пас ҳар кадомро
+   * ин ҷо маҳдуд мекунем: танҳо сатр, буридашуда, ва бо ҳадди дарозӣ
+   * ки ба `check`-и миграция мувофиқ аст. Майдони НАФИРИСТОДАШУДА
+   * тамоман ба `update` дохил намешавад, вагарна `undefined` қимати
+   * мавҷударо мешуст. Сатри холӣ маънои «тоза кун» дорад → `null`.
+   */
+  const MAX = { telegram: 64, instagram: 64, whatsapp: 24, facebook: 64 } as const;
+  const socials: Record<string, string | null> = {};
+  for (const key of ["telegram", "instagram", "whatsapp", "facebook"] as const) {
+    if (!(key in body)) continue;
+    const raw = body[key];
+    if (typeof raw !== "string") continue;
+    const v = raw.trim().slice(0, MAX[key]);
+    socials[key] = v === "" ? null : v;
+  }
 
   try {
     const client = await clerkClient();
@@ -38,6 +56,7 @@ export async function POST(req: NextRequest) {
         last_name: lastName,
         phone,
         secondary_phone: secondaryPhone,
+        ...socials,
         ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         updated_at: new Date().toISOString(),
       })
