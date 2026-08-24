@@ -15,6 +15,9 @@ import QRCodeStyling, {
 } from "qr-code-styling";
 import { cn } from "@/lib/utils";
 
+/** Кунҷи собити градиент — ҳамон `GRADIENT_ANGLE`-и native. Тағйирёбанда танҳо ТАҚСИМОТ (bias) аст. */
+const GRADIENT_ANGLE = 45;
+
 export interface QRCardSettings {
   qrColor: string;
   bgColor: string;
@@ -22,21 +25,21 @@ export interface QRCardSettings {
   shadow: "none" | "soft" | "medium";
   hasBorder: boolean;
   pattern: "none" | "subtle";
-  text: string;
   // Танзимоти нав
   dotsType?: DotType;
   cornersSquareType?: CornerSquareType;
   cornersDotType?: CornerDotType;
   /**
-   * Градиент — танҳо дар сатҳи Pro.
-   *
-   * Вақте ҳаст, ба ҷои ранги якхела истифода мешавад: нуқтаҳо ва кунҷҳо
-   * аз `qrColor` ба `gradientColor` мегузаранд. Матни поён ҳамон
-   * `qrColor`-и якхеларо нигоҳ медорад — градиенти матн хонданро душвор
-   * мекунад ва дар веб ба ҳар ҳол `background-clip` талаб мекард.
+   * Градиенти МАТН/нуқтаҳо — танҳо дар сатҳи Pro. То 2 ранг: якум =
+   * `qrColor`-и муодил, дуюм = ранги иловагӣ. Кунҷҳо ва JUYO ҳамеша
+   * `qrColor`-и СОФ мемонанд (на градиент) — хонданро осон нигоҳ медорад.
    */
-  gradientColor?: string | null;
-  gradientRotation?: number;
+  gradientColors?: string[] | null;
+  /** Тақсими ду ранг. 1 = баробар. Ниг. шарҳи `QrGradient.bias` дар lib/qr-palette.ts. */
+  gradientBias?: number;
+  /** Градиенти ЗАМИНА — ранги дуюм. Якум ҳамеша `bgColor` аст. */
+  bgGradientColor?: string | null;
+  bgGradientBias?: number;
 }
 
 interface QRCardProps {
@@ -69,13 +72,34 @@ export const QRCard: React.FC<QRCardProps> = ({
     borderRadius,
     shadow,
     hasBorder,
-    text,
     dotsType = "square",
     cornersSquareType = "square",
     cornersDotType = "square",
-    gradientColor = null,
-    gradientRotation = 45,
+    gradientColors = null,
+    gradientBias = 1,
+    bgGradientColor = null,
+    bgGradientBias = 1,
   } = settings;
+
+  /**
+   * Ду hex-и градиент → ду stop-и Гарб-даста, ноаён гузаронда шуда ба
+   * маркази минтақаи гузариш — `qr-code-styling` танҳо `rotation` (кунҷи
+   * ЯГОНА) мегирад, на нуқтаҳои start/end-и native (ниг. `gradientPoints`
+   * дар lib/qr-palette.ts). Тақсимот (bias) ба ҷои ҷойивазкунии
+   * координатаҳо тавассути ҶОЙИВАЗКУНИИ stop-ҳо дар дохили минтақаи
+   * 0..1 тақлид мешавад: `t = 1/(1+bias)` — 0.5 баробар, >0.5 ба ранги
+   * ЯКУМ бештар (bias<1), <0.5 ба ранги ДУЮМ бештар (bias>1).
+   */
+  function biasedStops(bias: number, c1: string, c2: string) {
+    const t = 1 / (1 + bias);
+    const w = 0.4; // паҳнои минтақаи гузариш — собит, бо чашм чида шуда
+    const o1 = Math.max(0, t - w / 2);
+    const o2 = Math.min(1, t + w / 2);
+    return [
+      { offset: o1, color: c1 },
+      { offset: o2, color: c2 },
+    ];
+  }
 
   /**
    * Ранги нуқтаҳо ва кунҷҳо — ё як ранг, ё градиент.
@@ -86,19 +110,47 @@ export const QRCard: React.FC<QRCardProps> = ({
    * вагарна `update()` қимати кӯҳнаро нигоҳ медорад ва ранги якхела
    * ҳаргиз барнамегардад.
    */
-  const paint = gradientColor
+  const hasGradient = !!gradientColors && gradientColors.length >= 2;
+  const paint = hasGradient
     ? {
         color: undefined,
         gradient: {
           type: "linear" as const,
-          rotation: (gradientRotation * Math.PI) / 180,
-          colorStops: [
-            { offset: 0, color: qrColor },
-            { offset: 1, color: gradientColor },
-          ],
+          rotation: (GRADIENT_ANGLE * Math.PI) / 180,
+          colorStops: biasedStops(gradientBias, gradientColors[0], gradientColors[1]),
         },
       }
     : { color: qrColor, gradient: undefined };
+
+  const bgPaint = bgGradientColor
+    ? {
+        color: undefined,
+        gradient: {
+          type: "linear" as const,
+          rotation: (GRADIENT_ANGLE * Math.PI) / 180,
+          colorStops: biasedStops(bgGradientBias, bgColor, bgGradientColor),
+        },
+      }
+    : { color: bgColor, gradient: undefined };
+
+  /**
+   * Чашмакҳои кунҷ ранги СОФ мехоҳанд, на градиент — онҳо аз градиент
+   * берунанд, пас ранги якхела дар тамоми се чашмак лозим аст (native
+   * ҳамин корро мекунад — ниг. `effQrAccent`/`accent` дар
+   * `lib/qr-palette.ts`). Ранги якуми градиент интихоб мешавад.
+   */
+  const accentPaint = hasGradient
+    ? { color: gradientColors[0], gradient: undefined }
+    : { color: qrColor, gradient: undefined };
+
+  /**
+   * `qr-code-styling` танҳо доираи ХУДИ QR-ро градиент мекунад — падинги
+   * гирдогирд ва бэкдропи лавҳачаи JUYO бояд ҳамон градиентро ҷудогона
+   * гиранд, вагарна дар канори QR як ХАТИ рангии ногаҳонӣ пайдо мешавад.
+   */
+  const cardBackground = bgGradientColor
+    ? `linear-gradient(135deg, ${bgColor}, ${bgGradientColor})`
+    : bgColor;
 
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const qrCodeInstance = useRef<QRCodeStyling | null>(null);
@@ -129,14 +181,14 @@ export const QRCard: React.FC<QRCardProps> = ({
           type: dotsType,
         },
         backgroundOptions: {
-          color: bgColor,
+          ...bgPaint,
         },
         cornersSquareOptions: {
-          ...paint,
+          ...accentPaint,
           type: cornersSquareType,
         },
         cornersDotOptions: {
-          ...paint,
+          ...accentPaint,
           type: cornersDotType,
         },
       });
@@ -154,20 +206,31 @@ export const QRCard: React.FC<QRCardProps> = ({
           type: dotsType,
         },
         backgroundOptions: {
-          color: bgColor,
+          ...bgPaint,
         },
         cornersSquareOptions: {
-          ...paint,
+          ...accentPaint,
           type: cornersSquareType,
         },
         cornersDotOptions: {
-          ...paint,
+          ...accentPaint,
           type: cornersDotType,
         },
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `paint` объекти нав дар ҳар render аст; вобастагиҳои воқеӣ рангҳоянд
-  }, [qrUrl, qrColor, bgColor, dotsType, cornersSquareType, cornersDotType, gradientColor, gradientRotation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `paint`/`bgPaint`/`accentPaint` объекти нав дар ҳар render аст; вобастагиҳои воқеӣ рангҳоянд
+  }, [
+    qrUrl,
+    qrColor,
+    bgColor,
+    dotsType,
+    cornersSquareType,
+    cornersDotType,
+    gradientColors,
+    gradientBias,
+    bgGradientColor,
+    bgGradientBias,
+  ]);
 
   const radiusMap = {
     small: "rounded-[0.3rem]",
@@ -186,34 +249,21 @@ export const QRCard: React.FC<QRCardProps> = ({
       <div
         ref={innerRef}
         className={cn(
-          // Корт МУРАББАЪ: 239 × 239.
-          //
-          //   бар     = 8 + 223 + 8      = 239
-          //   баландӣ = 8 + 210 + 17 (матн) + 4 = 239
-          //
-          // Боло, чап ва рост 8 доранд (талаби корбар — каме ҳаво), поён 4
-          // мемонад: зери QR аллакай банди матн истодааст.
-          //
-          // Матн ЗЕРИ QR дар ҷараён аст ва танҳо ба баландӣ илова мекунад.
-          // Барои мураббаъ мондан на падингро, балки БАРИ QR-ро ҳисоб
-          // мекунем: qrW = 210 + 17 + 4 − 8 = 223. Ҳамин ҷойи холии сафеди
-          // паҳлӯиро низ бо нақшҳои QR пур мекунад.
-          "relative flex flex-col items-center justify-center pt-2 px-2 pb-1 size-[239px] transition-all duration-300 overflow-hidden",
+          // Корт МУРАББАЪ: 246 × 246 = 210 (QR) + 18×2 (падинги ҳар чор
+          // тараф баробар) — айнан native-и `QrDesignCard`-и `PAD_TOP =
+          // PAD_SIDE = PAD_BOTTOM = 18`. Пештар (майдони матни поёнии
+          // нестшуда боқимонда) 8/8/21-и номутаносиб буд бо `scaleX`-и
+          // ҷубронӣ — native он ҷубронро низ бардошт (талаби корбар:
+          // "12→18", ҳар чор тараф баробар), пас веб ҳам содда шуд.
+          "relative flex items-center justify-center p-[18px] size-[246px] transition-all duration-300 overflow-hidden",
           radiusMap[borderRadius],
           shadowMap[shadow],
           hasBorder && "border-2 border-zinc-100 dark:border-zinc-800",
         )}
-        style={{ backgroundColor: bgColor }}
+        style={{ background: cardBackground }}
       >
-        <div
-          className="relative z-10 flex items-center justify-center"
-          style={{ backgroundColor: bgColor, width: 223, height: 210 }}
-        >
-          {/* `qr-code-styling` ҳамеша мураббаъ мекашад (dotSize аз рӯи
-              `Math.min` ҳисоб мешавад), бинобар ин васеъкуниро бо `scaleX`
-              мекунем. Он танҳо ба ХУДИ QR дода мешавад — лавҳачаи JUYO дар
-              поён бародари ин div аст ва бетағйир мемонад. */}
-          <div ref={qrContainerRef} style={{ transform: `scaleX(${223 / 210})` }} />
+        <div className="relative z-10 flex items-center justify-center" style={{ background: cardBackground }}>
+          <div ref={qrContainerRef} />
 
           {/* Логотипи JUYO дар маркази QR-код */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -227,31 +277,13 @@ export const QRCard: React.FC<QRCardProps> = ({
             >
               <span
                 className="text-[20px] font-[900] tracking-[0.1em] block leading-none"
-                style={{ color: qrColor, transform: "translate(0.2mm, 0.2mm)" }}
+                style={{ color: accentPaint.color, transform: "translate(0.2mm, 0.2mm)" }}
               >
                 JUYO
               </span>
             </div>
           </div>
         </div>
-
-        {text && (
-          <div className="relative z-10 text-center px-1 mt-0.5 max-w-[223px]">
-            {/* ЯК сатр: корт андозаи САХТ дорад ва сатри дуюм аз он
-                мебарояд. `clamp` ба ҷои буридан — стикер чоп мешавад ва
-                матни нимкора дар он бемаънист. */}
-            <p
-              className="font-bold tracking-widest break-all leading-[15px] overflow-hidden"
-              style={{
-                color: qrColor,
-                fontSize: `clamp(7px, ${Math.min(12, (223 / Math.max(text.length, 1)) * 1.7)}px, 12px)`,
-                whiteSpace: "nowrap",
-              }}
-            >
-              {text}
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );

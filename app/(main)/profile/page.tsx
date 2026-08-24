@@ -24,14 +24,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; //
 import { Skeleton } from "@/components/ui/skeleton"; // Барои ҳолати боргирии муваққатӣ
 import { Input } from "@/components/ui/input"; // Майдони воридкунии матн
 import { Label } from "@/components/ui/label"; // Сарлавҳаҳо барои майдонҳои форма
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"; // Рӯйхати интихобшаванда
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
+import { getErrorMessage } from "@/lib/error-utils"; // Паёми хониданӣ аз хатогии Clerk/Supabase
 import {
   User,
   Settings,
@@ -60,13 +54,19 @@ import {
   Scan,
   Droplet,
   Sparkles,
-  Type,
+  X,
+  Pointer,
+  Check,
+  Smartphone,
   type LucideIcon,
 } from "lucide-react";
 // Иконкаҳои гуногун барои интерфейс
 import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
 import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
 import { cn } from "@/lib/utils"; // Барои пайваст кардани классҳои CSS
+import { readableTextOn, isNearWhite } from "@/lib/qr-palette";
+import { DotStyleChip, CornerBorderChip, CornerCenterChip, StyleChipRow } from "@/components/qr-editor/qr-style-chips";
+import { PercentSlider, GradientBiasToggle } from "@/components/qr-editor/percent-slider";
 import {
   SOCIALS,
   socialPrefix,
@@ -175,6 +175,66 @@ const QR_TIERS = [
   { id: "pro" as const, icon: Sparkles, labelKey: "qrTierPro" },
 ];
 
+/**
+ * Қарори маҳсулот (муваққатӣ, мувофиқи native): азбаски «Худӣ» ҳоло
+ * ройгон аст, гузариш ба «Оддӣ» маъно надорад — тугмаи интихоби сатҳ
+ * ПИНҲОН. Мантиқи «Оддӣ» (isBasicTier, QR_BASIC) НЕСТ карда НАШУДААСТ —
+ * танҳо роҳи UI ба он баста шуд.
+ */
+const SHOW_TIER_SELECTOR = false;
+
+/**
+ * Фоизи АЗ НУҚТАИ НАЗАРИ stop-и додашуда — айнан formula-и native (ниг.
+ * `biasPercentForStop` дар `juyoapp/app/(tabs)/profile.tsx`). Барои
+ * stopIdx=0 фоизи БАРЪАКС нишон дода мешавад (100-percent), барои
+ * stopIdx=1 — айнан. Ин ҳам ба рақами НИШОНДОДАШУДА, ҳам ба bias-и
+ * ВОҚЕИИ рендер таъсир мерасонад — бе ин ду репо рақами гуногун
+ * медиҳанд, гарчанде дар база як арзиш захира шудааст.
+ */
+const biasPercentForStop = (percent: number, stopIdx: number) => (stopIdx === 0 ? 100 - percent : percent);
+
+/** Ранги ягонаи намунаҳои chip — на ранги ҷории QR, то муқоисаи шакл равшан монад. */
+const QR_CHIP_INK = "#000000";
+
+/** Вариантҳои шакл барои chip-picker-ҳо — маҳз он чи `qr-code-styling` дастгирӣ мекунад. */
+// native-и DOT_TYPES воқеан 5 навъ дорад: square/rounded/extra-rounded/
+// diamond/classy-rounded ("dots" ва "classy" бардошта шудаанд). "diamond"
+// шакли ХОСИСИ native аст (SVG-и дастӣ кашидашуда, `pieceCornerType:'cut'`)
+// — `qr-code-styling`-и веб чунин навъ ТАМОМАН НАДОРАД (DotType-и он танҳо
+// dots|rounded|classy|classy-rounded|square|extra-rounded аст), пас бе
+// нависондани рендерери пурра худӣ (беруни доираи ин ислоҳ) ғайриимкон аст.
+// 4 навъи БОҚИМОНДА, ки ҳарду платформа воқеан дастгирӣ мекунанд, гирифта
+// шуданд — "dots" ва "classy" низ бардошта шуданд, то бо интихоби native
+// мувофиқ бошад (на танҳо бо номгӯи техникии китобхона).
+const DOT_TYPES: DotType[] = ["square", "rounded", "extra-rounded", "classy-rounded"];
+/**
+ * "rounded" АЗ РӮЙХАТ БАРДОШТА ШУД: талаби корбар, баъд аз он ки
+ * ошкор шуд `qr-code-styling` (китобхонаи ВЕБ, на native) чунин навъро
+ * воқеан НАДОРАД — dispatcher-и китобхона (`QRCornerSquare.draw`) танҳо
+ * "square" ва "extra-rounded"-ро алоҳида кор мефармояд, ҳар чизи дигар
+ * (аз ҷумла "rounded") ба "dot" мегузарад. Пас интихоби "rounded" дар QR-и
+ * воқеӣ АЙНАН ҳамон "dot"-ро медод — фарқе набуд. Ниг. санҷиши манбаи
+ * `node_modules/qr-code-styling/lib/qr-code-styling.common.js`.
+ */
+const CORNER_TYPES: (CornerSquareType & CornerDotType)[] = ["square", "extra-rounded", "dot"];
+/** Ҳадди боло-и бари ҳар чиппа — айнан native (`chipMaxWidth={30}`). */
+const CHIP_MAX_WIDTH = 30;
+const DOT_LABEL_KEYS: Record<DotType, string> = {
+  square: "qrDotSquare",
+  dots: "qrDotDots",
+  rounded: "qrDotRounded",
+  "extra-rounded": "qrDotExtraRounded",
+  classy: "qrDotClassy",
+  "classy-rounded": "qrDotClassyRounded",
+};
+/** Ҳамон CORNER_LABEL_KEYS-и native: «extra-rounded» = «Мулоим» дар ҳарду. */
+const CORNER_LABEL_KEYS: Partial<Record<CornerSquareType | CornerDotType, string>> = {
+  square: "qrCornerSquare",
+  rounded: "qrCornerRounded",
+  "extra-rounded": "qrCornerRounded",
+  dot: "qrCornerDot",
+};
+
 /** Ҳолати «Оддӣ» — нуқтаи ҳисоб барои он ки чӣ «тағйирёфта» аст. */
 const QR_BASIC = {
   color: "#26ba90",
@@ -192,20 +252,6 @@ const QR_BASIC = {
    */
   corners: "square" as CornerSquareType & CornerDotType,
 };
-
-/**
- * Рангҳои тайёри градиент.
- *
- * Интихобгари пурраи ранг ду сутун дорад (QR ва замина) ва барои ранги
- * сеюм мувофиқ намеояд. Барои градиент чанд ранги омода кофист — ва
- * онҳо махсус чунин интихоб шудаанд, ки бо ҳар ранги асосӣ мутобиқ
- * бошанд ва контрасти QR-ро вайрон накунанд.
- */
-const GRADIENT_PRESETS = ["#0ea5e9", "#8b5cf6", "#ec4899", "#f59e0b", "#111827"];
-
-const QR_CONTROL_CLASS =
-  "h-11 w-full rounded-xl bg-white dark:bg-zinc-800 border-none shadow-none " +
-  "hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors";
 
 function ProfileContent() {
   // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
@@ -230,10 +276,13 @@ function ProfileContent() {
   );
   const qrRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [activePicker, setActivePicker] = useState<"qr" | "bg" | "all" | null>(
+  /** Кадом stop-и кадом градиент ҳозир дар picker кушода аст. */
+  const [activePicker, setActivePicker] = useState<{ kind: "text" | "bg"; index: number } | null>(
     null,
   );
   const [showWhyQRModal, setShowWhyQRModal] = useState(false);
+  /** Обои-и экрани қулф хусусияти телефонӣ аст — дар веб тугма ҳаст (мисли native), вале модали шарҳдиҳанда мекушояд. */
+  const [showWallpaperInfoModal, setShowWallpaperInfoModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -398,18 +447,29 @@ function ProfileContent() {
   });
   const [showTermsDetails, setShowTermsDetails] = useState(false);
 
-  // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва текст)
-  const [qrTier, setQrTier] = useState<QrTier>("basic");
-  // Ранги дуюми градиент — танҳо дар Pro. `null` = градиент хомӯш.
-  const [qrGradientColor, setQrGradientColor] = useState<string | null>(null);
+  // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва шакл).
+  // Пешфарз "pro" — мувофиқи native (SHOW_TIER_SELECTOR боло).
+  const [qrTier, setQrTier] = useState<QrTier>("pro");
+  /**
+   * Градиенти МАТН/нуқтаҳо — то 2 ранг. Пешфарз ҳамон ҷуфти native
+   * (кабуд → сабзи брендии JUYO, 74% ба сабз).
+   */
+  const [qrGradientStops, setQrGradientStops] = useState<string[]>(["#2563EB", "#26BA90"]);
+  const [qrGradientBiasPercent, setQrGradientBiasPercent] = useState(74);
+  /** Кадом stop ҳозир "интихобшуда" (барои `biasPercentForStop`) — пешфарз 0, мисли native. */
+  const [gradientStopIdx, setGradientStopIdx] = useState(0);
+  /** Градиенти ЗАМИНА (BG) — ҳамон сохтор, алоҳида. */
+  const [qrBgGradientStops, setQrBgGradientStops] = useState<string[]>(["#FFFFFF", "#EEFBF5"]);
+  const [qrBgGradientBiasPercent, setQrBgGradientBiasPercent] = useState(50);
+  const [bgGradientStopIdx, setBgGradientStopIdx] = useState(0);
   const [qrSettings, setQrSettings] = useState({
-    qrColor: "#26ba90",
-    bgColor: "#eefbf5",
-    text: t("qrScanMe"),
-    dotsType: "extra-rounded" as DotType,
+    dotsType: "rounded" as DotType,
     cornersSquareType: "dot" as CornerSquareType,
     cornersDotType: "dot" as CornerDotType,
   });
+  /** Талаби корбар: слайдери тақсимот бо пешфарз КУШОДА бошад. */
+  const [textBiasOpen, setTextBiasOpen] = useState(true);
+  const [bgBiasOpen, setBgBiasOpen] = useState(true);
 
   // Токен барои Supabase — лозим барои useUserItems/useSavedItems ва
   // амалиётҳои дигар (иваз кардани email, аватар ва ғ.) дар ин саҳифа.
@@ -709,35 +769,80 @@ function ProfileContent() {
   /** Калид танҳо вақте фаъол менамояд, ки QR воқеан кор карда тавонад. */
   const qrToggleOn = !!profile?.is_qr_active && !isQrDataMissing;
 
+  /**
+   * Иваз кардани статуси фаъол/хомӯши QR — аз таби QR ба «Танзимот»
+   * кӯчонида шуд (мисли native), пас ба функсияи алоҳида баровардем, то
+   * дар ҷои нав такрор нашавад.
+   */
+  const handleToggleQrActive = async () => {
+    if (!profile) return;
+    const previousState = profile.is_qr_active;
+    const newState = !previousState;
+
+    /**
+     * ФАЪОЛ кардан маълумоти пурра талаб мекунад.
+     *
+     * QR-и фаъол бе рақами телефон маънӣ надорад: ёбанда саҳифаро
+     * мекушояд ва он ҷо ҳеҷ роҳи тамос намебинад. Бинобар ин ба ҷои
+     * гузоштани калид модали пуркуниро мекушоем ва баъд аз захира
+     * худамон фаъол мекунем. ХОМӮШ кардан ҳамеша озод аст.
+     */
+    if (newState && isQrDataMissing) {
+      setPendingQrAction("activate");
+      setShowSecondaryPhoneModal(true);
+      return;
+    }
+
+    // Optimistic update
+    setProfile({ ...profile, is_qr_active: newState });
+
+    try {
+      const token = await getToken({ template: "supabase" });
+      const supabase = createClerkSupabaseClient(token!);
+
+      // Background update
+      ProfileService.updateProfile(supabase, userId!, { is_qr_active: newState })
+        .then((updated) => {
+          setProfile(updated);
+          toast.success(newState ? t("qrActivatedSuccess") : t("qrDeactivatedSuccess"));
+        })
+        .catch((err) => {
+          console.error(err);
+          setProfile({ ...profile, is_qr_active: previousState });
+          toast.error(t("error"));
+        });
+    } catch (err) {
+      console.error(err);
+      setProfile({ ...profile, is_qr_active: previousState });
+      toast.error(t("error"));
+    }
+  };
+
   const isBasicTier = qrTier === "basic";
-  const effQr = isBasicTier
-    ? {
-        qrColor: QR_BASIC.color,
-        bgColor: QR_BASIC.bg,
-        text: t("qrScanMe"),
-        dotsType: QR_BASIC.dots,
-        cornersSquareType: QR_BASIC.corners,
-        cornersDotType: QR_BASIC.corners,
-      }
-    : {
-        qrColor: qrSettings.qrColor,
-        bgColor: qrSettings.bgColor,
-        text: qrSettings.text,
-        dotsType: qrSettings.dotsType,
-        cornersSquareType: qrSettings.cornersSquareType,
-        cornersDotType: qrSettings.cornersDotType,
-      };
-  const effGradient = qrTier === "pro" ? qrGradientColor : null;
+  const activeGradient = !isBasicTier && qrGradientStops.length >= 2 ? qrGradientStops : null;
+  const effQrColor = isBasicTier ? QR_BASIC.color : qrGradientStops[0];
+  const effBgColor = isBasicTier ? QR_BASIC.bg : qrBgGradientStops[0];
+  const effBgGradientColor = !isBasicTier && qrBgGradientStops.length >= 2 ? qrBgGradientStops[1] : null;
+  const effDotsType = isBasicTier ? QR_BASIC.dots : qrSettings.dotsType;
+  const effCornersSquareType = isBasicTier ? QR_BASIC.corners : qrSettings.cornersSquareType;
+  const effCornersDotType = isBasicTier ? QR_BASIC.corners : qrSettings.cornersDotType;
+  /** Тақсимот (%) → bias: 50% = 1 (баробар), 90% = 1.8, 10% = 0.2. */
+  const effGradientBias = activeGradient
+    ? biasPercentForStop(qrGradientBiasPercent, gradientStopIdx) / 50
+    : 1;
+  const effBgGradientBias = effBgGradientColor
+    ? biasPercentForStop(qrBgGradientBiasPercent, bgGradientStopIdx) / 50
+    : 1;
 
   /** Оё корбар аз ҳолати стандартӣ дур рафтааст? */
   const isQrCustomized =
-    effQr.qrColor.toLowerCase() !== QR_BASIC.color.toLowerCase() ||
-    effQr.bgColor.toLowerCase() !== QR_BASIC.bg.toLowerCase() ||
-    effQr.dotsType !== QR_BASIC.dots ||
-    effQr.cornersSquareType !== QR_BASIC.corners ||
-    effQr.cornersDotType !== QR_BASIC.corners ||
-    effQr.text.trim() !== t("qrScanMe") ||
-    !!effGradient;
+    effQrColor.toLowerCase() !== QR_BASIC.color.toLowerCase() ||
+    effBgColor.toLowerCase() !== QR_BASIC.bg.toLowerCase() ||
+    effDotsType !== QR_BASIC.dots ||
+    effCornersSquareType !== QR_BASIC.corners ||
+    effCornersDotType !== QR_BASIC.corners ||
+    !!activeGradient ||
+    !!effBgGradientColor;
 
   /**
    * Қарори маҳсулот (муваққатӣ): «Худӣ» ҳоло РОЙГОН аст — то backend-и
@@ -748,6 +853,156 @@ function ProfileContent() {
    */
   const PAYWALL_ENABLED = false;
   const isQrLocked = PAYWALL_ENABLED && !isBasicTier && isQrCustomized;
+
+  /**
+   * Блоки градиент — барои МАТН ва барои ЗАМИНА такрор мешавад, ҳамон
+   * тавре ки native ин ду блокро (бо танзимоти ҷудогона) такрор мекунад.
+   * Функсия аст, на компонент, то holo давра дар ҳар render аз нав
+   * СОХТА нашавад (танҳо JSX мебарорад).
+   */
+  const renderGradientBlock = (kind: "text" | "bg") => {
+    const stops = kind === "text" ? qrGradientStops : qrBgGradientStops;
+    const setStops = kind === "text" ? setQrGradientStops : setQrBgGradientStops;
+    const rawBiasPercent = kind === "text" ? qrGradientBiasPercent : qrBgGradientBiasPercent;
+    const setRawBiasPercent = kind === "text" ? setQrGradientBiasPercent : setQrBgGradientBiasPercent;
+    const stopIdx = kind === "text" ? gradientStopIdx : bgGradientStopIdx;
+    const setStopIdx = kind === "text" ? setGradientStopIdx : setBgGradientStopIdx;
+    const biasOpen = kind === "text" ? textBiasOpen : bgBiasOpen;
+    const setBiasOpen = kind === "text" ? setTextBiasOpen : setBgBiasOpen;
+    const labelKey = kind === "text" ? "qrGradientLabel" : "qrBgLabel";
+    const secondColorDefault = kind === "text" ? "#26BA90" : "#EEFBF5";
+    const showStops = stops.length >= 2;
+    const isPickerOpenHere = activePicker?.kind === kind;
+    /** Фоизи НИШОНДОДАШУДА — аз нуқтаи назари stop-и ҳозир интихобшуда. */
+    const displayPercent = biasPercentForStop(rawBiasPercent, stopIdx);
+    const setDisplayPercent = (v: number) => setRawBiasPercent(biasPercentForStop(v, stopIdx));
+
+    return (
+      <div key={kind} className="flex-1 min-w-0">
+        <QrFieldLabel icon={kind === "text" ? Sparkles : Droplet}>{t(labelKey)}</QrFieldLabel>
+
+        <div className="relative mt-2">
+          {showStops ? (
+            <div
+              className={cn(
+                "h-12 rounded-xl mb-2.5",
+                stops.some(isNearWhite) && "border border-zinc-200 dark:border-zinc-700",
+              )}
+              style={{ backgroundImage: `linear-gradient(135deg, ${stops[0]}, ${stops[1]})` }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setStopIdx(0);
+                setActivePicker({ kind, index: 0 });
+              }}
+              aria-label={stops[0]}
+              className="w-full h-12 rounded-xl flex items-center gap-2.5 px-3.5 mb-2.5 color-trigger transition-transform active:scale-[0.98]"
+              style={{ backgroundColor: stops[0] }}
+            >
+              <Pointer className="size-[18px] shrink-0" style={{ color: readableTextOn(stops[0]) }} strokeWidth={2.25} />
+              <span className="text-[13px] font-bold tracking-wide uppercase truncate" style={{ color: readableTextOn(stops[0]) }}>
+                {stops[0].toUpperCase()}
+              </span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 h-[30px]">
+            {showStops &&
+              stops.map((col, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setStopIdx(i);
+                    setActivePicker({ kind, index: i });
+                  }}
+                  aria-label={col}
+                  className={cn(
+                    "relative size-[22px] shrink-0 rounded-full transition-transform color-trigger shadow-sm",
+                    isPickerOpenHere && activePicker?.index === i && "scale-110",
+                    isNearWhite(col) && "border border-zinc-200 dark:border-zinc-700",
+                  )}
+                  style={{ backgroundColor: col }}
+                >
+                  {isPickerOpenHere && activePicker?.index === i && (
+                    <span className="absolute -top-[3px] -right-[3px] flex items-center justify-center size-3 rounded-full bg-emerald-500 ring-[1.5px] ring-white dark:ring-zinc-800">
+                      <Check className="size-[7px] text-white" strokeWidth={3.5} />
+                    </span>
+                  )}
+                </button>
+              ))}
+
+            {!showStops ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setStops((prev) => [...prev, secondColorDefault]);
+                  setStopIdx(1);
+                  setActivePicker({ kind, index: 1 });
+                }}
+                aria-label={t("qrGradientAddColor")}
+                className="flex items-center justify-center size-[22px] shrink-0 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+              >
+                <span className="text-[13px] font-bold leading-none -mt-px">+</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setStops((prev) => prev.slice(0, 1))}
+                aria-label={t("qrGradientRemoveColor")}
+                className="flex items-center justify-center size-[22px] shrink-0 rounded-full bg-zinc-50 dark:bg-zinc-700 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+              >
+                <X className="size-3" />
+              </button>
+            )}
+
+            {showStops && (
+              <GradientBiasToggle
+                percent={displayPercent}
+                open={biasOpen}
+                onToggle={() => setBiasOpen((v) => !v)}
+                onRotate={() => setStops((prev) => [...prev].reverse())}
+              />
+            )}
+          </div>
+
+          {showStops && biasOpen && (
+            <PercentSlider value={displayPercent} onChange={setDisplayPercent} />
+          )}
+
+          {isPickerOpenHere && (
+            <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 sm:top-auto z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-2xl shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 color-picker-container overflow-hidden">
+              <div className="flex justify-center p-4">
+                <HexColorPicker
+                  color={stops[activePicker!.index] ?? stops[0]}
+                  onChange={(color) =>
+                    setStops((prev) => {
+                      const next = [...prev];
+                      next[activePicker!.index] = color;
+                      return next;
+                    })
+                  }
+                  className="!w-full !h-40"
+                />
+              </div>
+              <div className="p-4 pt-0 pb-8 sm:pb-4">
+                <Button
+                  className="w-full h-11 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+                  onClick={() => setActivePicker(null)}
+                >
+                  {t("done")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   /**
    * Функсия барои боргирии QR-код ҳамчун сурат (Download)
@@ -833,7 +1088,11 @@ function ProfileContent() {
         await executeQRDownload();
       }
     } catch (err) {
-      console.error("Error saving profile setup:", err);
+      // `err` (масалан PostgrestError-и Supabase) дар console.error
+      // ҳамчун `{}` намоён мешавад, чунки хосиятҳояш дар JSON-и объекти
+      // хом дуруст сериализатсия намешаванд — `getErrorMessage` онҳоро
+      // мустақим мехонад (`.message`), пас паёми воқеӣ дида мешавад.
+      console.error("Error saving profile setup:", getErrorMessage(err), err);
       toast.error(t("error"));
     } finally {
       setSecondaryLoading(false);
@@ -934,9 +1193,16 @@ function ProfileContent() {
           );
         }
         return (
-          <div className="space-y-8 pb-32">
+          // `pb-4`, на `pb-32`: талаби корбар — саҳифа набояд аз таги
+          // QR-код scroll шавад. `pb-32` барои ҷуброни навбари поёнии
+          // мобил буд, вале акнун панели танзимот худаш дар дохили худ
+          // `max-h-[50dvh]` scroll мешавад (ниг. шарҳи он поён), пас ин
+          // фазои иловагӣ дигар лозим нест.
+          <div className="space-y-8 pb-4">
             {/* Интихоби сатҳ — болои ҳама чиз, то корбар пеш аз ҳама
-                бифаҳмад, ки кадом реҷа фаъол аст. */}
+                бифаҳмад, ки кадом реҷа фаъол аст.
+                Пинҳон (SHOW_TIER_SELECTOR): ниг. шарҳи он дар боло. */}
+            {SHOW_TIER_SELECTOR && (
             <div className="px-2">
               <div role="tablist" className="grid grid-cols-2 gap-3 max-w-md mx-auto">
                 {QR_TIERS.map(({ id, icon: TierIcon, labelKey }) => {
@@ -962,31 +1228,55 @@ function ProfileContent() {
                 })}
               </div>
             </div>
+            )}
 
             {/* Танзимоти намуди зоҳирии QR */}
             <div className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
+              {/* `gap-5` дар мобил (на `gap-8`): талаби корбар — панели
+                  танзимот бояд ба тугмаҳо наздиктар бошад ва саҳифа
+                  scroll нашавад. `gap-3` санҷида шуд — хеле танг буд
+                  (талаби корбар: "аз ҳад зиёд боло бурдед"), `gap-5`
+                  мобайнист. Дар md+ (сутунҳои паҳлӯӣ) гапи калон (12)
+                  мемонад — он ҷо танзимот дар зери тугмаҳо нест. */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-12 items-start px-2">
                 {/* Пешнамоиши QR (Preview) */}
                 {/* Сутуни пешнамоиш. Танҳо ХУДИ QR sticky аст — корти
                     статус, тугмаҳо ва танзимот аз таги он мегузаранд. */}
                 <div className="flex flex-col">
-                <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 py-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   {/* Корти САФЕД бо хати мулоим — ҳамон намуди кортҳои
                       профил. Пештар ин ҷо хати РЕХТА буд: он ба «ҷои холии
                       интизорӣ» ишора мекунад, дар ҳоле ки корт мӯҳтавои
                       пурра дорад. */}
-                  <div className="relative group bg-white dark:bg-zinc-800 rounded-3xl p-4 sm:p-8 md:p-10 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 w-full sm:max-w-sm mx-auto overflow-hidden shadow-none transition-all duration-300">
+                  {/* `w-full`: талаби корбар — панели QR бояд ҳамон паҳноии
+                      панели танзимот (поён)-ро дошта бошад, то лаби чапу
+                      рости ду корт дар як сутун баробар шаванд. Пештар
+                      `w-fit` буд, то корт танҳо ба андозаи QR танг шавад —
+                      вале ин ду кортро номувозӣ менамуд.
+
+                      `aspect-square`: талаби корбар — панел бояд КВАДРАТ
+                      бошад, ва `w-full` (бе ҳадди max-w) — талаби корбар:
+                      "квадрат full width бошад". Ҳадди max-w-[280px] (барои
+                      "бе scroll") бозгашт дода шуд. */}
+                  <div className="relative group bg-white dark:bg-zinc-800 rounded-3xl p-3 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 w-full aspect-square overflow-hidden shadow-none transition-all duration-300">
                     <div className="scale-95 md:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
                         qrCode={profile?.qr_code}
                         settings={{
-                          ...effQr,
+                          qrColor: effQrColor,
+                          bgColor: effBgColor,
+                          dotsType: effDotsType,
+                          cornersSquareType: effCornersSquareType,
+                          cornersDotType: effCornersDotType,
                           borderRadius: "medium",
                           shadow: "soft",
                           hasBorder: false,
                           pattern: "none",
-                          gradientColor: effGradient,
+                          gradientColors: activeGradient,
+                          gradientBias: effGradientBias,
+                          bgGradientColor: effBgGradientColor,
+                          bgGradientBias: effBgGradientBias,
                         }}
                         className="qr-card-mobile-hide-text"
                         innerRef={qrRef}
@@ -995,119 +1285,20 @@ function ProfileContent() {
                   </div>
                 </div>
 
-                {/* Статус ва тугмаҳо — берун аз sticky, то бо танзимоти
-                    поён якҷоя аз таги QR гузаранд. px-1 = ҳамон падинги
-                    сутуни танзимот, то паҳноияшон баробар бошад. */}
-                {/* Статуси QR — дар ҲАР СЕ сатҳ. Он ба тарҳи стикер дахл
-                    надорад: калиди «фаъол/хомӯш» ба ҳар QR баробар тааллуқ
-                    дорад, бо кадом ранг кашида шуданаш аҳамият надорад. */}
-                <div className="mt-12 w-full px-1">
-                    <div className="bg-white dark:bg-zinc-800 border-none shadow-none p-4 min-[1084px]:p-5 rounded-xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col">
-                          <span className="text-xs min-[1084px]:text-sm font-bold tracking-wide text-zinc-900 dark:text-white">
-                            {t("qrStatus")}
-                          </span>
-                          {/* Ин пайванд акнун роҳнамои ПУРРАИ QR-ро мекушояд.
-                              Пештар он модали «Реҷаи амниятӣ»-ро мекушод ва
-                              роҳнамо дар паси тугмаи алоҳидаи «?» пинҳон буд —
-                              талаби корбар: як ҷои даромад, тугмаи «?» бардошта
-                              шавад. */}
-                          <button
-                            onClick={() => setShowWhyQRModal(true)}
-                            className="text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
-                          >
-                            {t("qrSecurityStatusWhy") ||
-                              "Барои чӣ QR-код лозим аст?"}
-                          </button>
-                        </div>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          if (!profile) return;
-                          const previousState = profile.is_qr_active;
-                          const newState = !previousState;
-
-                          /**
-                           * ФАЪОЛ кардан маълумоти пурра талаб мекунад.
-                           *
-                           * QR-и фаъол бе рақами телефон маънӣ надорад:
-                           * ёбанда саҳифаро мекушояд ва он ҷо ҳеҷ роҳи
-                           * тамос намебинад. Бинобар ин ба ҷои гузоштани
-                           * калид модали пуркуниро мекушоем ва баъд аз
-                           * захира худамон фаъол мекунем. ХОМӮШ кардан
-                           * ҳамеша озод аст.
-                           */
-                          if (newState && isQrDataMissing) {
-                            setPendingQrAction("activate");
-                            setShowSecondaryPhoneModal(true);
-                            return;
-                          }
-
-                          // Optimistic update
-                          setProfile({ ...profile, is_qr_active: newState });
-
-                          try {
-                            const token = await getToken({
-                              template: "supabase",
-                            });
-                            const supabase = createClerkSupabaseClient(token!);
-
-                            // Background update
-                            ProfileService.updateProfile(supabase, userId!, {
-                              is_qr_active: newState,
-                            })
-                              .then((updated) => {
-                                setProfile(updated);
-                                toast.success(
-                                  newState
-                                    ? t("qrActivatedSuccess")
-                                    : t("qrDeactivatedSuccess"),
-                                );
-                              })
-                              .catch((err) => {
-                                console.error(err);
-                                setProfile({
-                                  ...profile,
-                                  is_qr_active: previousState,
-                                });
-                                toast.error(t("error"));
-                              });
-                          } catch (err) {
-                            console.error(err);
-                            setProfile({
-                              ...profile,
-                              is_qr_active: previousState,
-                            });
-                            toast.error(t("error"));
-                          }
-                        }}
-                        className={cn(
-                          "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                          qrToggleOn
-                            ? "bg-emerald-500"
-                            : "bg-zinc-300 dark:bg-zinc-700",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                            qrToggleOn
-                              ? "translate-x-5"
-                              : "translate-x-0",
-                          )}
-                        />
-                      </button>
-                    </div>
-                  </div>
+                {/* Статуси QR аз ин ҷо БАРОМАД — мисли native, акнун дар
+                    таби «Танзимот» (гурӯҳи «Афзалиятҳо»), зеро ба тарҳи
+                    стикер дахл надорад. Ниг. `handleToggleQrActive`. */}
 
 
                 {/* Боргирӣ — ё озод, ё қулф.
                     Қулф танҳо вақте меафтад, ки корбар воқеан аз ҳолати
                     стандартӣ дур рафта бошад: дар табҳои худсоз, вале бе
                     тағйирот, боргирӣ бепул мемонад. */}
+                {/* `mt-4`: талаби корбар — панели танзимот бояд ба тугмаҳо
+                    наздиктар шавад ва саҳифа scroll нашавад (ниг. `gap-3`-и
+                    грид низ боло). */}
                 {isQrLocked ? (
-                  <div className="mt-3 w-full px-1">
+                  <div className="mt-5 w-full px-1">
                     <Button
                       onClick={() => toast.info(t("qrComingSoon"))}
                       className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
@@ -1116,7 +1307,7 @@ function ProfileContent() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 mt-3 w-full px-1">
+                  <div className="flex items-center gap-3 mt-5 w-full px-1">
                     <Button
                       onClick={handleDownloadQR}
                       disabled={isDownloading}
@@ -1129,6 +1320,18 @@ function ProfileContent() {
                       )}
                       {t("download")}
                     </Button>
+                    {/* Обои-и экрани қулф хусусияти телефонӣ аст — дар веб
+                        имконнопазир. Тугма мисли native намоён аст (талаби
+                        мутобиқат), вале пахш модали шарҳдиҳанда мекушояд, на
+                        амали воқеӣ. */}
+                    <Button
+                      onClick={() => setShowWallpaperInfoModal(true)}
+                      variant="outline"
+                      className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
+                      {t("qrWallpaperBtn")}
+                    </Button>
                   </div>
                 )}
                 </div>
@@ -1136,249 +1339,68 @@ function ProfileContent() {
                 {/* Ҳама танзимот танҳо дар «Худсоз» ва «Pro».
                     Дар «Оддӣ» сутун қасдан холӣ мемонад. */}
                 {!isBasicTier && (
-                <div className="space-y-5 p-4 min-[1084px]:p-5 mb-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                  {/* Стил ва Шаклҳо */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <QrFieldLabel icon={Grid2x2}>
-                        {t("qrDotsStyle") || "Нуқтаҳо"}
-                      </QrFieldLabel>
-                      <Select
-                        value={qrSettings.dotsType}
-                        onValueChange={(val) =>
-                          setQrSettings({ ...qrSettings, dotsType: val as DotType })
-                        }
-                      >
-                        <SelectTrigger className={cn(QR_CONTROL_CLASS, "text-sm font-bold px-3.5 text-zinc-600 dark:text-zinc-300")}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
-                          <SelectItem value="square">
-                            {t("qrDotSquare")}
-                          </SelectItem>
-                          <SelectItem value="dots">{t("qrDotDots")}</SelectItem>
-                          <SelectItem value="rounded">
-                            {t("qrDotRounded")}
-                          </SelectItem>
-                          <SelectItem value="extra-rounded">
-                            {t("qrDotExtraRounded")}
-                          </SelectItem>
-                          <SelectItem value="classy">
-                            {t("qrDotClassy")}
-                          </SelectItem>
-                          <SelectItem value="classy-rounded">
-                            {t("qrDotClassyRounded")}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                // Панел: px-3, space-y-1.5 АЙНАН native-и `qrPanel`
+                // (paddingHorizontal:12) + `gap:6`-и байни сексияҳо.
+                //
+                // `pt-2 pb-3` (на native-и pt-3.5/pb-7): талаби корбар —
+                // саҳифа УМУМАН набояд scroll шавад, ва панел бояд ба
+                // тугмаҳои боло наздиктар бошад. Ба ин хотир бошиши
+                // native-ро қасдан кам кардем.
+                <div className="space-y-1.5 px-3 pt-3 pb-4 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                  {/* Градиенти матн ва градиенти замина дар ЯК қатор —
+                      АВВАЛ меоянд (тартиби native: градиент → шакли нуқтаҳо
+                      → кунҷҳо, на баръакс). */}
+                  <div className="flex gap-4">
+                    {renderGradientBlock("text")}
+                    {renderGradientBlock("bg")}
+                  </div>
 
-                    <div className="space-y-2">
-                      {/* Пештар ин ҷо `RefreshCw` (тирҳои навкунӣ) буд — ба
-                          «шакли кунҷҳо» ҳеҷ рабте надошт ва хонандаро гумроҳ
-                          мекард. `Scan` маҳз кунҷҳои QR-ро нишон медиҳад. */}
-                      <QrFieldLabel icon={Scan}>
-                        {t("qrCornersStyle") || "Кунҷҳо"}
-                      </QrFieldLabel>
-                      <Select
+                  {/* Шакли нуқтаҳо — chip-и визуалӣ, на dropdown-и матнӣ:
+                      ҳар вариант худашро нишон медиҳад. Намунаҳо ЯКРАНГАНД
+                      (QR_CHIP_INK, на ранги ҷории QR) — талаби мутобиқат
+                      бо native. */}
+                  <div className="space-y-2">
+                    <QrFieldLabel icon={Grid2x2}>{t("qrDotsStyle")}</QrFieldLabel>
+                    <StyleChipRow
+                      options={DOT_TYPES}
+                      value={qrSettings.dotsType}
+                      onChange={(v) => setQrSettings({ ...qrSettings, dotsType: v })}
+                      labelFor={(v) => t(DOT_LABEL_KEYS[v])}
+                      chipMaxWidth={CHIP_MAX_WIDTH}
+                      renderChip={(v) => <DotStyleChip type={v} qrColor={QR_CHIP_INK} bgColor="transparent" />}
+                    />
+                  </div>
+
+                  {/* Фосилаи КАЛОН (28px, айнан native) байни ду гурӯҳ —
+                      бо фосилаи хурд онҳо як қатори ягона менамуданд. */}
+                  <div className="flex gap-7">
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <QrFieldLabel icon={Scan}>{t("qrCornersStyle")}</QrFieldLabel>
+                      <StyleChipRow
+                        options={CORNER_TYPES}
                         value={qrSettings.cornersSquareType}
-                        // Маркази чашмак дигар аз ҳошия БАРНАМЕОЯД: он
-                        // интихоби худро дорад (қатори поён). Пештар ин ҷо
-                        // «мураббаъ → мураббаъ, вагарна нуқта» сахт навишта
-                        // шуда буд ва интихоби корбарро мешуст.
-                        onValueChange={(val) =>
-                          setQrSettings({ ...qrSettings, cornersSquareType: val as CornerSquareType })
-                        }
-                      >
-                        <SelectTrigger className={cn(QR_CONTROL_CLASS, "text-sm font-bold px-3.5 text-zinc-600 dark:text-zinc-300")}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
-                          <SelectItem value="square">
-                            {t("qrCornerSquare")}
-                          </SelectItem>
-                          <SelectItem value="dot">
-                            {t("qrCornerDot")}
-                          </SelectItem>
-                          <SelectItem value="extra-rounded">
-                            {t("qrCornerRounded")}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => setQrSettings({ ...qrSettings, cornersSquareType: v })}
+                        labelFor={(v) => t(CORNER_LABEL_KEYS[v]!)}
+                        chipMaxWidth={CHIP_MAX_WIDTH}
+                        renderChip={(v) => <CornerBorderChip type={v} qrColor={QR_CHIP_INK} bgColor="transparent" />}
+                      />
                     </div>
 
                     {/* Маркази чашмак — интихоби СЕЮМИ мустақил.
                         Пештар он аз ҳошия бармеомад ва корбар ба он даст
                         расонда наметавонист. */}
-                    <div className="space-y-2">
-                      <QrFieldLabel icon={Scan}>
-                        {t("qrCornerCenterStyle")}
-                      </QrFieldLabel>
-                      <Select
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <QrFieldLabel icon={Scan}>{t("qrCornerCenterStyle")}</QrFieldLabel>
+                      <StyleChipRow
+                        options={CORNER_TYPES}
                         value={qrSettings.cornersDotType}
-                        onValueChange={(val) =>
-                          setQrSettings({ ...qrSettings, cornersDotType: val as CornerDotType })
-                        }
-                      >
-                        <SelectTrigger className={cn(QR_CONTROL_CLASS, "text-sm font-bold px-3.5 text-zinc-600 dark:text-zinc-300")}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-zinc-100 dark:border-zinc-800">
-                          <SelectItem value="square">{t("qrCornerSquare")}</SelectItem>
-                          <SelectItem value="rounded">{t("qrCornerRounded")}</SelectItem>
-                          <SelectItem value="extra-rounded">{t("qrDotExtraRounded")}</SelectItem>
-                          <SelectItem value="dot">{t("qrCornerDot")}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        onChange={(v) => setQrSettings({ ...qrSettings, cornersDotType: v })}
+                        labelFor={(v) => t(CORNER_LABEL_KEYS[v]!)}
+                        chipMaxWidth={CHIP_MAX_WIDTH}
+                        renderChip={(v) => <CornerCenterChip type={v} qrColor={QR_CHIP_INK} bgColor="transparent" />}
+                      />
                     </div>
                   </div>
-
-                  {/* Рангҳо */}
-                  <div className="grid grid-cols-2 gap-3 relative">
-                    <div className="space-y-2 relative">
-                      <QrFieldLabel icon={Palette}>
-                        {t("qrColorLabel")}
-                      </QrFieldLabel>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePicker(activePicker === "qr" ? null : "qr");
-                        }}
-                        aria-label={t("qrColorLabel")}
-                        className={cn(QR_CONTROL_CLASS, "flex items-center gap-2.5 px-2.5 color-trigger")}
-                      >
-                        {/* `rounded-md`, на `rounded-xl`: дар андозаи 28px
-                            кунҷи 12px намунаро қариб доира мекард ва он ба
-                            ранги QR (мураббаъ) шабоҳат надошт. */}
-                        <span
-                          className="size-7 shrink-0 rounded-md border border-black/10 dark:border-white/15"
-                          style={{ backgroundColor: qrSettings.qrColor }}
-                        />
-                        <span className="font-mono text-xs font-bold uppercase text-zinc-600 dark:text-zinc-300">
-                          {qrSettings.qrColor}
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className="space-y-2 relative">
-                      {/* Пештар ин ягона барчаспи бе иконка буд — аз ҷуфти
-                          худ (Ранги QR) фарқ мекард ва сатр каҷ менамуд. */}
-                      <QrFieldLabel icon={Droplet}>
-                        {t("qrBgLabel")}
-                      </QrFieldLabel>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePicker(activePicker === "bg" ? null : "bg");
-                        }}
-                        aria-label={t("qrBgLabel")}
-                        className={cn(QR_CONTROL_CLASS, "flex items-center gap-2.5 px-2.5 color-trigger")}
-                      >
-                        <span
-                          className="size-7 shrink-0 rounded-md border border-black/10 dark:border-white/15"
-                          style={{ backgroundColor: qrSettings.bgColor }}
-                        />
-                        <span className="font-mono text-xs font-bold uppercase text-zinc-600 dark:text-zinc-300">
-                          {qrSettings.bgColor}
-                        </span>
-                      </button>
-                    </div>
-
-                    {(activePicker === "qr" || activePicker === "bg") && (
-                      <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-[2rem] shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 color-picker-container overflow-hidden">
-                        <div className="flex flex-row p-0 gap-0 justify-center items-stretch h-full">
-                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950">
-                            <div className="p-0 flex justify-center flex-1 items-center">
-                              <HexColorPicker
-                                color={qrSettings.qrColor}
-                                onChange={(color) =>
-                                  setQrSettings({
-                                    ...qrSettings,
-                                    qrColor: color,
-                                  })
-                                }
-                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex-1 flex flex-col bg-white dark:bg-zinc-950 border-l border-zinc-100 dark:border-zinc-800">
-                            <div className="p-0 flex justify-center flex-1 items-center">
-                              <HexColorPicker
-                                color={qrSettings.bgColor}
-                                onChange={(color) =>
-                                  setQrSettings({
-                                    ...qrSettings,
-                                    bgColor: color,
-                                  })
-                                }
-                                className="!w-full !h-48 sm:!w-[180px] sm:!h-[180px]"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 pb-8 sm:pb-4 border-t border-zinc-100 dark:border-zinc-800">
-                          <Button
-                            className="w-full h-12 sm:h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
-                            onClick={() => setActivePicker(null)}
-                          >
-                            {t("done")}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Текст */}
-                  <div className="space-y-2">
-                    <QrFieldLabel icon={Type}>{t("qrFooterText")}</QrFieldLabel>
-                    <Input
-                      value={qrSettings.text}
-                      onChange={(e) =>
-                        setQrSettings({
-                          ...qrSettings,
-                          text: e.target.value,
-                        })
-                      }
-                      className={cn(QR_CONTROL_CLASS, "px-3.5 font-bold text-sm text-zinc-600 dark:text-zinc-300 focus-visible:ring-2 focus-visible:ring-emerald-500/25")}
-                      placeholder={t("qrInputPlaceholder")}
-                    />
-                  </div>
-
-                  {/* Градиент — хосияти ЯГОНАИ Pro. */}
-                  {qrTier === "pro" && (
-                    <div className="space-y-2">
-                      <QrFieldLabel icon={Droplet}>
-                        {t("qrGradientLabel")}
-                      </QrFieldLabel>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          onClick={() => setQrGradientColor(null)}
-                          className={cn(
-                            "h-9 px-3 rounded-lg text-[11px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-2 transition-colors",
-                            qrGradientColor === null
-                              ? "border-emerald-500"
-                              : "border-transparent",
-                          )}
-                        >
-                          {t("qrGradientOff")}
-                        </button>
-                        {GRADIENT_PRESETS.map((preset) => (
-                          <button
-                            key={preset}
-                            onClick={() => setQrGradientColor(preset)}
-                            aria-label={preset}
-                            style={{ backgroundColor: preset }}
-                            className={cn(
-                              "size-9 rounded-lg border-2 transition-colors",
-                              qrGradientColor === preset
-                                ? "border-emerald-500"
-                                : "border-transparent",
-                            )}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
                 )}
               </div>
@@ -1741,6 +1763,42 @@ function ProfileContent() {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Статуси QR — аз таби QR кӯчид ба ин ҷо (мисли native):
+                      ба тарҳи стикер дахл надорад, бо кадом ранг кашида
+                      шуданаш аҳамият надорад. */}
+                  <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <QrCode className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                          {t("qrStatus")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowWhyQRModal(true)}
+                          className="text-[11px] font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                        >
+                          {t("qrSecurityStatusWhy") || "Барои чӣ QR-код лозим аст?"}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleToggleQrActive}
+                      className={cn(
+                        "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                        qrToggleOn ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                          qrToggleOn ? "translate-x-5" : "translate-x-0",
+                        )}
+                      />
+                    </button>
                   </div>
 
                   {/* Корбарони басташуда — танҳо агар мавҷуд бошанд */}
@@ -2318,6 +2376,28 @@ function ProfileContent() {
           </div>
           <Button
             onClick={() => setShowTermsDetails(false)}
+            className="w-full h-12 rounded-xl font-bold tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+          >
+            {t("ok")}
+          </Button>
+        </DialogContent>
+      </Dialog>
+      {/* Обои — хусусияти телефонӣ, дар веб танҳо шарҳ медиҳем. */}
+      <Dialog open={showWallpaperInfoModal} onOpenChange={setShowWallpaperInfoModal}>
+        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+          <DialogHeader className="space-y-4 text-center">
+            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-3xl flex items-center justify-center mx-auto mb-2 border border-zinc-100 dark:border-zinc-800">
+              <Smartphone className="w-8 h-8 text-zinc-500" />
+            </div>
+            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+              {t("qrWallpaperWebTitle")}
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-medium text-sm leading-relaxed">
+              {t("qrWallpaperWebDesc")}
+            </DialogDescription>
+          </DialogHeader>
+          <Button
+            onClick={() => setShowWallpaperInfoModal(false)}
             className="w-full h-12 rounded-xl font-bold tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
           >
             {t("ok")}
