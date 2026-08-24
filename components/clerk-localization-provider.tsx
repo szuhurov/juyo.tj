@@ -21,6 +21,27 @@ export function ClerkLocalizationProvider({ children }: { children: React.ReactN
       localization={localization}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
+      appearance={{
+        // Ранги брендии JUYO (emerald-500) ба ҷои кабуди пешфарзи Clerk —
+        // ин ба ҳамаи компоненти Clerk (SignIn, SignUp ва ғ.) татбиқ мешавад,
+        // на танҳо ба саҳифаи ҷорӣ.
+        variables: {
+          colorPrimary: "#10b981",
+          borderRadius: "0.875rem",
+        },
+        elements: {
+          // Талаби корбар: гӯшаҳо мисли inputho бошанд (14px), на тамоман
+          // pill (rounded-full) ва на кортаки берунӣ аз ҳад мудаввар.
+          formButtonPrimary:
+            "!rounded-xl !normal-case !font-bold !shadow-none hover:!bg-emerald-600",
+          socialButtonsBlockButton: "!rounded-xl !border-zinc-200 dark:!border-zinc-700",
+          formFieldInput: "!rounded-xl !border-zinc-200 dark:!border-zinc-700",
+          footerActionLink: "!text-emerald-600 hover:!text-emerald-700",
+          identityPreviewEditButton: "!text-emerald-600",
+          card: "!rounded-xl",
+          cardBox: "!rounded-xl",
+        },
+      }}
     >
       {children}
     </ClerkProvider>

@@ -15,8 +15,8 @@ import QRCodeStyling, {
 } from "qr-code-styling";
 import { cn } from "@/lib/utils";
 
-/** Кунҷи собити градиент — ҳамон `GRADIENT_ANGLE`-и native. Тағйирёбанда танҳо ТАҚСИМОТ (bias) аст. */
-const GRADIENT_ANGLE = 45;
+/** Кунҷи пешфарзи градиент — вақте ки `gradientAngle`/`bgGradientAngle` дар settings нест. */
+const DEFAULT_GRADIENT_ANGLE = 45;
 
 export interface QRCardSettings {
   qrColor: string;
@@ -37,9 +37,17 @@ export interface QRCardSettings {
   gradientColors?: string[] | null;
   /** Тақсими ду ранг. 1 = баробар. Ниг. шарҳи `QrGradient.bias` дар lib/qr-palette.ts. */
   gradientBias?: number;
+  /**
+   * Кунҷи градиенти МАТН — талаби корбар: тугмаи "давр" бояд кунҷро давр
+   * занонад (45°→135°→225°→315°), на рангҳоро ҷойиваз кунад. Пешфарз
+   * `DEFAULT_GRADIENT_ANGLE`.
+   */
+  gradientAngle?: number;
   /** Градиенти ЗАМИНА — ранги дуюм. Якум ҳамеша `bgColor` аст. */
   bgGradientColor?: string | null;
   bgGradientBias?: number;
+  /** Кунҷи градиенти ЗАМИНА — ҳамон мантиқ, алоҳида. */
+  bgGradientAngle?: number;
 }
 
 interface QRCardProps {
@@ -77,8 +85,10 @@ export const QRCard: React.FC<QRCardProps> = ({
     cornersDotType = "square",
     gradientColors = null,
     gradientBias = 1,
+    gradientAngle = DEFAULT_GRADIENT_ANGLE,
     bgGradientColor = null,
     bgGradientBias = 1,
+    bgGradientAngle = DEFAULT_GRADIENT_ANGLE,
   } = settings;
 
   /**
@@ -116,7 +126,7 @@ export const QRCard: React.FC<QRCardProps> = ({
         color: undefined,
         gradient: {
           type: "linear" as const,
-          rotation: (GRADIENT_ANGLE * Math.PI) / 180,
+          rotation: (gradientAngle * Math.PI) / 180,
           colorStops: biasedStops(gradientBias, gradientColors[0], gradientColors[1]),
         },
       }
@@ -127,7 +137,7 @@ export const QRCard: React.FC<QRCardProps> = ({
         color: undefined,
         gradient: {
           type: "linear" as const,
-          rotation: (GRADIENT_ANGLE * Math.PI) / 180,
+          rotation: (bgGradientAngle * Math.PI) / 180,
           colorStops: biasedStops(bgGradientBias, bgColor, bgGradientColor),
         },
       }
@@ -149,7 +159,7 @@ export const QRCard: React.FC<QRCardProps> = ({
    * гиранд, вагарна дар канори QR як ХАТИ рангии ногаҳонӣ пайдо мешавад.
    */
   const cardBackground = bgGradientColor
-    ? `linear-gradient(135deg, ${bgColor}, ${bgGradientColor})`
+    ? `linear-gradient(${bgGradientAngle}deg, ${bgColor}, ${bgGradientColor})`
     : bgColor;
 
   const qrContainerRef = useRef<HTMLDivElement>(null);
@@ -228,8 +238,10 @@ export const QRCard: React.FC<QRCardProps> = ({
     cornersDotType,
     gradientColors,
     gradientBias,
+    gradientAngle,
     bgGradientColor,
     bgGradientBias,
+    bgGradientAngle,
   ]);
 
   const radiusMap = {

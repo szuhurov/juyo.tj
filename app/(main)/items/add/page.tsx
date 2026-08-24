@@ -15,6 +15,7 @@ import {
   supabase as anonSupabase,
 } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
+import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import type { PrivacyRegion } from "@/components/privacy-blur-editor";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 import { Button } from "@/components/ui/button";
@@ -78,6 +79,8 @@ function AddItemForm() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [rewardEnabled, setRewardEnabled] = useState(false);
+  const [contactTelegram, setContactTelegram] = useState(false);
+  const [contactWhatsapp, setContactWhatsapp] = useState(false);
 
   // Маълумоти эълон (Consolidated State for better stability)
   const [formData, setFormData] = useState({
@@ -504,6 +507,8 @@ function AddItemForm() {
         category: finalCategory,
         type: formData.type,
         phone_number: formData.phone,
+        contact_telegram: contactTelegram,
+        contact_whatsapp: contactWhatsapp,
         reward:
           formData.type === "lost"
             ? rewardEnabled
@@ -1152,6 +1157,30 @@ function AddItemForm() {
                     inputMode="numeric"
                     maxLength={9}
                   />
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-xl bg-white dark:bg-zinc-800 px-4 py-3">
+                    <Checkbox
+                      checked={contactTelegram}
+                      className="w-5 h-5 rounded-md border-zinc-200 dark:border-zinc-600 shrink-0"
+                      onCheckedChange={(checked) => setContactTelegram(checked === true)}
+                    />
+                    <TelegramIcon size={20} />
+                    <span className="text-xs min-[1084px]:text-sm font-bold text-zinc-500">
+                      {t("contactViaTelegram")}
+                    </span>
+                  </label>
+                  <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-xl bg-white dark:bg-zinc-800 px-4 py-3">
+                    <Checkbox
+                      checked={contactWhatsapp}
+                      className="w-5 h-5 rounded-md border-zinc-200 dark:border-zinc-600 shrink-0"
+                      onCheckedChange={(checked) => setContactWhatsapp(checked === true)}
+                    />
+                    <WhatsappIcon size={20} />
+                    <span className="text-xs min-[1084px]:text-sm font-bold text-zinc-500">
+                      {t("contactViaWhatsapp")}
+                    </span>
+                  </label>
                 </div>
                 {formData.type === "lost" && (
                   <div className="space-y-3">

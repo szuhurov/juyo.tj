@@ -8,7 +8,7 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Phone, ShieldCheck } from "lucide-react";
+import { Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,7 +16,7 @@ import { cookies } from "next/headers";
 import { unstable_cache } from "next/cache";
 import { translations } from "@/lib/translations";
 import { VerifiedBadge } from "@/components/verified-badge";
-import { SOCIALS, socialHref } from "@/components/social-icons";
+import { SOCIALS, socialHref, socialPrefix } from "@/components/social-icons";
 import { supabase } from "@/lib/supabase";
 
 interface Props {
@@ -119,17 +119,23 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
   // Танҳо шабакаҳое, ки соҳиб пур кардааст ВА пайвандашон эътибор дорад.
   // `socialHref` барои матни нодуруст `null` бармегардонад — беҳтар аст
   // нишона набошад, назар ба он ки ба саҳифаи вуҷуднадошта барад.
-  const socialLinks = SOCIALS.map((s) => ({
-    ...s,
-    href: socialHref(s.key, profile[s.key]),
-  })).filter((s): s is typeof s & { href: string } => s.href !== null);
+  // `display` — қимати воқеӣ (@ном ё +рақам), то дар паҳлуи иконаи ҳар
+  // шабака чӣ будани он намоён бошад, на танҳо номи шабака.
+  const socialLinks = SOCIALS.map((s) => {
+    const raw = (profile[s.key] ?? "").trim();
+    return {
+      ...s,
+      href: socialHref(s.key, raw),
+      display: socialPrefix(s.key, raw) + raw,
+    };
+  }).filter((s): s is typeof s & { href: string } => s.href !== null);
 
-  // Агар QR ФАЪОЛ БОШАД - САҲИФАИ ПУРРА
+  // Агар QR ФАЪОЛ БОШАД - САҲИФАИ ПУРРА (як экран, бе скролл)
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 pb-20">
-      {/* Селектори забон - Дизайни аслӣ */}
-      <div className="fixed top-6 left-0 right-0 z-50 flex items-center justify-center px-4 sm:px-8">
-        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1.5 border border-zinc-200 dark:border-zinc-800">
+    <div className="h-dvh w-full overflow-hidden flex flex-col p-5 sm:p-8">
+      {/* Селектори забон */}
+      <div className="flex items-center justify-center mb-4 sm:mb-6">
+        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1 border border-zinc-200 dark:border-zinc-800">
           {[
             { id: "tg", label: "Тоҷикӣ" },
             { id: "ru", label: "Русский" },
@@ -139,7 +145,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
               key={lang.id}
               href={`/qr/${id}?lang=${lang.id}`}
               className={cn(
-                "px-4 min-[1084px]:px-5 min-[1920px]:px-6 py-2 min-[1084px]:py-2.5 rounded-full text-sm min-[1084px]:text-base min-[1920px]:text-lg font-bold tracking-wider transition-all duration-300",
+                "px-3.5 py-1.5 rounded-full text-xs min-[1084px]:text-sm font-bold tracking-wide transition-all duration-300",
                 locale === lang.id
                   ? "bg-emerald-500 text-white scale-105"
                   : "bg-transparent text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
@@ -151,97 +157,75 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 pt-32 pb-12">
-        <div className="container mx-auto px-4 text-center">
-          <div className="relative inline-block mb-6">
-            <div className="w-32 h-32 min-[1084px]:w-36 min-[1084px]:h-36 min-[1920px]:w-40 min-[1920px]:h-40 border-4 border-white dark:border-zinc-800 shadow-2xl rounded-[2.5rem] overflow-hidden bg-zinc-100 relative">
-              {profile.avatar_url ? (
-                <Image
-                  src={profile.avatar_url}
-                  fill
-                  sizes="(min-width: 1920px) 160px, (min-width: 1084px) 144px, 128px"
-                  className="object-cover"
-                  alt="Avatar"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-zinc-300">
-                  {profile.first_name?.charAt(0)}
-                </div>
-              )}
+      {/* Аватар (калон, дар марказ) + ном дар зери он */}
+      <div className="flex flex-col items-center text-center shrink-0">
+        <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 shadow-lg relative">
+          {profile.avatar_url ? (
+            <Image
+              src={profile.avatar_url}
+              fill
+              sizes="96px"
+              className="object-cover"
+              alt="Avatar"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-300">
+              {profile.first_name?.charAt(0)}
             </div>
-            <div className="absolute -bottom-2 -right-2 bg-emerald-700 text-white p-2 rounded-2xl border-4 border-white dark:border-zinc-900">
-              <ShieldCheck className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7" />
-            </div>
-          </div>
-
-          <h1 className="text-3xl min-[1084px]:text-4xl min-[1920px]:text-[2.5rem] font-bold tracking-tighter mb-2 dark:text-white flex items-center justify-center gap-2">
-            {profile.first_name} {profile.last_name}
-            {profile.is_verified && <VerifiedBadge className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8" />}
-          </h1>
-
-          <div className="max-w-md min-[1084px]:max-w-lg mx-auto bg-zinc-50 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-zinc-100 dark:border-zinc-800 mb-10 mt-6 relative">
-            <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed font-bold text-lg min-[1084px]:text-xl min-[1920px]:text-[1.375rem] italic">
-              {t("foundUserItem").replace("%{name}", profile.first_name)}
-            </p>
-          </div>
-
-          <div className="flex flex-col items-center justify-center gap-4">
-            {/* Шабакаҳои иҷтимоӣ — як қатор, рост болои рақамҳо.
-                Танҳо онҳое, ки соҳиб пур кардааст ва пайвандашон эътибор
-                дорад; агар ҳеҷ кадомаш набошад, қатор тамоман намебарояд
-                ва фосилаи холӣ намемонад. */}
-            {socialLinks.length > 0 && (
-              // Паҳноӣ ҳамеша тақсими БАРОБАРИ як қатор аст: `flex-1` ба
-              // ҳар кадом. Пас 1 то → пурра, 2 то → нисф, 3 то → сеяк.
-              // Худи қатор ҳамон паҳноии тугмаи «Занг задан»-ро мегирад.
-              <div className="flex items-stretch gap-3 mb-2 w-full max-w-xs min-[1084px]:max-w-sm">
-                {socialLinks.map(({ key, Icon, label, href }) => (
-                  <a
-                    key={key}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer nofollow"
-                    aria-label={label}
-                    className="flex-1 flex items-center justify-center h-14 min-[1084px]:h-[60px] rounded-2xl bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                  >
-                    <Icon size={22} />
-                  </a>
-                ))}
-              </div>
-            )}
-
-            {profile.phone ? (
-              <Button
-                size="lg"
-                className="w-full max-w-xs min-[1084px]:max-w-sm h-16 min-[1084px]:h-[70px] min-[1920px]:h-[76px] px-10 min-[1084px]:px-11 min-[1920px]:px-12 rounded-2xl bg-emerald-500 text-white hover:bg-emerald-600 font-bold tracking-widest text-base min-[1084px]:text-lg min-[1920px]:text-xl gap-3 transition-all"
-                asChild
-              >
-                <a href={`tel:${profile.phone}`}>
-                  <Phone className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7" />
-                  {t("contactOwner")}
-                </a>
-              </Button>
-            ) : (
-              <div className="bg-amber-50 text-amber-600 px-6 py-4 rounded-2xl border border-amber-100 font-bold text-xs min-[1084px]:text-sm min-[1920px]:text-base tracking-widest">
-                {t("noPhoneWarning")}
-              </div>
-            )}
-
-            {profile.secondary_phone && (
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full max-w-xs min-[1084px]:max-w-sm h-14 min-[1084px]:h-[60px] min-[1920px]:h-16 px-10 min-[1084px]:px-11 min-[1920px]:px-12 rounded-2xl border-2 border-zinc-900 dark:border-zinc-100 font-bold tracking-widest text-sm min-[1084px]:text-base min-[1920px]:text-lg gap-3 transition-all hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100"
-                asChild
-              >
-                <a href={`tel:${profile.secondary_phone}`}>
-                  <Phone className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" />
-                  {t("contactSecondary")}
-                </a>
-              </Button>
-            )}
-          </div>
+          )}
         </div>
+        <h1 className="mt-3 text-lg min-[1084px]:text-xl font-bold tracking-tight dark:text-white flex items-center gap-1.5">
+          {profile.first_name} {profile.last_name}
+          {profile.is_verified && <VerifiedBadge className="w-5 h-5 shrink-0" />}
+        </h1>
+        <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-1">
+          {t("foundUserShort").replace("%{name}", profile.first_name)}
+        </p>
+      </div>
+
+      {/* Рӯйхат: шабакаҳои иҷтимоӣ (иконаи брендӣ + ном/рақам) ва тугмаҳои
+          занг — ҳама ҳамчун сатрҳои як рӯйхат, канори каме гирд (аз
+          намунаи мисол камтар). */}
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 mt-5 sm:mt-6">
+        {profile.phone ? (
+          <a
+            href={`tel:${profile.phone}`}
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-emerald-500 text-white font-normal text-sm transition-transform active:scale-[0.98]"
+          >
+            <Phone className="w-5 h-5 shrink-0" />
+            <span className="truncate">{t("contactOwner")}</span>
+          </a>
+        ) : (
+          <div className="flex items-center justify-center min-h-14 px-3.5 py-2 rounded-xl bg-amber-50 text-amber-600 font-normal text-sm">
+            {t("noPhoneWarning")}
+          </div>
+        )}
+
+        {profile.secondary_phone && (
+          <a
+            href={`tel:${profile.secondary_phone}`}
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-normal text-sm transition-transform active:scale-[0.98]"
+          >
+            <Phone className="w-5 h-5 shrink-0" />
+            <span className="truncate">{t("contactSecondary")}</span>
+          </a>
+        )}
+
+        {socialLinks.map(({ key, Icon, label, href, display }) => (
+          <a
+            key={key}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 transition-transform active:scale-[0.98]"
+          >
+            <Icon size={34} />
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-sm font-normal text-zinc-900 dark:text-white truncate">{label}</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{display}</p>
+            </div>
+          </a>
+        ))}
       </div>
     </div>
   );

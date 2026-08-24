@@ -9,8 +9,6 @@ export const ADMIN_KEYS = {
   postDetail: (id: string) => [...ADMIN_KEYS.posts(), "detail", id] as const,
   settings: () => [...ADMIN_KEYS.all, "settings"] as const,
   embeddingsMissing: () => [...ADMIN_KEYS.all, "embeddings-missing"] as const,
-  reports: () => [...ADMIN_KEYS.all, "reports"] as const,
-  reportsList: (status: string) => [...ADMIN_KEYS.reports(), "list", status] as const,
   deletionRequests: () => [...ADMIN_KEYS.all, "deletion-requests"] as const,
   deletionRequestsList: (status: string) => [...ADMIN_KEYS.deletionRequests(), "list", status] as const,
 };

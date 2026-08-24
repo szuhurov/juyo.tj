@@ -16,6 +16,8 @@ export interface Item {
   date: string;
   reward?: string;
   phone_number?: string;
+  contact_telegram?: boolean;
+  contact_whatsapp?: boolean;
   created_at: string;
   is_resolved: boolean;
   views?: number;

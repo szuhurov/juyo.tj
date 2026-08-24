@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useState, useRef, Suspense, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, Suspense, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
 import { CATEGORIES, type Item } from "@/lib/services/item-service";
 import { ItemFeedCard } from "@/components/item-feed-card";
 import { useLanguage } from "@/lib/language-context";
@@ -28,6 +28,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DateRangeCalendar } from "@/components/date-range-calendar";
 
 // Тугмаҳои амали зуд — филтри location_type (ба ҷои тугмаи куҳнаи "Такси"-и
 // махсус, ки танҳо аз рӯи як корбари собит филтр мекард — ниг. migration
@@ -112,6 +113,26 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const [draftTo, setDraftTo] = useState("");
   const datePickerRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Баландии ВОҚЕИИ бари fixed-и филтрҳо — андозагирии зинда, на рақами
+   * собити тахминӣ. Пештар `HOME_CONTENT_PT` рақами дастӣ (ва аксар вақт
+   * НОДУРУСТ) буд: ё холигии зиёд мемонд, ё баттар — тугмаҳои амали зуд
+   * зери бар медаромаданд (талаби корбар, бо screenshot нишон дода шуд).
+   * `ResizeObserver` ҳар тағйири баландиро (масалан, ивази breakpoint)
+   * фавран пайгирӣ мекунад, пас ҳеҷ гоҳ аз ҳақиқат дур намемонад.
+   */
+  const filterBarRef = useRef<HTMLDivElement>(null);
+  const [filterBarHeight, setFilterBarHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = filterBarRef.current;
+    if (!el) return;
+    const measure = () => setFilterBarHeight(el.getBoundingClientRect().height);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const filters = useMemo(
     () => ({
       category: category === "All" ? undefined : category,
@@ -193,6 +214,13 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [visualSearchResults, clearAllFilters]);
 
+  // Талаби корбар: тугмаҳои амали зуд (қатори такси/меҳмонхона/...) ҳар
+  // дафъае, ки корбар яке аз филтрҳои БОЛО (категория, навъ, сана) зер
+  // мекунад, бояд намоён бошанд.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [category, itemType, dateFrom, dateTo]);
+
   // Reset everything when user clicks the home logo
   //
   // `handledGoHomeRef` ҲАТМӢ аст — худи ҳамон муҳофизат, ки дар effect-и
@@ -255,9 +283,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   }, [allItems, visualSearchResults]);
 
   // Тугмаҳои амали зуд ҳангоми ҶУСТУҶӮИ МАТНӢ низ намоён мемонанд.
-  // Пештар онҳо бо `!searchQuery` пинҳон мешуданд, вале падинги мӯҳтаво
-  // (HOME_CONTENT_PT) баландии ҳар СЕ қатори филтрбари fixed-ро ҳисоб
-  // мекунад — дар натиҷа зери филтрҳо як холигии калон мемонд.
   // Ҳангоми ҷустуҷӯи ВИЗУАЛӢ ин қатор ҳамоно пинҳон мешавад, чунки он ҷо
   // тамоми навор ба тугмаи "тоза кардани натиҷа" иваз мешавад ва падинг
   // низ дигар аст (pt-[64px]).
@@ -266,15 +291,17 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   return (
     <div className="pb-18 min-h-screen bg-canvas">
       {/* Қисмати Филтрҳо (Header/Filters) */}
-      <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-canvas">
+      <div ref={filterBarRef} className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-canvas">
         <div className="w-full max-w-7xl mx-auto pl-2.5 sm:pl-4">
           {/* Худи header аллакай 6px зери майдони ҷустуҷӯ мемонад, пас `pt-0.5`
               фосиларо ба 8px мебарорад — каме калонтар аз 6px-и байни қаторҳои
-              филтр, то ҷустуҷӯ аз онҳо ҷудо ба назар расад. `py-1.5`-и пештара
-              12px медод, ки аз ҳад зиёд буд.
-              ДИҚҚАТ: ҳар тағйири ин рақам баландии бари fixed-ро иваз мекунад —
-              `HOME_CONTENT_PT` бояд ҳамон қадар иваз шавад, вагарна зери бар
-              холигӣ мемонад ё кортҳо зери он медароянд. */}
+              филтр, то ҷустуҷӯ аз онҳо ҷудо ба назар расад.
+              `pb-1.5` (6px): талаби корбар — тамоми фосилаи қатори навъ↔мӯҳтавои
+              зерин аз ҳамин ҷо биёяд (на аз margin-и мӯҳтавои поён), то ҳатто
+              вақте ки тугмаҳои амали зуд намоён нестанд (масалан ашёи рӯйхат
+              ба лаби бар расидааст), ҳамон фосила бимонад.
+              Ин рақам дигар ба HOME_CONTENT_PT дастӣ вобаста нест — падинги
+              мӯҳтаво баландии ВОҚЕИИ ин барро зинда чен мекунад (filterBarHeight). */}
           <div className="w-full pt-0.5 pb-1.5">
           <div
             className={cn(
@@ -379,30 +406,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                         aria-hidden
                       />
                     <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 shadow-lg p-3 space-y-2.5">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                          {t("dateFrom")}
-                        </label>
-                        <input
-                          type="date"
-                          value={draftFrom}
-                          max={draftTo || undefined}
-                          onChange={(e) => setDraftFrom(e.target.value)}
-                          className="w-full h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold tracking-wider text-zinc-400 uppercase">
-                          {t("dateTo")}
-                        </label>
-                        <input
-                          type="date"
-                          value={draftTo}
-                          min={draftFrom || undefined}
-                          onChange={(e) => setDraftTo(e.target.value)}
-                          className="w-full h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-2.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-white/10"
-                        />
-                      </div>
+                      <DateRangeCalendar
+                        from={draftFrom || undefined}
+                        to={draftTo || undefined}
+                        onChange={({ from, to }) => {
+                          setDraftFrom(from || "");
+                          setDraftTo(to || "");
+                        }}
+                      />
                       <div className="flex items-center justify-between pt-1">
                         <button
                           type="button"
@@ -425,56 +436,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 </div>
             </div>
           )}
-          {/* Тугмаҳои амали зуд — дар ДОХИЛИ бари fixed, то ҳангоми scroll
-                дар ҷои худ истанд ва зери филтрҳои дигар нараванд.
-  
-              `py-5 -my-5` ҷои соя аст, то соя бурида нашавад. */}
-          {showTopSections && (
-            <div className="mt-1.5">
-              <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5">
-                {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
-                  const active = value === "all" ? locationType === null : locationType === value;
-                  return (
-                    <button
-                      key={value}
-                      onClick={() =>
-                        value === "all" ? setLocationType(null) : toggleLocationType(value)
-                      }
-                      className={cn(
-                        "shrink-0 snap-start w-[37%] min-[480px]:w-36 min-[1503px]:w-40 min-[1920px]:w-[168px] flex items-center justify-between gap-1.5 px-2.5 py-2.5 min-[1503px]:py-3 rounded-xl text-left cursor-pointer",
-                        active ? "bg-emerald-500" : "bg-white dark:bg-zinc-800",
-                      )}
-                    >
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <span
-                          className={cn(
-                            "font-bold text-xs min-[1503px]:text-[13px] min-[1920px]:text-sm leading-tight tracking-wide truncate",
-                            active ? "text-white" : "text-zinc-900 dark:text-zinc-100",
-                          )}
-                        >
-                          {t(`quickActions.${value}.title`)}
-                        </span>
-                        <span
-                          className={cn(
-                            "text-left font-semibold text-[10px] min-[1503px]:text-[11px] min-[1920px]:text-xs leading-tight tracking-wide whitespace-nowrap truncate",
-                            active ? "text-white/70" : "text-zinc-400 dark:text-zinc-500",
-                          )}
-                        >
-                          {t(`quickActions.${value}.desc`)}
-                        </span>
-                      </div>
-                      <Icon
-                        className={cn(
-                          "w-7 h-7 min-[1503px]:w-8 min-[1503px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 shrink-0",
-                          active ? "text-white" : "text-emerald-500 dark:text-emerald-400",
-                        )}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
           </div>
 
         </div>
@@ -486,9 +447,69 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           "w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5 touch-pan-y",
           visualSearchResults
             ? "pt-[64px] md:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
-            : HOME_CONTENT_PT,
+            // То андозагирии зинда (filterBarHeight) омода шавад, синфи
+            // тахминӣ HOME_CONTENT_PT истифода мешавад — вагарна дар лаҳзаи
+            // аввали рендер (SSR/пеш аз JS) падинг умуман набуд.
+            : filterBarHeight == null && HOME_CONTENT_PT,
         )}
+        style={!visualSearchResults && filterBarHeight != null ? { paddingTop: filterBarHeight } : undefined}
       >
+        {/* Тугмаҳои амали зуд — дар мӯҳтавои СКРОЛЛШАВАНДА, на дар бари
+            fixed. Ҳангоми scroll онҳо боло рафта зери филтрбар пинҳон
+            мешаванд; танҳо ҳангоми зеркунии филтрҳои боло (категория/навъ/
+            сана) ё бозгашти пурра ба боло боз намоён мешаванд — талаби
+            корбар: "misli peshina... agar to okhir ravem badan paydo
+            shavad" (на ҳар ҷунбиши болоии scroll).
+            БЕ margin-top: фосилаи 6px аз `pb-1.5`-и дохили бари fixed
+            меояд (ниг. боло).
+            `py-5 -my-5` ҷои соя аст, то соя бурида нашавад. */}
+        {showTopSections && (
+          <div className="mb-2.5">
+            {/* `mr-[-Npx]`: қатор бояд ба лаби рости ВОҚЕИИ экран расад. */}
+            <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5 mr-[-10px] sm:mr-[-16px] lg:mr-[-20px]">
+              {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
+                const active = value === "all" ? locationType === null : locationType === value;
+                return (
+                  <button
+                    key={value}
+                    onClick={() =>
+                      value === "all" ? setLocationType(null) : toggleLocationType(value)
+                    }
+                    className={cn(
+                      "shrink-0 snap-start w-[37%] min-[480px]:w-36 min-[1503px]:w-40 min-[1920px]:w-[168px] flex items-center justify-between gap-1.5 px-2.5 py-2.5 min-[1503px]:py-3 rounded-xl text-left cursor-pointer",
+                      active ? "bg-emerald-500" : "bg-white dark:bg-zinc-800",
+                    )}
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span
+                        className={cn(
+                          "font-bold text-xs min-[1503px]:text-[13px] min-[1920px]:text-sm leading-tight tracking-wide truncate",
+                          active ? "text-white" : "text-zinc-900 dark:text-zinc-100",
+                        )}
+                      >
+                        {t(`quickActions.${value}.title`)}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-left font-semibold text-[10px] min-[1503px]:text-[11px] min-[1920px]:text-xs leading-tight tracking-wide whitespace-nowrap truncate",
+                          active ? "text-white/70" : "text-zinc-400 dark:text-zinc-500",
+                        )}
+                      >
+                        {t(`quickActions.${value}.desc`)}
+                      </span>
+                    </div>
+                    <Icon
+                      className={cn(
+                        "w-8 h-8 min-[1503px]:w-9 min-[1503px]:h-9 min-[1920px]:w-10 min-[1920px]:h-10 shrink-0",
+                        active ? "text-white" : "text-emerald-500 dark:text-emerald-400",
+                      )}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {isLoading &&
         allItems.length === 0 &&

@@ -29,23 +29,11 @@ export function HomeFiltersSkeleton() {
           </div>
 
           {/* Қатори навъ (Ҳама / Гумшуда / Ёфтшуда) + тугмаи сана */}
-          <div className="flex items-center gap-1.5 mt-1.5">
+          <div className="flex items-center gap-1.5 mt-1.5 mb-1.5">
             <Skeleton className="w-16 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
             <Skeleton className="w-24 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
             <Skeleton className="w-24 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full" />
             <Skeleton className="ml-auto mr-2 h-7 w-7 md:h-9 md:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] rounded-full" />
-          </div>
-
-          {/* Тайлҳои амали зуд */}
-          <div className="mt-1.5 mb-2">
-            <div className="flex gap-2.5 overflow-hidden py-5 -my-5">
-              {[0, 1, 2].map((i) => (
-                <Skeleton
-                  key={i}
-                  className="shrink-0 w-[42%] min-[480px]:w-40 min-[1503px]:w-44 min-[1920px]:w-[188px] h-[66px] min-[1503px]:h-[70px] min-[1920px]:h-[74px] rounded-2xl"
-                />
-              ))}
-            </div>
           </div>
         </div>
       </div>

@@ -327,7 +327,7 @@ export function Header() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 min-[1084px]:h-4 min-[1084px]:w-4 text-zinc-400" />
             <Input
               placeholder={t("search")}
-              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-xl bg-white dark:bg-zinc-800 border-none shadow-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
+              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-md bg-white dark:bg-zinc-800 border-none shadow-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
             />

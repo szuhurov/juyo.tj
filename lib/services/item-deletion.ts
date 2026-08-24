@@ -19,7 +19,7 @@ const ITEM_FIELDS = "*, images:item_images(image_url)";
  * "Нест кардан" ва ҳам барои "Ҳал шуд" истифода мешавад. Ин функсия танҳо
  * барои амали "Нест кардан"-и воқеӣ аст: snapshot дар deleted_items_archive,
  * аксҳо аз storage, баъд сатр аз items пурра нест мешавад (CASCADE
- * item_images/saved_items/item_reports). external_items.published_item_id
+ * item_images/saved_items). external_items.published_item_id
  * пеш аз ин FK-ро nullify мекунем (ON DELETE NO ACTION аст, вагарна FK
  * violation медиҳад барои элонҳои воридотӣ).
  */

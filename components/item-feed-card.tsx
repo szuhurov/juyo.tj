@@ -55,10 +55,10 @@ export function ItemFeedCard({ item }: { item: Item }) {
         )}
       </div>
 
-      {/* `pt`/`pb` ва `mt`-и тугма ҳамзамон 2px кам шуданд — баландии корт
-          кам мешавад, вале мувозинати боло/поёни тугма нигоҳ дошта мешавад.
-          Акс даст нахӯрд: `aspect-[4/3]` бетағйир аст. */}
-      <div className="px-3 pt-1.5 pb-1.5 flex flex-col flex-1">
+      {/* Талаби корбар: қисми поёни корт (зери акс) ~10-15% паст шавад, вале
+          унвон/сана даст нахӯранд — пас танҳо padding/margin кам шуд, на
+          андозаи матн. Акс низ даст нахӯрд: `aspect-[4/3]` бетағйир аст. */}
+      <div className="px-3 pt-1 pb-1 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
             {item.title || item.category}
@@ -74,7 +74,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
             аз рақамҳои ҳуҷҷат тоза шудааст (`stripDocumentNumbers` дар
             саҳифаи `items/add`), пас ин ҷо филтр лозим нест. */}
         {item.description && (
-          <p className="truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <p className="-mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
             {item.description}
           </p>
         )}
@@ -83,17 +83,19 @@ export function ItemFeedCard({ item }: { item: Item }) {
             `span` аст, на `button`: тамоми корт аллакай `<a>` мебошад ва
             тугма дар дохили пайванд HTML-и нодуруст медиҳад. */}
         {/* Тугма аз ҳар чор тараф мудаввар, аз контент 4px васеътар (`-mx-1`),
-            заминааш ҳамон фони барнома. Фосилаи болои он (`mt-1`) ва поёни он
-            (`pb-2`-и контейнер) қасдан БАРОБАР нигоҳ дошта мешаванд — агар
-            яке тағйир ёбад, дигаре низ бояд ҳамон қадар тағйир ёбад.
+            заминааш ҳамон фони барнома. Талаби корбар: гӯшаҳои тугма аз
+            гӯшаҳои худи корт КАМТАР мудаввар (rounded-md, на rounded-lg),
+            каме фосила аз тавсиф (`mt-0.5`) ва аз лаби корт (`mb-0.5`).
             Соя дар доираи тирча аст, на дар худи тугма. */}
-        <span className="mt-0.5 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-2.5">
+        <span className="-mx-1 mt-0.5 mb-0.5 flex items-center justify-between gap-2 rounded-md bg-canvas p-0.5 pl-2.5">
           {/* Ранги навъ — сер, на хира: «Гумшуда» ва «Ёфтшуда» бояд аз як
               назар фарқ кунанд. Тобишҳои 700 дар заминаи `--canvas`
-              контрасти WCAG AA-ро мегузаранд (500/600 не). */}
+              контрасти WCAG AA-ро мегузаранд (500/600 не).
+              Андоза — талаби корбар: аз унвон хурдтар, аз тавсиф калонтар
+              (унвон text-sm/base, тавсиф text-[11px]/xs). */}
           <span
             className={cn(
-              "min-w-0 truncate text-[11px] min-[1084px]:text-xs font-bold",
+              "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-bold",
               item.type === "lost"
                 ? "text-rose-700 dark:text-rose-400"
                 : "text-emerald-700 dark:text-emerald-400",

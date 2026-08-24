@@ -24,9 +24,6 @@ import {
   CheckCircle2,
   ShieldAlert,
   Loader2,
-  MoreVertical,
-  Flag,
-  UserX,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -44,20 +41,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Textarea } from "@/components/ui/textarea";
 import { useItemDetails } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { ImagePlaceholder } from "@/components/image-placeholder";
+import { TelegramIcon, WhatsappIcon, socialHref } from "@/components/social-icons";
 
-const REPORT_REASONS = ["spam", "inappropriate", "fake", "offensive", "other"] as const;
-type ReportReason = (typeof REPORT_REASONS)[number];
+/**
+ * `item.phone_number` танҳо рақами маҳаллист (бе рамзи кишвар). Telegram/
+ * WhatsApp бошад рақами байналмилалиро металабанд — пас рамзи "992"-ро
+ * илова мекунем, вале агар аллакай бошад (маълумоти кӯҳна), такрор намекунем.
+ */
+function toIntlPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  return digits.startsWith("992") ? digits : `992${digits}`;
+}
 
 export default function ItemDetailsClient({
   id,
@@ -83,13 +81,6 @@ export default function ItemDetailsClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
-
-  const [showReportDialog, setShowReportDialog] = useState(false);
-  const [reportReason, setReportReason] = useState<ReportReason | null>(null);
-  const [reportDetails, setReportDetails] = useState("");
-  const [reportSubmitting, setReportSubmitting] = useState(false);
-  const [showBlockUserConfirm, setShowBlockUserConfirm] = useState(false);
-  const [blockSubmitting, setBlockSubmitting] = useState(false);
 
   useEffect(() => {
     if (isLoaded) {
@@ -226,45 +217,6 @@ export default function ItemDetailsClient({
     }
   };
 
-  const handleSubmitReport = async () => {
-    if (!reportReason || reportSubmitting) return;
-    setReportSubmitting(true);
-    try {
-      const token = await getToken({ template: "supabase" });
-      const supabase = createClerkSupabaseClient(token!);
-      const { error } = await supabase.rpc("report_item", {
-        p_item_id: id,
-        p_reason: reportReason,
-        p_details: reportDetails.trim() || null,
-      });
-      if (error) throw error;
-      toast.success(t("reportSuccess"));
-      setShowReportDialog(false);
-      setReportReason(null);
-      setReportDetails("");
-    } catch {
-      toast.error(t("error"));
-    } finally {
-      setReportSubmitting(false);
-    }
-  };
-
-  const handleBlockUser = async () => {
-    if (!item?.user_id || blockSubmitting) return;
-    setBlockSubmitting(true);
-    try {
-      const token = await getToken({ template: "supabase" });
-      const supabase = createClerkSupabaseClient(token!);
-      const { error } = await supabase.rpc("block_user", { p_user_id: item.user_id });
-      if (error) throw error;
-      toast.success(t("success"));
-      router.push("/");
-    } catch {
-      toast.error(t("error"));
-      setBlockSubmitting(false);
-      setShowBlockUserConfirm(false);
-    }
-  };
 
   const handleShare = () => {
     const shareData = {
@@ -514,34 +466,6 @@ export default function ItemDetailsClient({
                 <div className="flex items-center gap-1.5 text-zinc-500 text-xs min-[1084px]:text-sm font-medium">
                   <Eye className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" /> {item?.views || 0}
                 </div>
-                {isLoaded && !isOwner && userId && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        aria-label={t("reportItem")}
-                        className="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors p-1 -m-1"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl">
-                      <DropdownMenuItem
-                        className="cursor-pointer gap-2"
-                        onClick={() => setShowReportDialog(true)}
-                      >
-                        <Flag className="w-3.5 h-3.5" />
-                        {t("reportItem")}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="cursor-pointer gap-2 text-red-600 focus:text-red-600"
-                        onClick={() => setShowBlockUserConfirm(true)}
-                      >
-                        <UserX className="w-3.5 h-3.5" />
-                        {t("blockUser")}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
               </div>
             </div>
 
@@ -643,15 +567,52 @@ export default function ItemDetailsClient({
                   {t("resolved")}?
                 </Button>
               ) : item?.phone_number ? (
-                <Button
-                  size="lg"
-                  className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
-                  asChild
-                >
-                  <a href={`tel:${item.phone_number}`}>
-                    <Phone className="w-5 h-5 md:w-6 md:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" /> {t("call")}
-                  </a>
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    size="lg"
+                    className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-2"
+                    asChild
+                  >
+                    <a href={`tel:${item.phone_number}`}>
+                      <Phone className="w-5 h-5 md:w-6 md:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2 shrink-0" />
+                      <span className="truncate">{t("call")}</span>
+                    </a>
+                  </Button>
+                  {item.contact_telegram && socialHref("telegram", toIntlPhone(item.phone_number)) && (
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-2xl font-bold bg-white dark:bg-zinc-800 text-[#229ED9] border border-zinc-200 dark:border-zinc-700 px-2"
+                      asChild
+                    >
+                      <a
+                        href={socialHref("telegram", toIntlPhone(item.phone_number))!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <TelegramIcon size={24} className="mr-2 shrink-0" />
+                        <span className="truncate">Telegram</span>
+                      </a>
+                    </Button>
+                  )}
+                  {item.contact_whatsapp && socialHref("whatsapp", toIntlPhone(item.phone_number)) && (
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-2xl font-bold bg-white dark:bg-zinc-800 text-[#25D366] border border-zinc-200 dark:border-zinc-700 px-2"
+                      asChild
+                    >
+                      <a
+                        href={socialHref("whatsapp", toIntlPhone(item.phone_number))!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <WhatsappIcon size={24} className="mr-2 shrink-0" />
+                        <span className="truncate">WhatsApp</span>
+                      </a>
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <div className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center gap-2 text-zinc-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
                   <Phone className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0" /> {t("phoneNotAvailable")}
@@ -768,107 +729,6 @@ export default function ItemDetailsClient({
           </DialogContent>
         </Dialog>
 
-        <Dialog
-          open={showReportDialog}
-          onOpenChange={(open) => {
-            if (!reportSubmitting) {
-              setShowReportDialog(open);
-              if (!open) { setReportReason(null); setReportDetails(""); }
-            }
-          }}
-        >
-          <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
-            <DialogHeader className="space-y-2.5">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
-                <Flag className="w-5 h-5" />
-              </div>
-              <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
-                {t("reportItem")}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-2">
-              {REPORT_REASONS.map((reason) => (
-                <button
-                  key={reason}
-                  type="button"
-                  onClick={() => setReportReason(reason)}
-                  className={cn(
-                    "text-left px-4 py-3 rounded-xl border text-sm font-semibold transition-all",
-                    reportReason === reason
-                      ? "border-red-500 bg-red-50 dark:bg-red-900/10 text-red-700 dark:text-red-400"
-                      : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-zinc-300",
-                  )}
-                >
-                  {t(`reportReason${reason.charAt(0).toUpperCase()}${reason.slice(1)}`)}
-                </button>
-              ))}
-              <Textarea
-                value={reportDetails}
-                onChange={(e) => setReportDetails(e.target.value)}
-                placeholder={t("reportDetailsPlaceholder")}
-                className="mt-1 rounded-xl resize-none"
-                rows={3}
-              />
-            </div>
-            <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                disabled={!reportReason || reportSubmitting}
-                onClick={handleSubmitReport}
-                className="w-full h-12 rounded-xl font-semibold tracking-widest text-[10px] bg-red-600 hover:bg-red-700 text-white"
-              >
-                {reportSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  t("reportSubmit")
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        <Dialog
-          open={showBlockUserConfirm}
-          onOpenChange={(open) => !blockSubmitting && setShowBlockUserConfirm(open)}
-        >
-          <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
-            <DialogHeader className="space-y-2.5">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
-                <UserX className="w-5 h-5" />
-              </div>
-              <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
-                {t("blockUserConfirmTitle")}
-              </DialogTitle>
-              <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
-                {t("blockUserConfirmDesc")}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="flex-row gap-3 sm:justify-start pt-2">
-              <Button
-                type="button"
-                variant="destructive"
-                className="flex-1 h-12 rounded-xl font-semibold tracking-widest text-[10px] text-white"
-                onClick={handleBlockUser}
-                disabled={blockSubmitting}
-              >
-                {blockSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  t("blockUser")
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 h-12 rounded-xl font-semibold tracking-widest text-[10px] border-zinc-200"
-                onClick={() => setShowBlockUserConfirm(false)}
-                disabled={blockSubmitting}
-              >
-                {t("cancel")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </TooltipProvider>
   );

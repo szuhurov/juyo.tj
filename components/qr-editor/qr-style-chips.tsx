@@ -56,8 +56,16 @@ function Bridge({ x, y, dir, color }: { x: number; y: number; dir: "h" | "v"; co
   );
 }
 
+/**
+ * "diamond" ба намунаи чиппа илова карда шуд, вале ба QRCard НЕ гузашта
+ * мешавад: `qr-code-styling` (китобхонаи веб) чунин навъро ТАМОМАН
+ * НАДОРАД (ниг. profile/page.tsx, DOT_TYPES). Талаби корбар: чиппа нишон
+ * диҳад, ҳарчанд QR-и воқеӣ фарқ накунад.
+ */
+export type ChipDotType = DotType | "diamond";
+
 /** Як модул дар услуби додашуда. */
-function Piece({ type, x, y, color }: { type: DotType; x: number; y: number; color: string }) {
+function Piece({ type, x, y, color }: { type: ChipDotType; x: number; y: number; color: string }) {
   const px = x * M;
   const py = y * M;
 
@@ -74,6 +82,13 @@ function Piece({ type, x, y, color }: { type: DotType; x: number; y: number; col
     const r = M / 2;
     return <rect x={px} y={py} width={M} height={M} rx={r} ry={r} fill={color} />;
   }
+  if (type === "diamond") {
+    // Мураббаъи 45°-гардонидашуда — айнан native.
+    const cx = px + M / 2;
+    const cy = py + M / 2;
+    const h = M / 2;
+    return <path d={`M${cx},${cy - h} L${cx + h},${cy} L${cx},${cy + h} L${cx - h},${cy} Z`} fill={color} />;
+  }
   // classy / classy-rounded — ду кунҷи МУҚОБИЛ гирд (боло-чап, поён-рост)
   const r = M * 0.5;
   const arc = type === "classy-rounded" ? r : r * 0.6;
@@ -88,7 +103,7 @@ export function DotStyleChip({
   angle = 45,
   bias = 1,
 }: {
-  type: DotType;
+  type: ChipDotType;
   qrColor: string;
   bgColor: string;
   /** Ду ранг. Вақте ҳаст, намуна ҳамон градиенти QR-ро мегирад. */
@@ -150,9 +165,10 @@ const INNER_R: Partial<Record<CornerDotType, number>> = {
  * рӯи манбаи native — агар баъдтар манбаи воқеӣ ёфт шавад, бо он муқоиса
  * кардан лозим.
  */
-const BRACKET_MARGIN = 5;
-const BRACKET_ARM = 13;
-const BRACKET_STROKE = 5;
+// Талаби корбар: боз ҳам калонтар (такроран калон карда шуд).
+const BRACKET_MARGIN = 3;
+const BRACKET_ARM = 19;
+const BRACKET_STROKE = 8;
 /**
  * Талаби корбар: "иконҳо аз якдигар фарқ намекунад" — радиусҳои қаблӣ
  * (0 / 4.5 / 9.1) дар қуттии 44px бо строки 5px хеле наздик буданд.

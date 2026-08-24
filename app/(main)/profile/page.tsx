@@ -47,7 +47,6 @@ import {
   Palette,
   KeyRound,
   MousePointerClick,
-  UserX,
   Globe,
   UserCog,
   Grid2x2,
@@ -65,7 +64,7 @@ import Link from "next/link"; // Барои пайвандҳо ба саҳифа
 import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
 import { cn } from "@/lib/utils"; // Барои пайваст кардани классҳои CSS
 import { readableTextOn, isNearWhite } from "@/lib/qr-palette";
-import { DotStyleChip, CornerBorderChip, CornerCenterChip, StyleChipRow } from "@/components/qr-editor/qr-style-chips";
+import { DotStyleChip, CornerBorderChip, CornerCenterChip, StyleChipRow, type ChipDotType } from "@/components/qr-editor/qr-style-chips";
 import { PercentSlider, GradientBiasToggle } from "@/components/qr-editor/percent-slider";
 import {
   SOCIALS,
@@ -122,14 +121,33 @@ import { useQueryClient } from "@tanstack/react-query"; // Барои идора
 import { VerifiedBadge } from "@/components/verified-badge";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
 
-// Клерк одатан хатогиро ҳамчун { errors: [{ longMessage, message }] } мефиристад —
-// ин helper новобаста аз шакли воқеии хатогӣ (Clerk, Error, ё дигар) паёми
-// хониданиро бе `any` мебарорад.
-function getClerkErrorMessage(err: unknown, fallback: string): string {
-  if (err && typeof err === "object") {
-    const clerkErr = err as { errors?: { longMessage?: string; message?: string }[]; message?: string };
-    return clerkErr.errors?.[0]?.longMessage || clerkErr.errors?.[0]?.message || clerkErr.message || fallback;
+// Клерк одатан хатогиро ҳамчун { errors: [{ code, longMessage, message }] }
+// мефиристад — вале `message`/`longMessage` ҲАМЕША бо забони англисӣ меоянд,
+// новобаста аз забони интихобии сайт. Талаби корбар: "дар ҳама ҳолат ... бо
+// забони интихобшуда нишон дода шавад" — пас ба ҷои матни хоми Clerk, КОДИ
+// хаторо (устувор, аз забон вобаста нест) ба калиди тарҷумаи худамон
+// мегардонем (ҳамон `clerk.errors.*`-е, ки `lib/clerk-localization.ts`
+// барои виҷетҳои тайёри Clerk истифода мебарад — ин ҷо низ ҳамонҳоро).
+const CLERK_ERROR_CODE_TO_KEY: Record<string, string> = {
+  form_password_length_too_short: "clerk.errors.passwordTooShort",
+  form_identifier_not_found: "clerk.errors.userNotFound",
+  form_password_incorrect: "clerk.errors.wrongPassword",
+  form_identifier_exists: "clerk.errors.emailExists",
+  form_code_incorrect: "clerk.errors.incorrectCode",
+  rate_limit_exceeded: "clerk.errors.tooManyRequests",
+  form_password_pwned: "clerk.passwordPwned",
+};
+
+function getClerkErrorMessage(
+  err: unknown,
+  fallback: string,
+  t: (key: string) => string,
+): string {
+  if (err && typeof err === "object" && "errors" in err) {
+    const code = (err as { errors?: { code?: string }[] }).errors?.[0]?.code;
+    if (code && CLERK_ERROR_CODE_TO_KEY[code]) return t(CLERK_ERROR_CODE_TO_KEY[code]);
   }
+  // Ҳеҷ гоҳ матни хоми Clerk намонад — хатои умумии тарҷумашуда бехатартар аст.
   return fallback;
 }
 
@@ -145,8 +163,8 @@ function QrFieldLabel({
 }) {
   return (
     <div className="flex items-center gap-1.5 ml-1">
-      <Icon className="w-3.5 h-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
-      <Label className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
+      <Icon className="w-4 h-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
+      <Label className="text-[12px] font-bold text-zinc-500 dark:text-zinc-400">
         {children}
       </Label>
     </div>
@@ -196,17 +214,19 @@ const biasPercentForStop = (percent: number, stopIdx: number) => (stopIdx === 0 
 /** Ранги ягонаи намунаҳои chip — на ранги ҷории QR, то муқоисаи шакл равшан монад. */
 const QR_CHIP_INK = "#000000";
 
-/** Вариантҳои шакл барои chip-picker-ҳо — маҳз он чи `qr-code-styling` дастгирӣ мекунад. */
-// native-и DOT_TYPES воқеан 5 навъ дорад: square/rounded/extra-rounded/
-// diamond/classy-rounded ("dots" ва "classy" бардошта шудаанд). "diamond"
-// шакли ХОСИСИ native аст (SVG-и дастӣ кашидашуда, `pieceCornerType:'cut'`)
-// — `qr-code-styling`-и веб чунин навъ ТАМОМАН НАДОРАД (DotType-и он танҳо
-// dots|rounded|classy|classy-rounded|square|extra-rounded аст), пас бе
-// нависондани рендерери пурра худӣ (беруни доираи ин ислоҳ) ғайриимкон аст.
-// 4 навъи БОҚИМОНДА, ки ҳарду платформа воқеан дастгирӣ мекунанд, гирифта
-// шуданд — "dots" ва "classy" низ бардошта шуданд, то бо интихоби native
-// мувофиқ бошад (на танҳо бо номгӯи техникии китобхона).
-const DOT_TYPES: DotType[] = ["square", "rounded", "extra-rounded", "classy-rounded"];
+/**
+ * Вариантҳои шакл барои chip-picker — 5 то, айнан native
+ * (square/rounded/extra-rounded/diamond/classy-rounded).
+ *
+ * "diamond" ХОСИСИИ ХАТАРНОК аст: `qr-code-styling` (китобхонаи ВЕБ, на
+ * native) чунин навъро ТАМОМАН НАДОРАД (DotType-и он танҳо
+ * dots|rounded|classy|classy-rounded|square|extra-rounded аст). Талаби
+ * корбар: чиппа нишон диҳад, ҳарчанд QR-и воқеӣ фарқ накунад — пас
+ * "diamond" танҳо дар РӮЙХАТИ ИНТИХОБ аст; ҳангоми фиристодан ба QRCard
+ * он ба "square" мегузарад (ниг. `effDotsType` — АЙНАН ҳамон пешфарзи
+ * дохилии худи китобхона барои навъи номаълум).
+ */
+const DOT_TYPES: ChipDotType[] = ["square", "rounded", "extra-rounded", "diamond", "classy-rounded"];
 /**
  * "rounded" АЗ РӮЙХАТ БАРДОШТА ШУД: талаби корбар, баъд аз он ки
  * ошкор шуд `qr-code-styling` (китобхонаи ВЕБ, на native) чунин навъро
@@ -219,13 +239,14 @@ const DOT_TYPES: DotType[] = ["square", "rounded", "extra-rounded", "classy-roun
 const CORNER_TYPES: (CornerSquareType & CornerDotType)[] = ["square", "extra-rounded", "dot"];
 /** Ҳадди боло-и бари ҳар чиппа — айнан native (`chipMaxWidth={30}`). */
 const CHIP_MAX_WIDTH = 30;
-const DOT_LABEL_KEYS: Record<DotType, string> = {
+const DOT_LABEL_KEYS: Record<ChipDotType, string> = {
   square: "qrDotSquare",
   dots: "qrDotDots",
   rounded: "qrDotRounded",
   "extra-rounded": "qrDotExtraRounded",
   classy: "qrDotClassy",
   "classy-rounded": "qrDotClassyRounded",
+  diamond: "qrDotDiamond",
 };
 /** Ҳамон CORNER_LABEL_KEYS-и native: «extra-rounded» = «Мулоим» дар ҳарду. */
 const CORNER_LABEL_KEYS: Partial<Record<CornerSquareType | CornerDotType, string>> = {
@@ -331,7 +352,7 @@ function ProfileContent() {
       toast.success(t("codeResent"));
     } catch (err) {
       console.error("Resend code error:", err);
-      toast.error(getClerkErrorMessage(err, t("error")));
+      toast.error(getClerkErrorMessage(err, t("error"), t));
     } finally {
       setResendSubmitting(false);
     }
@@ -363,7 +384,7 @@ function ProfileContent() {
       setResendCooldown(59);
     } catch (err) {
       console.error("Start email change error:", err);
-      toast.error(getClerkErrorMessage(err, t("error")));
+      toast.error(getClerkErrorMessage(err, t("error"), t));
     } finally {
       setEmailSubmitting(false);
     }
@@ -393,7 +414,7 @@ function ProfileContent() {
       resetEmailModal();
     } catch (err) {
       console.error("Clerk error:", err);
-      toast.error(getClerkErrorMessage(err, t("error")));
+      toast.error(getClerkErrorMessage(err, t("error"), t));
     } finally {
       setEmailSubmitting(false);
     }
@@ -445,6 +466,28 @@ function ProfileContent() {
     whatsapp: "",
     facebook: "",
   });
+  /**
+   * Ҳамон шабакаҳо, вале барои ФОРМАИ «Танзимот» — алоҳида аз `social`
+   * (он барои модали боргирӣ аст ва қасдан ҳамеша холӣ оғоз мешавад).
+   * Ин ҷо баръакс: бояд қиматҳои ҳозираи профилро нишон диҳад, то
+   * префикси @/+ (ниг. `socialPrefix`) ҳамон тавре ки дар модал кор
+   * кунад — талаби корбар.
+   */
+  const [infoSocial, setInfoSocial] = useState<Record<SocialKey, string>>({
+    telegram: "",
+    instagram: "",
+    whatsapp: "",
+    facebook: "",
+  });
+  useEffect(() => {
+    if (!profile) return;
+    setInfoSocial({
+      telegram: profile.telegram || "",
+      instagram: profile.instagram || "",
+      whatsapp: profile.whatsapp || "",
+      facebook: profile.facebook || "",
+    });
+  }, [profile]);
   const [showTermsDetails, setShowTermsDetails] = useState(false);
 
   // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва шакл).
@@ -458,19 +501,23 @@ function ProfileContent() {
   const [qrGradientBiasPercent, setQrGradientBiasPercent] = useState(74);
   /** Кадом stop ҳозир "интихобшуда" (барои `biasPercentForStop`) — пешфарз 0, мисли native. */
   const [gradientStopIdx, setGradientStopIdx] = useState(0);
+  /**
+   * Кунҷи градиенти МАТН — талаби корбар: тугмаи "давр" (rotate) бояд
+   * кунҷро давр занонад (45°→135°→225°→315°, 4 ҳолат), НА рангҳоро
+   * ҷойиваз кунад. Пештар `onRotate` рангҳоро reverse мекард — акнун
+   * рангҳо СОБИТ мемонанд, танҳо кунҷ мечархад.
+   */
+  const [qrGradientAngle, setQrGradientAngle] = useState(45);
   /** Градиенти ЗАМИНА (BG) — ҳамон сохтор, алоҳида. */
   const [qrBgGradientStops, setQrBgGradientStops] = useState<string[]>(["#FFFFFF", "#EEFBF5"]);
   const [qrBgGradientBiasPercent, setQrBgGradientBiasPercent] = useState(50);
   const [bgGradientStopIdx, setBgGradientStopIdx] = useState(0);
+  const [qrBgGradientAngle, setQrBgGradientAngle] = useState(45);
   const [qrSettings, setQrSettings] = useState({
-    dotsType: "rounded" as DotType,
+    dotsType: "rounded" as ChipDotType,
     cornersSquareType: "dot" as CornerSquareType,
     cornersDotType: "dot" as CornerDotType,
   });
-  /** Талаби корбар: слайдери тақсимот бо пешфарз КУШОДА бошад. */
-  const [textBiasOpen, setTextBiasOpen] = useState(true);
-  const [bgBiasOpen, setBgBiasOpen] = useState(true);
-
   // Токен барои Supabase — лозим барои useUserItems/useSavedItems ва
   // амалиётҳои дигар (иваз кардани email, аватар ва ғ.) дар ин саҳифа.
   const [token, setToken] = useState<string | null>(null);
@@ -480,35 +527,6 @@ function ProfileContent() {
       .then((t) => { if (t) setToken(t); })
       .catch((err) => console.error("Error loading token:", err));
   }, [userId, getToken]);
-
-  // Рӯйхати корбарони block-шуда (барои таби "Маълумоти шахсӣ")
-  const [blockedUsers, setBlockedUsers] = useState<
-    { user_id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[]
-  >([]);
-  const [unblockingId, setUnblockingId] = useState<string | null>(null);
-  useEffect(() => {
-    if (!token) return;
-    const supabase = createClerkSupabaseClient(token);
-    supabase.rpc("get_my_blocked_users").then(({ data }) => {
-      if (data) setBlockedUsers(data);
-    });
-  }, [token]);
-
-  const handleUnblockUser = async (targetUserId: string) => {
-    if (unblockingId) return;
-    setUnblockingId(targetUserId);
-    try {
-      const supabase = createClerkSupabaseClient(token!);
-      const { error } = await supabase.rpc("unblock_user", { p_user_id: targetUserId });
-      if (error) throw error;
-      setBlockedUsers((prev) => prev.filter((u) => u.user_id !== targetUserId));
-      toast.success(t("success"));
-    } catch {
-      toast.error(t("error"));
-    } finally {
-      setUnblockingId(null);
-    }
-  };
 
   // Профил — тавассути React Query (кэши 2 дақиқа), на бо fetch-и дастии
   // бе кэш — пеш аз ин ҳар гузариш ба /profile (масалан home → QR →
@@ -586,7 +604,7 @@ function ProfileContent() {
   // Табҳои "Танзимот" ба сабки рӯйхати iOS сохта шудаанд — маълумоти шахсӣ
   // ва рӯйхати корбарони басташуда ба ҷои ҳамеша кушода будан, бо клик
   // ба сатри худашон боз/пӯшида мешаванд.
-  const [openSetting, setOpenSetting] = useState<"profile" | "blocked" | null>(null);
+  const [openSetting, setOpenSetting] = useState<"profile" | null>(null);
 
   // Синхронизатсия кардани таби фаъол бо URL
   useEffect(() => {
@@ -823,7 +841,14 @@ function ProfileContent() {
   const effQrColor = isBasicTier ? QR_BASIC.color : qrGradientStops[0];
   const effBgColor = isBasicTier ? QR_BASIC.bg : qrBgGradientStops[0];
   const effBgGradientColor = !isBasicTier && qrBgGradientStops.length >= 2 ? qrBgGradientStops[1] : null;
-  const effDotsType = isBasicTier ? QR_BASIC.dots : qrSettings.dotsType;
+  // "diamond" танҳо дар chip аст (ниг. DOT_TYPES боло) — QRCard навъи
+  // воқеии китобхонаро (DotType) мехоҳад, пас ин ҷо ба "square" мегузарад,
+  // АЙНАН ҳамон пешфарзи дохилии `qr-code-styling` барои навъи номаълум.
+  const effDotsType: DotType = isBasicTier
+    ? QR_BASIC.dots
+    : qrSettings.dotsType === "diamond"
+      ? "square"
+      : qrSettings.dotsType;
   const effCornersSquareType = isBasicTier ? QR_BASIC.corners : qrSettings.cornersSquareType;
   const effCornersDotType = isBasicTier ? QR_BASIC.corners : qrSettings.cornersDotType;
   /** Тақсимот (%) → bias: 50% = 1 (баробар), 90% = 1.8, 10% = 0.2. */
@@ -867,8 +892,8 @@ function ProfileContent() {
     const setRawBiasPercent = kind === "text" ? setQrGradientBiasPercent : setQrBgGradientBiasPercent;
     const stopIdx = kind === "text" ? gradientStopIdx : bgGradientStopIdx;
     const setStopIdx = kind === "text" ? setGradientStopIdx : setBgGradientStopIdx;
-    const biasOpen = kind === "text" ? textBiasOpen : bgBiasOpen;
-    const setBiasOpen = kind === "text" ? setTextBiasOpen : setBgBiasOpen;
+    const angle = kind === "text" ? qrGradientAngle : qrBgGradientAngle;
+    const setAngle = kind === "text" ? setQrGradientAngle : setQrBgGradientAngle;
     const labelKey = kind === "text" ? "qrGradientLabel" : "qrBgLabel";
     const secondColorDefault = kind === "text" ? "#26BA90" : "#EEFBF5";
     const showStops = stops.length >= 2;
@@ -888,7 +913,7 @@ function ProfileContent() {
                 "h-12 rounded-xl mb-2.5",
                 stops.some(isNearWhite) && "border border-zinc-200 dark:border-zinc-700",
               )}
-              style={{ backgroundImage: `linear-gradient(135deg, ${stops[0]}, ${stops[1]})` }}
+              style={{ backgroundImage: `linear-gradient(${angle}deg, ${stops[0]}, ${stops[1]})` }}
             />
           ) : (
             <button
@@ -963,14 +988,13 @@ function ProfileContent() {
             {showStops && (
               <GradientBiasToggle
                 percent={displayPercent}
-                open={biasOpen}
-                onToggle={() => setBiasOpen((v) => !v)}
-                onRotate={() => setStops((prev) => [...prev].reverse())}
+                onRotate={() => setAngle((a) => (a + 90) % 360)}
               />
             )}
           </div>
 
-          {showStops && biasOpen && (
+          {/* Талаби корбар: слайдер ҳамеша кушода мемонад. */}
+          {showStops && (
             <PercentSlider value={displayPercent} onChange={setDisplayPercent} />
           )}
 
@@ -1275,8 +1299,10 @@ function ProfileContent() {
                           pattern: "none",
                           gradientColors: activeGradient,
                           gradientBias: effGradientBias,
+                          gradientAngle: qrGradientAngle,
                           bgGradientColor: effBgGradientColor,
                           bgGradientBias: effBgGradientBias,
+                          bgGradientAngle: qrBgGradientAngle,
                         }}
                         className="qr-card-mobile-hide-text"
                         innerRef={qrRef}
@@ -1346,7 +1372,7 @@ function ProfileContent() {
                 // саҳифа УМУМАН набояд scroll шавад, ва панел бояд ба
                 // тугмаҳои боло наздиктар бошад. Ба ин хотир бошиши
                 // native-ро қасдан кам кардем.
-                <div className="space-y-1.5 px-3 pt-3 pb-4 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                <div className="space-y-1.5 px-3 pt-4 pb-6 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
                   {/* Градиенти матн ва градиенти замина дар ЯК қатор —
                       АВВАЛ меоянд (тартиби native: градиент → шакли нуқтаҳо
                       → кунҷҳо, на баръакс). */}
@@ -1630,26 +1656,38 @@ function ProfileContent() {
                         {t("qrSecondaryModal.socialBtn")}
                       </Label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {SOCIALS.map(({ key, Icon, label }) => (
-                          <div key={key} className="relative">
-                            <Icon
-                              size={18}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-                            />
-                            <Input
-                              name={key}
-                              placeholder={label}
-                              defaultValue={(profile as Record<string, unknown> | null)?.[key] as string || ""}
-                              className="h-10 pl-10 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
-                              autoComplete="off"
-                              autoCapitalize="none"
-                              spellCheck={false}
-                              onChange={(e) => {
-                                e.target.value = sanitizeSocialInput(key, e.target.value);
-                              }}
-                            />
-                          </div>
-                        ))}
+                        {SOCIALS.map(({ key, Icon, label }) => {
+                          const prefix = socialPrefix(key, infoSocial[key]);
+                          return (
+                            <div key={key} className="relative">
+                              <Icon
+                                size={18}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
+                              />
+                              {/* Аломат ба қимат дохил намешавад — танҳо
+                                  намоишӣ, мисли дар модали боргирӣ. */}
+                              <span
+                                aria-hidden
+                                className="absolute left-9 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none"
+                              >
+                                {prefix}
+                              </span>
+                              <Input
+                                name={key}
+                                placeholder={label}
+                                value={infoSocial[key]}
+                                className="h-10 pl-[3.25rem] rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
+                                autoComplete="off"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                onChange={(e) => {
+                                  const v = sanitizeSocialInput(key, e.target.value);
+                                  setInfoSocial((s) => ({ ...s, [key]: v }));
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                       <p className="text-[9px] font-bold text-zinc-400 px-1 leading-snug">
                         {t("qrSecondaryModal.socialHint")}
@@ -1800,66 +1838,13 @@ function ProfileContent() {
                       />
                     </button>
                   </div>
-
-                  {/* Корбарони басташуда — танҳо агар мавҷуд бошанд */}
-                  {blockedUsers.length > 0 && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setOpenSetting(openSetting === "blocked" ? null : "blocked")}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
-                      >
-                        <UserX className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
-                        <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                          {t("blockedUsers")}
-                        </span>
-                        <span className="text-xs font-medium text-zinc-400">
-                          {blockedUsers.length}
-                        </span>
-                        <ChevronRight
-                          className={cn(
-                            "w-4 h-4 text-zinc-400 shrink-0 transition-transform",
-                            openSetting === "blocked" && "rotate-90",
-                          )}
-                        />
-                      </button>
-                      {openSetting === "blocked" &&
-                        blockedUsers.map((u) => (
-                          <div key={u.user_id} className="px-4 py-3 flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <Avatar className="w-9 h-9">
-                                <AvatarImage src={u.avatar_url ?? undefined} />
-                                <AvatarFallback className="bg-canvas dark:bg-zinc-700 text-xs">
-                                  <User className="w-4 h-4 text-zinc-400" />
-                                </AvatarFallback>
-                              </Avatar>
-                              <p className="font-medium text-sm truncate">
-                                {u.first_name || t("user")} {u.last_name || ""}
-                              </p>
-                            </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={unblockingId === u.user_id}
-                              onClick={() => handleUnblockUser(u.user_id)}
-                              className="h-9 rounded-lg border-none shadow-none bg-canvas dark:bg-zinc-700 font-bold text-[9px] tracking-widest shrink-0"
-                            >
-                              {unblockingId === u.user_id ? (
-                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                              ) : (
-                                t("unblockUser")
-                              )}
-                            </Button>
-                          </div>
-                        ))}
-                    </>
-                  )}
                 </div>
               </div>
 
               {/* Нест кардани ҳисоб — гурӯҳи алоҳида, то бо танзимоти
-                  муқаррарӣ омехта нашавад (амали бебозгашт). */}
+                  муқаррарӣ омехта нашавад (амали бебозгашт). Талаби
+                  корбар: ранги ХОКИСТАРӢ (на сурх) — "Хуруҷ" акнун
+                  сурхтарин аст. */}
               <div className="space-y-2">
                 <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden">
                   <button
@@ -1867,16 +1852,33 @@ function ProfileContent() {
                     onClick={() => setShowDeleteAccountModal(true)}
                     className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
                   >
-                    <Trash2 className="w-[18px] h-[18px] text-red-600 shrink-0" />
-                    <span className="flex-1 text-sm font-medium text-red-600">
+                    <Trash2 className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                       {t("deleteAccount")}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-red-300 shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
                   </button>
                 </div>
                 <p className="text-[11px] font-medium text-zinc-400 px-4 leading-relaxed">
                   {t("deleteAccountDesc")}
                 </p>
+              </div>
+
+              {/* Хуруҷ аз ҳисоб — талаби корбар: ПОЁНИ "Нест кардани
+                  ҳисоб", ва рангаш аз он СУРХТАР. */}
+              <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden">
+                <SignOutButton>
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                  >
+                    <LogOut className="w-[18px] h-[18px] text-red-700 shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-red-700">
+                      {t("signOut")}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-red-300 shrink-0" />
+                  </button>
+                </SignOutButton>
               </div>
             </div>
           </div>

@@ -31,6 +31,7 @@ import { Loader2, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react"; // И
 import Image from "next/image"; // Барои суратҳо
 import { compressImage } from "@/lib/image-utils";
 import type { PrivacyRegion } from "@/components/privacy-blur-editor";
+import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 
 import {
   Tooltip,
@@ -66,6 +67,8 @@ export default function EditItemPage({
     "taxi" | "hotel_restaurant" | "public_place" | "airport" | null
   >(null);
   const [rewardEnabled, setRewardEnabled] = useState(false);
+  const [contactTelegram, setContactTelegram] = useState(false);
+  const [contactWhatsapp, setContactWhatsapp] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<
     { url: string; isExisting: boolean }[]
@@ -175,6 +178,8 @@ export default function EditItemPage({
       setCategory(data.category);
       setLocationType(data.location_type ?? null);
       setRewardEnabled(!!data.reward);
+      setContactTelegram(!!data.contact_telegram);
+      setContactWhatsapp(!!data.contact_whatsapp);
       if (data.images) {
         setPreviews(
           data.images.map((img: { image_url: string }) => ({
@@ -459,6 +464,8 @@ export default function EditItemPage({
         category: finalCategory,
         type,
         phone_number: phone,
+        contact_telegram: contactTelegram,
+        contact_whatsapp: contactWhatsapp,
         reward: reward ? `${reward}` : null,
         // Агар AI хомӯш бошад ва чизе воқеан тағйир ёфта бошад, "pending"
         // мемонад (интизори admin) — вагарна AI аллакай тафтиш кардааст.
@@ -847,6 +854,28 @@ export default function EditItemPage({
                       (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
                     }
                   />
+                </div>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Checkbox
+                      checked={contactTelegram}
+                      onCheckedChange={(checked) => setContactTelegram(checked === true)}
+                    />
+                    <TelegramIcon size={18} />
+                    <span className="font-bold text-xs min-[1084px]:text-sm text-zinc-500">
+                      {t("contactViaTelegram")}
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <Checkbox
+                      checked={contactWhatsapp}
+                      onCheckedChange={(checked) => setContactWhatsapp(checked === true)}
+                    />
+                    <WhatsappIcon size={18} />
+                    <span className="font-bold text-xs min-[1084px]:text-sm text-zinc-500">
+                      {t("contactViaWhatsapp")}
+                    </span>
+                  </label>
                 </div>
                 {type === "lost" && (
                   <div className="space-y-3">

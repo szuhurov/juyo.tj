@@ -16,7 +16,7 @@ const content = {
     what: [
       "Профил (ном, насаб, рақами телефон, акс)",
       "Ҳамаи эълонҳои шумо ва суратҳои онҳо",
-      "Эълонҳои захирашуда ва блок-листи корбарон",
+      "Эълонҳои захирашуда",
     ],
     emailLabel: "Почтаи электронии ҳисоби шумо",
     noteLabel: "Изоҳ (ихтиёрӣ)",
@@ -35,7 +35,7 @@ const content = {
     what: [
       "Профиль (имя, фамилия, номер телефона, фото)",
       "Все ваши объявления и их фотографии",
-      "Сохранённые объявления и список заблокированных пользователей",
+      "Сохранённые объявления",
     ],
     emailLabel: "Email вашего аккаунта",
     noteLabel: "Комментарий (необязательно)",
@@ -54,7 +54,7 @@ const content = {
     what: [
       "Profile (name, phone number, photo)",
       "All your listings and their photos",
-      "Saved listings and your blocked-users list",
+      "Saved listings",
     ],
     emailLabel: "Your account email",
     noteLabel: "Note (optional)",
