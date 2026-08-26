@@ -39,7 +39,6 @@ import {
   Loader2,
   ShieldCheck,
   AlertTriangle,
-  Phone,
   Pencil,
   QrCode,
   Menu as MenuIcon,
@@ -1608,12 +1607,14 @@ function ProfileContent() {
                           {t("phoneLabel")}
                         </Label>
                         <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-zinc-400 pointer-events-none">
+                            +
+                          </span>
                           <Input
                             name="phone"
                             placeholder={t("phonePlaceholder")}
                             defaultValue={profile?.phone || ""}
-                            className="h-10 pl-9 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
+                            className="h-10 pl-7 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
                             inputMode="numeric"
                             required
                             onChange={(e) =>
@@ -1630,12 +1631,14 @@ function ProfileContent() {
                           {t("phoneSecondaryLabel")}
                         </Label>
                         <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-400" />
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-zinc-400 pointer-events-none">
+                            +
+                          </span>
                           <Input
                             name="secondaryPhone"
                             placeholder={t("phoneSecondaryPlaceholder")}
                             defaultValue={profile?.secondary_phone || ""}
-                            className="h-10 pl-9 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
+                            className="h-10 pl-7 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
                             inputMode="numeric"
                             required
                             onChange={(e) =>

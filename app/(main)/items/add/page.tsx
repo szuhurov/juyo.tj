@@ -98,9 +98,17 @@ function AddItemForm() {
   // интихоб кард" лозим аст, то RadioGroup аз аввал холӣ намояд.
   const [locationAnswered, setLocationAnswered] = useState(false);
 
+  // Танҳо барои formData.type === "found": корбар ашёро худаш нигоҳ
+  // медорад, ё ба ҷои наздик (мағоза, дӯкон) месупорад.
+  const [foundHandoff, setFoundHandoff] = useState<"self" | "nearby" | null>(null);
+  const [handoffPhoto, setHandoffPhoto] = useState<File | null>(null);
+  const [handoffPreview, setHandoffPreview] = useState<string | null>(null);
+
   // Тартиби воқеии қадамҳо аз рӯи навигатсия — қадами 3 (санҷиши AI)
   // охирин аст, на сеюм; қадами 6 ("дар куҷо?") пас аз тафсилот ҷойгир аст.
-  const stepOrder = [1, 2, 6, 4, 5, 3];
+  // Қадами 7 (нигоҳ доштан ё супоридан) танҳо барои "found" илова мешавад.
+  const stepOrder =
+    formData.type === "found" ? [1, 2, 6, 4, 7, 5, 3] : [1, 2, 6, 4, 5, 3];
   const stepIndex = stepOrder.indexOf(step);
 
   const [images, setImages] = useState<File[]>([]);
@@ -213,7 +221,7 @@ function AddItemForm() {
 
 
   const addNewFiles = (files: File[]) => {
-    if (images.length + files.length > 5) {
+    if (images.length + files.length > 4) {
       toast.error(t("maxImagesReached"));
       return;
     }
@@ -225,6 +233,13 @@ function AddItemForm() {
 
     // Reset AI state when images change
     setModerationStatus("idle");
+  };
+
+  // Танҳо ЯК акс барои ҷои супоридан — натиҷаи навро ҷойгузин мекунад.
+  const setHandoffFile = (file: File | null) => {
+    if (handoffPreview) URL.revokeObjectURL(handoffPreview);
+    setHandoffPhoto(file);
+    setHandoffPreview(file ? URL.createObjectURL(file) : null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,13 +281,19 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(5); // Тафсилот → тамос
+      setStep(formData.type === "found" ? 7 : 5); // Тафсилот → нигоҳ/супоридан (агар found) → тамос
     } else if (step === 6) {
       if (!locationAnswered) {
         toast.error(t("fillAllFields"));
         return;
       }
       setStep(4); // Ҷой → тафсилот
+    } else if (step === 7) {
+      if (!foundHandoff) {
+        toast.error(t("fillAllFields"));
+        return;
+      }
+      setStep(5);
     } else if (step === 5) {
       if (!formData.phone.trim()) {
         toast.error(t("fillAllFields"));
@@ -288,8 +309,10 @@ function AddItemForm() {
       setModerationStatus("idle");
     } else if (step === 6) {
       setStep(2);
-    } else if (step === 5) {
+    } else if (step === 7) {
       setStep(4);
+    } else if (step === 5) {
+      setStep(formData.type === "found" ? 7 : 4);
     } else if (step > 1 && step !== 3) {
       setStep(step - 1);
       // Reset moderation if going back to edit photos or type
@@ -500,6 +523,22 @@ function AddItemForm() {
         imageUrls.push(publicUrl);
       }
 
+      const isNearbyHandoff = formData.type === "found" && foundHandoff === "nearby";
+      let handoffPhotoUrl: string | null = null;
+      if (isNearbyHandoff && handoffPhoto) {
+        const compressedHandoff = await compressImage(handoffPhoto);
+        const ext = compressedHandoff.name.split(".").pop();
+        const handoffFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+        const { error: handoffUploadError } = await supabase.storage
+          .from("items")
+          .upload(handoffFileName, compressedHandoff);
+        if (handoffUploadError) throw handoffUploadError;
+        const {
+          data: { publicUrl: handoffPublicUrl },
+        } = supabase.storage.from("items").getPublicUrl(handoffFileName);
+        handoffPhotoUrl = handoffPublicUrl;
+      }
+
       const itemData = {
         user_id: userId,
         title: finalTitle,
@@ -509,6 +548,9 @@ function AddItemForm() {
         phone_number: formData.phone,
         contact_telegram: contactTelegram,
         contact_whatsapp: contactWhatsapp,
+        handoff_type: formData.type === "found" ? foundHandoff : null,
+        handoff_phone: isNearbyHandoff ? formData.phone : null,
+        handoff_photo_url: handoffPhotoUrl,
         reward:
           formData.type === "lost"
             ? rewardEnabled
@@ -656,7 +698,7 @@ function AddItemForm() {
                 </h2>
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3">
-                {images.length < 5 && (
+                {images.length < 4 && (
                   <div
                     onClick={() => setShowPhotoChoice(true)}
                     className="aspect-square flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 transition-all group order-first"
@@ -871,6 +913,53 @@ function AddItemForm() {
                       <RadioGroupItem
                         value={opt.value}
                         id={`loc-${opt.value}`}
+                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-zinc-200 dark:border-zinc-600 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      />
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </div>
+          )}
+
+          {/* Step 7: Нигоҳ медорӣ ё месупорӣ? — танҳо барои formData.type === "found" */}
+          {step === 7 && (
+            <div className="space-y-6 max-w-lg mx-auto w-full">
+              <div className="text-center space-y-1">
+                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                  {t("addHandoffStep.title")}
+                </h2>
+              </div>
+              <RadioGroup
+                value={foundHandoff || ""}
+                onValueChange={(val) => setFoundHandoff(val as "self" | "nearby")}
+                className="grid grid-cols-1 gap-3"
+              >
+                {(
+                  [
+                    { value: "self", emoji: "🤝" },
+                    { value: "nearby", emoji: "🏪" },
+                  ] as const
+                ).map((opt) => (
+                  <div key={opt.value} className="relative">
+                    <Label
+                      htmlFor={`handoff-${opt.value}`}
+                      className="flex items-center gap-3 rounded-2xl bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    >
+                      <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-xl bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
+                        {opt.emoji}
+                      </div>
+                      <div className="flex-1">
+                        <span className="block font-bold text-base min-[1084px]:text-lg leading-snug">
+                          {t(`addHandoffStep.${opt.value}`)}
+                        </span>
+                        <span className="text-zinc-400 text-[13px] min-[1084px]:text-sm font-medium">
+                          {t(`addHandoffStep.${opt.value}Desc`)}
+                        </span>
+                      </div>
+                      <RadioGroupItem
+                        value={opt.value}
+                        id={`handoff-${opt.value}`}
                         className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-zinc-200 dark:border-zinc-600 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
                       />
                     </Label>
@@ -1136,28 +1225,79 @@ function AddItemForm() {
             <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1 mb-4">
                 <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {t("contactInfo") || "Contact Information"}
+                  {formData.type === "found" && foundHandoff === "nearby"
+                    ? t("addHandoffStep.phoneStepTitle")
+                    : t("contactInfo") || "Contact Information"}
                 </h2>
               </div>
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-[11px] min-[1084px]:text-xs font-bold tracking-wider text-zinc-500 dark:text-zinc-400 ml-1">
-                    {t("phoneLabel")}
+                    {formData.type === "found" && foundHandoff === "nearby"
+                      ? t("addHandoffStep.phoneLabel")
+                      : t("phoneLabel")}
                   </Label>
-                  <Input
-                    placeholder={t("phoneLabel")}
-                    className="rounded-xl h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 dark:text-emerald-400 px-5 transition-all"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        phone: e.target.value.replace(/[^0-9]/g, ""),
-                      }))
-                    }
-                    inputMode="numeric"
-                    maxLength={9}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-base min-[1084px]:text-lg text-emerald-600 dark:text-emerald-400 pointer-events-none">
+                      +
+                    </span>
+                    <Input
+                      placeholder={
+                        formData.type === "found" && foundHandoff === "nearby"
+                          ? t("addHandoffStep.phonePlaceholder")
+                          : undefined
+                      }
+                      className="rounded-xl h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 dark:text-emerald-400 pl-9 pr-5 transition-all"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          phone: e.target.value.replace(/[^0-9]/g, ""),
+                        }))
+                      }
+                      inputMode="numeric"
+                      maxLength={9}
+                    />
+                  </div>
                 </div>
+
+                {formData.type === "found" && foundHandoff === "nearby" && (
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] min-[1084px]:text-xs font-bold tracking-wider text-zinc-500 dark:text-zinc-400 ml-1">
+                      {t("addHandoffStep.photoLabel")}
+                    </Label>
+                    {handoffPreview ? (
+                      <div className="relative w-28 h-28 rounded-xl overflow-hidden group bg-white dark:bg-zinc-800">
+                        <Image
+                          src={handoffPreview}
+                          alt="Handoff preview"
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setHandoffFile(null)}
+                          className="absolute top-1.5 right-1.5 bg-white/90 dark:bg-black/90 text-red-500 p-1 rounded-lg z-20"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="w-28 h-28 flex items-center justify-center border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-800 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 transition-all group">
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={(e) => setHandoffFile(e.target.files?.[0] || null)}
+                        />
+                        <div className="w-10 h-10 rounded-full bg-canvas dark:bg-zinc-700 flex items-center justify-center text-zinc-400 dark:text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                          <Plus className="w-5 h-5" strokeWidth={3} />
+                        </div>
+                      </label>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-xl bg-white dark:bg-zinc-800 px-4 py-3">
                     <Checkbox

@@ -18,6 +18,9 @@ export interface Item {
   phone_number?: string;
   contact_telegram?: boolean;
   contact_whatsapp?: boolean;
+  handoff_type?: "self" | "nearby" | null;
+  handoff_phone?: string | null;
+  handoff_photo_url?: string | null;
   created_at: string;
   is_resolved: boolean;
   views?: number;
@@ -167,27 +170,31 @@ export const ItemService = {
       "id, user_id, title, description, category, type, date, reward, " +
       "is_resolved, is_guest, views, moderation_status, moderation_result, " +
       "expires_at, created_at, updated_at, status, deleted_at, location_type, " +
-      "expiry_notified_at, contact_telegram, contact_whatsapp";
+      "expiry_notified_at, contact_telegram, contact_whatsapp, " +
+      "handoff_type, handoff_photo_url";
 
-    // Query 1: item (бе phone_number) + аксҳо. Эълони нест-шуда
-    // (status = 'deleted') ҳатто барои соҳиби худаш низ "ёфт нашуд"
-    // бошад — RLS танҳо соҳибиро месанҷад, on статуси нест-шударо
+    // Query 1: item (бе phone_number/handoff_phone) + аксҳо. Эълони
+    // нест-шуда (status = 'deleted') ҳатто барои соҳиби худаш низ "ёфт
+    // нашуд" бошад — RLS танҳо соҳибиро месанҷад, on статуси нест-шударо
     // намедонад, бинобар ин филтр ҳамин ҷо лозим аст.
-    // Query 2 (параллел): рақами телефон, алоҳида, тавассути RPC.
-    const [{ data: item, error }, { data: phone }] = await Promise.all([
-      client
-        .from("items")
-        .select(`${ITEM_COLUMNS}, images:item_images(image_url)`)
-        .eq("id", id)
-        .or("status.is.null,status.neq.deleted")
-        .maybeSingle(),
-      client.rpc("get_item_phone", { p_item_id: id }),
-    ]);
+    // Query 2, 3 (параллел): рақамҳо, алоҳида, тавассути RPC (ҳамон
+    // ҳимояи як-эълон-дар-як-дархост, ниг. изоҳи боло).
+    const [{ data: item, error }, { data: phone }, { data: handoffPhone }] =
+      await Promise.all([
+        client
+          .from("items")
+          .select(`${ITEM_COLUMNS}, images:item_images(image_url)`)
+          .eq("id", id)
+          .or("status.is.null,status.neq.deleted")
+          .maybeSingle(),
+        client.rpc("get_item_phone", { p_item_id: id }),
+        client.rpc("get_item_handoff_phone", { p_item_id: id }),
+      ]);
 
     if (error) throw error;
     if (!item) return null;
 
-    // Query 3: profile аз VIEW ба таври алоҳида (барои пешгирии мушкили FK дар VIEW)
+    // Query 4: profile аз VIEW ба таври алоҳида (барои пешгирии мушкили FK дар VIEW)
     const { data: profile } = await client
       .from("public_profiles")
       .select("first_name, last_name, avatar_url, is_verified")
@@ -197,6 +204,7 @@ export const ItemService = {
     return {
       ...item,
       phone_number: phone ?? undefined,
+      handoff_phone: handoffPhone ?? undefined,
       profiles: profile ?? null,
     } as Item;
   },

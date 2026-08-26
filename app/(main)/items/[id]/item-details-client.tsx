@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   ShieldAlert,
   Loader2,
+  Store,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -554,6 +555,27 @@ export default function ItemDetailsClient({
                 />
               </Button>
             </div>
+
+            {item?.handoff_type === "nearby" && (
+              <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Store className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                    {t("handoffCardTitle")}
+                  </span>
+                </div>
+                {item.handoff_photo_url && (
+                  <div className="relative w-full h-40 rounded-xl overflow-hidden bg-white dark:bg-zinc-800">
+                    <Image
+                      src={item.handoff_photo_url}
+                      alt={t("handoffCardTitle")}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="mt-auto flex flex-col gap-3">
               {isLoaded && isOwner ? (
