@@ -17,7 +17,8 @@ import { unstable_cache } from "next/cache";
 import { translations } from "@/lib/translations";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { SOCIALS, socialHref, socialPrefix } from "@/components/social-icons";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
+import { QrSaveContactButton } from "@/components/qr-save-contact-button";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -32,9 +33,15 @@ interface Props {
 // як RPC-и сабук, кэшшуда (10 сония) — ҳам generateMetadata, ҳам саҳифа
 // аз ҳамин истифода мебаранд. increment_qr_scan_count АЗ ин кэш берун
 // аст (поён), чунки ҳар кушоиши воқеӣ бояд ҳамчун scan ҳисоб шавад.
+//
+// `supabaseAdmin` (на анони ошкоро) қасдан: пас аз миграцияи
+// 20260824020000 ин RPC-ҳо аз anon/authenticated REVOKE шудаанд — то
+// касе бо калиди ошкорои `NEXT_PUBLIC_SUPABASE_ANON_KEY` мустақим
+// (бе гузаштан аз ин саҳифа) рақами ҳазорон корбарро паси ҳам талаб
+// карда натавонад. Рафтори намоён барои корбар айнан ҳамин мемонад.
 const getCachedQrContact = unstable_cache(
   async (id: string) => {
-    const { data, error } = await supabase.rpc("get_qr_contact", { p_id: id });
+    const { data, error } = await supabaseAdmin.rpc("get_qr_contact", { p_id: id });
     return { profile: data?.[0] ?? null, error };
   },
   ["qr-contact"],
@@ -91,7 +98,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
   // ин ҷо расидааст). Дар Server Component await лозим аст — баъд аз ба охир
   // расидани render, кори "background" кафолат надорад, ки иҷро шавад.
   if (profile.is_qr_active) {
-    await supabase.rpc("increment_qr_scan_count", { p_id: id });
+    await supabaseAdmin.rpc("increment_qr_scan_count", { p_id: id });
   }
 
   // Агар QR ҒАЙРИФАЪОЛ БОШАД
@@ -116,19 +123,39 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     );
   }
 
+  // 5 рақами охирро бо нуқта мепӯшонад — пайванди воқеӣ (tel:/wa.me/t.me)
+  // пурра мемонад, танҳо матни РӮИ ЭКРАН барои scraper хондашаванда намемонад.
+  const maskTail = (raw: string) => (raw.length > 5 ? raw.slice(0, -5) + "....." : raw);
+
+  // `profile.phone`/`secondary_phone` дар пойгоҳ рамзи кишвар (992)
+  // надоранд — фақат он илова мешавад, боқимонда РАҚАМ (бо "00"-и
+  // ибтидоияш низ) айнан ҳамон тавре ки сабт шудааст мемонад.
+  const toE164 = (raw: string) => {
+    const digits = raw.replace(/\D/g, "");
+    return digits.startsWith("992") ? `+${digits}` : `+992${digits}`;
+  };
+
   // Танҳо шабакаҳое, ки соҳиб пур кардааст ВА пайвандашон эътибор дорад.
   // `socialHref` барои матни нодуруст `null` бармегардонад — беҳтар аст
   // нишона набошад, назар ба он ки ба саҳифаи вуҷуднадошта барад.
   // `display` — қимати воқеӣ (@ном ё +рақам), то дар паҳлуи иконаи ҳар
-  // шабака чӣ будани он намоён бошад, на танҳо номи шабака.
+  // шабака чӣ будани он намоён бошад, на танҳо номи шабака. Барои
+  // рақамҳо (WhatsApp ҳамеша, Telegram агар рақам бошад) ниқоб мехӯрад.
   const socialLinks = SOCIALS.map((s) => {
     const raw = (profile[s.key] ?? "").trim();
+    const isPhoneLike = s.key === "whatsapp" || (s.key === "telegram" && /^\d+$/.test(raw));
+    const shown = isPhoneLike ? maskTail(raw) : raw;
     return {
       ...s,
       href: socialHref(s.key, raw),
-      display: socialPrefix(s.key, raw) + raw,
+      display: socialPrefix(s.key, raw) + shown,
     };
   }).filter((s): s is typeof s & { href: string } => s.href !== null);
+
+  const phoneIntl = profile.phone ? toE164(profile.phone) : "";
+  const secondaryPhoneIntl = profile.secondary_phone ? toE164(profile.secondary_phone) : "";
+  const phoneShown = phoneIntl ? maskTail(phoneIntl) : "";
+  const secondaryPhoneShown = secondaryPhoneIntl ? maskTail(secondaryPhoneIntl) : "";
 
   // Агар QR ФАЪОЛ БОШАД - САҲИФАИ ПУРРА (як экран, бе скролл)
   return (
@@ -186,14 +213,19 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
       {/* Рӯйхат: шабакаҳои иҷтимоӣ (иконаи брендӣ + ном/рақам) ва тугмаҳои
           занг — ҳама ҳамчун сатрҳои як рӯйхат, канори каме гирд (аз
           намунаи мисол камтар). */}
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 mt-5 sm:mt-6">
+      <div className="min-h-0 overflow-y-auto flex flex-col gap-2 mt-5 sm:mt-6">
         {profile.phone ? (
           <a
-            href={`tel:${profile.phone}`}
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-emerald-500 text-white font-normal text-sm transition-transform active:scale-[0.98]"
+            href={`tel:${phoneIntl}`}
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
           >
-            <Phone className="w-5 h-5 shrink-0" />
-            <span className="truncate">{t("contactOwner")}</span>
+            <span className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[#25D366] shrink-0">
+              <Phone className="w-4 h-4 text-white" />
+            </span>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-sm font-normal truncate">{t("contactOwner")}</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{phoneShown}</p>
+            </div>
           </a>
         ) : (
           <div className="flex items-center justify-center min-h-14 px-3.5 py-2 rounded-xl bg-amber-50 text-amber-600 font-normal text-sm">
@@ -203,11 +235,16 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
 
         {profile.secondary_phone && (
           <a
-            href={`tel:${profile.secondary_phone}`}
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 font-normal text-sm transition-transform active:scale-[0.98]"
+            href={`tel:${secondaryPhoneIntl}`}
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
           >
-            <Phone className="w-5 h-5 shrink-0" />
-            <span className="truncate">{t("contactSecondary")}</span>
+            <span className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[#25D366] shrink-0">
+              <Phone className="w-4 h-4 text-white" />
+            </span>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-sm font-normal truncate">{t("contactSecondary")}</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{secondaryPhoneShown}</p>
+            </div>
           </a>
         )}
 
@@ -227,6 +264,32 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
           </a>
         ))}
       </div>
+
+      {/* Ду spacer-и flex-1-и баробар — тугма дар маркази фазои холии
+          боқимонда меистад, то фосила аз рӯйхат ва то поёни экран баробар шавад. */}
+      <div className="flex-1" />
+      <div className="shrink-0">
+        <QrSaveContactButton
+          name={`${profile.first_name} ${profile.last_name}`}
+          avatarUrl={profile.avatar_url}
+          phone={phoneIntl || null}
+          secondaryPhone={secondaryPhoneIntl || null}
+          socials={{
+            telegram: profile.telegram,
+            instagram: profile.instagram,
+            whatsapp: profile.whatsapp,
+            facebook: profile.facebook,
+          }}
+          labels={{
+            save: t("saveContactToGallery"),
+            saved: t("contactSavedSuccess"),
+            error: t("error"),
+            contactOwner: t("contactOwner"),
+            contactSecondary: t("contactSecondary"),
+          }}
+        />
+      </div>
+      <div className="flex-1" />
     </div>
   );
 }

@@ -13,17 +13,19 @@
  */
 import { redirect, notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase-admin";
 
 interface Props {
   params: Promise<{ code: string }>;
 }
 
 // Рамз → ID. Кэш 5 дақиқа: рамз ҳаргиз тағйир намеёбад, пас ҳар скан
-// набояд ба пойгоҳ равад.
+// набояд ба пойгоҳ равад. `supabaseAdmin` — пас аз миграцияи
+// 20260824020000 ин RPC низ аз anon/authenticated REVOKE шудааст (ниг.
+// шарҳи муфассал дар app/qr/[id]/page.tsx).
 const getCachedId = unstable_cache(
   async (code: string) => {
-    const { data } = await supabase.rpc("get_id_by_qr_code", { p_code: code });
+    const { data } = await supabaseAdmin.rpc("get_id_by_qr_code", { p_code: code });
     return (data as string | null) ?? null;
   },
   ["qr-code-id"],

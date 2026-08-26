@@ -225,11 +225,13 @@ export const translations: Record<string, TranslationDict> = {
     qrDeactivatedSuccess: "QR-профил ғайрифаъол шуд",
     qrProfileInactive:
       "Ин QR-код муваққатан аз ҷониби соҳибаш (%{name}) ғайрифаъол карда шудааст.",
-    contactSecondary: "Занг ба наздикон",
+    contactSecondary: "Тамос бо аъзои оила",
     additionalInfo: "Маълумоти иловагӣ...",
     foundUserItem:
       "Шумо ашёи %{name}-ро ёфтед. Лутфан бо ӯ тамос гиред, то ашёро баргардонед.",
     foundUserShort: "Шумо %{name}-ро ёфтед",
+    saveContactToGallery: "Захира дар галерея",
+    contactSavedSuccess: "Тамос бо муваффақият захира шуд!",
 
     contactOwner: "Тамос бо соҳиб",
     scanOwnerDesc: "Ин шахс мехоҳад ашёҳои гумшудаашро пайдо кунад.",
@@ -399,12 +401,12 @@ export const translations: Record<string, TranslationDict> = {
     phoneMinLength: "Рақами телефон бояд на кам аз 9 рақам бошад",
     savePhone: "Захира",
     phoneLabel: "Рақами телефони шумо",
-    phoneSecondaryLabel: "Рақами дуюми иловагӣ (наздикон)",
+    phoneSecondaryLabel: "Рақами аъзои оила",
     phoneSecondaryDescription:
       "Дар ҳолати гум шудани телефони шумо ё ҷавоб надоданатон, ёбанда ба ин рақам занг мезанад.",
     phoneSecondaryNote: "",
     phonePlaceholder: "992XXXXXXXXX",
-    phoneSecondaryPlaceholder: "Рақами наздикон",
+    phoneSecondaryPlaceholder: "Рақами аъзои оила",
     phonesMustBeDifferent:
       "Рақами аввал ва дуюм бояд аз ҳам фарқ кунанд. Лутфан рақами ягон наздикатонро ҳамчун эҳтиётӣ ворид кунед.",
     locationLabel: "Макони гумшавӣ ё ёфтшавӣ",
@@ -955,22 +957,24 @@ export const translations: Record<string, TranslationDict> = {
     qrDeactivatedSuccess: "QR-профиль деактивирован",
     qrProfileInactive:
       "Этот QR-код временно деактивирован владельцем (%{name}).",
-    contactSecondary: "Связаться с близкими",
+    contactSecondary: "Связаться с членом семьи",
     additionalInfo: "Дополнительная информация...",
     foundUserItem:
       "Вы нашли вещь пользователя %{name}. Пожалуйста, свяжитесь с ним, чтобы вернуть находку.",
     foundUserShort: "Вы нашли %{name}",
+    saveContactToGallery: "Сохранить в галерею",
+    contactSavedSuccess: "Контакт успешно сохранён!",
     phoneRequiredTitle: "Контакт",
     phoneRequiredDesc: "Введите ваши номера",
     phoneMinLength: "Номер телефона должен быть не менее 9 цифр",
     savePhone: "Сохранить",
     phoneLabel: "Ваш номер телефона",
-    phoneSecondaryLabel: "Второй дополнительный номер (близких)",
+    phoneSecondaryLabel: "Номер члена семьи",
     phoneSecondaryDescription:
       "В случае потери вашего телефона или если вы не ответите, нашедший сможет позвонить по этому номеру.",
     phoneSecondaryNote: "",
     phonePlaceholder: "992XXXXXXXXX",
-    phoneSecondaryPlaceholder: "Номер родных",
+    phoneSecondaryPlaceholder: "Номер члена семьи",
 
     contactOwner: "Связаться с владельцем",
     scanOwnerDesc: "Этот человек хочет найти свои утерянные вещи.",
@@ -1681,11 +1685,13 @@ export const translations: Record<string, TranslationDict> = {
     qrDeactivatedSuccess: "QR Profile Deactivated",
     qrProfileInactive:
       "This QR code has been temporarily deactivated by the owner (%{name}).",
-    contactSecondary: "Call Emergency Contact",
+    contactSecondary: "Contact Family Member",
     additionalInfo: "Additional info...",
     foundUserItem:
       "You've found an item belonging to %{name}. Please contact them to return it.",
     foundUserShort: "You found %{name}",
+    saveContactToGallery: "Save to gallery",
+    contactSavedSuccess: "Contact saved successfully!",
 
     contactOwner: "Contact Owner",
     scanOwnerDesc: "This person wants to find their lost items.",
@@ -1850,12 +1856,12 @@ export const translations: Record<string, TranslationDict> = {
     phoneMinLength: "Phone number must be at least 9 digits",
     savePhone: "Save",
     phoneLabel: "Your Phone Number",
-    phoneSecondaryLabel: "Second additional number (relative)",
+    phoneSecondaryLabel: "Family member's number",
     phoneSecondaryDescription:
       "In case your phone is lost or you don't answer, the finder will call this number.",
     phoneSecondaryNote: "",
     phonePlaceholder: "992XXXXXXXXX",
-    phoneSecondaryPlaceholder: "Family number",
+    phoneSecondaryPlaceholder: "Family member's number",
     phonesMustBeDifferent:
       "Primary and secondary numbers must be different. Please provide a relative's number as backup.",
     locationLabel: "Location of loss or discovery",

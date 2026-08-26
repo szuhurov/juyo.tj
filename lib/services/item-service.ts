@@ -148,32 +148,57 @@ export const ItemService = {
 
   /**
    * Гирифтани маълумоти муфассали як ашё ва профили соҳиби он.
+   *
+   * `phone_number` қасдан аз SELECT-и `items` берун аст: пас аз
+   * миграцияи 20260824020000 стуни он барои anon/authenticated бо
+   * REVOKE пӯшида шудааст (пеш аз он `select=phone_number,user_id` —
+   * дархости мустақими PostgREST бо танҳо калиди ошкоро — рақами
+   * ТАМОМИ эълонҳои тасдиқшударо дар як дархост медод). Рақам акнун
+   * танҳо як-эълон-дар-як-дархост тавассути RPC-и `get_item_phone`
+   * гирифта мешавад — ҳамон шарти намоёнӣ, вале bulk-scraping имконнопазир.
    */
   async getItemDetails(id: string, supabaseClient?: SupabaseClient) {
     const client = supabaseClient || supabase;
 
-    // Query 1: item + images (FK-и мустақим мавҷуд аст, эмбед кор мекунад)
-    // Эълони нест-шуда (status = 'deleted') ҳатто барои соҳиби худаш низ
-    // "ёфт нашуд" бошад — RLS танҳо соҳибиро месанҷад, on статуси
-    // нест-шударо намедонад, бинобар ин филтр ҳамин ҷо лозим аст.
-    const { data: item, error } = await client
-      .from("items")
-      .select("*, images:item_images(image_url)")
-      .eq("id", id)
-      .or("status.is.null,status.neq.deleted")
-      .maybeSingle();
+    // Рӯйхати стунҳо ДАСТӢ аст (на `*`) — маҳз барои берун мондани
+    // `phone_number`. Агар сутуни нав ба `items` илова шавад, инро низ
+    // навсозӣ кунед.
+    const ITEM_COLUMNS =
+      "id, user_id, title, description, category, type, date, reward, " +
+      "is_resolved, is_guest, views, moderation_status, moderation_result, " +
+      "expires_at, created_at, updated_at, status, deleted_at, location_type, " +
+      "expiry_notified_at, contact_telegram, contact_whatsapp";
+
+    // Query 1: item (бе phone_number) + аксҳо. Эълони нест-шуда
+    // (status = 'deleted') ҳатто барои соҳиби худаш низ "ёфт нашуд"
+    // бошад — RLS танҳо соҳибиро месанҷад, on статуси нест-шударо
+    // намедонад, бинобар ин филтр ҳамин ҷо лозим аст.
+    // Query 2 (параллел): рақами телефон, алоҳида, тавассути RPC.
+    const [{ data: item, error }, { data: phone }] = await Promise.all([
+      client
+        .from("items")
+        .select(`${ITEM_COLUMNS}, images:item_images(image_url)`)
+        .eq("id", id)
+        .or("status.is.null,status.neq.deleted")
+        .maybeSingle(),
+      client.rpc("get_item_phone", { p_item_id: id }),
+    ]);
 
     if (error) throw error;
     if (!item) return null;
 
-    // Query 2: profile аз VIEW ба таври алоҳида (барои пешгирии мушкили FK дар VIEW)
+    // Query 3: profile аз VIEW ба таври алоҳида (барои пешгирии мушкили FK дар VIEW)
     const { data: profile } = await client
       .from("public_profiles")
       .select("first_name, last_name, avatar_url, is_verified")
       .eq("id", item.user_id)
       .maybeSingle();
 
-    return { ...item, profiles: profile ?? null } as Item;
+    return {
+      ...item,
+      phone_number: phone ?? undefined,
+      profiles: profile ?? null,
+    } as Item;
   },
 
   async incrementView(id: string) {
