@@ -12,7 +12,7 @@ import { ProfileService } from "@/lib/services/profile-service"; // Барои �
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Барои тирезаҳои огоҳӣ
 import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Input } from "@/components/ui/input"; // Компоненти воридкунии матн
+import { PhoneInput } from "@/components/phone-input"; // Майдони телефон бо рамзи давлат
 import { Label } from "@/components/ui/label"; // Компоненти тамға
 import { Phone, Loader2 } from "lucide-react"; // Иконкаҳо
 import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
@@ -155,13 +155,10 @@ export function MandatoryPhoneModal() {
                 <Label className="text-[8px] font-bold text-zinc-400 tracking-widest ml-2">
                   {t('phoneLabel')}
                 </Label>
-                <Input 
-                  name="phone" 
-                  placeholder="XXXXXXXXX" 
-                  className="h-12 px-5 rounded-xl bg-zinc-50 dark:bg-zinc-800 font-bold text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none" 
-                  required 
-                  inputMode="numeric"
-                  onChange={(e) => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
+                <PhoneInput
+                  name="phone"
+                  placeholder="XXXXXXXXX"
+                  required
                 />
               </div>
 

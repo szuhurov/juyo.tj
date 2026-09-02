@@ -20,6 +20,7 @@ import type { PrivacyRegion } from "@/components/privacy-blur-editor";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/phone-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -1237,28 +1238,22 @@ function AddItemForm() {
                       ? t("addHandoffStep.phoneLabel")
                       : t("phoneLabel")}
                   </Label>
-                  <div className="relative">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 font-bold text-base min-[1084px]:text-lg text-emerald-600 dark:text-emerald-400 pointer-events-none">
-                      +
-                    </span>
-                    <Input
-                      placeholder={
-                        formData.type === "found" && foundHandoff === "nearby"
-                          ? t("addHandoffStep.phonePlaceholder")
-                          : undefined
-                      }
-                      className="rounded-xl h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg font-bold text-emerald-600 dark:text-emerald-400 pl-9 pr-5 transition-all"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          phone: e.target.value.replace(/[^0-9]/g, ""),
-                        }))
-                      }
-                      inputMode="numeric"
-                      maxLength={9}
-                    />
-                  </div>
+                  <PhoneInput
+                    placeholder={
+                      formData.type === "found" && foundHandoff === "nearby"
+                        ? t("addHandoffStep.phonePlaceholder")
+                        : undefined
+                    }
+                    containerClassName="h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800"
+                    className="text-base min-[1084px]:text-lg text-emerald-600 dark:text-emerald-400"
+                    value={formData.phone}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
+                  />
                 </div>
 
                 {formData.type === "found" && foundHandoff === "nearby" && (

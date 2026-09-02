@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"; // Компоненти туг�
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Барои нишон додани сурати корбар
 import { Skeleton } from "@/components/ui/skeleton"; // Барои ҳолати боргирии муваққатӣ
 import { Input } from "@/components/ui/input"; // Майдони воридкунии матн
+import { PhoneInput } from "@/components/phone-input"; // Майдони телефон бо рамзи давлат
 import { Label } from "@/components/ui/label"; // Сарлавҳаҳо барои майдонҳои форма
 import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
 import { getErrorMessage } from "@/lib/error-utils"; // Паёми хониданӣ аз хатогии Clerk/Supabase
@@ -79,10 +80,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"; // Барои тирезаҳои тасдиқкунанда (модалкаҳо)
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"; // Тирезаи умумии тасдиқи амал
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -625,22 +626,6 @@ function ProfileContent() {
     params.set("tab", tabId);
     router.push(`/profile?${params.toString()}`, { scroll: false });
   };
-
-  // Стейт барои тирезаи тасдиқи амалҳо (Confirm Dialog)
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean;
-    title: string;
-    description: string;
-    onConfirm: () => void;
-    variant: "default" | "destructive" | "warning";
-    isLoading?: boolean;
-  }>({
-    open: false,
-    title: "",
-    description: "",
-    onConfirm: () => {},
-    variant: "default",
-  });
 
   // Элементҳои менюи паҳлӯӣ (Sidebar Menu)
   const LANGUAGES: Array<{ code: "tg" | "ru" | "en"; label: string }> = [
@@ -1606,49 +1591,27 @@ function ProfileContent() {
                         <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                           {t("phoneLabel")}
                         </Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-zinc-400 pointer-events-none">
-                            +
-                          </span>
-                          <Input
-                            name="phone"
-                            placeholder={t("phonePlaceholder")}
-                            defaultValue={profile?.phone || ""}
-                            className="h-10 pl-7 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
-                            inputMode="numeric"
-                            required
-                            onChange={(e) =>
-                              (e.target.value = e.target.value.replace(
-                                /[^0-9]/g,
-                                "",
-                              ))
-                            }
-                          />
-                        </div>
+                        <PhoneInput
+                          name="phone"
+                          placeholder={t("phonePlaceholder")}
+                          defaultValue={profile?.phone || ""}
+                          containerClassName="h-10 bg-white dark:bg-zinc-950"
+                          className="text-xs"
+                          required
+                        />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                           {t("phoneSecondaryLabel")}
                         </Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-xs text-zinc-400 pointer-events-none">
-                            +
-                          </span>
-                          <Input
-                            name="secondaryPhone"
-                            placeholder={t("phoneSecondaryPlaceholder")}
-                            defaultValue={profile?.secondary_phone || ""}
-                            className="h-10 pl-7 rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
-                            inputMode="numeric"
-                            required
-                            onChange={(e) =>
-                              (e.target.value = e.target.value.replace(
-                                /[^0-9]/g,
-                                "",
-                              ))
-                            }
-                          />
-                        </div>
+                        <PhoneInput
+                          name="secondaryPhone"
+                          placeholder={t("phoneSecondaryPlaceholder")}
+                          defaultValue={profile?.secondary_phone || ""}
+                          containerClassName="h-10 bg-white dark:bg-zinc-950"
+                          className="text-xs"
+                          required
+                        />
                       </div>
                     </div>
 
@@ -2088,56 +2051,6 @@ function ProfileContent() {
         </div>
       </div>
 
-      {/* Тирезаҳои тасдиқ (Dialogs/Modals) */}
-      <Dialog
-        open={confirmDialog.open}
-        onOpenChange={(open) =>
-          !open && setConfirmDialog((prev) => ({ ...prev, open: false }))
-        }
-      >
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
-              {confirmDialog.title}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
-              {confirmDialog.description}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-row gap-3 sm:justify-start pt-2">
-            <Button
-              type="button"
-              className={cn(
-                "flex-1 h-12 rounded-xl font-bold tracking-widest text-[10px]",
-                confirmDialog.variant === "destructive"
-                  ? "bg-red-600 hover:bg-red-700 text-white"
-                  : "bg-emerald-500 hover:bg-emerald-600 text-white",
-              )}
-              onClick={() => confirmDialog.onConfirm()}
-              disabled={confirmDialog.isLoading}
-            >
-              {confirmDialog.isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : confirmDialog.variant === "destructive" ? (
-                t("delete")
-              ) : (
-                t("confirm")
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1 h-12 rounded-xl font-bold tracking-widest text-[10px] border-zinc-200"
-              onClick={() =>
-                setConfirmDialog((prev) => ({ ...prev, open: false }))
-              }
-            >
-              {t("cancel")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Модалкаи ҳатмии рақами телефон ва амният ҳангоми насби QR */}
       <Dialog
         open={showSecondaryPhoneModal}
@@ -2170,21 +2083,11 @@ function ProfileContent() {
                     <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                       {t("phoneLabel")}
                     </Label>
-                    <div className="relative">
-                      <Input
-                        name="phone"
-                        placeholder="XXXXXXXXX"
-                        className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 font-bold text-lg tracking-wider border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
-                        required
-                        inputMode="numeric"
-                        onChange={(e) =>
-                          (e.target.value = e.target.value.replace(
-                            /[^0-9]/g,
-                            "",
-                          ))
-                        }
-                      />
-                    </div>
+                    <PhoneInput
+                      name="phone"
+                      placeholder="XXXXXXXXX"
+                      required
+                    />
                   </div>
                 )}
 
@@ -2195,21 +2098,12 @@ function ProfileContent() {
                       <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.label")}
                       </Label>
-                      <div className="relative">
-                        <Input
-                          name="secondary_phone"
-                          placeholder={t("qrSecondaryModal.placeholder")}
-                          className="h-12 px-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 font-bold text-lg tracking-wider text-emerald-600 dark:text-emerald-400 border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
-                          required
-                          inputMode="numeric"
-                          onChange={(e) =>
-                            (e.target.value = e.target.value.replace(
-                              /[^0-9]/g,
-                              "",
-                            ))
-                          }
-                        />
-                      </div>
+                      <PhoneInput
+                        name="secondary_phone"
+                        placeholder={t("qrSecondaryModal.placeholder")}
+                        className="text-emerald-600 dark:text-emerald-400"
+                        required
+                      />
                       <p className="text-[8px] font-bold text-zinc-400 px-1 leading-tight tracking-wider">
                         {t("phoneSecondaryDescription") ||
                           "Дар ҳолати гум шудани телефони шумо, ёбанда ба ин рақам занг мезанад."}
@@ -2497,47 +2391,20 @@ function ProfileContent() {
 
 
       {/* Delete Account Confirmation Modal */}
-      <Dialog
+      <ConfirmDialog
         open={showDeleteAccountModal}
         onOpenChange={(open) =>
           !deletingAccount && setShowDeleteAccountModal(open)
         }
-      >
-        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
-          <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <Trash2 className="w-8 h-8 text-red-500" />
-            </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
-              {t("deleteAccountConfirmTitle")}
-            </DialogTitle>
-            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
-              {t("deleteAccountConfirmDesc")}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-6 flex flex-col gap-3">
-            <Button
-              onClick={handleDeleteAccount}
-              disabled={deletingAccount}
-              className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 transition-all"
-            >
-              {deletingAccount ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                t("deleteAccount")
-              )}
-            </Button>
-            <Button
-              variant="ghost"
-              disabled={deletingAccount}
-              onClick={() => setShowDeleteAccountModal(false)}
-              className="w-full h-11 rounded-xl font-bold tracking-widest text-[10px] text-zinc-500"
-            >
-              {t("cancel")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        icon={Trash2}
+        variant="destructive"
+        title={t("deleteAccountConfirmTitle")}
+        description={t("deleteAccountConfirmDesc")}
+        confirmLabel={t("deleteAccount")}
+        cancelLabel={t("cancel")}
+        onConfirm={handleDeleteAccount}
+        loading={deletingAccount}
+      />
 
       {/* Change Password Modal */}
       <Dialog open={showChangePasswordModal} onOpenChange={setShowChangePasswordModal}>

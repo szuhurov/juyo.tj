@@ -51,7 +51,8 @@ export async function POST(req: NextRequest) {
 
     const { data: updated, error } = await supabaseAdmin
       .from("profiles")
-      .update({
+      .upsert({
+        id: userId,
         first_name: firstName,
         last_name: lastName,
         phone,
@@ -60,7 +61,6 @@ export async function POST(req: NextRequest) {
         ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", userId)
       .select()
       .single();
     if (error) throw error;

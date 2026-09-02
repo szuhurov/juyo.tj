@@ -416,6 +416,9 @@ export const translations: Record<string, TranslationDict> = {
     phoneSecondaryLabel: "Рақами аъзои оила",
     phoneSecondaryDescription:
       "Дар ҳолати гум шудани телефони шумо ё ҷавоб надоданатон, ёбанда ба ин рақам занг мезанад.",
+    selectCountry: "Интихоби давлат",
+    searchCountryPlaceholder: "Ҷустуҷӯи давлат ё рамз",
+    countryNoResults: "Ҳеҷ чиз ёфт нашуд",
     phoneSecondaryNote: "",
     phonePlaceholder: "",
     phoneSecondaryPlaceholder: "Рақами аъзои оила",
@@ -984,6 +987,9 @@ export const translations: Record<string, TranslationDict> = {
     phoneSecondaryLabel: "Номер члена семьи",
     phoneSecondaryDescription:
       "В случае потери вашего телефона или если вы не ответите, нашедший сможет позвонить по этому номеру.",
+    selectCountry: "Выбор страны",
+    searchCountryPlaceholder: "Поиск страны или кода",
+    countryNoResults: "Ничего не найдено",
     phoneSecondaryNote: "",
     phonePlaceholder: "",
     phoneSecondaryPlaceholder: "Номер члена семьи",
@@ -1895,6 +1901,9 @@ export const translations: Record<string, TranslationDict> = {
     phoneSecondaryLabel: "Family member's number",
     phoneSecondaryDescription:
       "In case your phone is lost or you don't answer, the finder will call this number.",
+    selectCountry: "Select country",
+    searchCountryPlaceholder: "Search country or code",
+    countryNoResults: "No results found",
     phoneSecondaryNote: "",
     phonePlaceholder: "",
     phoneSecondaryPlaceholder: "Family member's number",
