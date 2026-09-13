@@ -352,8 +352,6 @@ function AddItemForm() {
       );
 
       try {
-        const supabaseClient = userId ? createClerkSupabaseClient(getToken) : anonSupabase;
-
         const finalCheckData = new FormData();
         const compressedForCheck = await Promise.all(
           images.map((img) => compressImage(img, 1024, 0.7)),
@@ -365,10 +363,16 @@ function AddItemForm() {
         finalCheckData.append("type", formData.type || "lost");
         finalCheckData.append("mode", "final_check");
 
-        const { data: checkData, error: checkError } =
-          await supabaseClient.functions.invoke("ai-brain", {
-            body: finalCheckData,
-          });
+        // ai-brain акнун тавассути route-и худи сервер (na бевосита аз
+        // браузер ба Supabase) даъват мешавад — ниг. app/api/items/moderate.
+        const checkRes = await fetch("/api/items/moderate", {
+          method: "POST",
+          body: finalCheckData,
+        });
+        const checkData = await checkRes.json().catch(() => null);
+        const checkError = !checkRes.ok
+          ? new Error(checkData?.error || "Санҷиши AI ноком шуд")
+          : null;
 
         if (checkError || (checkData && checkData.is_safe === false)) {
           setModerationStatus("failed");
