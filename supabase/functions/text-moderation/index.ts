@@ -45,8 +45,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-5.5",
-          reasoning_effort: "medium",
+          model: "gpt-4o",
           messages: [
             {
               role: "system",
