@@ -54,6 +54,14 @@ const QUICK_ACTIONS = [
   { value: "none", icon: HelpCircle },
 ] as const;
 
+// Нусхаи МУРАТТАБШУДА барои филтри home (на худи CATEGORIES) — "Дигар"
+// дар охир меистад, аммо тартиби аслии CATEGORIES (барои қадами
+// категорияи wizard-и items/add) дахлнопазир мемонад. Айнан ҳамин
+// қолаб дар мобилӣ (juyoapp/app/(tabs)/index.tsx — CAT_FILTER_ITEMS).
+const CATEGORY_FILTER_ITEMS = [...CATEGORIES].sort((a, b) =>
+  a.name === "Other" ? 1 : b.name === "Other" ? -1 : 0,
+);
+
 function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
@@ -345,7 +353,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   >
                     {t("all")}
                   </button>
-                  {CATEGORIES.map((cat) => {
+                  {CATEGORY_FILTER_ITEMS.map((cat) => {
                     const active = category === cat.name;
                     return (
                       <button

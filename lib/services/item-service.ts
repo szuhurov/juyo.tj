@@ -39,16 +39,15 @@ export interface Item {
 }
 
 // Категорияҳои асосии ашёҳо барои филтр ва ҷустуҷӯ
-// Талаби корбар: "Дигар" (Other) дар охир бошад, на дар миён.
 export const CATEGORIES = [
   { id: "1", name: "Electronics", icon: "📱" },
   { id: "2", name: "Documents", icon: "📄" },
   { id: "3", name: "Keys", icon: "🔑" },
   { id: "4", name: "Clothing", icon: "👕" },
   { id: "5", name: "Pets", icon: "🐾" },
+  { id: "6", name: "Other", icon: "📦" },
   { id: "7", name: "LicensePlate", icon: "🚗" },
   { id: "8", name: "Wallet", icon: "👛" },
-  { id: "6", name: "Other", icon: "📦" },
 ];
 
 export const ItemService = {
