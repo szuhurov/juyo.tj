@@ -70,8 +70,6 @@ export default function ItemDetailsClient({
   const { getToken, userId, isLoaded } = useAuth();
   const queryClient = useQueryClient();
 
-  // undefined = Clerk ҳанӯз auth-ро санҷидааст, null = вуруд накарда, string = вуруд кардааст
-  const [token, setToken] = useState<string | null | undefined>(undefined);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
@@ -83,15 +81,10 @@ export default function ItemDetailsClient({
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
 
-  useEffect(() => {
-    if (isLoaded) {
-      getToken().then(setToken);
-    }
-  }, [isLoaded, getToken]);
-
   const { data: item, isLoading: loading } = useItemDetails(
     id,
-    token,
+    isLoaded ? !!userId : undefined,
+    getToken,
     initialItem,
   );
   const isOwner = !!userId && userId === item?.user_id;
@@ -169,9 +162,7 @@ export default function ItemDetailsClient({
 
   const checkInitialSavedState = useCallback(async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-      const supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(getToken);
       const { data } = await supabase
         .from("saved_items")
         .select("item_id")
@@ -205,8 +196,7 @@ export default function ItemDetailsClient({
     if (isToggling) return;
     setIsToggling(true);
     try {
-      const token = await getToken();
-      const supabase = createClerkSupabaseClient(token!);
+      const supabase = createClerkSupabaseClient(getToken);
       const saved = await ItemService.toggleSaveItem(supabase, userId!, id);
       setIsSaved(saved);
       toast.success(saved ? t("addedToSaved") : t("removedFromSaved"));
@@ -259,8 +249,7 @@ export default function ItemDetailsClient({
   const handleResolved = async () => {
     setIsActionLoading(true);
     try {
-      const token = await getToken();
-      const supabase = createClerkSupabaseClient(token!);
+      const supabase = createClerkSupabaseClient(getToken);
       await ItemService.deleteItem(supabase, id);
       toast.success(t("itemResolvedSuccess"));
       router.push("/");
@@ -274,7 +263,7 @@ export default function ItemDetailsClient({
 
   if (!item) {
     // Skeleton нишон медиҳем агар: auth ҳанӯз муайян нашудааст ё query кор мекунад
-    if (token === undefined || loading) {
+    if (!isLoaded || loading) {
       return (
         <div className="mx-auto max-w-6xl md:pt-8 px-2.5 py-4 md:px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
@@ -302,9 +291,9 @@ export default function ItemDetailsClient({
 
   return (
     <TooltipProvider>
-      <div className="min-h-screen bg-white dark:bg-zinc-950 mx-auto max-w-6xl md:pt-8 md:px-4 -mb-20 pb-20 md:mb-0 md:pb-0">
+      <div className="min-h-screen bg-canvas mx-auto max-w-6xl md:pt-8 md:px-4 -mb-20 pb-20 md:mb-0 md:pb-0">
         <div className="flex flex-col md:grid md:grid-cols-2 gap-0 md:gap-12 md:items-start relative">
-          <div className="sticky top-12 sm:top-16 md:top-24 z-0 w-full h-[100vw] md:h-auto md:aspect-square flex items-start justify-center md:self-start">
+          <div className="sticky top-0 md:top-8 z-0 w-full h-[100vw] md:h-auto md:aspect-square flex items-start justify-center md:self-start">
             <div className="relative w-full h-full md:rounded-[32px] overflow-hidden border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 group shimmer-bg">
               <div
                 ref={scrollContainerRef}

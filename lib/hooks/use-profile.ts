@@ -12,14 +12,17 @@ export const PROFILE_KEYS = {
   detail: (userId: string) => ["profile", "detail", userId] as const,
 };
 
-export function useProfileQuery(userId: string | null | undefined, token: string | null) {
+export function useProfileQuery(
+  userId: string | null | undefined,
+  getToken: (() => Promise<string | null>) | undefined,
+) {
   return useQuery({
     queryKey: PROFILE_KEYS.detail(userId || ""),
     queryFn: () => {
-      const supabase = createClerkSupabaseClient(token!);
+      const supabase = createClerkSupabaseClient(getToken!);
       return ProfileService.getProfile(supabase, userId!);
     },
-    enabled: !!userId && !!token,
+    enabled: !!userId && !!getToken,
     staleTime: 1000 * 60 * 2, // 2 дақиқа — телефон/QR статус хеле кам иваз мешавад
   });
 }

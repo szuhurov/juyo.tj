@@ -206,9 +206,7 @@ function AddItemForm() {
     const fetchProfile = async () => {
       if (!userId) return;
       try {
-        const token = await getToken();
-        if (!token) return;
-        const supabase = createClerkSupabaseClient(token);
+        const supabase = createClerkSupabaseClient(getToken);
         const profile = await ProfileService.getProfile(supabase, userId);
         if (profile?.phone) {
           setFormData((prev) => ({ ...prev, phone: profile.phone as string }));
@@ -354,13 +352,7 @@ function AddItemForm() {
       );
 
       try {
-        let supabaseClient;
-        if (userId) {
-          const token = await getToken();
-          supabaseClient = createClerkSupabaseClient(token!);
-        } else {
-          supabaseClient = anonSupabase;
-        }
+        const supabaseClient = userId ? createClerkSupabaseClient(getToken) : anonSupabase;
 
         const finalCheckData = new FormData();
         const compressedForCheck = await Promise.all(
@@ -504,10 +496,7 @@ function AddItemForm() {
     };
 
     const publishWork = async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Authentication token missing");
-
-      const supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(getToken);
 
       const imageUrls = [];
       for (const file of finalImages) {
@@ -1389,7 +1378,7 @@ function AddItemForm() {
               <Button
                 size="lg"
                 onClick={nextStep}
-                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all"
+                className="flex-1 rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all"
               >
                 {t("next")}
               </Button>
@@ -1398,7 +1387,7 @@ function AddItemForm() {
               <Button
                 onClick={nextStep}
                 disabled={loading}
-                className="flex-[1.5] rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] bg-emerald-500 hover:bg-emerald-600 text-white font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] transition-all"
+                className="flex-1 rounded-2xl h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] bg-emerald-500 hover:bg-emerald-600 text-white font-bold tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] transition-all"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 animate-spin" />

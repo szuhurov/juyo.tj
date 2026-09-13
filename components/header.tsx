@@ -120,13 +120,13 @@ export function Header() {
 
   const navLinks = [
     { href: "/", value: "home", label: t("home"), icon: Home },
-    { href: "/profile", value: "profile", label: t("profile"), icon: User },
     {
       href: "/profile?tab=qr",
       value: "qr",
       label: t("qrMyCode"),
       icon: QrCode,
     },
+    { href: "/profile", value: "profile", label: t("profile"), icon: User },
   ];
 
   // Пешгирии Hydration Mismatch — синхронизатсияи "клиент омода аст" бо
@@ -268,8 +268,15 @@ export function Header() {
 
             {/* Паймоиши асосӣ барои Desktop */}
             <nav className="hidden lg:flex items-center space-x-1 bg-zinc-100/50 dark:bg-zinc-800/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
-              {mounted &&
-                navLinks.map((link) => {
+              {/* `mounted` пештар ин ҷо низ бо мақсади пешгирии hydration
+                  mismatch буд (аз рӯи locale-и localStorage/cookie), вале
+                  ин боиси "иконаҳо дертар пайдо мешаванд" мешуд — талаби
+                  корбар. `pathname`/`t()` дар аввалин рендери клиент бо
+                  SSR айнан якхелаанд (cookie-и `juyo-locale` бо localStorage
+                  ҳамвақт навсозӣ мешавад — ниг. lib/language-context.tsx),
+                  пас хатари воқеии mismatch хеле кам аст — арзиши он
+                  ба таъхири ҳатмии ҳар корбар намеарзад. */}
+              {navLinks.map((link) => {
                   const isQrTab = searchParams.get("tab") === "qr";
                   let isActive = false;
 
@@ -364,16 +371,6 @@ export function Header() {
               {!userId ? (
                 <div className="flex items-center gap-2">
                   <Button
-                    size="sm"
-                    className="rounded-lg font-bold text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4"
-                    asChild
-                  >
-                    <Link href="/items/add">
-                      <PlusCircle className="h-[18px] w-[18px] mr-1.5" />
-                      {t("addItemTitle")}
-                    </Link>
-                  </Button>
-                  <Button
                     variant="secondary"
                     size="sm"
                     className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border-none rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100"
@@ -457,7 +454,7 @@ export function Header() {
                         >
                           <User className="mr-3 h-4 w-4 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
                           <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
-                            {t("manageAccount")}
+                            {t("myPosts")}
                           </span>
                         </DropdownMenuItem>
                         <DropdownMenuItem

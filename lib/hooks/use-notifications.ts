@@ -76,9 +76,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       setLoading(false);
       return;
     }
-    const token = await getToken();
-    if (!token) return;
-    const supabase = createClerkSupabaseClient(token);
+    const supabase = createClerkSupabaseClient(getToken);
 
     // get_my_category_notifications — эълонҳои нави дигар корбарон дар
     // ҳамон категорияҳое, ки худи корбар низ эълон дорад.
@@ -235,9 +233,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       // Корбар бояд «Истодааст» ё «Не»-ро интихоб кунад.
       if (item.kind === "expiry_confirm") return;
 
-      const token = await getToken();
-      if (!token) return;
-      const supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(getToken);
       const refId = item.id.includes(":") ? item.id.split(":")[1] : item.id;
       const { error } = await supabase.rpc("dismiss_notification", {
         p_kind: item.kind,

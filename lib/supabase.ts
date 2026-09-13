@@ -11,23 +11,32 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-// Ҳар токен як GoTrueClient месозад (Supabase дар console огоҳӣ медиҳад,
-// агар якчанд instance якбора барои ҳамон storage key кор кунанд). Токени
-// Clerk дар доираи муддати эътиборинокиаш (~1 дақ) якхела мемонад — пас
-// кэш кардан аз рӯи худи токен GoTrueClient-ҳои такрории беneed-ро пешгирӣ
-// мекунад (масалан poll-ҳои 20-сонияи useNotifications).
-const clientCache = new Map<string, SupabaseClient>();
-const MAX_CACHED_CLIENTS = 5;
+// Пештар ин ҷо ҳар дархост клиенти НАВ бо `global.headers.Authorization`
+// (header-и дастӣ) месохт. Ин усули КӮҲНА буд — Supabase онро ҳамчун
+// header-и оддӣ мегирад, на ҳамчун токени Third-Party Auth, пас баъзе
+// хизматҳо (масалан Storage) кӯшиш мекарданд онро бо масири кӯҳнаи
+// HS256 тасдиқ кунанд ва бо хатои "Key for RS256 algorithm must be
+// CryptoKey... received Uint8Array" меафтоданд — токен RS256 буд (Clerk),
+// вале тасдиқ бо сирри кӯҳна (Uint8Array) кӯшиш мешуд.
+//
+// ХАЛ (ҳамон намунае, ки барномаи мобилӣ аллакай истифода мебарад — ниг.
+// https://supabase.com/docs/guides/auth/third-party/clerk): опсияи
+// расмии `accessToken` supabase-js-ро — вай ин callback-ро ДАР ҲАР
+// дархост худаш дубора даъват мекунад, пас (1) template/header-и дастӣ
+// лозим нест, (2) 60-сонияи lifetime-и токен масъала намешавад (ҳамеша
+// тоза гирифта мешавад), (3) ба ҷои як client барои ҳар токен, ҳамагӣ
+// ЯК client барои тамоми сессия кофист.
+let cachedClerkGetToken: (() => Promise<string | null>) | null = null;
+let authedClient: SupabaseClient | null = null;
 
-export const createClerkSupabaseClient = (clerkToken: string): SupabaseClient => {
-  const cached = clientCache.get(clerkToken);
-  if (cached) return cached;
-
-  if (clientCache.size >= MAX_CACHED_CLIENTS) clientCache.clear();
-
-  const client = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${clerkToken}` } },
-  });
-  clientCache.set(clerkToken, client);
-  return client;
-};
+export function createClerkSupabaseClient(
+  clerkGetToken: () => Promise<string | null>,
+): SupabaseClient {
+  cachedClerkGetToken = clerkGetToken;
+  if (!authedClient) {
+    authedClient = createClient(supabaseUrl!, supabaseAnonKey!, {
+      accessToken: () => cachedClerkGetToken!(),
+    });
+  }
+  return authedClient;
+}

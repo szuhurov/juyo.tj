@@ -259,7 +259,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-2.5 sm:px-4 py-6 sm:py-8">
-      <div className="sticky top-12 sm:top-16 z-30 bg-canvas py-3 mb-4 flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800">
+      <div className="sticky top-0 z-30 bg-canvas py-3 mb-4 flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800">
         <Bell className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-zinc-500 dark:text-zinc-400 shrink-0" />
         <h1 className="flex-1 text-base min-[1084px]:text-lg min-[1920px]:text-xl font-bold tracking-tight text-zinc-500 dark:text-zinc-400 ml-1">
           {t("notifPageTitle")}

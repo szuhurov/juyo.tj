@@ -117,36 +117,15 @@ export const ItemService = {
     });
 
     if (error) throw error;
-    if (!data.results || data.results.length === 0) return [];
 
-    interface VisualSearchResultRow {
-      id: string;
-      user_id?: string;
-      title: string;
-      description?: string;
-      category?: string;
-      type?: string;
-      date?: string;
-      created_at?: string;
-      is_resolved?: boolean;
-      score?: number;
-      image_url: string;
-    }
-
-    // Харитасозии натиҷаҳо ба формати Item
-    return data.results.map((res: VisualSearchResultRow) => ({
-      id: res.id,
-      user_id: res.user_id || "",
-      title: res.title,
-      description: res.description || "",
-      category: res.category || "Other",
-      type: (res.type === "found" ? "found" : "lost") as "lost" | "found",
-      date: res.date || new Date().toISOString().split("T")[0],
-      created_at: res.created_at || new Date().toISOString(),
-      is_resolved: res.is_resolved ?? false,
-      similarity_score: res.score,
-      images: [{ image_url: res.image_url }],
-    })) as Item[];
+    // Edge function (supabase/functions/visual-search) аллакай сатрҳои
+    // ПУРРАи `items` (бо `images:item_images(image_url)` ва
+    // `similarity_score`) бармегардонад — айнан шакли `Item`. Дубора
+    // харита сохтан ин ҷо лозим нест — пештар чунин мешуд ва маҳз ҳамин
+    // майдонҳои аллакай-дурустро бо шакли кӯҳна (`image_url`/`score`-и
+    // ҳамвор) иваз мекард, ки дигар вуҷуд надоранд — натиҷа бе акс ва
+    // бе фоизи мувофиқат мебаромад.
+    return (data.results ?? []) as Item[];
   },
 
   /**

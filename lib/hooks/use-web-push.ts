@@ -55,9 +55,7 @@ export function useWebPush() {
         });
       }
 
-      const token = await getToken();
-      if (!token) return false;
-      const supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(getToken);
       await supabase
         .from("push_tokens")
         .upsert(
@@ -81,14 +79,11 @@ export function useWebPush() {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        const token = await getToken();
-        if (token) {
-          const supabase = createClerkSupabaseClient(token);
-          await supabase
-            .from("push_tokens")
-            .delete()
-            .eq("token", JSON.stringify(subscription));
-        }
+        const supabase = createClerkSupabaseClient(getToken);
+        await supabase
+          .from("push_tokens")
+          .delete()
+          .eq("token", JSON.stringify(subscription));
         await subscription.unsubscribe();
       }
       setSubscribed(false);

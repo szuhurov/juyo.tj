@@ -111,13 +111,50 @@ Deno.serve(async (req) => {
 
     if (searchError) throw searchError;
 
-    const results = (similarItems || []).map((item: any) => ({
-      id: item.item_id,
-      score: item.similarity,
-      title: item.title,
-      description: item.description,
-      image_url: item.image_url
-    }));
+    /**
+     * ХАТОГИИ ЁФТШУДА (талаби корбар: "натиҷаҳо акс надоранд, санааш
+     * NaN.NaN.NaN аст"): пештар ин ҷо танҳо
+     * {id, score, title, description, image_url} бармегашт — шакли
+     * КОМИЛАН ФАРҚ аз `Item`-и клиент (ниг. lib/services/item-service.ts),
+     * ки `images: {image_url}[]` (на `image_url`-и танҳо) ва `date`
+     * мехоҳад. `ItemFeedCard` бо ин шакли нотамом акс намеёфт (`images`
+     * холӣ буд) ва `format(new Date(undefined))` → Invalid Date медод.
+     *
+     * Ҳал: барои ID-ҳои ёфтшуда (аз рӯи тартиби similarity аллакай аз
+     * `match_item_images` омада) сатрҳои ПУРРАи `items` (бо аксҳояшон)
+     * мегирем — АЙНАН ҳамон шакле, ки `search_items` RPC (ҷустуҷӯи
+     * матнӣ) медиҳад — то клиент бе ҳеҷ харитасозии иловагӣ кор кунад.
+     */
+    const itemIds = (similarItems || []).map((it: any) => it.item_id);
+    let results: unknown[] = [];
+
+    if (itemIds.length > 0) {
+      const { data: fullItems, error: itemsError } = await supabase
+        .from('items')
+        .select(
+          'id, user_id, title, description, category, type, date, reward, ' +
+          'created_at, is_resolved, moderation_status, ' +
+          'images:item_images(image_url)'
+        )
+        .in('id', itemIds);
+
+      if (itemsError) throw itemsError;
+
+      const similarityById = new Map(
+        (similarItems || []).map((it: any) => [it.item_id, it.similarity]),
+      );
+      const itemsById = new Map((fullItems || []).map((it: any) => [it.id, it]));
+
+      // Тартиби АСЛИИ similarity (аз `match_item_images`) нигоҳ дошта
+      // мешавад — на тартиби худсарии `.in()`.
+      results = itemIds
+        .map((id: string) => itemsById.get(id))
+        .filter(Boolean)
+        .map((item: any) => ({
+          ...item,
+          similarity_score: similarityById.get(item.id) ?? null,
+        }));
+    }
 
     return new Response(JSON.stringify({ results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

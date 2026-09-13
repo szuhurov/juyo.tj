@@ -57,6 +57,7 @@ import {
   Pointer,
   Check,
   Smartphone,
+  Home,
   type LucideIcon,
 } from "lucide-react";
 // Иконкаҳои гуногун барои интерфейс
@@ -518,21 +519,11 @@ function ProfileContent() {
     cornersSquareType: "dot" as CornerSquareType,
     cornersDotType: "dot" as CornerDotType,
   });
-  // Токен барои Supabase — лозим барои useUserItems/useSavedItems ва
-  // амалиётҳои дигар (иваз кардани email, аватар ва ғ.) дар ин саҳифа.
-  const [token, setToken] = useState<string | null>(null);
-  useEffect(() => {
-    if (!userId) return;
-    getToken()
-      .then((t) => { if (t) setToken(t); })
-      .catch((err) => console.error("Error loading token:", err));
-  }, [userId, getToken]);
-
   // Профил — тавассути React Query (кэши 2 дақиқа), на бо fetch-и дастии
   // бе кэш — пеш аз ин ҳар гузариш ба /profile (масалан home → QR →
   // бозгашт) skeleton-и наверо нишон медод, ҳатто агар чанд сония пеш
   // аллакай fetch шуда буд.
-  const { data: queriedProfile, isError: profileQueryError } = useProfileQuery(userId, token);
+  const { data: queriedProfile, isError: profileQueryError } = useProfileQuery(userId, getToken);
   useEffect(() => {
     if (queriedProfile !== undefined) {
       setProfile(queriedProfile);
@@ -550,11 +541,11 @@ function ProfileContent() {
   // Гирифтани рӯйхати эълонҳо, ашёҳои захирашуда ва ашёҳои "Қуттии бехатарӣ"
   const { data: myItems = [], isLoading: postsLoading } = useUserItems(
     userId || undefined,
-    token,
+    getToken,
   );
   const { data: savedItems = [], isLoading: savedLoading } = useSavedItems(
     userId || undefined,
-    token,
+    getToken,
   );
   // Эълоне, ки корбар ҳозир нашр кард — дар болои акси он ҳисобкунаки
   // санҷиш нишон дода мешавад.
@@ -606,15 +597,18 @@ function ProfileContent() {
   // ба сатри худашон боз/пӯшида мешаванд.
   const [openSetting, setOpenSetting] = useState<"profile" | null>(null);
 
-  // Синхронизатсия кардани таби фаъол бо URL
+  // Синхронизатсия кардани таби фаъол бо URL.
+  //
+  // ХАТОГИИ ЁФТШУДА (талаби корбар: "тугмаҳои навбар кор намекунанд"):
+  // пештар ин ҷо ФАҚАТ вақте `activeTab` иваз мешуд, ки `tab` дар URL
+  // МАВҶУД бошад. Тугмаи "Профиль" (href="/profile", БЕ tab) аз таби
+  // QR клик карда, URL-ро иваз мекард, вале `activeTab` "qr" мемонд —
+  // корбар ҳамон мӯҳтавои QR-ро мебинад, гӯё тугма кор намекунад.
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (
-      tab &&
-      ["posts", "info", "saved", "qr"].includes(tab)
-    ) {
-      setActiveTab(tab);
-    }
+    const validTab =
+      tab && ["posts", "info", "saved", "qr"].includes(tab) ? tab : "posts";
+    setActiveTab(validTab);
   }, [searchParams]);
 
   /**
@@ -799,8 +793,7 @@ function ProfileContent() {
     setProfile({ ...profile, is_qr_active: newState });
 
     try {
-      const token = await getToken();
-      const supabase = createClerkSupabaseClient(token!);
+      const supabase = createClerkSupabaseClient(getToken);
 
       // Background update
       ProfileService.updateProfile(supabase, userId!, { is_qr_active: newState })
@@ -1055,8 +1048,7 @@ function ProfileContent() {
 
     setSecondaryLoading(true);
     try {
-      const supabaseToken = await getToken();
-      const supabase = createClerkSupabaseClient(supabaseToken!);
+      const supabase = createClerkSupabaseClient(getToken);
 
       const updates: Partial<Profile> = {};
       if (needsPhone) updates.phone = phone;
@@ -1251,7 +1243,7 @@ function ProfileContent() {
                 {/* Сутуни пешнамоиш. Танҳо ХУДИ QR sticky аст — корти
                     статус, тугмаҳо ва танзимот аз таги он мегузаранд. */}
                 <div className="flex flex-col">
-                <div className="sticky top-[60px] sm:top-[130px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                <div className="sticky top-[12px] sm:top-[66px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   {/* Корти САФЕД бо хати мулоим — ҳамон намуди кортҳои
                       профил. Пештар ин ҷо хати РЕХТА буд: он ба «ҷои холии
                       интизорӣ» ишора мекунад, дар ҳоле ки корт мӯҳтавои
@@ -1426,7 +1418,7 @@ function ProfileContent() {
                 дубора медиҳад — бинобар ин ҳарду бояд БАЙНИ breakpoint-ҳо
                 бо шофияи волид (`px-2 sm:px-4`) баробар монанд, вагарна
                 банд аз экран мебарояд ва scroll-и уфуқӣ пайдо мешавад. */}
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-4">
+            <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-4">
               <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                 {t("settings")}
               </h3>
@@ -1854,7 +1846,7 @@ function ProfileContent() {
         return (
           <div className="space-y-6">
             {/* Сарлавҳаи таби Захирашудаҳо */}
-            <div className="sticky top-0 sm:top-[64px] z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-6">
+            <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-6">
               <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                 {t("savedItems")}
               </h3>
@@ -1989,8 +1981,24 @@ function ProfileContent() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12 px-0 sm:px-0">
           {/* Менюи Sidebar (Менюи паҳлӯӣ) */}
           <div className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-[100px] h-fit z-20 space-y-6">
+            <div className="sticky top-9 h-fit z-20 space-y-6">
               <div className="flex flex-col gap-3">
+                {/* Тугмаи бозгашт ба саҳифаи асосӣ — талаби корбар: дар
+                    сатри якуми меню, на танҳо тавассути навбари поёнӣ. */}
+                <Link
+                  href="/"
+                  className="flex items-center justify-between p-3 min-[1084px]:p-3.5 min-[1503px]:p-4 rounded-xl transition-all group shadow-sm border bg-white border-zinc-100 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-800 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 min-[1084px]:p-2.5 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 transition-colors">
+                      <Home className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 min-[1920px]:w-[22px] min-[1920px]:h-[22px]" />
+                    </div>
+                    <span className="font-bold text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-wider">
+                      {t("home")}
+                    </span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 text-zinc-300 transition-transform group-hover:translate-x-0.5" />
+                </Link>
                 {menuItems.map((item) => (
                   <button
                     key={item.id}
@@ -2292,7 +2300,20 @@ function ProfileContent() {
               {t("qrWallpaperWebTitle")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-medium text-sm leading-relaxed">
-              {t("qrWallpaperWebDesc")}
+              {/* Талаби корбар: "JUYO" (номи лотинӣ дар матни кириллӣ)
+                  хурдтар аз бақияи ҷумла бошад — ба чашм намезад. */}
+              {(() => {
+                const desc = t("qrWallpaperWebDesc");
+                const [before, after] = desc.split("JUYO");
+                if (after === undefined) return desc;
+                return (
+                  <>
+                    {before}
+                    <span className="text-[11px]">JUYO</span>
+                    {after}
+                  </>
+                );
+              })()}
             </DialogDescription>
           </DialogHeader>
           <Button

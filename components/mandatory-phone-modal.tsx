@@ -35,11 +35,8 @@ export function MandatoryPhoneModal() {
       if (!userId || !userLoaded) return;
       
       try {
-        const token = await getToken();
-        if (!token) return;
+        const supabase = createClerkSupabaseClient(getToken);
 
-        const supabase = createClerkSupabaseClient(token);
-        
         // Маҷбур мекунем, ки маълумоти охиринро аз сервер гирад (бе кэш)
         const { data, error } = await supabase
           .from('profiles')
@@ -78,9 +75,8 @@ export function MandatoryPhoneModal() {
 
     setLoading(true);
     try {
-      const token = await getToken();
-      const supabase = createClerkSupabaseClient(token!);
-      
+      const supabase = createClerkSupabaseClient(getToken);
+
       await ProfileService.updateProfile(supabase, userId!, {
         phone,
         accepted_terms: true,

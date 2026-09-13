@@ -60,18 +60,23 @@ export function useItems(filters?: ItemFilters, initialItems?: Item[]) {
 }
 
 // Хук барои гирифтани маълумоти муфассали як ашё
-// token: undefined = auth ҳанӯз муайян нашудааст, null = вуруд накарда, string = вуруд кардааст
+// isSignedIn: undefined = auth ҳанӯз муайян нашудааст, false = вуруд накарда, true = вуруд кардааст
 // initialData: маълумоти server-side (барои SSR/SEO — Google фавран мебинад)
-export function useItemDetails(id: string, token: string | null | undefined, initialData?: Item | null) {
+export function useItemDetails(
+  id: string,
+  isSignedIn: boolean | undefined,
+  getToken: (() => Promise<string | null>) | undefined,
+  initialData?: Item | null,
+) {
   const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ITEM_KEYS.detail(id),
     queryFn: async () => {
       let supabaseClient: SupabaseClient | undefined;
-      if (token) {
+      if (isSignedIn && getToken) {
         const { createClerkSupabaseClient } = await import("@/lib/supabase");
-        supabaseClient = createClerkSupabaseClient(token);
+        supabaseClient = createClerkSupabaseClient(getToken);
       }
       return ItemService.getItemDetails(id, supabaseClient);
     },
@@ -119,7 +124,7 @@ export function useItemDetails(id: string, token: string | null | undefined, ini
     },
     // Фақат пас аз муайян шудани ҳолати auth query иҷро мешавад.
     // Агар зудтар иҷро шавад, anon client эълонҳои pending/rejected-ро дида наметавонад.
-    enabled: !!id && token !== undefined,
+    enabled: !!id && isSignedIn !== undefined,
     staleTime: 1000 * 30,
     // Ҳар дафъае, ки саҳифаи муфассал кушода мешавад, ҳатман аз сервер нав
     // мегирад (на кэши куҳна) — moderation_status ва аксҳо метавонанд байни
@@ -130,18 +135,18 @@ export function useItemDetails(id: string, token: string | null | undefined, ini
 }
 
 // Хук барои гирифтани эълонҳои худи корбар
-export function useUserItems(userId?: string, token?: string | null) {
+export function useUserItems(userId?: string, getToken?: () => Promise<string | null>) {
   return useQuery({
     queryKey: ITEM_KEYS.userItems(userId || ""),
     queryFn: async () => {
-      if (!userId || !token) return [];
+      if (!userId || !getToken) return [];
 
       const { createClerkSupabaseClient } = await import("@/lib/supabase");
-      const supabaseClient = createClerkSupabaseClient(token);
+      const supabaseClient = createClerkSupabaseClient(getToken);
 
       return ItemService.getItems({ user_id: userId }, supabaseClient);
     },
-    enabled: !!userId && !!token,
+    enabled: !!userId && !!getToken,
     staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
     refetchOnWindowFocus: false,
     // Санҷиши AI дар сервер async аст (якчанд сония мегирад) — то он
@@ -155,21 +160,21 @@ export function useUserItems(userId?: string, token?: string | null) {
 }
 
 // Хук барои гирифтани ашёҳои захирашуда (Saved)
-export function useSavedItems(userId?: string, token?: string | null) {
+export function useSavedItems(userId?: string, getToken?: () => Promise<string | null>) {
   return useQuery({
     queryKey: ITEM_KEYS.savedItems(userId || ""),
     queryFn: async () => {
-      if (!userId || !token) return [];
+      if (!userId || !getToken) return [];
       const { createClerkSupabaseClient } = await import("@/lib/supabase");
-      const supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(getToken);
       return ItemService.getSavedItems(supabase, userId);
     },
-    enabled: !!userId && !!token,
+    enabled: !!userId && !!getToken,
     staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
   });
 }
 
-export function useIsItemSaved(itemId: string, userId?: string, token?: string | null) {
-  const { data: savedItems = [] } = useSavedItems(userId, token);
+export function useIsItemSaved(itemId: string, userId?: string, getToken?: () => Promise<string | null>) {
+  const { data: savedItems = [] } = useSavedItems(userId, getToken);
   return (savedItems as Item[]).some((item) => item.id === itemId);
 }

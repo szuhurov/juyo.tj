@@ -24,10 +24,15 @@ export function MobileNavbar() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
 
+  // Тугмаи "+" (эълони нав) танҳо барои корбари воридшуда — `/items/add`
+  // аллакай тавассути middleware муҳофизат мешавад, вале нишон додани он
+  // ба корбари бе login бесамар аст (пахш → бозгашт ба sign-in).
   const navItems = [
     { label: t("home"), href: "/", icon: Home },
     { id: "qr", label: "QR", href: "/profile?tab=qr", icon: QrCode },
-    { label: t("addItemTitle"), href: "/items/add", icon: PlusCircle, isMain: true },
+    ...(userId
+      ? [{ label: t("addItemTitle"), href: "/items/add", icon: PlusCircle, isMain: true }]
+      : []),
     { label: "Scan", href: "/scan", icon: ScanLine },
     { id: "profile", label: t("profile"), href: "/profile", icon: User, isProfile: true },
   ];

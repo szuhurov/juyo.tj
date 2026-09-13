@@ -70,6 +70,12 @@ export default function Page() {
             elements: {
               card: "w-full shadow-none border-none bg-transparent",
               rootBox: "w-full",
+              // Талаби корбар: input/тугмаҳои Clerk аз ҳад зиёд rounded
+              // буданд (пешфарзи Clerk) — ба ҳамон радиуси боқии
+              // input/тугмаҳои барнома (`--radius-control`, 14px) мутобиқ карда шуд.
+              formFieldInput: "rounded-[var(--radius-control)]",
+              formButtonPrimary: "rounded-[var(--radius-control)]",
+              socialButtonsBlockButton: "rounded-[var(--radius-control)]",
             }
           }}
         />

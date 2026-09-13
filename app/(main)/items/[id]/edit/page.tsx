@@ -155,8 +155,7 @@ export default function EditItemPage({
   const loadItem = useCallback(async () => {
     try {
       setLoading(true);
-      const token = await getToken();
-      const supabase = createClerkSupabaseClient(token!);
+      const supabase = createClerkSupabaseClient(getToken);
 
       const { data, error } = await supabase
         .from("items")
@@ -246,8 +245,7 @@ export default function EditItemPage({
     setModerationError(null);
 
     try {
-      const token = await getToken();
-      const supabase = createClerkSupabaseClient(token!);
+      const supabase = createClerkSupabaseClient(getToken);
 
       const formDataAI = new FormData();
 
@@ -301,8 +299,7 @@ export default function EditItemPage({
     );
 
     try {
-      const token = await getToken();
-      const supabase = createClerkSupabaseClient(token!);
+      const supabase = createClerkSupabaseClient(getToken);
 
       const { data, error } = await supabase.functions.invoke(
         "text-moderation",
@@ -366,10 +363,7 @@ export default function EditItemPage({
 
     setSaving(true);
     try {
-      let token = await getToken();
-      if (!token) throw new Error("Authentication token missing");
-
-      let supabase = createClerkSupabaseClient(token);
+      const supabase = createClerkSupabaseClient(getToken);
 
       let finalImages = images;
       let finalTitle = title;
@@ -452,10 +446,6 @@ export default function EditItemPage({
           finalImageUrls.push(publicUrl);
         }
       }
-
-      token = await getToken();
-      if (!token) throw new Error("Authentication token expired or missing");
-      supabase = createClerkSupabaseClient(token);
 
       // 2. Нав кардани маълумоти эълон дар база (Update query)
       const updateData: Omit<Partial<Item>, "reward"> & { reward: string | null } = {

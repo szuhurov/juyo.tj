@@ -6,8 +6,7 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { unstable_cache } from "next/cache";
-import Link from "next/link";
-import { Header } from "@/components/header";
+import { HomeOnlyHeader, MainContent, SiteFooter } from "@/components/home-only-header";
 import { MobileNavbar } from "@/components/mobile-navbar";
 import { HomeProvider } from "@/lib/home-context";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -79,23 +78,15 @@ export default async function MainLayout({
   return (
     <HomeProvider>
     <div className="flex flex-col min-h-screen bg-canvas">
-      {/* Ҳедери сайт (Шапка) - Persistent UI */}
-      <Header />
+      {/* Ҳедери сайт (Шапка) - танҳо дар саҳифаи асосӣ (талаби корбар: дар
+          дигар саҳифаҳо ҷустуҷӯ/навигатсияи такрорӣ лозим нест). */}
+      <HomeOnlyHeader />
 
       {/* Ин ҷо мӯҳтавои асосии саҳифаҳо мебарояд (Main Content) */}
-      <main className="flex-1 pt-12 sm:pt-16 pb-20 md:pb-0">
-        {children}
-      </main>
+      <MainContent>{children}</MainContent>
 
       {/* Поёни сайт (Footer) */}
-      <footer data-nosnippet className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12 mb-20 md:mb-0 hidden md:block">
-        <div className="w-full px-4 text-center text-zinc-500 text-sm">
-          <p>© 2026 juyo - All rights reserved.</p>
-          <div className="mt-2">
-            <Link href="/privacy" className="hover:underline">Сиёсати махфият</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* Навбари мобилӣ (Bottom Navigation) - Persistent UI */}
       <MobileNavbar />
