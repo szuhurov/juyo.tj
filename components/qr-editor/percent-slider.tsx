@@ -52,31 +52,24 @@ export function PercentSlider({
 }
 
 /**
- * Рақам (%) + тугмаи давр. Талаби корбар: слайдери тақсимот ҳамеша
- * кушода мемонад (ҳеҷ гоҳ пӯшида намешавад) — пас рақам акнун танҳо
- * НИШОНДИҲАНДА аст (на тугмаи кушодан/пӯшидан).
+ * Тугмаи давр. Талаби корбар (ҳамон ислоҳе, ки native аллакай дорад —
+ * ниг. шарҳи `GradientBiasToggle` дар мобилӣ): рақами % такрорӣ буд —
+ * худи слайдер (PercentSlider дар боло) аллакай ҳамон фоизро нишон
+ * медиҳад, пас ин ҷо бардошта шуд.
  */
 export function GradientBiasToggle({
-  percent,
   onRotate,
 }: {
-  percent: number;
   onRotate: () => void;
 }) {
-  const pct = Math.round(percent);
   return (
-    <>
-      <span className="ml-auto text-[11px] font-bold text-zinc-600 dark:text-zinc-300 px-0.5 py-1">
-        {pct}%
-      </span>
-      <button
-        type="button"
-        onClick={onRotate}
-        aria-label="rotate"
-        className="flex items-center justify-center size-[30px] rounded-full border bg-zinc-50 dark:bg-zinc-800 border-zinc-100 dark:border-zinc-700 transition-colors"
-      >
-        <RotateCw className="size-3.5 text-zinc-600 dark:text-zinc-300" />
-      </button>
-    </>
+    <button
+      type="button"
+      onClick={onRotate}
+      aria-label="rotate"
+      className="ml-auto flex items-center justify-center size-[30px] rounded-full border bg-zinc-50 dark:bg-zinc-800 border-zinc-100 dark:border-zinc-700 transition-colors"
+    >
+      <RotateCw className="size-3.5 text-zinc-600 dark:text-zinc-300" />
+    </button>
   );
 }

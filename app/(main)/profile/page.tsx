@@ -216,18 +216,18 @@ const biasPercentForStop = (percent: number, stopIdx: number) => (stopIdx === 0 
 const QR_CHIP_INK = "#000000";
 
 /**
- * Вариантҳои шакл барои chip-picker — 5 то, айнан native
- * (square/rounded/extra-rounded/diamond/classy-rounded).
+ * Вариантҳои шакл барои chip-picker.
  *
- * "diamond" ХОСИСИИ ХАТАРНОК аст: `qr-code-styling` (китобхонаи ВЕБ, на
- * native) чунин навъро ТАМОМАН НАДОРАД (DotType-и он танҳо
- * dots|rounded|classy|classy-rounded|square|extra-rounded аст). Талаби
- * корбар: чиппа нишон диҳад, ҳарчанд QR-и воқеӣ фарқ накунад — пас
- * "diamond" танҳо дар РӮЙХАТИ ИНТИХОБ аст; ҳангоми фиристодан ба QRCard
- * он ба "square" мегузарад (ниг. `effDotsType` — АЙНАН ҳамон пешфарзи
- * дохилии худи китобхона барои навъи номаълум).
+ * ХАТОГИИ ЁФТШУДА (талаби корбар: "тугмаи шакли нуқтаи 4 ба QR таъсир
+ * намерасонад"): пештар "diamond" низ дар рӯйхат буд — native (мобилӣ)
+ * ин шаклро воқеан дорад, вале `qr-code-styling` (китобхонаи ВЕБ) чунин
+ * навъро ТАМОМАН НАДОРАД (DotType-и он танҳо
+ * dots|rounded|classy|classy-rounded|square|extra-rounded аст), пас
+ * интихоби он ба QRCard ҳамеша "square" мефиристод — тугма буд, вале
+ * ҳеҷ таъсире надошт. Ҳал: "diamond" аз рӯйхат бардошта шуд — танҳо
+ * шаклҳое мемонанд, ки воқеан QR-ро тағйир медиҳанд.
  */
-const DOT_TYPES: ChipDotType[] = ["square", "rounded", "extra-rounded", "diamond", "classy-rounded"];
+const DOT_TYPES: ChipDotType[] = ["square", "rounded", "extra-rounded", "classy-rounded"];
 /**
  * "rounded" АЗ РӮЙХАТ БАРДОШТА ШУД: талаби корбар, баъд аз он ки
  * ошкор шуд `qr-code-styling` (китобхонаи ВЕБ, на native) чунин навъро
@@ -869,7 +869,6 @@ function ProfileContent() {
     const setRawBiasPercent = kind === "text" ? setQrGradientBiasPercent : setQrBgGradientBiasPercent;
     const stopIdx = kind === "text" ? gradientStopIdx : bgGradientStopIdx;
     const setStopIdx = kind === "text" ? setGradientStopIdx : setBgGradientStopIdx;
-    const angle = kind === "text" ? qrGradientAngle : qrBgGradientAngle;
     const setAngle = kind === "text" ? setQrGradientAngle : setQrBgGradientAngle;
     const labelKey = kind === "text" ? "qrGradientLabel" : "qrBgLabel";
     const secondColorDefault = kind === "text" ? "#26BA90" : "#EEFBF5";
@@ -884,15 +883,11 @@ function ProfileContent() {
         <QrFieldLabel icon={kind === "text" ? Sparkles : Droplet}>{t(labelKey)}</QrFieldLabel>
 
         <div className="relative mt-2">
-          {showStops ? (
-            <div
-              className={cn(
-                "h-12 rounded-xl mb-2.5",
-                stops.some(isNearWhite) && "border border-zinc-200 dark:border-zinc-700",
-              )}
-              style={{ backgroundImage: `linear-gradient(${angle}deg, ${stops[0]}, ${stops[1]})` }}
-            />
-          ) : (
+          {/* Талаби корбар (ҳамон ислоҳе, ки native аллакай дорад):
+              навори калони пешнамоиши градиент бардошта шуд — пахш
+              кардан ба он таъсире надошт, ва доираҳои поён (ки воқеан
+              таҳриршавандаанд) аллакай ҳарду рангро нишон медиҳанд. */}
+          {!showStops && (
             <button
               type="button"
               onClick={(e) => {
@@ -964,7 +959,6 @@ function ProfileContent() {
 
             {showStops && (
               <GradientBiasToggle
-                percent={displayPercent}
                 onRotate={() => setAngle((a) => (a + 90) % 360)}
               />
             )}
@@ -1298,9 +1292,14 @@ function ProfileContent() {
                     тағйирот, боргирӣ бепул мемонад. */}
                 {/* `mt-4`: талаби корбар — панели танзимот бояд ба тугмаҳо
                     наздиктар шавад ва саҳифа scroll нашавад (ниг. `gap-3`-и
-                    грид низ боло). */}
+                    грид низ боло). Талаби нав: дар desktop (md+) ин
+                    тугмаҳо на дар сутуни QR, балки дар сутуни рост, ЗЕРИ
+                    панели танзимот меистанд — пас дар ин ҷо (сутуни QR)
+                    танҳо дар мобил намоён аст (`md:hidden`); нусхаи
+                    дуюм (`md:flex`, бе `md:hidden`) поёнтар, дар сутуни
+                    рост меояд. */}
                 {isQrLocked ? (
-                  <div className="mt-5 w-full px-1">
+                  <div className="md:hidden mt-5 w-full px-1">
                     <Button
                       onClick={() => toast.info(t("qrComingSoon"))}
                       className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
@@ -1309,7 +1308,7 @@ function ProfileContent() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-3 mt-5 w-full px-1">
+                  <div className="md:hidden flex items-center gap-3 mt-5 w-full px-1">
                     <Button
                       onClick={handleDownloadQR}
                       disabled={isDownloading}
@@ -1338,6 +1337,9 @@ function ProfileContent() {
                 )}
                 </div>
 
+                {/* Сутуни рост: танзимот, ва зери он (танҳо md+) ҳамон
+                    тугмаҳои боргирӣ/обои — талаби корбар. */}
+                <div className="flex flex-col gap-5">
                 {/* Ҳама танзимот танҳо дар «Худсоз» ва «Pro».
                     Дар «Оддӣ» сутун қасдан холӣ мемонад. */}
                 {!isBasicTier && (
@@ -1405,6 +1407,42 @@ function ProfileContent() {
                   </div>
                 </div>
                 )}
+
+                {/* Нусхаи desktop-и тугмаҳо (ниг. шарҳи `md:hidden` боло). */}
+                {isQrLocked ? (
+                  <div className="hidden md:block w-full px-1">
+                    <Button
+                      onClick={() => toast.info(t("qrComingSoon"))}
+                      className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                    >
+                      {t("qrBuy")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="hidden md:flex items-center gap-3 w-full px-1">
+                    <Button
+                      onClick={handleDownloadQR}
+                      disabled={isDownloading}
+                      className="flex-1 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                    >
+                      {isDownloading ? (
+                        <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px] text-white" />
+                      )}
+                      {t("download")}
+                    </Button>
+                    <Button
+                      onClick={() => setShowWallpaperInfoModal(true)}
+                      variant="outline"
+                      className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
+                      {t("qrWallpaperBtn")}
+                    </Button>
+                  </div>
+                )}
+                </div>
               </div>
             </div>
           </div>
