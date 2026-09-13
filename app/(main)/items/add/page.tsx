@@ -303,6 +303,13 @@ function AddItemForm() {
   };
 
   const prevStep = () => {
+    // Талаби корбар: дар қадами 1 низ тугмаи "Бозгашт" лозим аст —
+    // пештар он ҷо тугма умуман набуд (санг. шарти `step > 1` дар
+    // footer поён), корбар роҳи баромад аз wizard-ро надошт.
+    if (step === 1) {
+      router.push("/");
+      return;
+    }
     if (step === 4) {
       setStep(6);
       setModerationStatus("idle");
@@ -1367,7 +1374,7 @@ function AddItemForm() {
         {/* Navigation Footer */}
         <div className="px-2.5 pt-3 pb-0 sm:px-10 sm:pt-8 sm:pb-2 bg-canvas shrink-0">
           <div className="flex gap-3 sm:gap-4 items-center w-full">
-            {step > 1 && step !== 3 && (
+            {step !== 3 && (
               <Button
                 variant="outline"
                 size="lg"
