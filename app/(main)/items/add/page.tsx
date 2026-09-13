@@ -1385,7 +1385,7 @@ function AddItemForm() {
                 {t("back")}
               </Button>
             )}
-            {(step === 1 || step === 2 || step === 6 || step === 4) && (
+            {(step === 1 || step === 2 || step === 6 || step === 4 || step === 7) && (
               <Button
                 size="lg"
                 onClick={nextStep}
