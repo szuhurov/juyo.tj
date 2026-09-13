@@ -28,7 +28,7 @@ export interface Item {
   moderation_result?: string;
   images?: { image_url: string }[];
   similarity_score?: number;
-  location_type?: "taxi" | "hotel_restaurant" | "public_place" | "airport" | null;
+  location_type?: "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym" | null;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -39,15 +39,16 @@ export interface Item {
 }
 
 // Категорияҳои асосии ашёҳо барои филтр ва ҷустуҷӯ
+// Талаби корбар: "Дигар" (Other) дар охир бошад, на дар миён.
 export const CATEGORIES = [
   { id: "1", name: "Electronics", icon: "📱" },
   { id: "2", name: "Documents", icon: "📄" },
   { id: "3", name: "Keys", icon: "🔑" },
   { id: "4", name: "Clothing", icon: "👕" },
   { id: "5", name: "Pets", icon: "🐾" },
-  { id: "6", name: "Other", icon: "📦" },
   { id: "7", name: "LicensePlate", icon: "🚗" },
   { id: "8", name: "Wallet", icon: "👛" },
+  { id: "6", name: "Other", icon: "📦" },
 ];
 
 export const ItemService = {

@@ -91,7 +91,7 @@ function AddItemForm() {
     description: "",
     phone: "",
     reward: "",
-    locationType: null as "taxi" | "hotel_restaurant" | "public_place" | "airport" | null,
+    locationType: null as "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym" | null,
   });
   // Қадами 6 ("дар куҷо?") аз рӯи интихоб маҷбурист — вале "Дигар" низ як
   // интихоби эътиборнок аст (locationType ҳамоно null мемонад). Ин flag
@@ -884,7 +884,7 @@ function AddItemForm() {
                     locationType:
                       val === "none"
                         ? null
-                        : (val as "taxi" | "hotel_restaurant" | "public_place" | "airport"),
+                        : (val as "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym"),
                   }));
                 }}
                 className="grid grid-cols-1 gap-3"
@@ -895,6 +895,7 @@ function AddItemForm() {
                     { value: "airport", emoji: "✈️" },
                     { value: "hotel_restaurant", emoji: "🏨" },
                     { value: "public_place", emoji: "🎭" },
+                    { value: "gym", emoji: "🏋️" },
                     { value: "none", emoji: "🤷" },
                   ] as const
                 ).map((opt) => (

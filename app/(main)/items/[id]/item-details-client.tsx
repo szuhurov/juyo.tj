@@ -414,7 +414,7 @@ export default function ItemDetailsClient({
             </div>
           </div>
 
-          <div className="flex flex-col relative z-10 bg-white dark:bg-zinc-950 rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12">
+          <div className="flex flex-col relative z-10 bg-canvas rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12">
             {/* Дастаки кашиш (drag handle) — мисли bottom sheet-и iOS/app-и
                 мобилӣ, нишон медиҳад ки ин панел боло-поён мешавад. */}
             <div className="md:hidden flex justify-center -mt-6 mb-4">

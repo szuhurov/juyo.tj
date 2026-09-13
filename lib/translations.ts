@@ -324,6 +324,8 @@ export const translations: Record<string, TranslationDict> = {
       airport: { title: "Фурудгоҳҳо", desc: "терминалҳо" },
       hotel_restaurant: { title: "Меҳмонхона", desc: "ва Тарабхонаҳо" },
       public_place: { title: "Ҷои ҷамъиятӣ", desc: "кино, консерт..." },
+      gym: { title: "Толори варзишӣ", desc: "фитнес, бошгоҳ" },
+      none: { title: "Дигар", desc: "ҷойҳои дигар" },
     },
     addItemLocationStep: {
       title: "Дар куҷо гум/ёфт кардед?",
@@ -333,6 +335,7 @@ export const translations: Record<string, TranslationDict> = {
       airport: "Фурудгоҳҳо",
       hotel_restaurant: "Меҳмонхона ё Тарабхонаҳо",
       public_place: "Ҷойҳои ҷамъиятӣ (кино, консерт...)",
+      gym: "Толори варзишӣ",
       notSpecified: "Дигар",
     },
     addHandoffStep: {
@@ -1082,6 +1085,8 @@ export const translations: Record<string, TranslationDict> = {
       airport: { title: "Аэропорт", desc: "терминал, рейс" },
       hotel_restaurant: { title: "Гостиницы", desc: "и рестораны" },
       public_place: { title: "Обществ. места", desc: "кино, концерт" },
+      gym: { title: "Спортзал", desc: "фитнес, клуб" },
+      none: { title: "Другое", desc: "другие места" },
     },
     addItemLocationStep: {
       title: "Где вы потеряли/нашли?",
@@ -1091,6 +1096,7 @@ export const translations: Record<string, TranslationDict> = {
       airport: "Аэропорт",
       hotel_restaurant: "Гостиница/Ресторан",
       public_place: "Общественное место (кино, концерт...)",
+      gym: "Спортзал",
       notSpecified: "Другое",
     },
     addHandoffStep: {
@@ -1811,6 +1817,8 @@ export const translations: Record<string, TranslationDict> = {
       airport: { title: "Airport", desc: "terminal, flight" },
       hotel_restaurant: { title: "Hotels", desc: "& Restaurants" },
       public_place: { title: "Public places", desc: "cinema, concert" },
+      gym: { title: "Gym", desc: "fitness, club" },
+      none: { title: "Other", desc: "other places" },
     },
     addItemLocationStep: {
       title: "Where did you lose/find it?",
@@ -1820,6 +1828,7 @@ export const translations: Record<string, TranslationDict> = {
       airport: "Airport",
       hotel_restaurant: "Hotel/Restaurant",
       public_place: "Public place (cinema, concert...)",
+      gym: "Gym",
       notSpecified: "Other",
     },
     addHandoffStep: {

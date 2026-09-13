@@ -24,8 +24,10 @@ import {
   Car,
   Plane,
   Hotel,
-  Landmark,
   LayoutGrid,
+  Building2,
+  HelpCircle,
+  Dumbbell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DateRangeCalendar } from "@/components/date-range-calendar";
@@ -35,12 +37,21 @@ import { DateRangeCalendar } from "@/components/date-range-calendar";
 // 20260802000000_items_location_type.sql). Ин филтри УМУМӢ барои ҳамаи
 // корбарон аст, аз рӯи посух ба саволи wizard-и items/add. "all" маънии
 // location_type-и нест дорад — тугмаи тоза кардани ин филтр, на филтри воқеӣ.
+// ХАТОГИИ ЁФТШУДА (талаби корбар: ин филтрҳо аз мобилӣ фарқ мекунанд):
+// пештар ин ҷо "gym"/"fintech_center"-и худсохта буданд, ки дар
+// native тамоман вуҷуд надоранд. Ҳоло АЙНАН ҳамон 6-то, ки native
+// дорад (ниг. app/(tabs)/index.tsx) — "none" махсус аст: на "бе
+// филтр" (ҳамон "all"), балки "маҳз ҳамон эълонҳое, ки ҷой
+// нагузоштаанд" (location_type IS NULL — RPC-и search_items ин
+// сатрро махсус мефаҳмад, ниг. p_location_type='none').
 const QUICK_ACTIONS = [
   { value: "all", icon: LayoutGrid },
   { value: "taxi", icon: Car },
   { value: "hotel_restaurant", icon: Hotel },
   { value: "airport", icon: Plane },
-  { value: "public_place", icon: Landmark },
+  { value: "public_place", icon: Building2 },
+  { value: "gym", icon: Dumbbell },
+  { value: "none", icon: HelpCircle },
 ] as const;
 
 function HomeContent({ initialItems }: { initialItems?: Item[] }) {
