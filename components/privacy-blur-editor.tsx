@@ -35,6 +35,9 @@ import { cn } from "@/lib/utils";
 
 export interface PrivacyRegion {
   label?: string;
+  /** Кадом аксро дар назар дорад (0-асосӣ), вақте якчанд акс якҷоя ба
+   *  ai-brain фиристода мешавад — ниг. шарҳи decodeSlot дар поён. */
+  imageIndex?: number;
   x: number; // 0-1
   y: number; // 0-1
   width: number; // 0-1
@@ -342,7 +345,21 @@ export function PrivacyBlurEditor({
       setReady(false);
       setCurrentIndex(0);
       setSelectedId(null);
-      Promise.all(files.map((file) => decodeSlot(file, initialRegions))).then((newSlots) => {
+      // ХАТОГИИ ЁФТШУДА (талаби корбар: "чизҳое, ки бояд пинҳон шаванд,
+      // пинҳон намешаванд"): пештар ҲАМАИ минтақаҳо (аз ҳар чанд акс) ба
+      // ҲАР акс якхела татбиқ мешуданд — координатаҳои акси 1 дар акси 2
+      // ҷои нодуруст мепӯшонданд ва рақами воқеӣ кушода мемонд. Ҳоло
+      // ai-brain ба ҳар минтақа `imageIndex` медиҳад (ниг.
+      // supabase/functions/ai-brain) — ҳамин ҷо танҳо минтақаҳои ҳамон
+      // акси мушаххас ба он акс мерасанд.
+      Promise.all(
+        files.map((file, i) =>
+          decodeSlot(
+            file,
+            initialRegions?.filter((r) => (r.imageIndex ?? 0) === i),
+          ),
+        ),
+      ).then((newSlots) => {
         setSlots(newSlots);
         setReady(true);
       });

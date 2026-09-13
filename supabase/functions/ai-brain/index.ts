@@ -97,13 +97,23 @@ Deno.serve(async (req) => {
       return encodeBase64(arrayBuffer);
     }));
 
-    const contentPayload = base64Images.map(b64 => ({ 
-      type: "image_url", 
-      image_url: { 
-        url: `data:image/jpeg;base64,${b64}`,
-        detail: "auto"
-      } 
-    }));
+    // ХАТОГИИ ЁФТШУДА (талаби корбар: "чизҳое, ки бояд пинҳон шаванд,
+    // пинҳон намешаванд"): вақте якчанд акс якҷоя фиристода мешаванд,
+    // модел ФАҚАТ ЯК privacy_regions бармегардонд — бе нишон додани он
+    // ки минтақа ба КАДОМ акс тааллуқ дорад. Клиент ҳамон як маҷмӯи
+    // минтақаҳоро ба ҲАМАИ аксҳо якхела татбиқ мекард — дар аксе, ки
+    // рақами ҳуҷҷат дар ҷои дигар буд (ё тамоман набуд), координатаҳо
+    // нодуруст меафтоданд ва рақам кушода мемонд. Ҳал: пеш аз ҳар акс
+    // барчаспи матнии индексаш ("Image N:") гузошта мешавад, то модел
+    // дар privacy_regions майдони image_index-ро дуруст пур кунад.
+    const contentPayload: unknown[] = [];
+    base64Images.forEach((b64, i) => {
+      contentPayload.push({ type: "text", text: `Image ${i}:` });
+      contentPayload.push({
+        type: "image_url",
+        image_url: { url: `data:image/jpeg;base64,${b64}`, detail: "auto" },
+      });
+    });
 
     // Shared instructions for is_document text handling — reused by both
     // MODERATION_PROMPT and FINAL_CHECK_PROMPT so text privacy behaves
@@ -126,6 +136,8 @@ STRICT RULES:
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly.
 IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner of the box, measured from the top-left corner of the WHOLE IMAGE including any background/margin around the document, not from the corner of the document itself).
 
+MULTIPLE IMAGES — the images are each preceded by a text label "Image 0:", "Image 1:", etc. EVERY region in privacy_regions MUST include "image_index" set to the number of the image it was found in. Never guess or reuse coordinates across images — a region for Image 0 must never be applied to Image 1. Check each image independently.
+
 COORDINATE ACCURACY — read this carefully, it is the part that goes wrong most:
 - Before returning each box, re-check it against the image: the box must actually sit ON the digits you are hiding. A box that lands next to the number instead of on it is a total failure — the number stays public.
 - ALWAYS ERR LARGER. If you are not certain of the exact position, widen and heighten the box. An oversized mosaic is harmless; one visible digit is not.
@@ -144,7 +156,7 @@ CRITICAL — NEVER cover, and NEVER let any privacy_region overlap even partiall
 THE ONLY EXCEPTION IS THE MRZ: the MRZ band also contains the name in machine-readable form, and that is fine — cover the whole MRZ band anyway. The name stays readable in the normal printed fields above, so nothing is lost. Never shrink the MRZ band to try to spare the name inside it.
 If is_document is false, or no qualifying number/code fields are visible, privacy_regions must be [].
 ${DOCUMENT_TEXT_RULES}
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "is_document": true/false, "privacy_regions": [{"label": "passport_number", "image_index": 0, "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "..."}`;
 
     // SUGGEST-ONLY PROMPT — pure vision auto-fill, no moderation verdict at all.
     // Used for the early "analyzing photo" step so it never blocks the user;
@@ -203,6 +215,8 @@ If unsafe, identify the SPECIFIC problematic part (image or text) in "reason", q
 ALSO DETERMINE: is any attached image an official document (passport, national ID, driver's license, residence permit, student card, bank/payment card, insurance card, or similar official document with a photo/printed personal data)? Set is_document accordingly — this is independent of is_safe.
 IF is_document IS TRUE, also locate every field that is a unique identifier that could be used for identity theft or fraud (passport/ID/license/card number, CVV/CVC, IBAN/account number, QR code, barcode, MRZ — the machine-readable row(s) of monospace text at the bottom of passports/IDs — or any other serial/unique number), and return a bounding box for EACH one in privacy_regions, as FRACTIONS of the image width/height (0 to 1, x/y = top-left corner of the box, measured from the top-left corner of the WHOLE IMAGE including any background/margin around the document, not from the corner of the document itself).
 
+MULTIPLE IMAGES — the images are each preceded by a text label "Image 0:", "Image 1:", etc. EVERY region in privacy_regions MUST include "image_index" set to the number of the image it was found in. Never guess or reuse coordinates across images — a region for Image 0 must never be applied to Image 1. Check each image independently.
+
 COORDINATE ACCURACY — read this carefully, it is the part that goes wrong most:
 - Before returning each box, re-check it against the image: the box must actually sit ON the digits you are hiding. A box that lands next to the number instead of on it is a total failure — the number stays public.
 - ALWAYS ERR LARGER. If you are not certain of the exact position, widen and heighten the box. An oversized mosaic is harmless; one visible digit is not.
@@ -233,7 +247,7 @@ This is a light copy-edit, not a re-authoring. The user does not see the result 
 - DOCUMENT RULE: if is_document is true, polished_title must be the document type plus the owner's name found on it, and polished_description must keep that name. Names always stay.
 - If is_document is true, polished_title and polished_description must ALREADY have any raw document/passport/ID/card number removed, exactly per the redaction rules above.
 
-Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "violation_source": "image"/"text"/"both"/null, "is_document": true/false, "privacy_regions": [{"label": "passport_number", "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "...", "polished_title": "...", "polished_description": "..."}`;
+Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "violation_source": "image"/"text"/"both"/null, "is_document": true/false, "privacy_regions": [{"label": "passport_number", "image_index": 0, "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "...", "polished_title": "...", "polished_description": "..."}`;
 
     let promptToUse = MASTER_PROMPT;
     if (mode === 'moderation_only') {
@@ -309,6 +323,12 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
               const y = Math.max(0, Math.min(1, r.y));
               return {
                 label: typeof r.label === "string" ? r.label : "sensitive",
+                // Пеш аз ин image_index набуд — минтақаҳои акси якум ба
+                // ХАМАИ аксҳо якхела татбиқ мешуданд (ниг. шарҳи contentPayload
+                // дар боло). Пешфарз 0, агар модел ин майдонро надиҳад.
+                imageIndex: typeof r.image_index === "number" && r.image_index >= 0
+                  ? Math.round(r.image_index)
+                  : 0,
                 x,
                 y,
                 width: Math.max(0, Math.min(1 - x, r.width)),

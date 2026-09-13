@@ -69,10 +69,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const pathname = usePathname();
 
   const category = searchParams.get("cat") || "All";
-  // Пешфарз — «Ёфтшуда»: одам аввал чизи ёфтшударо мебинад. Ҳолати «Ҳама»
-  // дигар нест, пас `type`-и холӣ маънои «Ёфтшуда»-ро дорад ва URL-и
-  // саҳифаи асосӣ тоза мемонад (`?type=` танҳо барои «Гумшуда» пайдо мешавад).
-  const itemType = (searchParams.get("type") as "lost" | "found") || "found";
+  // Пешфарз — «Ёфтшуда»: одам аввал чизи ёфтшударо мебинад. `type`-и
+  // холӣ маънои «Ёфтшуда»-ро дорад ва URL-и саҳифаи асосӣ тоза мемонад
+  // (`?type=` танҳо барои «Гумшуда» пайдо мешавад). Талаби корбар:
+  // «Ҳама» баргардонда шуд — бо `type=all` дар URL, `null` дар JS (бе
+  // филтр аз рӯи навъ, ниг. queryFilters поён).
+  const rawType = searchParams.get("type");
+  const itemType: "lost" | "found" | null =
+    rawType === "all" ? null : (rawType as "lost" | "found") || "found";
   const locationType = searchParams.get("loc") || null;
   const dateFrom = searchParams.get("from") || undefined;
   const dateTo = searchParams.get("to") || undefined;
@@ -104,9 +108,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const setCategory = (value: string) =>
     setFilterParams({ cat: value === "All" ? null : value });
   // «Ёфтшуда» пешфарз аст — онро аз URL мебарорем, то суроға тоза монад
-  // (ҳамон мантиқи `setCategory` бо "All").
-  const setItemType = (value: "lost" | "found") =>
-    setFilterParams({ type: value === "found" ? null : value });
+  // (ҳамон мантиқи `setCategory` бо "All"). `null` («Ҳама») ба `type=all` мегузарад.
+  const setItemType = (value: "lost" | "found" | null) =>
+    setFilterParams({ type: value === "found" ? null : value ?? "all" });
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [draftFrom, setDraftFrom] = useState("");
@@ -361,12 +365,13 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     ЗАМИНА — вагарна матни сурх дар заминаи сабз меафтод. */}
                 {(
                   [
+                    { value: null, label: t("all"), on: "bg-zinc-700 text-white dark:bg-zinc-200 dark:text-zinc-900", off: "bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400" },
                     { value: "found", label: t("filterFound"), on: "bg-emerald-500 text-white", off: "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400" },
                     { value: "lost", label: t("filterLost"), on: "bg-rose-500 text-white", off: "bg-white dark:bg-zinc-800 text-rose-700 dark:text-rose-400" },
                   ] as const
                 ).map((opt) => (
                   <button
-                    key={opt.value}
+                    key={opt.value ?? "all"}
                     onClick={() => setItemType(opt.value)}
                     aria-pressed={itemType === opt.value}
                     className={cn(
