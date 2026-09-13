@@ -155,7 +155,7 @@ export default function EditItemPage({
   const loadItem = useCallback(async () => {
     try {
       setLoading(true);
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const supabase = createClerkSupabaseClient(token!);
 
       const { data, error } = await supabase
@@ -246,7 +246,7 @@ export default function EditItemPage({
     setModerationError(null);
 
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const supabase = createClerkSupabaseClient(token!);
 
       const formDataAI = new FormData();
@@ -301,7 +301,7 @@ export default function EditItemPage({
     );
 
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const supabase = createClerkSupabaseClient(token!);
 
       const { data, error } = await supabase.functions.invoke(
@@ -366,7 +366,7 @@ export default function EditItemPage({
 
     setSaving(true);
     try {
-      let token = await getToken({ template: "supabase" });
+      let token = await getToken();
       if (!token) throw new Error("Authentication token missing");
 
       let supabase = createClerkSupabaseClient(token);
@@ -453,7 +453,7 @@ export default function EditItemPage({
         }
       }
 
-      token = await getToken({ template: "supabase" });
+      token = await getToken();
       if (!token) throw new Error("Authentication token expired or missing");
       supabase = createClerkSupabaseClient(token);
 

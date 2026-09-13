@@ -76,7 +76,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       setLoading(false);
       return;
     }
-    const token = await getToken({ template: "supabase" });
+    const token = await getToken();
     if (!token) return;
     const supabase = createClerkSupabaseClient(token);
 
@@ -235,7 +235,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       // Корбар бояд «Истодааст» ё «Не»-ро интихоб кунад.
       if (item.kind === "expiry_confirm") return;
 
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       if (!token) return;
       const supabase = createClerkSupabaseClient(token);
       const refId = item.id.includes(":") ? item.id.split(":")[1] : item.id;

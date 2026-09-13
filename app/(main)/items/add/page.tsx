@@ -206,7 +206,7 @@ function AddItemForm() {
     const fetchProfile = async () => {
       if (!userId) return;
       try {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         if (!token) return;
         const supabase = createClerkSupabaseClient(token);
         const profile = await ProfileService.getProfile(supabase, userId);
@@ -356,7 +356,7 @@ function AddItemForm() {
       try {
         let supabaseClient;
         if (userId) {
-          const token = await getToken({ template: "supabase" });
+          const token = await getToken();
           supabaseClient = createClerkSupabaseClient(token!);
         } else {
           supabaseClient = anonSupabase;
@@ -504,7 +504,7 @@ function AddItemForm() {
     };
 
     const publishWork = async () => {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       if (!token) throw new Error("Authentication token missing");
 
       const supabase = createClerkSupabaseClient(token);

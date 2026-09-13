@@ -55,7 +55,7 @@ export function useWebPush() {
         });
       }
 
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       if (!token) return false;
       const supabase = createClerkSupabaseClient(token);
       await supabase
@@ -81,7 +81,7 @@ export function useWebPush() {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        const token = await getToken({ template: "supabase" });
+        const token = await getToken();
         if (token) {
           const supabase = createClerkSupabaseClient(token);
           await supabase

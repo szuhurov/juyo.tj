@@ -120,7 +120,7 @@ export function ItemCard({
     if (isActionLoading) return;
     setIsActionLoading(true);
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       if (!token) throw new Error("Not authenticated");
       const supabase = createClerkSupabaseClient(token);
       await ItemService.deleteItem(supabase, item.id);

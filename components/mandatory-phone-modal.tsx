@@ -35,7 +35,7 @@ export function MandatoryPhoneModal() {
       if (!userId || !userLoaded) return;
       
       try {
-        const token = await getToken({ template: 'supabase' });
+        const token = await getToken();
         if (!token) return;
 
         const supabase = createClerkSupabaseClient(token);
@@ -78,7 +78,7 @@ export function MandatoryPhoneModal() {
 
     setLoading(true);
     try {
-      const token = await getToken({ template: 'supabase' });
+      const token = await getToken();
       const supabase = createClerkSupabaseClient(token!);
       
       await ProfileService.updateProfile(supabase, userId!, {

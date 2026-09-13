@@ -523,7 +523,7 @@ function ProfileContent() {
   const [token, setToken] = useState<string | null>(null);
   useEffect(() => {
     if (!userId) return;
-    getToken({ template: "supabase" })
+    getToken()
       .then((t) => { if (t) setToken(t); })
       .catch((err) => console.error("Error loading token:", err));
   }, [userId, getToken]);
@@ -799,7 +799,7 @@ function ProfileContent() {
     setProfile({ ...profile, is_qr_active: newState });
 
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const supabase = createClerkSupabaseClient(token!);
 
       // Background update
@@ -1055,7 +1055,7 @@ function ProfileContent() {
 
     setSecondaryLoading(true);
     try {
-      const supabaseToken = await getToken({ template: "supabase" });
+      const supabaseToken = await getToken();
       const supabase = createClerkSupabaseClient(supabaseToken!);
 
       const updates: Partial<Profile> = {};

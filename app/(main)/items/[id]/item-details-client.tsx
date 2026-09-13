@@ -85,7 +85,7 @@ export default function ItemDetailsClient({
 
   useEffect(() => {
     if (isLoaded) {
-      getToken({ template: "supabase" }).then(setToken);
+      getToken().then(setToken);
     }
   }, [isLoaded, getToken]);
 
@@ -169,7 +169,7 @@ export default function ItemDetailsClient({
 
   const checkInitialSavedState = useCallback(async () => {
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       if (!token) return;
       const supabase = createClerkSupabaseClient(token);
       const { data } = await supabase
@@ -205,7 +205,7 @@ export default function ItemDetailsClient({
     if (isToggling) return;
     setIsToggling(true);
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const supabase = createClerkSupabaseClient(token!);
       const saved = await ItemService.toggleSaveItem(supabase, userId!, id);
       setIsSaved(saved);
@@ -259,7 +259,7 @@ export default function ItemDetailsClient({
   const handleResolved = async () => {
     setIsActionLoading(true);
     try {
-      const token = await getToken({ template: "supabase" });
+      const token = await getToken();
       const supabase = createClerkSupabaseClient(token!);
       await ItemService.deleteItem(supabase, id);
       toast.success(t("itemResolvedSuccess"));
