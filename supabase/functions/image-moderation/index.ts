@@ -41,8 +41,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-5.5",
-          reasoning_effort: "medium",
+          model: "gpt-4o",
           messages: [
             {
               role: "system",
@@ -91,8 +90,7 @@ Return JSON ONLY: { "is_safe": boolean, "reason": "Short reason in Tajik or null
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-5.5",
-          reasoning_effort: "low",
+          model: "gpt-4o",
           messages: [
             {
               role: "system",

@@ -251,8 +251,7 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "gpt-5.5",
-        reasoning_effort: "low",
+        model: "gpt-4o",
         messages: [
           { 
             role: "system", 
