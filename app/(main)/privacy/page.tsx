@@ -1,10 +1,11 @@
 /**
- * Саҳифаи сиёсати махфият (Privacy Policy).
- * Ин саҳифа барои талаботи Facebook ва Google ҳатмӣ мебошад.
+ * Privacy Policy page.
+ * This page is required by Facebook and Google's policies.
  *
- * Server Component-и НОЗУК: танҳо metadata (title/description)-ро аз
- * cookie-и забон месозад — мӯҳтавои воқеӣ дар privacy-content.tsx (Client
- * Component) аст, то ивази забон аз header (бе navigation) фавран кор кунад.
+ * A LEAN Server Component: it only builds the metadata (title/description)
+ * from the language cookie — the actual content lives in privacy-content.tsx
+ * (a Client Component), so switching the language from the header (without
+ * navigation) works instantly.
  */
 import { cookies } from "next/headers";
 import type { Metadata } from "next";

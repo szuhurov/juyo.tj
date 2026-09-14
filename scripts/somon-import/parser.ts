@@ -1,8 +1,8 @@
 /**
- * Қабати parsing — ҷудо аз HTTP, то санҷиш осон бошад. Ҳамаи функсияҳо
- * "graceful" ҳастанд: агар сохтори HTML-и somon.tj тағйир ёфта бошад,
- * ба ҷои крash кардан, натиҷаи холӣ/null бармегардонанд ва warning
- * мезананд — воридкунӣ идома меёбад, танҳо ҳамон сабтҳо гум мешаванд.
+ * The parsing layer — separated from HTTP, so testing is easy. All
+ * functions are "graceful": if somon.tj's HTML structure changes,
+ * instead of crashing they return an empty result/null and log a
+ * warning — the import continues, only those records are lost.
  */
 import * as cheerio from "cheerio";
 import { logger } from "./logger";
@@ -48,10 +48,10 @@ export function parseDetailPage(html: string): ListingDetail {
     const description = $('meta[property="og:description"]').attr("content")?.trim() || null;
     const category = $("[data-category]").first().attr("data-category")?.trim() || null;
 
-    // Ҳамаи аксҳои ХУДИ ин эълон — img.announcement__images-item аст,
-    // на .js-image-page-advert-grid (он ба виҷети "эълонҳои монанд" дар
-    // поёни саҳифа тааллуқ дорад, на ба худи ин эълон — агар онро
-    // истифода барем, аксҳои эълони дигар омехта мешавад).
+    // All images belonging to THIS listing itself are img.announcement__images-item,
+    // not .js-image-page-advert-grid (that belongs to the "similar listings"
+    // widget at the bottom of the page, not to this listing itself — if we
+    // used it, other listings' images would get mixed in).
     const images = new Set<string>();
     $('img.announcement__images-item[itemprop="image"]').each((_, el) => {
       const src = $(el).attr("data-full") || $(el).attr("src");
@@ -82,8 +82,8 @@ export function parseDetailPage(html: string): ListingDetail {
   }
 }
 
-// Тахминӣ гумшуда/ёфтшуда аз рӯи калимаҳои калидии унвон — агар возеҳ
-// набошад, null мемонад (admin худаш муайян мекунад).
+// Guesses lost/found from keywords in the title — if it's not clear,
+// it stays null (the admin decides).
 export function guessType(title: string): "lost" | "found" | null {
   const t = title.toLowerCase();
   if (/найден|ёфт|ёфтшуда|топ/.test(t)) return "found";

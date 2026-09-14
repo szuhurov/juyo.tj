@@ -1,6 +1,6 @@
 /**
- * Хизматрасонӣ барои маълумоти оммавии саҳифаи асосӣ (Landing stats).
- * Танҳо рақамҳо ва аватарҳои воқеии корбарон аз ҷадвали'profiles'гирифта мешаванд.
+ * Service for the landing page's public data (Landing stats).
+ * Only real numbers and user avatars are fetched from the 'profiles' table.
  */
 
 import { SupabaseClient } from'@supabase/supabase-js';

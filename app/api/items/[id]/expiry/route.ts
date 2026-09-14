@@ -5,15 +5,15 @@ import { hardDeleteItem } from "@/lib/services/item-deletion";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
- * Ҷавоби соҳиб ба огоҳии «мӯҳлати эълон тамом шуд».
+ * Owner's response to the "post has expired" notification.
  *
- *   keep   → мӯҳлат аз нав (аз `app_settings.post_lifetime_days`), 72 соат бекор
- *   delete → нест кардани фаврӣ, бе интизори 72 соат
+ *   keep   → renews the expiry (from `app_settings.post_lifetime_days`), cancels the 72-hour timer
+ *   delete → deletes immediately, without waiting the 72 hours
  *
- * Агар корбар ҳеҷ чиз назанад, cron-и рӯзона баъд аз 72 соат худаш нест
- * мекунад (ниг. supabase/functions/cleanup-expired-posts).
+ * If the user doesn't tap anything, the daily cron deletes it automatically
+ * after 72 hours (see supabase/functions/cleanup-expired-posts).
  *
- * Native низ ҳамин route-ро бо Bearer-и Clerk занг мезанад.
+ * Native also calls this same route with a Clerk Bearer token.
  */
 export async function POST(
   req: NextRequest,
@@ -38,7 +38,7 @@ export async function POST(
 
   try {
     if (action === "delete") {
-      // hardDeleteItem худаш соҳибиро месанҷад ва аксҳоро аз Storage мебарорад.
+      // hardDeleteItem itself checks ownership and removes the images from Storage.
       const result = await hardDeleteItem(id, userId);
       if (!result.ok) {
         return NextResponse.json({ error: result.reason }, { status: result.status });
@@ -46,8 +46,8 @@ export async function POST(
       return NextResponse.json({ ok: true, action: "delete" });
     }
 
-    // СОҲИБӢ аз рӯи база санҷида мешавад, на аз бадани дархост —
-    // `supabaseAdmin` RLS-ро убур мекунад, пас ин санҷиш ягона монеа аст.
+    // OWNERSHIP is checked against the database, not the request body —
+    // `supabaseAdmin` bypasses RLS, so this check is the only safeguard.
     const { data: item, error: fetchError } = await supabaseAdmin
       .from("items")
       .select("id, user_id, expiry_notified_at")

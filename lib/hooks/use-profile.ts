@@ -1,8 +1,8 @@
 /**
- * Хук барои гирифтани профили корбари ҷорӣ бо кэши React Query — пеш аз
- * ин профил ҳар бор бо useEffect дастӣ fetch мешуд (бе кэш), яъне ҳар
- * гузариш ба /profile (масалан home → QR → бозгашт) skeleton-и навро
- * нишон медод, ҳатто агар чанд сония пеш аллакай fetch шуда буд.
+ * Hook for fetching the current user's profile with React Query caching —
+ * previously the profile was manually fetched each time via useEffect
+ * (with no cache), meaning every navigation to /profile (e.g. home → QR →
+ * back) showed a new skeleton, even if it had already been fetched a few seconds earlier.
  */
 import { useQuery } from "@tanstack/react-query";
 import { ProfileService } from "@/lib/services/profile-service";
@@ -23,6 +23,6 @@ export function useProfileQuery(
       return ProfileService.getProfile(supabase, userId!);
     },
     enabled: !!userId && !!getToken,
-    staleTime: 1000 * 60 * 2, // 2 дақиқа — телефон/QR статус хеле кам иваз мешавад
+    staleTime: 1000 * 60 * 2, // 2 minutes — phone/QR status changes very rarely
   });
 }

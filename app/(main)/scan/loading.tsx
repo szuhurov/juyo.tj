@@ -1,7 +1,7 @@
 /**
- * Loading UI-и махсуси /scan — то Next.js аз loading.tsx-и умумии
- * гурӯҳи (main) (шакли grid-и item-ҳо, барои home сохта шудааст)
- * истифода набарад. Он барои ин саҳифа тамоман нодуруст менамуд.
+ * A dedicated loading UI for /scan — so Next.js doesn't fall back to
+ * the (main) group's shared loading.tsx (an item grid skeleton built for
+ * home). That skeleton looked completely wrong for this page.
  */
 export default function ScanLoading() {
   return null;

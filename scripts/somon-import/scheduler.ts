@@ -1,13 +1,13 @@
 /**
- * Раванди тӯлонӣ (long-running) — runImport-ро аз рӯи cron ба таври
- * даврӣ иҷро мекунад. Пешфарз ҳар 6 соат (на ҳар 15 дақиқа), то
- * баррасии дастии admin (пур кардани рақами телефон) ба вақт расад —
- * ниг. SOMON_CRON_SCHEDULE дар config.ts барои тағир додан.
+ * A long-running process — runs runImport periodically on a cron
+ * schedule. Defaults to every 6 hours (not every 15 minutes), to give
+ * time for the admin's manual review (filling in the phone number) —
+ * see SOMON_CRON_SCHEDULE in config.ts to change it.
  *
- * Истифода (бояд иҷрокунанда доимӣ кушода бимонад — pm2/systemd/Task
- * Scheduler ё монанди он):
+ * Usage (the process must stay open continuously — pm2/systemd/Task
+ * Scheduler or similar):
  *   node --env-file=.env.local -r tsx/cjs scripts/somon-import/scheduler.ts
- *   ё: npx tsx --env-file=.env.local scripts/somon-import/scheduler.ts
+ *   or: npx tsx --env-file=.env.local scripts/somon-import/scheduler.ts
  */
 import cron from "node-cron";
 import { config } from "./config";
@@ -25,7 +25,7 @@ async function tick() {
   try {
     await runImport();
   } catch (err: any) {
-    // Ҳаргиз набояд аз ин ҷо баромада бирасад — раванди cron бояд зинда монад.
+    // This must never escape from here — the cron process must stay alive.
     logger.error("Давраи cron бо хатогӣ тамом шуд, зинда мемонем", { error: err.message });
   } finally {
     running = false;
@@ -35,7 +35,7 @@ async function tick() {
 logger.info("Scheduler оғоз шуд", { schedule: config.cronSchedule });
 cron.schedule(config.cronSchedule, tick);
 
-// Бори аввал фавран иҷро мекунем, баъд аз рӯи cron.
+// The first run happens immediately, after that it follows the cron schedule.
 tick();
 
 process.on("SIGINT", () => {

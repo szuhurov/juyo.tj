@@ -1,6 +1,6 @@
 /**
- * Icon-и ҳар категория (lucide-react), якхела барои филтри саҳифаи асосӣ
- * ва ItemListRow — то ду ҷо аз ҳам дур наравад.
+ * Icon for each category (lucide-react), shared between the main page filter
+ * and ItemListRow — so the two places don't drift apart.
  */
 import {
   Cpu,

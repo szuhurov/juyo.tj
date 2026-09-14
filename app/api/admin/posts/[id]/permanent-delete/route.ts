@@ -16,12 +16,12 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
 }
 
 /**
- * Пурра нест кардани эълон — фақат барои эълонҳое, ки аллакай дар trash
- * ҳастанд (status='deleted'). Snapshot дар deleted_items_archive захира
- * мешавад (ҳамон ҷадвале, ки cascade-и "пурра нест кардани корбар" низ
- * истифода мебарад — ниг. app/api/admin/users/[id]/permanent-delete),
- * то саҳифаи Эълонҳо ҳарду ҳолатро (мустақим нест ва аз cascade-и
- * корбари нестшуда) якҷоя нишон диҳад.
+ * Permanently deletes a post — only for posts that are already in the
+ * trash (status='deleted'). A snapshot is saved to deleted_items_archive
+ * (the same table also used by the "permanently delete user" cascade —
+ * see app/api/admin/users/[id]/permanent-delete), so the Posts page can
+ * show both cases (directly deleted and cascaded from a deleted user)
+ * together.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId: adminId } = await auth();

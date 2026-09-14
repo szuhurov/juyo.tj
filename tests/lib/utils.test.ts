@@ -31,8 +31,8 @@ describe('cn (className merger)', () => {
 });
 
 describe('stripDocumentNumbers', () => {
-  // Ин панҷараи охирин пеш аз саҳифаи ОММАВӢ аст — агар AI рақами
-  // шиносномаро дар матн монад, ҳамин ҷо бурида мешавад.
+  // This is the last filter before the PUBLIC page — if the AI leaves a
+  // passport number in the text, it gets cut here.
   it('removes a bare document number', () => {
     expect(stripDocumentNumbers('Паспорт Алимов рақами 1234567.')).toBe(
       'Паспорт Алимов рақами.',
@@ -56,8 +56,8 @@ describe('stripDocumentNumbers', () => {
   });
 
   it('does not eat letters from the preceding word', () => {
-    // Регекс силсиларо (то 2 ҳарф) мегирад — бе муҳофизат "рақами" ба
-    // "рақа" мубаддал мешуд.
+    // The regex captures the series prefix (up to 2 letters) — without this
+    // safeguard, "рақами" would turn into "рақа".
     expect(stripDocumentNumbers('рақами 1234567')).toBe('рақами');
   });
 

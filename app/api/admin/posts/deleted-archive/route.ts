@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
       .select("id, item_id, item_snapshot, deleted_at")
       .order("deleted_at", { ascending: false })
       .limit(200);
-    // item_snapshot — JSON-и пурраи сатри items дар лаҳзаи нест шудан, ки
-    // user_id-ро низ дар бар мегирад — барои филтр аз рӯи корбар истифода мешавад.
+    // item_snapshot — the full JSON of the items row at the moment of
+    // deletion, which also includes user_id — used for filtering by user.
     if (filterUserId) query = query.eq("item_snapshot->>user_id", filterUserId);
 
     const { data, error } = await query;

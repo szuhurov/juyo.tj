@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Мӯҳтавои саҳифаи сиёсати махфият — Client Component, то ивази забон аз
- * header (бе navigation/reload) фавран инъикос ёбад, мисли ҳамаи саҳифаҳои
- * дигар. Metadata (title/description) дар page.tsx-и волидайн (Server
- * Component) идора мешавад.
+ * Content of the Privacy Policy page — a Client Component, so switching the
+ * language from the header (without navigation/reload) is reflected
+ * instantly, like on all other pages. Metadata (title/description) is
+ * handled in the parent page.tsx (a Server Component).
  */
 import { useLanguage } from "@/lib/language-context";
 
@@ -167,8 +167,8 @@ export function PrivacyContent() {
 
       <div className="space-y-8">
         {currentContent.sections.map((section) => (
-          // `scroll-mt-24` — бари болоии `fixed` вагарна сарлавҳаи
-          // бахшро мепӯшонд ва пайванди `#anchor` ба ҷои холӣ мебурд.
+          // `scroll-mt-24` — the fixed top bar would otherwise cover the
+          // section heading and the `#anchor` link would land on empty space.
           <div key={section.id} id={section.id} className="scroll-mt-24">
             <h2 className="text-xl font-semibold mb-3">{section.title}</h2>
             <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">

@@ -1,7 +1,7 @@
 /**
- * Ин тарҳи асосии сайт аст (Layout).
- * Дар ин ҷо Ҳедер, модал барои телефон ва Футер ҷойгир шудаанд.
- * Ҳамаи саҳифаҳои ин раздел дар дохили ин файл рендеринг мешаванд.
+ * This is the site's main layout (Layout).
+ * The Header, the phone modal, and the Footer live here.
+ * All pages in this section render inside this file.
  */
 
 import { auth, currentUser } from "@clerk/nextjs/server";
@@ -12,12 +12,12 @@ import { HomeProvider } from "@/lib/home-context";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { BlockedAccountScreen } from "@/components/blocked-account-screen";
 
-// Ин хониш (status/phone) дар ин layout ДАР ҲАР ГУЗАРИШ (ҳатто дохили
-// ҳамин гурӯҳ, масалан хона → профил) иҷро мешуд — як дархости DB барои
-// ҳар клик, ки ба сустии гузариш мусоидат мекард. Кэш (30 сония) ин
-// сустиро нест мекунад, вале боз ҳам блоки "ҳисоби басташуда" ва
-// backfill-и телефон дар доираи чанд сония амал мекунанд — на воқеан
-// "лаҳзавӣ", вале ин барои санҷиши заминавӣ кофист.
+// This read (status/phone) in this layout used to run on EVERY navigation
+// (even within this same group, e.g. home → profile) — one DB request per
+// click, which contributed to slow transitions. The cache (30 seconds)
+// doesn't eliminate that slowness, but the "blocked account" gate and the
+// phone backfill still take effect within a few seconds — not truly
+// "instant", but that's enough for a background check.
 const getCachedProfileStatus = unstable_cache(
   async (userId: string) => {
     const { data } = await supabaseAdmin
@@ -43,13 +43,13 @@ export default async function MainLayout({
       return <BlockedAccountScreen />;
     }
 
-    // Fallback барои вақте webhook-и clerk-sync ноком мешавад (масалан
-    // signing secret номувофиқ) — то профил ҳаргиз "гум" нашавад ва телефони
-    // аз Clerk (масалан ҳангоми сабти ном бо рақами телефон) бе он намонад.
-    // Барои профили аллакай мавҷуда танҳо телефони ХОЛӢ пур мешавад — ном/
-    // насаб/email-ро дубора аз Clerk намегирем, чунки шояд корбар онҳоро дар
-    // худи барнома нав карда бошад ва Clerk (аз сабаби ҳамон webhook) ҳанӯз
-    // куҳна бошад.
+    // Fallback for when the clerk-sync webhook fails (e.g. a mismatched
+    // signing secret) — so the profile never ends up "missing", and the
+    // phone number from Clerk (e.g. when signing up with a phone number)
+    // isn't left without it. For a profile that already exists, only an
+    // EMPTY phone field gets filled — we don't re-fetch name/surname/email
+    // from Clerk, because the user may have updated them inside the app
+    // itself while Clerk (due to that same webhook issue) is still stale.
     if (!profile) {
       const clerkUser = await currentUser();
       if (clerkUser) {
@@ -78,17 +78,17 @@ export default async function MainLayout({
   return (
     <HomeProvider>
     <div className="flex flex-col min-h-screen bg-canvas">
-      {/* Ҳедери сайт (Шапка) - танҳо дар саҳифаи асосӣ (талаби корбар: дар
-          дигар саҳифаҳо ҷустуҷӯ/навигатсияи такрорӣ лозим нест). */}
+      {/* Site header (Header) - only on the home page (user request: other
+          pages don't need duplicate search/navigation). */}
       <HomeOnlyHeader />
 
-      {/* Ин ҷо мӯҳтавои асосии саҳифаҳо мебарояд (Main Content) */}
+      {/* This is where the pages' main content renders (Main Content) */}
       <MainContent>{children}</MainContent>
 
-      {/* Поёни сайт (Footer) */}
+      {/* Site bottom (Footer) */}
       <SiteFooter />
 
-      {/* Навбари мобилӣ (Bottom Navigation) - Persistent UI */}
+      {/* Mobile navbar (Bottom Navigation) - Persistent UI */}
       <MobileNavbar />
     </div>
     </HomeProvider>

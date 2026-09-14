@@ -25,10 +25,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .single();
     if (fetchError) throw fetchError;
 
-    // "Коркард шуд" = admin шахсиятро тасдиқ кард — ҳисоби воқеии Clerk-ро
-    // бо ҳамин email ёфта, пурра нест мекунем (мисли худи корбар аз
-    // /api/account/delete). Агар ҳисобе бо ин email вуҷуд надошта бошад,
-    // дархостро "коркард шуд" мегузорем (чизе барои нест кардан нест).
+    // "Processed" = admin has verified identity — find the actual Clerk
+    // account with this same email and delete it completely (just like the
+    // user themselves would via /api/account/delete). If no account with
+    // this email exists, mark the request as "processed" anyway (there's
+    // nothing to delete).
     if (status === "processed") {
       const client = await clerkClient();
       const { data: users } = await client.users.getUserList({ emailAddress: [request.email] });

@@ -5,11 +5,11 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /**
- * Аватари даъвогар — бо fallback ба доираи ҳарфи аввал агар URL кор
- * накунад (масалан snapshot-и кӯҳнаи Clerk, ки аллакай 404 медиҳад).
- * className андозаро (масалан w-11 h-11) муайян мекунад — истифода
- * мешавад ба wrapper-и relative, зеро next/image bo fill андозаи
- * падари positioned-ро талаб мекунад.
+ * Claimant avatar — falls back to a circle with the first letter if the
+ * URL doesn't work (e.g. an old Clerk snapshot that already 404s).
+ * className sets the size (e.g. w-11 h-11) — it's applied to the relative
+ * wrapper, since next/image with fill requires the positioned parent to
+ * have a size.
  */
 export function ClaimantAvatar({
   url,

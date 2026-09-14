@@ -1,33 +1,33 @@
 /**
- * Тарҳбандии асосии барнома (Root Layout), ки сохтори умумии HTML-ро муайян мекунад.
- * Дар ин ҷо таъминкунандагони (providers) глобалӣ ва метамаълумоти SEO танзим карда мешаванд.
- * Test commit: git push санҷиш.
+ * The app's root layout, which defines the overall HTML structure.
+ * Global providers and SEO metadata are configured here.
+ * Test commit: git push test.
  */
-import type { Viewport } from "next"; // Барои танзими маълумоти SEO ва экран
-import { Nunito } from "next/font/google"; // Барои истифодаи шрифти Nunito
-import "./globals.css"; // Пайваст кардани услубҳои асосии CSS
-import { LanguageProvider, type Locale } from "@/lib/language-context"; // Барои идоракунии забони тамоми сайт
-import { Toaster } from "@/components/ui/sonner"; // Барои нишон додани огоҳиномаҳо дар экран
-import { NetworkStatus } from "@/components/network-status"; // Барои санҷиши пайвастшавӣ ба интернет
-import { Analytics } from "@vercel/analytics/react"; // Барои ҷамъоварии омори истифодабарандагон
-import { SpeedInsights } from "@vercel/speed-insights/next"; // Барои назорати суръати кори сайт
+import type { Viewport } from "next"; // For configuring SEO and viewport data
+import { Nunito } from "next/font/google"; // For using the Nunito font
+import "./globals.css"; // Import the main CSS styles
+import { LanguageProvider, type Locale } from "@/lib/language-context"; // For managing the site's language
+import { Toaster } from "@/components/ui/sonner"; // For showing on-screen notifications
+import { NetworkStatus } from "@/components/network-status"; // For checking internet connectivity
+import { Analytics } from "@vercel/analytics/react"; // For collecting user analytics
+import { SpeedInsights } from "@vercel/speed-insights/next"; // For monitoring site performance
 import { ClerkLocalizationProvider } from "@/components/clerk-localization-provider";
-import { QueryProvider } from "@/components/query-provider"; // Барои идоракунии запросҳо ба сервер
-import { ThemeProvider } from "@/components/theme-provider"; // Равшан / торик / система
-import { translations } from "@/lib/translations"; // Барои дастрасӣ ба тарҷумаҳои сайт
-import { cookies } from "next/headers"; // Барои кор бо кукиҳои браузер
+import { QueryProvider } from "@/components/query-provider"; // For managing requests to the server
+import { ThemeProvider } from "@/components/theme-provider"; // Light / dark / system
+import { translations } from "@/lib/translations"; // For accessing site translations
+import { cookies } from "next/headers"; // For working with browser cookies
 import Script from "next/script";
 
-// Nunito — мудаввар, дӯстона, ба SF Compact Rounded монанд; дастгирии
-// пурраи алифбои лотинӣ ва кирилӣ (тоҷикӣ/русӣ/англисӣ дар як фонт).
+// Nunito — rounded, friendly, similar to SF Compact Rounded; full
+// support for both Latin and Cyrillic (Tajik/Russian/English in one font).
 const nunito = Nunito({
   subsets: ["latin", "cyrillic"],
   variable: "--font-nunito",
 });
 
 /**
- * Функсия барои тавлиди динамикии метамаълумот вобаста ба забони интихобшудаи корбар.
- * Ин барои беҳтар кардани SEO дар забонҳои тоҷикӣ, русӣ ва англисӣ хидмат мекунад.
+ * Function for dynamically generating metadata based on the user's selected language.
+ * This serves to improve SEO in Tajik, Russian, and English.
  */
 export async function generateMetadata() {
   const cookieStore = await cookies();
@@ -114,19 +114,19 @@ export async function generateMetadata() {
 }
 
 /**
- * Танзимоти намоиш (Viewport) барои таъмини мутобиқат бо дастгоҳҳои мобилӣ.
+ * Viewport configuration for ensuring compatibility with mobile devices.
  */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // `maximumScale`/`userScalable: false` пештар зум-ро пурра манъ мекард —
-  // WCAG 1.4.4-ро вайрон мекунад (корбарони бинои заиф наметавонанд калон
-  // кунанд). Ҳадди 5x кофист барои пешгирии зуми тасодуфӣ, вале ҳамзамон
-  // ба талаботи дастрасӣ ҷавобгӯ мебошад.
+  // `maximumScale`/`userScalable: false` previously disabled zoom entirely —
+  // that violates WCAG 1.4.4 (users with low vision can't zoom in).
+  // A cap of 5x is enough to prevent accidental zooming while still
+  // meeting accessibility requirements.
   maximumScale: 5,
-  // Ранги навори системавии браузер/PWA. Пештар ҳарду сафед буданд —
-  // дар реҷаи торик навор сафед мемонд ва бо сайт номувофиқ буд.
-  // Арзишҳо = --canvas дар ҳар мавзӯъ.
+  // Color of the browser/PWA system bar. Both used to be white —
+  // in dark mode the bar stayed white and clashed with the site.
+  // Values = --canvas for each theme.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f1f5f9" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
@@ -195,10 +195,10 @@ export default async function RootLayout({
         <ThemeProvider>
         <LanguageProvider initialLocale={locale as Locale}>
           <ClerkLocalizationProvider>
-            {/* Матни махфӣ барои Google, то ба ҷои номҳои меню тавсифи сайтро нишон диҳад.
-                Дар div-и бо role="region" печонда шудааст (на худи h1), то ки
-                a) axe/screen reader онро ҳамчун landmark-и дуруст шиносад,
-                б) семантикаи "heading"-и худи h1 бетаъсир монад. */}
+            {/* Hidden text for Google, so it shows the site description instead of menu names.
+                Wrapped in a div with role="region" (not the h1 itself), so that
+                a) axe/screen readers recognize it as a proper landmark,
+                b) the h1's own "heading" semantics stay unaffected. */}
             <div role="region" aria-label="JUYO">
               <h1 className="sr-only">
                 роҳи зуд барои пайдо кардан ва баргардонидани ашёҳои гумшуда дар
@@ -228,9 +228,9 @@ export default async function RootLayout({
             }}
           />
         ) : (
-          // Дар dev ҳеҷ гоҳ SW-ро сабт накун — агар аз пеш сабт шуда бошад
-          // (масалан аз production build-и қаблӣ), онро худкор нест кун,
-          // то кэши SW тағйиротро дар вақти рушд пинҳон накунад.
+          // Never register the SW in dev — if it was already registered
+          // (e.g. from a previous production build), automatically unregister it,
+          // so the SW cache doesn't hide changes during development.
           <Script
             id="sw-unregister-dev"
             strategy="afterInteractive"

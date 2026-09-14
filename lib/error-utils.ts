@@ -1,7 +1,7 @@
 /**
- * Хатогиҳои Clerk одатан ҳамчун { errors: [{ longMessage, message }] } меоянд,
- * на Error оддӣ — ин helper новобаста аз шакли воқеии хатогӣ паёми
- * хониданиро бе `any` мебарорад (барои логгинг ва/ё паёми корбар).
+ * Clerk errors usually come as { errors: [{ longMessage, message }] },
+ * not a plain Error — this helper extracts a readable message regardless
+ * of the actual error shape, without `any` (for logging and/or user-facing messages).
  */
 export function getErrorMessage(err: unknown, fallback = "Internal error"): string {
   if (err && typeof err === "object") {
@@ -11,7 +11,7 @@ export function getErrorMessage(err: unknown, fallback = "Internal error"): stri
   return fallback;
 }
 
-/** Коди HTTP-и хатогии Clerk (масалан 404), агар мавҷуд бошад. */
+/** The HTTP status code of a Clerk error (e.g. 404), if present. */
 export function getErrorStatus(err: unknown): number | undefined {
   if (err && typeof err === "object" && "status" in err) {
     const status = (err as { status?: unknown }).status;

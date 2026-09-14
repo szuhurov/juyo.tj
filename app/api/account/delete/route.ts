@@ -4,12 +4,13 @@ import { deleteUserAccount } from "@/lib/services/account-deletion";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
- * Худи корбар ҳисоби худро нест мекунад (Танзимот → "Нест кардани ҳисоб").
- * Ҳам Clerk ва ҳам Supabase-ро мустақим аз ин ҷо (Backend API, бо
- * secret key) нест мекунад — на тавассути user.delete()-и клиент, зеро он
- * reverification талаб мекунад (парол/телефон), ки бисёр ҳисобҳо (масалан
- * бо Google бе парол) надоранд ва ба "Cannot verify your account" дучор
- * мешаванд. Дархости сервер-ба-сервер ин талаботро надорад.
+ * The user deletes their own account (Settings → "Delete account"). Deletes
+ * both Clerk and Supabase directly from here (a backend API, with the
+ * secret key) — not via the client's user.delete(), because that requires
+ * reverification (password/phone), which many accounts (for example,
+ * Google accounts without a password) don't have and would hit "Cannot
+ * verify your account". A server-to-server request doesn't have this
+ * requirement.
  */
 export async function POST() {
   const { userId } = await auth();

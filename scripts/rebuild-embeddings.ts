@@ -1,15 +1,15 @@
 /**
- * Векторҳои visual-search-ро аз нав месозад.
+ * Rebuilds the visual-search vectors.
  *
- * Вақте ки модели embedding ё forensic prompt иваз мешавад, векторҳои
- * кӯҳна дигар бо вектори дархост дар як фазо нестанд — ҷустуҷӯ ашёи
- * нодуруст мебарорад. Ин скрипт ҳамаро аз нав месозад.
+ * When the embedding model or the forensic prompt changes, the old
+ * vectors are no longer in the same space as the query vector — search
+ * returns the wrong items. This script rebuilds all of them.
  *
  *   npx tsx --env-file=.env.local scripts/rebuild-embeddings.ts --dry-run
  *   npx tsx --env-file=.env.local scripts/rebuild-embeddings.ts
  *
- * --dry-run  — танҳо нишон медиҳад, ки чанд ашё коркард мешавад
- * --missing  — танҳо аксҳои бе вектор (арзонтар, барои backfill-и оддӣ)
+ * --dry-run  — only shows how many items would be processed
+ * --missing  — only images without a vector (cheaper, for simple backfill)
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -80,12 +80,13 @@ async function main() {
   let failed = 0;
   const failedIds: string[] = [];
 
-  // Пай дар пай — ҳар акс ду занги OpenAI мехоҳад; параллел рафтан
-  // ба маҳдудияти квота мезанад.
+  // Sequential — each image needs two OpenAI calls; going in parallel
+  // hits the quota limit.
   //
-  // Такрор ҳатмист: дар гузариши аввал 65 аз 99 ашё ноком шуд, вале
-  // ҳамон ашёҳо дар кӯшиши дуюм бе ягон тағйирот 200 доданд — яъне
-  // хатоҳо гузаранда буданд (маҳдудияти суръати OpenAI), на воқеӣ.
+  // Retrying is essential: on the first pass, 65 of 99 items failed, but
+  // those same items returned 200 on the second attempt with no changes
+  // at all — meaning the errors were transient (OpenAI rate limiting),
+  // not real failures.
   for (const [itemId, entry] of targets) {
     let ok = false;
     let lastError = "";
@@ -119,7 +120,7 @@ async function main() {
       console.error(`✗ ${itemId}: ${lastError}`);
     }
 
-    // Нафаси кӯтоҳ байни ашёҳо — маҳдудияти суръати OpenAI-ро сабук мекунад.
+    // A short breather between items — eases OpenAI's rate limiting.
     await sleep(400);
   }
 

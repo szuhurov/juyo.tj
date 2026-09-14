@@ -1,5 +1,5 @@
 /**
- * Луғати тарҷумаҳои барнома (Translations).
+ * The application's translation dictionary (Translations).
  */
 
 export type TranslationValue = string | string[] | { [key: string]: TranslationValue };

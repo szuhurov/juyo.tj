@@ -1,6 +1,6 @@
 /**
- * Саҳифаи бақайдгирӣ (Sign Up Page).
- * Ин файл барои сохтани аккаунти нави корбар бо ёрии Clerk хизмат мекунад.
+ * Sign Up Page.
+ * This file is used for creating a new user account with the help of Clerk.
  */
 "use client";
 
@@ -14,7 +14,7 @@ export default function Page() {
   const { t, locale, setLocale } = useLanguage();
   const router = useRouter();
 
-  // Рӯйхати забонҳо барои тугмаҳо
+  // List of languages for the buttons
   const languages = [
     { code: "tg", label: "Тоҷикӣ" },
     { code: "ru", label: "Русский" },
@@ -23,7 +23,7 @@ export default function Page() {
 
   return (
     <main className="min-h-screen flex flex-col items-center bg-white dark:bg-zinc-950 p-4 pt-6 sm:pt-12 relative">
-      {/* Сарлавҳаи боло: Тугмаи Ба қафо ва Ивази забон */}
+      {/* Top header: Back button and Language switcher */}
       <div className="w-full max-w-[480px] relative flex items-center justify-center mb-8 sm:mb-12">
         <Button
           variant="ghost"
@@ -68,11 +68,11 @@ export default function Page() {
                 elements: {
                   card: "w-full shadow-none border-none bg-transparent",
                   rootBox: "w-full",
-                  // Талаби корбар: input/тугмаҳои Clerk аз ҳад зиёд rounded
-                  // буданд (пешфарзи Clerk) — ба ҳамон радиуси боқии
-                  // Талаби такрории корбар: боз ҳам камтар — акнун АЙНАН
-                  // ба радиуси тугмаҳои интихоби забон дар боло мутобиқ
-                  // (rounded-lg, 8px), на --radius-control (14px).
+                  // User request: Clerk's inputs/buttons were too rounded
+                  // (Clerk's default) — matched to the same radius as the rest of the
+                  // Repeated user request: even less — now matching EXACTLY
+                  // the radius of the language selection buttons above
+                  // (rounded-lg, 8px), not --radius-control (14px).
                   formFieldInput: "rounded-lg",
                   formButtonPrimary: "rounded-lg",
                   socialButtonsBlockButton: "rounded-lg",

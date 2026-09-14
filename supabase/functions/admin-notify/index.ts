@@ -11,13 +11,13 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Web push (VAPID/aes128gcm) такя ба crypto.createECDH-и Node дорад, ки
-// дар Deno's node:crypto polyfill татбиқ нашудааст ("Not implemented:
-// crypto.ECDH") — бинобар ин рамзгузорӣ ва фиристодани воқеӣ на аз ин ҷо,
-// балки аз /api/push/send-и Vercel (runtime-и воқеии Node) иҷро мешавад.
-// Ҳамон қолиб, ки notify-category-post ва notify-verification истифода
-// мебаранд — admin-notify пештар мустақим webpush.sendNotification()-ро
-// дар Deno даъват мекард, ки ҳаргиз кор намекард (хатои ECDH-ро хомӯш фурӯ мебурд).
+// Web push (VAPID/aes128gcm) relies on Node's crypto.createECDH, which is
+// not implemented in Deno's node:crypto polyfill ("Not implemented:
+// crypto.ECDH") — so the actual encryption and sending happens not here,
+// but through Vercel's /api/push/send (a real Node runtime).
+// Same pattern used by notify-category-post and notify-verification —
+// admin-notify used to call webpush.sendNotification() directly in Deno,
+// which never worked (it silently swallowed the ECDH error).
 async function sendWebPush(token: string, payload: object): Promise<{ ok: boolean; statusCode?: number }> {
   const subscription = JSON.parse(token);
   const res = await fetch(`${SITE_URL}/api/push/send`, {

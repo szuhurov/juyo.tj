@@ -1,6 +1,6 @@
 /**
- * Барои паст кардани вазни суратҳо пеш аз боргузорӣ.
- * Ин кор барои тезтар кор кардани сайт лозим аст.
+ * For reducing image file size before upload.
+ * This is needed to make the site work faster.
  */
 export async function compressImage(
   file: File,
@@ -10,7 +10,7 @@ export async function compressImage(
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    // Хондани файл ва табдил додани он ба формати DataURL
+    // Reading the file and converting it to DataURL format
     reader.readAsDataURL(file);
     
     reader.onload = (event) => {
@@ -18,12 +18,12 @@ export async function compressImage(
       img.src = event.target?.result as string;
       
       img.onload = () => {
-        // Сохтани элементи Canvas барои коркарди графикӣ дар браузер
+        // Creating a Canvas element for graphics processing in the browser
         const canvas = document.createElement("canvas");
         let width = img.width;
         let height = img.height;
 
-        // Ҳисобкунии таносуби андозаҳо (Aspect Ratio) барои нигоҳ доштани сифат
+        // Calculating the aspect ratio to preserve quality
         if (width > maxWidth) {
           height = Math.round((height * maxWidth) / width);
           width = maxWidth;
@@ -34,19 +34,19 @@ export async function compressImage(
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          return resolve(file); // Агар контексти Canvas дастрас набошад, файли аслиро мефиристем
+          return resolve(file); // If the Canvas context isn't available, send the original file
         }
 
-        // Кашидани акс дар Canvas бо андозаҳои нав
+        // Drawing the image onto the Canvas at the new dimensions
         ctx.drawImage(img, 0, 0, width, height);
-        
-        // Табдил додани мазмуни Canvas ба BloB (Binary Large Object) бо формати JPEG
+
+        // Converting the Canvas content to a Blob (Binary Large Object) in JPEG format
         canvas.toBlob(
           (blob) => {
             if (!blob) {
               return resolve(file);
             }
-            // Сохтани файли нави фишурдашуда аз объект Blob
+            // Creating a new compressed file from the Blob object
             const compressedFile = new File([blob], file.name, {
               type: "image/jpeg",
               lastModified: Date.now(),

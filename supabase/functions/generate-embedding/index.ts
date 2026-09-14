@@ -10,21 +10,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// МОДЕЛҲО — бояд бо supabase/functions/visual-search АЙНАН ЯКХЕЛА бошанд.
-// Вектори дархост ва вектори захирашуда танҳо дар сурате муқоисашаванда
-// мебошанд, ки аз як модел ва бо як андоза сохта шуда бошанд.
+// MODELS — must be EXACTLY THE SAME as supabase/functions/visual-search.
+// The query vector and the stored vector are only comparable if they were
+// built from the same model at the same size.
 //
-// `text-embedding-3-large` бо `dimensions: 1536` — сифати баландтари
-// recall нисбат ба `-small`, вале ҳамон 1536 андоза, пас сутуни
-// vector(1536) тағйир намехоҳад ва index-и оянда низ имконпазир мемонад.
+// `text-embedding-3-large` with `dimensions: 1536` — higher recall quality
+// than `-small`, but the same 1536 size, so the vector(1536) column doesn't
+// need to change and a future index remains possible too.
 const EMBEDDING_MODEL = "text-embedding-3-large"
 const EMBEDDING_DIMENSIONS = 1536
 const VISION_MODEL = "gpt-4o-mini"
 
-// FORENSIC PROMPT — бо visual-search якхела нигоҳ дошта мешавад.
-// Ҳарду тараф бояд ЯК НАВЪ матн диҳанд (тавсифи forensic-и англисӣ +
-// матни айнан кӯчонидашуда), вагарна векторҳо дар минтақаҳои гуногуни
-// фазои embedding меафтанд ва ҳеҷ гоҳ ба ҳам намерасанд.
+// FORENSIC PROMPT — kept identical to visual-search.
+// Both sides must produce the SAME KIND of text (English forensic
+// description + verbatim transcribed text), otherwise the vectors land in
+// different regions of the embedding space and never match each other.
 const FORENSIC_PROMPT = `You are an elite forensic AI expert specialized in object identification for a lost-and-found platform.
 Analyze the image with extreme precision to find unique identifiers. Identify ALL of the following, if visible:
 - Brand, Model, precise color shades, material
@@ -87,19 +87,19 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    // `force` — вектори мавҷударо аз нав месозад (backfill/reprocess).
-    // Бе он танҳо аксҳои бе embedding коркард мешаванд.
+    // `force` — rebuilds an existing vector (backfill/reprocess).
+    // Without it, only images without an embedding are processed.
     const { item_id, text, force } = await req.json();
 
     if (!item_id) throw new Error("Missing item_id");
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    // ҲАМАИ аксҳои ашё, на танҳо аввалин.
+    // ALL of the item's images, not just the first one.
     //
-    // Пеш аз ин танҳо акси якум вектор мегирифт, яъне акси дуюму сеюм
-    // барои ҷустуҷӯи аксӣ мурда буданд: агар корбар ҳамон ашёро аз
-    // тарафи дигар сурат гирад, ҳеҷ мувофиқате пайдо намешуд.
+    // Previously only the first image got a vector, meaning the second and
+    // third images were dead for image search: if a user photographed the
+    // same item from a different angle, no match would ever be found.
     const { data: images, error: fetchError } = await supabase
       .from('item_images')
       .select('id, image_url, embedding')
@@ -127,10 +127,10 @@ Deno.serve(async (req) => {
           ? await describeImage(image.image_url, listingText)
           : "";
 
-        // Агар акс тавсиф шуда бошад, матни эълон аллакай дар дохили он
-        // ҳамроҳ шудааст — такрор кардан вектори тоҷикиро вазнин карда,
-        // онро аз фазои дархости англисӣ дур мекунад. Матни хом танҳо
-        // ҳамчун fallback истифода мешавад.
+        // If the image has been described, the listing text is already
+        // folded into it — repeating it would weight down the vector with
+        // Tajik text and pull it away from the English query space. The raw
+        // text is used only as a fallback.
         const embeddingText = imageDescription || listingText;
         if (!embeddingText) { skipped += 1; continue; }
 

@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * Card-и эълон барои профил (Эълонҳои ман / Захирашуда) — ба сабки
- * product-card-и ItemFeedCard-и саҳифаи асосӣ мутобиқ карда шуд (акси
- * inset бо padding, соя-и мулоим, rounded калон, pill-и поёнӣ). Аз
- * ItemFeedCard фарқ мекунад: барои соҳиби эълон тугмаҳои edit/delete ва
- * overlay-и ҳолати moderation (pending/rejected) дорад.
+ * Listing card for the profile (My Listings / Saved) — matches the
+ * product-card style of the home page's ItemFeedCard (inset image with
+ * padding, soft shadow, large rounded corners, bottom pill). Differs
+ * from ItemFeedCard: has edit/delete buttons for the listing owner and
+ * a moderation status overlay (pending/rejected).
  */
 import Image from "next/image";
 import Link from "next/link";
@@ -48,13 +48,14 @@ export function ItemCard({
   item: Item;
   index?: number;
   savedItemIds?: Set<string>;
-  /** Лаҳзаи оғози нашр (Date.now()) — агар эълонро корбар ҳозир нашр
-   *  карда бошад. Дар болои акс ҳисобкунак нишон дода мешавад, чунки
-   *  санҷиши AI дар сервер якчанд сония мегирад.
+  /** The moment publishing started (Date.now()) — if the user just
+   *  published this listing. A countdown is shown over the image because
+   *  the AI check on the server takes a few seconds.
    *
-   *  Маҳз ЛАҲЗА, на `boolean`: боркунии аксҳо 3-5 сония мегирад ва корт
-   *  баъд аз он пайдо мешавад — бо boolean ҳисобкунак маҳз ҳамон вақт аз
-   *  нав аз 10 сар мешуд, дар ҳоле ки санҷиш аллакай оғоз шудааст. */
+   *  Deliberately a TIMESTAMP, not a `boolean`: uploading images takes
+   *  3-5 seconds and the card only appears afterward — with a boolean
+   *  the countdown would restart from 10 right at that point, even
+   *  though the check had already begun. */
   justPublishedAt?: number;
 }) {
   const { t } = useLanguage();
@@ -63,11 +64,11 @@ export function ItemCard({
 
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  // URL метавонад мавҷуд бошад, вале акс бор нашавад — ниг. ItemFeedCard.
+  // The URL may exist but the image may still fail to load — see ItemFeedCard.
   const [imgFailed, setImgFailed] = useState(false);
-  // `tick` танҳо барои аз нав ҳисоб кардани вақти боқимонда — худи
-  // ҳисобкунак аз `justPublishedAt` бармеояд, на аз state, то он ҳангоми
-  // дертар пайдо шудани корт аз нав сар нашавад.
+  // `tick` is only used to recompute the remaining time — the countdown
+  // itself is derived from `justPublishedAt`, not from state, so it
+  // doesn't restart if the card appears late.
   const [tick, setTick] = useState(0);
   const [flashDone, setFlashDone] = useState(false);
 
@@ -85,9 +86,9 @@ export function ItemCard({
     return () => clearTimeout(id);
   }, [justPublishedAt, countdown, tick]);
 
-  // Баъд аз ҳисобкунак, агар эълон тасдиқ шуда бошад, чанд сония нишонаи
-  // сабз мемонад — вагарна корбар ҳеҷ натиҷаро намедид, зеро эълони
-  // тасдиқшуда ягон overlay надорад.
+  // After the countdown, if the listing was approved, a green indicator
+  // stays for a few seconds — otherwise the user would see no result at
+  // all, since an approved listing has no overlay.
   useEffect(() => {
     if (!justPublishedAt || countdown > 0 || flashDone) return;
     const id = setTimeout(() => setFlashDone(true), APPROVED_FLASH_MS);
@@ -139,11 +140,11 @@ export function ItemCard({
         prefetch
         className="group flex flex-col gap-0 rounded-xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
       >
-        {/* Акс аз ҳар чор тараф мудаввар — нишони навъ ба тугмаи поёнӣ
-            кӯчид, пас mask ва `-mb-px` дигар лозим нестанд. */}
+        {/* Image is rounded on all four sides — the type indicator moved
+            to the bottom button, so a mask and `-mb-px` are no longer needed. */}
         <div className="relative aspect-[4/3] rounded-xl bg-zinc-100 dark:bg-zinc-700">
-          {/* Placeholder ҲАМЕША дар таг — ниг. ItemFeedCard: бе ин дар
-              лаҳзаи боршавии акс ҷои он холӣ мемонад. */}
+          {/* Placeholder is ALWAYS underneath — see ItemFeedCard: without
+              this, its spot stays empty while the image is loading. */}
           <ImagePlaceholder className="rounded-xl" />
           {thumb && !imgFailed && (
             <Image
@@ -187,8 +188,8 @@ export function ItemCard({
             </div>
           )}
 
-          {/* Ҳисобкунаки санҷиш — z-30, аз ҳама болотар (нишони навъи
-              ашё z-20 аст, overlay-и moderation z-10). */}
+          {/* Verification countdown — z-30, above everything else (the
+              item type indicator is z-20, the moderation overlay is z-10). */}
           {checkingNow && (
             <div className="absolute inset-0 z-30 bg-black/65 backdrop-blur-[2px] flex items-center justify-center">
               <div className="relative w-14 h-14">
@@ -279,20 +280,20 @@ export function ItemCard({
             </span>
           </div>
 
-          {/* Тавсиф — як сатр, ниг. ItemFeedCard (ҳарду корт як хел мемонанд). */}
+          {/* Description — one line, see ItemFeedCard (both cards look the same). */}
           {item.description && (
             <p className="mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
               {item.description}
             </p>
           )}
 
-          {/* Навъи ашё ва тирча ҳамчун ЯК тугма
-              (ниг. ItemFeedCard — ҳарду корт як хел мемонанд). */}
-          {/* Ниг. ItemFeedCard — ҳамон тугма: 4px васеътар, `-mb-[7px]` поён,
-              соя дар доираи тирча. */}
+          {/* Item type and arrow as ONE button
+              (see ItemFeedCard — both cards look the same). */}
+          {/* See ItemFeedCard — same button: 4px wider, `-mb-[7px]` at the
+              bottom, shadow around the arrow. */}
           <span className="mt-1 -mx-1 flex items-center justify-between gap-2 rounded-full bg-canvas p-0.5 pl-3">
-            {/* Ранги навъ — ниг. ItemFeedCard: тобишҳои 700, то «Гумшуда» ва
-                «Ёфтшуда» аз як назар фарқ кунанд ва хонда шаванд. */}
+            {/* Type color — see ItemFeedCard: 700 shades, so "Lost" and
+                "Found" are distinguishable and readable at a glance. */}
             <span
               className={cn(
                 "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-bold",

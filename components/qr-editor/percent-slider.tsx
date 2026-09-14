@@ -1,12 +1,12 @@
 /**
- * Слайдери фоизи ТАҚСИМИ ду ранги градиент (bias) — нусхаи веб.
+ * Slider for the SPLIT percentage of two gradient colors (bias) — web version.
  *
- * Native-и ин компонент (`components/PercentSlider.tsx`) бо
- * `react-native-gesture-handler` кор мекунад, зеро React Native
- * слайдери БУНЁДӢ надорад. Веб чунин ниёз надорад — браузер худаш
- * кашидани `<input type="range">`-ро медиҳад (муш ва ангушт, бе
- * gesture-и мустақил). Ин соддакунии қасдист: натиҷаи визуалӣ ва
- * рафтори функсионалӣ (track/fill/thumb, min/max, тағйир) якхела.
+ * The native version of this component (`components/PercentSlider.tsx`)
+ * uses `react-native-gesture-handler`, because React Native has no
+ * BUILT-IN slider. The web doesn't need this — the browser already
+ * handles dragging a `<input type="range">` (mouse and touch, no custom
+ * gesture logic needed). This simplification is deliberate: the visual
+ * result and functional behavior (track/fill/thumb, min/max, change) are the same.
  */
 "use client";
 
@@ -52,10 +52,10 @@ export function PercentSlider({
 }
 
 /**
- * Тугмаи давр. Талаби корбар (ҳамон ислоҳе, ки native аллакай дорад —
- * ниг. шарҳи `GradientBiasToggle` дар мобилӣ): рақами % такрорӣ буд —
- * худи слайдер (PercentSlider дар боло) аллакай ҳамон фоизро нишон
- * медиҳад, пас ин ҷо бардошта шуд.
+ * Rotate button. User request (the same fix native already has — see
+ * the `GradientBiasToggle` comment on mobile): the % number was
+ * redundant — the slider itself (PercentSlider above) already shows
+ * that percentage, so it was removed here.
  */
 export function GradientBiasToggle({
   onRotate,

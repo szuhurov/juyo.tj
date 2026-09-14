@@ -1,26 +1,26 @@
 /**
- * Loading UI-и худкори Next.js — вақте ки саҳифаи дохили гурӯҳи (main)
- * (масалан ҳангоми гузариш) кори сервериаш (DB fetch) ҳанӯз тайёр нест,
- * Next.js ФАВРАН ҳамин skeleton-ро нишон медиҳад (на экрани холӣ) — Header
- * ва MobileNavbar (дар layout.tsx) бетаъсир мемонанд, зеро loading.tsx
- * танҳо ҷои {children}-ро мегирад. Ин ҳамон "ҳисси native app"-ест, ки
- * барои гузариши фаврӣ байни саҳифаҳо лозим аст.
+ * Next.js's automatic loading UI — when a page inside the (main) group
+ * (e.g. during navigation) has server work (a DB fetch) that isn't ready
+ * yet, Next.js IMMEDIATELY shows this skeleton (instead of a blank screen)
+ * — the Header and MobileNavbar (in layout.tsx) stay unaffected, since
+ * loading.tsx only takes the place of {children}. This is the "native app
+ * feel" needed for instant transitions between pages.
  *
- * Геометрия бояд бо саҳифаи асосӣ АЙНАН як хел бошад — ҳамин сабаб
- * HOME_GRID_CLASS/HOME_CONTENT_PT ва компонентҳои умумии skeleton
- * истифода мешаванд, на классҳои дастӣ.
+ * The geometry must be EXACTLY the same as the actual home page — that's
+ * why HOME_GRID_CLASS/HOME_CONTENT_PT and the shared skeleton components
+ * are used, instead of hand-picked classes.
  */
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import { HomeFiltersSkeleton } from "@/components/home-filters-skeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 
-// ХАТОГИИ ЁФТШУДА (талаби корбар: "гурӯҳи Такси skeleton надорад"): ин
-// қатор (QUICK_ACTIONS дар home-client.tsx) на дар бари fixed
-// (HomeFiltersSkeleton), балки дар ҚИСМИ СКРОЛЛШАВАНДАИ мӯҳтаво
-// меистад — пас надоштани skeleton барояш ҷаҳиши тарҳбандӣ намедиҳад
-// (HOME_CONTENT_PT-ро тағйир додан лозим нест), танҳо ҷои холии
-// бемаъно то боркунии воқеӣ мемонд.
+// BUG FOUND (user request: "the Taxi row has no skeleton"): this row
+// (QUICK_ACTIONS in home-client.tsx) sits not in the fixed bar
+// (HomeFiltersSkeleton), but in the SCROLLABLE part of the content —
+// so not having a skeleton for it doesn't cause a layout shift
+// (no need to change HOME_CONTENT_PT), it just left a meaningless
+// empty space until the actual load finished.
 const QUICK_ACTION_COUNT = 5;
 
 export default function MainLoading() {

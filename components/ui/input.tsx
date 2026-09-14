@@ -1,6 +1,6 @@
 /**
- * Компоненти воридкунии матн (Input).
- * Майдони оддӣ барои гирифтани маълумот аз корбар.
+ * Text input component (Input).
+ * A simple field for getting input from the user.
  */
 import * as React from "react"
 

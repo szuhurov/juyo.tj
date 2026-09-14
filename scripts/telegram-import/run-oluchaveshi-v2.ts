@@ -1,16 +1,16 @@
 /**
- * Воридоти дуюм (такмилёфта)-и 100 паёми охирин аз t.me/oluchaveshi, ба номи
- * Ali Mirzoev (allimirzoev2000@icloud.com, бо розигии ӯ):
- *  - унвон: муқаррарӣ (2-4 калимаи AI, на кӯтоҳшуда)
- *  - moderation: ВОҚЕӢ — ҳар элон 'pending' сар мешавад, trigger-и муқаррарӣ
- *    AI-ро занг мезанад (moderation_exempt-и Ali муваққатан хомӯш карда
- *    мешавад, то bypass нашавад — сабаби ин версия маҳз ҳамин аст: партияи
- *    аввал бе тафтиш буд ва як акси хеле ҳассос (ҳуҷҷати ҳарбӣ + чеки
- *    бонкӣ) бе назорат нашр шуда буд)
- *  - рақами телефон: собит 111212331 (мисли пештара)
- *  - тавсиф: матни аслӣ бетағйир
+ * Second (improved) import of the last 100 posts from t.me/oluchaveshi, on
+ * behalf of Ali Mirzoev (allimirzoev2000@icloud.com, with his consent):
+ *  - title: normal (2-4 AI-generated words, not shortened)
+ *  - moderation: REAL — every listing starts as 'pending', the normal AI
+ *    trigger fires on it (Ali's moderation_exempt is temporarily disabled
+ *    so nothing bypasses it — this is exactly why this version exists: the
+ *    first batch went in unchecked and one very sensitive photo (a military
+ *    document + a bank check) got published without any review)
+ *  - phone number: fixed at 111212331 (same as before)
+ *  - description: original text unchanged
  *
- * Иҷро: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi-v2.ts
+ * Run: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi-v2.ts
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./config";
@@ -69,7 +69,7 @@ async function insertItem(
       date: post.date.slice(0, 10),
       is_resolved: false,
       is_guest: false,
-      moderation_status: "pending", // ВОҚЕӢ тафтиш мешавад — на хардкод 'approved'.
+      moderation_status: "pending", // Goes through REAL review — not hardcoded to 'approved'.
     })
     .select("id")
     .single();
@@ -108,18 +108,18 @@ async function insertItem(
 async function main() {
   const supabase = getClient();
 
-  // 1. Муваққатан хомӯш кардани bypass, то moderation воқеан кор кунад.
+  // 1. Temporarily disable the bypass so moderation actually runs.
   await supabase.from("profiles").update({ moderation_exempt: false }).eq("id", TARGET_USER_ID);
   logger.info("moderation_exempt муваққатан хомӯш карда шуд.");
 
-  // 2. Гирифтани 100 паёми охирин.
+  // 2. Fetch the last 100 posts.
   const posts = await fetchChannelPosts(CHANNEL, LIMIT);
   logger.info("Паём ёфт шуд", { channel: CHANNEL, count: posts.length });
 
   const insertedIds: string[] = [];
   let failed = 0;
 
-  // 3. Дар партияҳои хурд ворид мекунем — то ҳама дар як лаҳза trigger назанад.
+  // 3. Insert in small batches — so the trigger doesn't fire on everything at once.
   for (let i = 0; i < posts.length; i += BATCH_SIZE) {
     const batch = posts.slice(i, i + BATCH_SIZE);
     for (const post of batch) {
@@ -140,7 +140,7 @@ async function main() {
   await disconnectListener();
   logger.info("Воридкунӣ тамом шуд", { imported: insertedIds.length, failed });
 
-  // 4. Интизори тамом шудани moderation-и воқеӣ.
+  // 4. Wait for real moderation to finish.
   const start = Date.now();
   while (Date.now() - start < MAX_WAIT_MS) {
     const { data: pending } = await supabase
@@ -154,11 +154,11 @@ async function main() {
     await sleep(POLL_INTERVAL_MS);
   }
 
-  // 5. Барқарор кардани bypass барои элонҳои ояндаи Ali (тавассути wizard-и оддӣ).
+  // 5. Restore the bypass for Ali's future listings (submitted through the normal wizard).
   await supabase.from("profiles").update({ moderation_exempt: true }).eq("id", TARGET_USER_ID);
   logger.info("moderation_exempt барқарор шуд.");
 
-  // 6. Хулосаи ниҳоӣ.
+  // 6. Final summary.
   const { data: finalItems } = await supabase
     .from("items")
     .select("id, title, moderation_status, moderation_result")

@@ -1,16 +1,17 @@
 /**
- * Таснифи паём бо OpenAI — унвони кӯтоҳ, категория (мувофиқи таксономияи
- * худи juyo.tj), ҳолат (гумшуда/ёфтшуда), шаҳр, телефон (агар дар матн
- * ошкоро бошад). Тавсиф аз ин ҷо НАМЕОЯД — matни аслии паём БЕ ТАҒЙИР
- * ҳамчун тавсиф истифода мешавад (ниг. importer.ts), то ҳеҷ маълумот аз
- * дасти AI гум/тағйир наёбад. Graceful: агар AI ноком шавад ё JSON
- * нодуруст баргардонад, натиҷаи "номуайян" бармегардад (на crash).
+ * Classifies a post with OpenAI — a short title, category (per juyo.tj's
+ * own taxonomy), status (lost/found), city, phone (if explicitly present
+ * in the text). The description does NOT come from here — the original
+ * post text is used AS-IS as the description (see importer.ts), so no
+ * information is lost or altered by the AI's hand. Graceful: if the AI
+ * fails or returns malformed JSON, an "unknown" result is returned
+ * (not a crash).
  */
 import OpenAI from "openai";
 import { config } from "./config";
 import { logger } from "./logger";
 
-// Ҳамон категорияҳои худи juyo.tj (ниг. lib/services/item-service.ts CATEGORIES) — то ҳеҷ харитасозии иловагӣ лозим набошад.
+// The same categories as juyo.tj itself (see lib/services/item-service.ts CATEGORIES) — so no extra mapping is needed.
 export type TgCategory = "Electronics" | "Documents" | "Keys" | "Clothing" | "Pets" | "Other" | "LicensePlate" | "Wallet";
 export type TgStatus = "lost" | "found";
 
@@ -20,13 +21,13 @@ export interface Classification {
   status: TgStatus | null;
   city: string | null;
   phone: string | null;
-  /** Мукофот: агар дар матн зикр шуда бошад — андозаи мушаххас (масалан
-   *  "50 сомонӣ") ё, агар андоза номаълум бошад, матни умумӣ ("Мукофот
-   *  пешниҳод мешавад"). Агар ҳеҷ мукофот зикр нашуда бошад — null. */
+  /** Reward: if mentioned in the text — a specific amount (e.g.
+   *  "50 somoni"), or, if the amount is unspecified, generic text ("A
+   *  reward is offered"). If no reward is mentioned at all — null. */
   reward: string | null;
-  /** true агар паём хабар диҳад, ки ашё АЛЛАКАЙ ба соҳибаш баргардонда
-   *  шудааст/ёфта шудааст (на эълони нави гумшуда/ёфтшуда) — чунин паём
-   *  набояд ҳамчун элони фаъол сабт шавад. */
+  /** true if the post reports that the item has ALREADY been returned to
+   *  its owner/found (as opposed to a new lost/found post) — such a post
+   *  should not be recorded as an active listing. */
   already_resolved: boolean;
   confidence: number;
 }
@@ -82,7 +83,7 @@ export async function classifyPost(text: string, imageBase64?: string): Promise<
     const raw = res.choices[0]?.message?.content;
     if (!raw) return empty;
     const parsed = JSON.parse(raw);
-    // GPT баъзан сатри "null" (на JSON null-и воқеӣ) бармегардонад — ҳарду шаклро якхела мегирем.
+    // GPT sometimes returns the string "null" (rather than an actual JSON null) — both forms are treated the same.
     const clean = (v: unknown): string | null => (typeof v === "string" && v.trim() && v.trim().toLowerCase() !== "null" ? v.trim() : null);
     const CATEGORIES: TgCategory[] = ["Electronics", "Documents", "Keys", "Clothing", "Pets", "Other", "LicensePlate", "Wallet"];
     const category = CATEGORIES.includes(parsed.category) ? (parsed.category as TgCategory) : "Other";

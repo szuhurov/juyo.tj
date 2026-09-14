@@ -1,44 +1,45 @@
 /**
- * Ин саҳифаи асосии мост (Главная).
- * Дар ин ҷо ҳамаи эълонҳо нишон дода мешаванд. Одамон метавонанд аз рӯи категорияҳо филтр кунанд
- * ё ҷустуҷӯ кунанд, то чизҳои гумшуда ё ёфтшударо пайдо намоянд.
+ * This is our home page (Home).
+ * All listings are shown here. People can filter by categories or search,
+ * to find lost or found items.
  *
- * Server Component: саҳифаи аввали натиҷаро дар сервер мегирад, то HTML-и
- * аввалия итемҳоро аллакай дошта бошад (Google/SEO) — на танҳо баъд аз
- * fetch-и клиентӣ пайдо шавад. Қисми интерактивӣ (филтр, infinite scroll)
- * дар home-client.tsx аст.
+ * Server Component: fetches the first page of results on the server, so the
+ * initial HTML already has the items (Google/SEO) — instead of only
+ * appearing after a client-side fetch. The interactive part (filters,
+ * infinite scroll) is in home-client.tsx.
  */
 import { unstable_cache } from "next/cache";
 import { ItemService } from "@/lib/services/item-service";
 import { HomeClient } from "./home-client";
 
-// ItemService.getItems({}) як RPC-и Supabase (search_items) аст, ки бе кэш
-// ҳар БОР — на танҳо бори аввал, балки дар ҳар гузариш ба "/" (масалан
-// home → QR → home) — аз нав иҷро мешуд (400–1200ms), ки боиси он мешуд,
-// ки loading.tsx (skeleton) дар ҳар гузариш пайдо шавад, ҳатто агар
-// корбар чанд сония пеш аллакай саҳифаи асосиро дида буд. 15 сония кэш
-// ин таъхирро нест мекунад — эълонҳои нав то 15 сония дертар пайдо
-// мешаванд (арзиши хурд), вале гузариш байни саҳифаҳо фаврӣ мешавад.
-// `type: "found"` бояд бо филтри ПЕШФАРЗи клиент (home-client.tsx) айнан
-// баробар бошад. Агар сервер рӯйхати омехта диҳад ва клиент танҳо
-// ёфтшударо хоҳад, HTML-и аввалия эълонҳои гумшударо ҳам нишон медиҳад ва
-// баъд аз hydration рӯйхат ҷаҳида иваз мешавад.
-// Калиди кэш низ иваз шуд — вагарна рӯйхати куҳнаи омехта то revalidate-и
-// навбатӣ аз Data Cache дода мешуд.
+// ItemService.getItems({}) is a Supabase RPC (search_items) that, without a
+// cache, used to re-run EVERY TIME — not just on the first load, but on
+// every navigation to "/" (e.g. home → QR → home) — taking 400–1200ms,
+// which caused loading.tsx (the skeleton) to appear on every navigation,
+// even if the user had already seen the home page a few seconds earlier. A
+// 15-second cache doesn't eliminate this delay — new listings appear up to
+// 15 seconds later (a small cost), but transitions between pages become
+// instant.
+// `type: "found"` must exactly match the client's DEFAULT filter
+// (home-client.tsx). If the server returned a mixed list while the client
+// wants only "found", the initial HTML would also show lost listings, and
+// the list would jump after hydration.
+// The cache key was also changed — otherwise the old mixed list would
+// still be served from the Data Cache until the next revalidation.
 const getCachedHomeItems = unstable_cache(
   () => ItemService.getItems({ type: "found" }),
   ["home-initial-items-found"],
   { revalidate: 15 },
 );
 
-// Ин саҳифа ягон dynamic function (cookies()/headers()/auth()) истифода
-// намекунад, пас Next.js онро статикӣ render мекунад — HTML/RSC-и худи
-// route (Full Route Cache) АЛОҲИДА аз Data Cache-и unstable_cache боло
-// аст. Бе ин экспорт, HTML-и саҳифа метавонад аз давраи кэши дохилӣ (15с)
-// дертар нав шавад — эълони нав дар база аллакай ҳаст, аммо HTML-и
-// фиристодашуда ба боздидкунандагони нав то дафъаи навбатии revalidate-и
-// РОҲ (на танҳо маълумот) куҳна мемонад. revalidate-и якхела (15с) дар
-// ин ҷо ҳарду сатҳро синхрон нигоҳ медорад.
+// This page doesn't use any dynamic function (cookies()/headers()/auth()),
+// so Next.js renders it statically — the route's own HTML/RSC (Full Route
+// Cache) is SEPARATE from the Data Cache of unstable_cache above. Without
+// this export, the page's HTML could go stale longer than the internal
+// cache's (15s) period — a new listing already exists in the database, but
+// the HTML served to new visitors stays stale until the next revalidation
+// of the ROUTE (not just the data). The matching revalidate (15s) here
+// keeps both layers in sync.
 export const revalidate = 15;
 
 export default async function HomePage() {
@@ -46,8 +47,8 @@ export default async function HomePage() {
   try {
     initialItems = await getCachedHomeItems();
   } catch {
-    // Агар fetch-и сервер ноком шавад, клиент худаш fetch мекунад —
-    // рендери саҳифа манъ намешавад.
+    // If the server fetch fails, the client fetches on its own —
+    // this doesn't block the page from rendering.
   }
 
   return <HomeClient initialItems={initialItems} />;

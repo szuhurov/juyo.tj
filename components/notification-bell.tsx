@@ -13,9 +13,10 @@ export function NotificationBell() {
   const { status, subscribe } = useWebPush();
   const { t } = useLanguage();
 
-  // Агар иҷозат аллакай дода шуда бошад (масалан аз сессияи қаблӣ), бидуни
-  // пурсиши нав обуна-ро дар фон нав мекунем — subscribe() дар ин ҳолат
-  // ҳеҷ prompt намедиҳад, чунки браузер аллакай қарор кардааст.
+  // If permission was already granted (e.g. from a previous session), we
+  // silently refresh the subscription in the background without a new
+  // prompt — subscribe() shows no prompt in this case, since the browser
+  // has already decided.
   useEffect(() => {
     if (status === "granted") subscribe();
   }, [status, subscribe]);

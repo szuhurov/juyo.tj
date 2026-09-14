@@ -1,6 +1,6 @@
 /**
- * Компоненти корт (Card).
- * Барои гурӯҳбандии маълумот дар дохили блоки алоҳида истифода мешавад.
+ * Card component.
+ * Used to group information inside a separate block.
  */
 import * as React from "react"
 

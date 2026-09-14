@@ -1,7 +1,7 @@
 /**
- * Иҷрои якдафъаина аз терминал.
+ * One-time run from the terminal.
  *
- * Истифода:
+ * Usage:
  *   npx tsx --env-file=.env.local scripts/telegram-import/run-once.ts
  *   npx tsx --env-file=.env.local scripts/telegram-import/run-once.ts --dry-run
  *   npx tsx --env-file=.env.local scripts/telegram-import/run-once.ts --older --limit=600

@@ -5,7 +5,7 @@ import { ADMIN_KEYS } from "@/lib/hooks/admin-query-keys";
 export interface AppSettings {
   id: boolean;
   ai_moderation_enabled: boolean;
-  /** Мӯҳлати зиндагии эълон бо рӯз (пешфарз 180). */
+  /** Post lifetime in days (default 180). */
   post_lifetime_days: number;
   updated_at: string;
 }

@@ -5,15 +5,14 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
- * Омори давраи ҳаёти эълонҳо барои admin.
+ * Post lifecycle statistics for admin.
  *
- * Ҳамаи шуморишҳо `head: true` мебошанд — танҳо адад бармегардад, на
- * сатрҳо. Дар ин route маълумоти шахсӣ (телефон, ном) умуман хонда
- * намешавад.
+ * All counts use `head: true` — only the number is returned, not the
+ * rows. This route never reads any personal data (phone, name) at all.
  */
 export async function GET() {
   const { userId } = await auth();
-  // 404, на 403 — то мавҷудияти endpoint тасдиқ нашавад (ниг. security.rules).
+  // 404, not 403 — so the endpoint's existence isn't confirmed (see security.rules).
   if (!isAdminUser(userId)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -49,11 +48,11 @@ export async function GET() {
 
     return NextResponse.json({
       total,
-      /** Бе `expires_at` — набояд бошад; агар ҳаст, trigger кор намекунад. */
+      /** Without `expires_at` — shouldn't happen; if it does, the trigger isn't working. */
       withoutExpiry,
-      /** Дар 30 рӯзи оянда мӯҳлаташон тамом мешавад. */
+      /** Expiring within the next 30 days. */
       expiringIn30Days,
-      /** Огоҳинома рафтааст, дар 72 соати интизорӣ мебошанд. */
+      /** Notification has been sent, within the 72-hour waiting period. */
       awaitingConfirm,
       postLifetimeDays: settings?.post_lifetime_days ?? 180,
     });

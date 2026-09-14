@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Ҳедер (навбари боло) танҳо дар саҳифаи асосӣ намоён аст — талаби корбар:
- * дар дигар саҳифаҳо (профил, эълон, огоҳиномаҳо ва ғ.) ҷустуҷӯ/навигатсияи
- * такрории Header лозим нест, ҳар саҳифа навигатсияи худашро дорад.
+ * The header (top bar) is only shown on the home page — user request:
+ * other pages (profile, listing, notifications, etc.) don't need the
+ * repeated Header search/navigation, each page has its own navigation.
  *
- * `<main>` низ ҳамин ҷо идора мешавад: padding-top-и болоӣ танҳо барои
- * ҷои Header лозим буд — дар дигар саҳифаҳо бе Header он падингро нигоҳ
- * доштан як фазои холии бемаънӣ мемонд (талаби корбар: "чизҳое, ки дар
- * тагаш буданд, боло баред, чун болои онҳо холист").
+ * `<main>` is also managed here: the top padding-top was only needed for
+ * the Header's space — on other pages, without the Header, keeping that
+ * padding left a pointless empty gap (user request: "move things that
+ * were below it up, since there's nothing above them anymore").
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -33,9 +33,9 @@ export function MainContent({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Пеш аз ин "Сиёсати махфият" сахт (hardcoded) ба тоҷикӣ навишта шуда
- * буд — дар ru/en низ ҳамон матни тоҷикӣ намоён мешуд. Талаби корбар:
- * тарҷумаи дуруст, пас ин ба client component кӯчид, то `t()` кор кунад.
+ * Previously "Privacy Policy" was hardcoded in Tajik — the same Tajik
+ * text also showed up in ru/en. User request: a proper translation, so
+ * this was moved into a client component so `t()` would work.
  */
 export function SiteFooter() {
   const { t } = useLanguage();

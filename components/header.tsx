@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Қисмати сарлавҳаи асосии барнома (Header).
- * Ин компонент паймоиш (navigation), ҷустуҷӯ, ивази забон ва менюи корбарро дар бар мегирад.
+ * Main header section of the app (Header).
+ * This component includes navigation, search, language switching, and the user menu.
  */
 
 import Link from "next/link";
@@ -53,10 +53,10 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
-// Ин ду компонент (модали камера, ҷустуҷӯи визуалӣ) дар Header ҳастанд, ки
-// дар ҲАМАИ саҳифаҳо render мешавад — вале аксари ташрифҳо ҳеҷ гоҳ онҳоро
-// намекушоянд. next/dynamic JS-и онҳоро аз bundle-и асосии ҳар саҳифа ҷудо
-// мекунад (chunk-и алоҳида), то first-load JS-и умумии барнома камтар шавад.
+// These two components (camera modal, visual search) live in Header, which
+// is rendered on ALL pages — but most visits never open them.
+// next/dynamic splits their JS out of every page's main bundle (into a
+// separate chunk), so the app's overall first-load JS stays smaller.
 const VisualSearchModal = dynamic(() =>
   import("./visual-search-modal").then((m) => m.VisualSearchModal),
 );
@@ -74,8 +74,8 @@ export function Header() {
   const { user } = useUser();
   const { signOut } = useClerk();
 
-  // Барои нишони "тасдиқшуда" дар паҳлӯи номи худи корбар — public_profiles
-  // ба ҳама намоён аст, пас токен лозим нест.
+  // For the "verified" badge next to the user's own name — public_profiles
+  // is visible to everyone, so no token is needed.
   const { data: ownProfile } = useQuery({
     queryKey: ["own-profile-verified", userId],
     queryFn: async () => {
@@ -90,8 +90,8 @@ export function Header() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Иконаи ҷустуҷӯи визуалӣ танҳо вақте намоён аст, ки AI фаъол аст — бе он
-  // embedding сохта намешавад ва ҷустуҷӯи аксӣ натиҷа намедиҳад.
+  // The visual search icon is only shown when AI is enabled — without it
+  // no embedding is generated and image search returns no results.
   const { data: appSettings } = useQuery({
     queryKey: ["app-settings-ai-enabled"],
     queryFn: async () => {
@@ -129,8 +129,8 @@ export function Header() {
     { href: "/profile", value: "profile", label: t("profile"), icon: User },
   ];
 
-  // Пешгирии Hydration Mismatch — синхронизатсияи "клиент омода аст" бо
-  // ягона роҳи имконпазир: effect (native browser API аст, на state аз рендер).
+  // Prevents a Hydration Mismatch — syncing "client is ready" the only
+  // way possible: an effect (this is a native browser API, not render-derived state).
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
@@ -175,7 +175,7 @@ export function Header() {
   // showing stale text after browser back/forward or after navigating home
   // via a link/route that doesn't go through this input.
   useEffect(() => {
-    // Синхронизатсия АЗ URL (система берун аз React) — маҳз ҳамин барои effect аст.
+    // Syncing FROM the URL (a system outside React) — this is exactly what an effect is for.
     if (pathname === "/") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchValue(searchParams.get("q") || "");
@@ -224,14 +224,14 @@ export function Header() {
   }, [searchValue, router, setIsSearchTyping, triggerGoHome]);
 
   /**
-   * Дар табби QR бари болоӣ ТАМОМАН нишон дода намешавад.
+   * On the QR tab the top bar is NOT shown at all.
    *
-   * Он саҳифа ба ҷустуҷӯ ҳеҷ рабте надорад — он ҷо корбар стикери худро
-   * танзим мекунад. Талаби корбар: ҳам ҷустуҷӯ, ҳам занги огоҳиномаҳо
-   * бардошта шаванд, то интихобгари сатҳҳо дар сари саҳифа истад.
+   * That page has nothing to do with search — there the user configures
+   * their own sticker. User request: both search and the notification bell
+   * should be removed so the level selector stays at the top of the page.
    *
-   * Ҳамаи hook-ҳо БОЛОИ ин сатр меистанд — return-и барвақт пеш аз онҳо
-   * тартиби hook-ҳоро вайрон мекард.
+   * All hooks are placed ABOVE this line — an early return before them
+   * would break the order of hooks.
    */
   if (onQrTab) return null;
 
@@ -242,11 +242,11 @@ export function Header() {
         className="fixed top-0 left-0 right-0 z-50 w-full bg-canvas"
       >
         <div className="w-full max-w-7xl mx-auto flex h-12 sm:h-16 items-center px-2.5 sm:px-4 gap-2 sm:gap-4">
-          {/* Қисми чап: Логотип ва Паймоиш.
-              `hidden sm:flex`: дар мобил мазмуни он холист (матни логотип
-              `hidden sm:inline` аст, паймоиш desktop-ӣ), вале ҳамчун элементи
-              flex ҳанӯз як `gap` (8px) мегирифт — аз ин сабаб майдони ҷустуҷӯ
-              дар 18px меистод, дар ҳоле ки шофияи кортҳо 10px аст. */}
+          {/* Left section: Logo and Navigation.
+              `hidden sm:flex`: on mobile its content is empty (the logo text
+              is `hidden sm:inline`, navigation is desktop-only), but as a
+              flex element it still picked up a `gap` (8px) — that's why the
+              search field sat at 18px, while the card gutter is 10px. */}
           <div className="hidden sm:flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
             <Link
               href="/"
@@ -266,16 +266,16 @@ export function Header() {
               </span>
             </Link>
 
-            {/* Паймоиши асосӣ барои Desktop */}
+            {/* Main navigation for Desktop */}
             <nav className="hidden lg:flex items-center space-x-1 bg-zinc-100/50 dark:bg-zinc-800/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
-              {/* `mounted` пештар ин ҷо низ бо мақсади пешгирии hydration
-                  mismatch буд (аз рӯи locale-и localStorage/cookie), вале
-                  ин боиси "иконаҳо дертар пайдо мешаванд" мешуд — талаби
-                  корбар. `pathname`/`t()` дар аввалин рендери клиент бо
-                  SSR айнан якхелаанд (cookie-и `juyo-locale` бо localStorage
-                  ҳамвақт навсозӣ мешавад — ниг. lib/language-context.tsx),
-                  пас хатари воқеии mismatch хеле кам аст — арзиши он
-                  ба таъхири ҳатмии ҳар корбар намеарзад. */}
+              {/* `mounted` used to be used here too, to prevent a hydration
+                  mismatch (based on the localStorage/cookie locale), but
+                  that caused "icons appearing late" — a user complaint.
+                  `pathname`/`t()` on the client's first render are identical
+                  to SSR (the `juyo-locale` cookie is always updated together
+                  with localStorage — see lib/language-context.tsx), so the
+                  real risk of a mismatch is very low — not worth forcing a
+                  delay on every user. */}
               {navLinks.map((link) => {
                   const isQrTab = searchParams.get("tab") === "qr";
                   let isActive = false;
@@ -288,7 +288,7 @@ export function Header() {
                     isActive = pathname === link.href;
                   }
 
-                  // Функсия барои назорати дастӣ
+                  // Function for manual handling
                   const handleNavClick = () => {
                     const isProtected =
                       link.href.includes("/profile") ||
@@ -329,7 +329,7 @@ export function Header() {
             </nav>
           </div>
 
-          {/* Қисми миёна: Сатри ҷустуҷӯ (Марказонидашуда) */}
+          {/* Middle section: Search bar (Centered) */}
           <div className="flex-[2] sm:flex-[1.5] max-w-xl relative block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 min-[1084px]:h-4 min-[1084px]:w-4 text-zinc-400" />
             <Input
@@ -361,12 +361,12 @@ export function Header() {
             </div>
           </div>
 
-          {/* Қисми рост: Аутентификатсия. Ивази забон акнун аз Профил → Маълумоти шахсӣ
-              сурат мегирад, на аз ин ҷо — ниг. app/(main)/profile/page.tsx */}
+          {/* Right section: Authentication. Language switching now happens from
+              Profile → Personal info, not from here — see app/(main)/profile/page.tsx */}
           <div className="flex items-center gap-1.5 flex-initial sm:flex-1 justify-end shrink-0">
             {mounted && userId && <NotificationBell />}
 
-            {/* User Button / Login (Танҳо барои Desktop) */}
+            {/* User Button / Login (Desktop only) */}
             <div className="hidden sm:flex items-center space-x-2">
               {!userId ? (
                 <div className="flex items-center gap-2">
@@ -483,7 +483,7 @@ export function Header() {
               )}
             </div>
 
-            {/* Login Button Mobile Only (Агар корбар ворид нашуда бошад) */}
+            {/* Login Button Mobile Only (if the user is not signed in) */}
             {!userId ? (
               <Button
                 size="sm"

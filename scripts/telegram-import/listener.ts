@@ -1,6 +1,6 @@
 /**
- * Қабати Telegram — танҳо гирифтани паёмҳои охирини канали ошкор
- * (session-и аллакай login-шуда истифода мешавад, ниг. login.ts).
+ * The Telegram layer — only fetches the latest posts of a public channel
+ * (uses an already-logged-in session, see login.ts).
  */
 import { TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";
@@ -41,12 +41,12 @@ export async function fetchChannelPosts(
   const posts: TelegramPost[] = [];
 
   try {
-    // minId — паёмҳои НАВТАР аз ин ID (пайгирии инкременталӣ).
-    // maxId — паёмҳои КӮҲНАТАР аз ин ID (backfill-и таърихӣ ба қафо).
+    // minId — posts NEWER than this ID (incremental tracking).
+    // maxId — posts OLDER than this ID (historical backfill backwards).
     const params = minId ? { limit, minId } : maxId ? { limit, offsetId: maxId } : { limit };
     const messages = await client.getMessages(channel, params);
     for (const msg of messages) {
-      if (!msg.message && !msg.media) continue; // паёмҳои холӣ (масалан "join" service message) мегузарем
+      if (!msg.message && !msg.media) continue; // skip empty messages (e.g. a "join" service message)
 
       let imageBuffer: Buffer | null = null;
       if (msg.photo) {
@@ -68,7 +68,7 @@ export async function fetchChannelPosts(
       });
     }
   } catch (err: any) {
-    // Канал тағир ёфта бошад / дастрас набошад — идома медиҳем, на crash.
+    // The channel may have changed / be unavailable — we continue, not crash.
     logger.error("Гирифтани паёмҳои канал ноком шуд", { channel, error: err.message });
   }
 

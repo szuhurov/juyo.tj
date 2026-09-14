@@ -18,15 +18,15 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
 const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url)";
 
 /**
- * Пурра нест кардани ҳисоб — фақат барои профилҳое, ки аллакай дар trash
- * ҳастанд (status='deleted'). Пеш аз нест кардан як snapshot-и пурра
- * (профил + эълонҳо + захирашуда + дархостҳои тасдиқ) захира
- * мешавад, то дар "Пурра нестшуда" click карда шавад ва маълумот дида шавад
- * — на танҳо профил, балки чи корҳое, ки корбар пеш аз нест шудан карда буд.
- * Аввал худи Clerk-ро нест мекунад, баъд тозакунии Supabase-ро (snapshot +
- * cascade hard-delete) ҳамин ҷо мустақим иҷро мекунад — на танҳо ба
- * webhook-и user.deleted такя мекунад, зеро он рӯйдод дар Clerk Dashboard
- * бояд дастӣ фаъол шавад.
+ * Permanently delete an account — only for profiles that are already in
+ * the trash (status='deleted'). Before deleting, a full snapshot
+ * (profile + posts + saved items + confirmation requests) is saved,
+ * so that clicking "Permanently deleted" still shows the data
+ * — not just the profile, but what the user had done before being deleted.
+ * It deletes Clerk itself first, then runs the Supabase cleanup (snapshot +
+ * cascade hard-delete) directly right here — rather than relying solely on
+ * the user.deleted webhook, since that event must be manually enabled
+ * in the Clerk Dashboard.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId: adminId } = await auth();
@@ -78,9 +78,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       },
     ]);
 
-    // Ҳар эълони корбар низ алоҳида дар deleted_items_archive сабт мешавад,
-    // то саҳифаи Эълонҳо → "Нестшудаҳо" онҳоро низ бинад (на танҳо эълонҳое,
-    // ки мустақим нест шудаанд) — ниг. app/api/admin/posts/[id]/permanent-delete.
+    // Each of the user's posts is also separately recorded in deleted_items_archive,
+    // so the Posts → "Deleted" page can see them too (not just posts that were
+    // deleted directly) — see app/api/admin/posts/[id]/permanent-delete.
     if ((items ?? []).length > 0) {
       await supabaseAdmin.from("deleted_items_archive").insert(
         (items ?? []).map((item) => ({

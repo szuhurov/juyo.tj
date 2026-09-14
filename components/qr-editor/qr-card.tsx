@@ -1,6 +1,6 @@
 /**
- * Компоненти корти QR-код (QR Card Component).
- * Ин компонент стикери махсуси JUYO-ро бо истифода аз qr-code-styling месозад.
+ * QR code card component (QR Card Component).
+ * This component builds the custom JUYO sticker using qr-code-styling.
  */ "use client";
 
 import React, { useEffect, useRef } from "react";
@@ -15,7 +15,7 @@ import QRCodeStyling, {
 } from "qr-code-styling";
 import { cn } from "@/lib/utils";
 
-/** Кунҷи пешфарзи градиент — вақте ки `gradientAngle`/`bgGradientAngle` дар settings нест. */
+/** Default gradient angle — used when `gradientAngle`/`bgGradientAngle` is absent from settings. */
 const DEFAULT_GRADIENT_ANGLE = 45;
 
 export interface QRCardSettings {
@@ -25,28 +25,28 @@ export interface QRCardSettings {
   shadow: "none" | "soft" | "medium";
   hasBorder: boolean;
   pattern: "none" | "subtle";
-  // Танзимоти нав
+  // New settings
   dotsType?: DotType;
   cornersSquareType?: CornerSquareType;
   cornersDotType?: CornerDotType;
   /**
-   * Градиенти МАТН/нуқтаҳо — танҳо дар сатҳи Pro. То 2 ранг: якум =
-   * `qrColor`-и муодил, дуюм = ранги иловагӣ. Кунҷҳо ва JUYO ҳамеша
-   * `qrColor`-и СОФ мемонанд (на градиент) — хонданро осон нигоҳ медорад.
+   * FOREGROUND/dots gradient — Pro tier only. Up to 2 colors: first =
+   * the equivalent `qrColor`, second = the extra color. Corners and JUYO
+   * always stay a SOLID `qrColor` (not a gradient) — keeps it easy to read.
    */
   gradientColors?: string[] | null;
-  /** Тақсими ду ранг. 1 = баробар. Ниг. шарҳи `QrGradient.bias` дар lib/qr-palette.ts. */
+  /** Split between the two colors. 1 = equal. See the `QrGradient.bias` comment in lib/qr-palette.ts. */
   gradientBias?: number;
   /**
-   * Кунҷи градиенти МАТН — талаби корбар: тугмаи "давр" бояд кунҷро давр
-   * занонад (45°→135°→225°→315°), на рангҳоро ҷойиваз кунад. Пешфарз
-   * `DEFAULT_GRADIENT_ANGLE`.
+   * FOREGROUND gradient angle — user request: the "rotate" button should
+   * cycle the angle (45°→135°→225°→315°), not swap the colors. Defaults
+   * to `DEFAULT_GRADIENT_ANGLE`.
    */
   gradientAngle?: number;
-  /** Градиенти ЗАМИНА — ранги дуюм. Якум ҳамеша `bgColor` аст. */
+  /** BACKGROUND gradient — the second color. The first is always `bgColor`. */
   bgGradientColor?: string | null;
   bgGradientBias?: number;
-  /** Кунҷи градиенти ЗАМИНА — ҳамон мантиқ, алоҳида. */
+  /** BACKGROUND gradient angle — same logic, separate. */
   bgGradientAngle?: number;
 }
 
@@ -54,13 +54,14 @@ interface QRCardProps {
   settings: QRCardSettings;
   id: string;
   /**
-   * Рамзи кӯтоҳи 6-ҳарфа. Вақте ҳаст, QR ба `/q/<code>` ишора мекунад.
+   * A short 6-character code. When present, the QR points to `/q/<code>`.
    *
-   * Ин на зебоӣ, балки андозаи нуқта аст: суроғаи дароз QR-и 41×41 месозад,
-   * кӯтоҳ 29×29 — нуқтаҳо 41% калонтар, бе кам кардани ҳимоя.
+   * This isn't about aesthetics, it's about dot size: the long URL
+   * produces a 41×41 QR, the short one 29×29 — dots are 41% larger,
+   * without reducing error correction.
    *
-   * Агар набошад (миграция ҳанӯз иҷро нашуда), суроғаи дарози кӯҳна
-   * истифода мешавад — стикер ҳамеша кор мекунад.
+   * If absent (migration hasn't run yet), the old long URL is used —
+   * the sticker always keeps working.
    */
   qrCode?: string | null;
   className?: string;
@@ -92,17 +93,17 @@ export const QRCard: React.FC<QRCardProps> = ({
   } = settings;
 
   /**
-   * Ду hex-и градиент → ду stop-и Гарб-даста, ноаён гузаронда шуда ба
-   * маркази минтақаи гузариш — `qr-code-styling` танҳо `rotation` (кунҷи
-   * ЯГОНА) мегирад, на нуқтаҳои start/end-и native (ниг. `gradientPoints`
-   * дар lib/qr-palette.ts). Тақсимот (bias) ба ҷои ҷойивазкунии
-   * координатаҳо тавассути ҶОЙИВАЗКУНИИ stop-ҳо дар дохили минтақаи
-   * 0..1 тақлид мешавад: `t = 1/(1+bias)` — 0.5 баробар, >0.5 ба ранги
-   * ЯКУМ бештар (bias<1), <0.5 ба ранги ДУЮМ бештар (bias>1).
+   * Two hex colors → two gradient stops, smoothly blended around the
+   * center of the transition zone — `qr-code-styling` only takes a
+   * `rotation` (a SINGLE angle), not native start/end points (see
+   * `gradientPoints` in lib/qr-palette.ts). The split (bias) is
+   * simulated, instead of shifting coordinates, by SHIFTING the stops
+   * within the 0..1 range: `t = 1/(1+bias)` — 0.5 is equal, >0.5 favors
+   * the FIRST color (bias<1), <0.5 favors the SECOND color (bias>1).
    */
   function biasedStops(bias: number, c1: string, c2: string) {
     const t = 1 / (1 + bias);
-    const w = 0.4; // паҳнои минтақаи гузариш — собит, бо чашм чида шуда
+    const w = 0.4; // width of the transition zone — fixed, chosen by eye
     const o1 = Math.max(0, t - w / 2);
     const o2 = Math.min(1, t + w / 2);
     return [
@@ -112,13 +113,12 @@ export const QRCard: React.FC<QRCardProps> = ({
   }
 
   /**
-   * Ранги нуқтаҳо ва кунҷҳо — ё як ранг, ё градиент.
+   * Color of the dots and corners — either a solid color or a gradient.
    *
-   * `qr-code-styling` ҳарду калидро якҷоя қабул мекунад, вале агар
-   * `gradient` дошта бошад, `color`-ро нодида мегирад. Бинобар ин
-   * ҳангоми хомӯш кардани градиент онро САРЕҲАН `undefined` мегузорем —
-   * вагарна `update()` қимати кӯҳнаро нигоҳ медорад ва ранги якхела
-   * ҳаргиз барнамегардад.
+   * `qr-code-styling` accepts both keys together, but ignores `color` if
+   * `gradient` is set. So when turning off the gradient we EXPLICITLY
+   * set it to `undefined` — otherwise `update()` keeps the old value and
+   * the solid color never comes back.
    */
   const hasGradient = !!gradientColors && gradientColors.length >= 2;
   const paint = hasGradient
@@ -144,19 +144,20 @@ export const QRCard: React.FC<QRCardProps> = ({
     : { color: bgColor, gradient: undefined };
 
   /**
-   * Чашмакҳои кунҷ ранги СОФ мехоҳанд, на градиент — онҳо аз градиент
-   * берунанд, пас ранги якхела дар тамоми се чашмак лозим аст (native
-   * ҳамин корро мекунад — ниг. `effQrAccent`/`accent` дар
-   * `lib/qr-palette.ts`). Ранги якуми градиент интихоб мешавад.
+   * The corner eyes want a SOLID color, not a gradient — they're outside
+   * the gradient, so a consistent color is needed across all three eyes
+   * (native does the same thing — see `effQrAccent`/`accent` in
+   * `lib/qr-palette.ts`). The gradient's first color is used.
    */
   const accentPaint = hasGradient
     ? { color: gradientColors[0], gradient: undefined }
     : { color: qrColor, gradient: undefined };
 
   /**
-   * `qr-code-styling` танҳо доираи ХУДИ QR-ро градиент мекунад — падинги
-   * гирдогирд ва бэкдропи лавҳачаи JUYO бояд ҳамон градиентро ҷудогона
-   * гиранд, вагарна дар канори QR як ХАТИ рангии ногаҳонӣ пайдо мешавад.
+   * `qr-code-styling` only applies the gradient within the QR's OWN
+   * bounds — the surrounding padding and the JUYO badge backdrop must
+   * get the same gradient separately, otherwise a sudden colored LINE
+   * appears at the QR's edge.
    */
   const cardBackground = bgGradientColor
     ? `linear-gradient(${bgGradientAngle}deg, ${bgColor}, ${bgGradientColor})`
@@ -228,7 +229,7 @@ export const QRCard: React.FC<QRCardProps> = ({
         },
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `paint`/`bgPaint`/`accentPaint` объекти нав дар ҳар render аст; вобастагиҳои воқеӣ рангҳоянд
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `paint`/`bgPaint`/`accentPaint` are new objects on every render; the real dependencies are the colors
   }, [
     qrUrl,
     qrColor,
@@ -261,12 +262,13 @@ export const QRCard: React.FC<QRCardProps> = ({
       <div
         ref={innerRef}
         className={cn(
-          // Корт МУРАББАЪ: 246 × 246 = 210 (QR) + 18×2 (падинги ҳар чор
-          // тараф баробар) — айнан native-и `QrDesignCard`-и `PAD_TOP =
-          // PAD_SIDE = PAD_BOTTOM = 18`. Пештар (майдони матни поёнии
-          // нестшуда боқимонда) 8/8/21-и номутаносиб буд бо `scaleX`-и
-          // ҷубронӣ — native он ҷубронро низ бардошт (талаби корбар:
-          // "12→18", ҳар чор тараф баробар), пас веб ҳам содда шуд.
+          // The card is SQUARE: 246 × 246 = 210 (QR) + 18×2 (equal
+          // padding on all four sides) — exactly matching native's
+          // `QrDesignCard` `PAD_TOP = PAD_SIDE = PAD_BOTTOM = 18`.
+          // Previously (a leftover from the removed bottom text area) it
+          // was an uneven 8/8/21 with a compensating `scaleX` — native
+          // removed that compensation too (user request: "12→18", equal
+          // on all four sides), so the web version was simplified as well.
           "relative flex items-center justify-center p-[18px] size-[246px] transition-all duration-300 overflow-hidden",
           radiusMap[borderRadius],
           shadowMap[shadow],
@@ -277,7 +279,7 @@ export const QRCard: React.FC<QRCardProps> = ({
         <div className="relative z-10 flex items-center justify-center" style={{ background: cardBackground }}>
           <div ref={qrContainerRef} />
 
-          {/* Логотипи JUYO дар маркази QR-код */}
+          {/* JUYO logo at the center of the QR code */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div
               className="flex items-center justify-center px-1.5 rounded-sm"

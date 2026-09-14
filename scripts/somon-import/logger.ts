@@ -1,4 +1,4 @@
-/** Логгери оддии сохторёфта — вақт + сатҳ + паём. */
+/** A simple structured logger — timestamp + level + message. */
 function ts() {
   return new Date().toISOString();
 }

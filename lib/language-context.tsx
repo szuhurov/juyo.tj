@@ -1,13 +1,13 @@
 /**
- * Идоракунии забонҳои сайт (Тоҷикӣ, Русӣ, Англисӣ).
- * Барои иваз кардани забон ва дар хотира нигоҳ доштани он.
+ * Site language management (Tajik, Russian, English).
+ * For switching the language and remembering it.
  */
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"; // Хукҳо ва типҳои React
-import { translations, type TranslationValue } from "./translations"; // Файли тарҷумаҳо
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"; // React hooks and types
+import { translations, type TranslationValue } from "./translations"; // Translations file
 
-// Намудҳои забонҳои дастгиришаванда
+// Supported language types
 export type Locale = "tg" | "ru" | "en";
 
 interface LanguageContextType {
@@ -16,7 +16,7 @@ interface LanguageContextType {
   t: (key: string, params?: Record<string, string | number>) => string;
 }
 
-// Сохтани Контекст барои дастрасии глобалӣ ба забон дар тамоми барнома
+// Creating the Context for global access to the language throughout the app
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ 
@@ -28,19 +28,19 @@ export function LanguageProvider({
 }) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
 
-  // Бори аввал хондани забони интихобшуда аз хотираи браузер (localStorage) —
-  // синхронизатсия АЗ система берун аз React, ягона роҳаш effect аст.
+  // First read of the selected language from browser storage (localStorage) —
+  // syncing FROM a system outside React, the only way is an effect.
   useEffect(() => {
     const saved = localStorage.getItem("juyo-locale") as Locale;
     if (saved && ["tg", "ru", "en"].includes(saved)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocale(saved);
-      // Ҳамзамон дар Cookie сабт мекунем, то сервер ҳам хабардор шавад
+      // Also record it in a Cookie, so the server knows about it too
       document.cookie = `juyo-locale=${saved}; path=/; max-age=31536000; SameSite=Lax`;
     }
   }, []);
 
-  // Навсозии номи саҳифа (Tab Title) дар браузер ҳангоми иваз шудани забон
+  // Updating the page title (Tab Title) in the browser when the language changes
   useEffect(() => {
     const seoTitle = translations[locale]?.seoTitle;
     if (typeof seoTitle === 'string') {
@@ -49,32 +49,32 @@ export function LanguageProvider({
   }, [locale]);
 
   /**
-   * Функсия барои сабти забони нав дар localStorage ва Cookie.
-   * Сабт дар Cookie зарур аст, то ки сервер (Next.js) пеш аз боршавӣ
-   * забонро фаҳмад ва SEO-ро дуруст нишон диҳад.
+   * Function for recording the new language in localStorage and the Cookie.
+   * Recording it in the Cookie is necessary so the server (Next.js)
+   * knows the language before rendering and shows SEO correctly.
    */
   const setAndSaveLocale = (newLocale: Locale) => {
     setLocale(newLocale);
     localStorage.setItem("juyo-locale", newLocale);
-    // Мӯҳлати эътибори Cookie - 1 сол
+    // Cookie expiration - 1 year
     document.cookie = `juyo-locale=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
   };
 
   /**
-   * Функсияи асосии тарҷума (Translate).
-   * Калидро (key) мегирад ва матни мувофиқро аз файли тарҷумаҳо бармегардонад.
-   * Агар калид ёфт нашавад, ҳамчун 'fallback' забони англисиро истифода мебарад.
+   * The main translation function (Translate).
+   * Takes a key and returns the matching text from the translations file.
+   * If the key isn't found, it falls back to the English language.
    */
   const t = (key: string, params?: Record<string, string | number>): string => {
     const keys = key.split('.');
     let value: TranslationValue = translations[locale];
 
-    // Ҷустуҷӯи калид дар дохили объекти тарҷумаҳо
+    // Searching for the key inside the translations object
     for (const k of keys) {
       if (value && typeof value === 'object' && !Array.isArray(value) && k in value) {
         value = value[k];
       } else {
-        // Агар дар забони ҷорӣ ёфт нашавад, ба забони англисӣ мегузарем
+        // If not found in the current language, fall back to English
         let fallbackValue: TranslationValue = translations['en'];
         for (const fk of keys) {
           if (fallbackValue && typeof fallbackValue === 'object' && !Array.isArray(fallbackValue) && fk in fallbackValue) {
@@ -89,13 +89,13 @@ export function LanguageProvider({
       }
     }
 
-    // Агар калид ба зершохаи объект/массив расад (масалан "categories" ё
-    // "qrItems" бе идомаи роҳ), ин леафи ниҳоии тарҷума НЕСТ — ба худи
-    // калид bargardem, то ҳаргиз объект/массив ба JSX нарасад (React онро
-    // рендер карда наметавонад).
+    // If the key resolves to an object/array sub-branch (e.g. "categories" or
+    // "qrItems" without a further path), this is NOT a final translation leaf —
+    // return the key itself, so that an object/array never reaches JSX
+    // (React cannot render it).
     if (typeof value !== 'string') return key;
 
-    // Иваз кардани параметрҳо дар дохили матн (масалан, %{name})
+    // Replacing parameters inside the text (e.g. %{name})
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
         value = (value as string).replace(new RegExp(`%{${k}}`, 'g'), String(v));
@@ -112,7 +112,7 @@ export function LanguageProvider({
   );
 }
 
-// Хуки махсус (Custom Hook) барои истифодаи осони забон дар компонентҳо
+// Custom Hook for easy use of the language in components
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) throw new Error("useLanguage must be used within LanguageProvider");

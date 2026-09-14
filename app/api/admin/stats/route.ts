@@ -13,18 +13,18 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { CATEGORIES } from "@/lib/services/item-service";
 import { getErrorMessage } from "@/lib/error-utils";
 
-// PostgREST-и .neq() бо NULL кор намекунад (NULL <> 'deleted' = NULL, на true),
-// пас барои "ҳамаи корбарони фаъол" ҳамеша .or() бо status.is.null истифода мешавад.
+// PostgREST's .neq() doesn't work with NULL (NULL <> 'deleted' = NULL, not true),
+// so for "all active users" we always use .or() with status.is.null.
 const NOT_DELETED = "status.is.null,status.neq.deleted";
 
 type Period = "today" | "week" | "month" | "year" | "all";
 
-// period тағйир медиҳад: totalUsers/totalLostItems/totalFoundItems/totalResolvedItems/
-// signupsByDay/itemsByCategory (аз рӯи он давра ҳисоб мешаванд). Вақте period дода
-// нашудааст (Users/Posts-и мавҷуда чунин мекунанд), "all" бо ҳеҷ филтри сана — яъне
-// натиҷа ҳамон ҳамешагии қаблӣ мемонад (backward-compatible).
+// period affects: totalUsers/totalLostItems/totalFoundItems/totalResolvedItems/
+// signupsByDay/itemsByCategory (these are computed over that period). When period
+// is not provided (as the existing Users/Posts pages do), "all" applies with no
+// date filter at all — i.e. the result stays the same as it always was (backward-compatible).
 // usersJoinedToday/usersJoinedThisMonth/pendingModerationCount/totalPushEnabledUsers
-// ҳамеша равзанаи собит доранд, новобаста аз period.
+// always use a fixed window, regardless of period.
 function periodConfig(period: Period, now: Date) {
   switch (period) {
     case "today":
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
     (categoryRows ?? []).forEach((row: { category: string }) => {
       categoryCounts[row.category] = (categoryCounts[row.category] ?? 0) + 1;
     });
-    // Ҳамаи категорияҳои воқеӣ нишон дода мешаванд, ҳатто 0% — на танҳо онҳое, ки дар ин давра эълон доранд.
+    // All real categories are shown, even at 0% — not just the ones that have posts in this period.
     const itemsByCategory = CATEGORIES.map((c) => ({ category: c.name, count: categoryCounts[c.name] ?? 0 }));
 
     const totalPushEnabledUsers = new Set((pushTokenRows ?? []).map((r: { user_id: string }) => r.user_id)).size;

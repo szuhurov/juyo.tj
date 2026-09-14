@@ -1,7 +1,7 @@
 /**
- * Иҷрои якдафъаина аз терминал (на cron) — барои санҷиш ё воридкунии дастӣ.
+ * One-off run from the terminal (not cron) — for testing or manual import.
  *
- * Истифода:
+ * Usage:
  *   npx tsx --env-file=.env.local scripts/somon-import/run-once.ts
  *   npx tsx --env-file=.env.local scripts/somon-import/run-once.ts --dry-run
  *   npx tsx --env-file=.env.local scripts/somon-import/run-once.ts --query "ёфтшуда"

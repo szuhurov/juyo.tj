@@ -1,16 +1,17 @@
 /**
- * Нишонаҳои брендии шабакаҳои иҷтимоӣ.
+ * Brand icons for social networks.
  *
- * Инҳо на глифи ҳамвор, балки НИШОНАИ БАРНОМА-анд: замина дар ранги
- * (ё градиенти) расмии бренд, глиф дар болои он сафед — айнан ҳамон
- * тавре ки корбар онҳоро дар экрани телефони худ мебинад. Ҳамин
- * шинохтро фаврӣ мекунад: чашм пеш аз хондани матн шабакаро мешиносад.
+ * These aren't flat glyphs, they're APP ICONS: a background in the
+ * brand's official color (or gradient), with a white glyph on top —
+ * exactly how the user sees them on their phone's home screen. This
+ * makes recognition instant: the eye recognizes the network before
+ * reading any text.
  *
- * `lucide-react` ин шаклҳоро надорад ва тибқи қоидаҳои лоиҳа китобхонаи
- * дуюми нишонаҳо илова кардан мумкин нест, пас ҳар се ин ҷо ҳамчун SVG
- * нигоҳ дошта мешаванд. Роҳҳои глиф бо нусхаи барнома
- * (`juyoapp/components/SocialIcons.tsx`) АЙНАН якхелаанд — ҳар тағйири
- * шакл бояд дар ҳарду файл шавад.
+ * `lucide-react` doesn't have these shapes, and per the project's rules
+ * a second icon library can't be added, so all three are kept here as
+ * SVG. The glyph paths are EXACTLY the same as the app's version
+ * (`juyoapp/components/SocialIcons.tsx`) — any shape change must be made
+ * in both files.
  */
 import type { SVGProps } from "react";
 
@@ -37,11 +38,11 @@ const svgBase = (size: number) => ({
 });
 
 /**
- * Глиф дар маркази нишона, хурдтар аз замина.
+ * Glyph centered on the icon, smaller than the background.
  *
- * `cx`/`cy` маркази ВОҚЕИИ роҳ аст, на маркази қуттии 24×24: паррончаи
- * Telegram аз марказ каме чап-боло меафтад ва бе ин ислоҳ дар доира каҷ
- * менамуд.
+ * `cx`/`cy` is the path's ACTUAL center, not the center of the 24×24
+ * box: the Telegram paper plane sits slightly up-left of center, and
+ * without this correction it looked off-center within the circle.
  */
 const glyph = (scale: number, cx = 12, cy = 12) =>
   `translate(12 12) scale(${scale}) translate(${-cx} ${-cy})`;
@@ -65,7 +66,7 @@ export function InstagramIcon({ size = 24, ...props }: IconProps) {
   return (
     <svg {...svgBase(size)} {...props}>
       <defs>
-        {/* Градиенти расмии Instagram — аз кунҷи поён-чап ба боло-рост. */}
+        {/* Instagram's official gradient — from bottom-left to top-right corner. */}
         <linearGradient id="juyo-ig-bg" x1="2" y1="22" x2="22" y2="2" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#FEDA75" />
           <stop offset="0.25" stopColor="#FA7E1E" />
@@ -93,14 +94,14 @@ export function FacebookIcon({ size = 24, ...props }: IconProps) {
   return (
     <svg {...svgBase(size)} {...props}>
       <circle cx="12" cy="12" r="12" fill="#1877F2" />
-      {/* Ҳарфи «f» аллакай дар маркази қуттӣ ва дар андозаи лозим аст —
-          ба фарқи сеи дигар ин ҷо миқёс лозим нест. */}
+      {/* The "f" letter is already centered in the box and at the right
+          size — unlike the other three, no scale is needed here. */}
       <path d={FACEBOOK_D} fill="#fff" />
     </svg>
   );
 }
 
-/** Тартиби ягона — ҳам дар форма, ҳам дар саҳифаи скан. */
+/** A single order — used both in the form and on the scan page. */
 export const SOCIALS = [
   { key: "telegram", Icon: TelegramIcon, label: "Telegram" },
   { key: "instagram", Icon: InstagramIcon, label: "Instagram" },
@@ -111,53 +112,54 @@ export const SOCIALS = [
 export type SocialKey = (typeof SOCIALS)[number]["key"];
 
 /**
- * Аломати намоишӣ дар аввали майдон.
+ * Display prefix shown at the start of the field.
  *
- * Он ба қимат ДОХИЛ НАМЕШАВАД — танҳо нишон дода мешавад, то корбар
- * бидонад, ки чӣ навишта истодааст:
+ * It is NOT INCLUDED in the value — it's only displayed, so the user
+ * knows what they're typing:
  *
- *   Instagram → ҳамеша `@`
- *   WhatsApp  → ҳамеша `+` (танҳо рақам)
- *   Telegram  → ҳарду мумкин: рақам → `+`, ном → `@`
+ *   Instagram → always `@`
+ *   WhatsApp  → always `+` (numbers only)
+ *   Telegram  → either possible: a number → `+`, a name → `@`
  *
- * То он даме ки Telegram холӣ аст, аломат нишон дода намешавад, вале
- * ҷои он нигоҳ дошта мешавад — вагарна ҳангоми навиштани ҳарфи аввал
- * матн якбора ба тарафе меҷаҳид.
+ * While Telegram is empty, no prefix is shown, but its space is still
+ * reserved — otherwise the text would suddenly jump sideways the moment
+ * the first character is typed.
  */
 export function socialPrefix(key: SocialKey, value: string): string {
   if (key === "instagram") return "@";
   if (key === "whatsapp") return "+";
-  // Facebook аломати сар надорад — суроғаи он `facebook.com/<ном>` аст.
+  // Facebook has no prefix — its URL is `facebook.com/<name>`.
   if (key === "facebook") return "";
   if (!value) return "";
   return /^\d/.test(value) ? "+" : "@";
 }
 
 /**
- * Аломатҳои сарро ҳангоми навиштан мебарорад.
+ * Strips prefix characters while typing.
  *
- * Бе ин, агар корбар худаш `@` ё `+` нависад, дар экран ду аломат
- * (`@@name`) менамуд ва дар пойгоҳ низ қимати ифлос нигоҳ дошта мешуд.
+ * Without this, if the user typed `@` or `+` themselves, the screen
+ * would show two characters (`@@name`) and the database would also end
+ * up storing a dirty value.
  */
 export function stripSocialPrefix(value: string): string {
   return value.replace(/^[@+\s]+/, "");
 }
 
 /**
- * Ҳарфҳои иҷозатнадодаро ҲАНГОМИ навиштан мебарорад.
+ * Strips disallowed characters WHILE typing.
  *
- * Ҳар шабака қоидаи худро дорад ва ҳеҷ кадомашон фосила (space) қабул
- * намекунанд — дар ҷои он `_` ё `.` меистад:
+ * Each network has its own rules, and none of them accept a space — a
+ * `_` or `.` goes there instead:
  *
- *   telegram  — ҳарф, рақам, `_`. Нуқта НЕСТ. То 32.
- *               (рақами телефон низ ҳамин ҷо мегузарад — танҳо рақам)
- *   instagram — ҳарф, рақам, `.`, `_`. То 30.
- *   facebook  — ҳарф, рақам, `.`. Зерхат НЕСТ. То 50.
- *   whatsapp  — ТАНҲО рақам. То 20.
+ *   telegram  — letters, digits, `_`. No dot. Up to 32.
+ *               (a phone number also goes through here — digits only)
+ *   instagram — letters, digits, `.`, `_`. Up to 30.
+ *   facebook  — letters, digits, `.`. No underscore. Up to 50.
+ *   whatsapp  — digits ONLY. Up to 20.
  *
- * Тоза кардан маҳз ҳангоми навиштан муҳим аст, на ҳангоми захира: агар
- * корбар фосила гузорад ва мо онро баъдтар бе хабар партоем, ӯ намефаҳмад,
- * ки чаро пайванд кор намекунад.
+ * Sanitizing exactly while typing matters, not on save: if the user
+ * types a space and we silently drop it later, they won't understand
+ * why the link doesn't work.
  */
 export function sanitizeSocialInput(key: SocialKey, value: string): string {
   const v = stripSocialPrefix(value);
@@ -168,12 +170,12 @@ export function sanitizeSocialInput(key: SocialKey, value: string): string {
 }
 
 /**
- * Аз чизе ки корбар навиштааст пайванди боэътимод месозад.
+ * Builds a reliable link from whatever the user typed.
  *
- * Корбарон одатан `@name`, пайванди пурра ё танҳо номро менависанд —
- * ҳар серо ба як шакл меорем. `null` баргардонидан маънои «нанависед»
- * дорад: беҳтар аст нишона нишон дода нашавад, назар ба он ки ба
- * саҳифаи вуҷуднадошта барад.
+ * Users typically type `@name`, a full link, or just the name — we
+ * normalize all three forms into one. Returning `null` means "don't
+ * render": better to not show the icon at all than link to a
+ * non-existent page.
  */
 export function socialHref(key: SocialKey, raw: string | null | undefined): string | null {
   const v = (raw ?? "").trim();
@@ -184,7 +186,7 @@ export function socialHref(key: SocialKey, raw: string | null | undefined): stri
     return digits.length >= 9 ? `https://wa.me/${digits}` : null;
   }
 
-  // Номи корбарро аз `@`, пайванди пурра ва бурришҳо тоза мекунем.
+  // Strip the username of `@`, the full link, and trailing slashes.
   const handle = v
     .replace(
       /^https?:\/\/(www\.)?(t\.me|telegram\.me|instagram\.com|facebook\.com|fb\.com)\//i,
@@ -196,12 +198,12 @@ export function socialHref(key: SocialKey, raw: string | null | undefined): stri
 
   if (key === "telegram") {
     /**
-     * Telegram ҲАМ рақам, ҳам nickname қабул мекунад.
+     * Telegram accepts BOTH a phone number and a nickname.
      *
-     * Онҳоро аз ҳам фарқ кардан осон аст: nickname-и Telegram ҳаргиз
-     * танҳо аз рақам иборат буда наметавонад — он ҳатман ҳарф дорад.
-     * Пас агар ҳама рақам бошад, ин телефон аст ва Telegram барои он
-     * шакли `t.me/+<рақам>`-ро мехоҳад (аломати «+» ҳатмист).
+     * Telling them apart is easy: a Telegram nickname can never consist
+     * of digits only — it must contain a letter. So if it's all digits,
+     * it's a phone number, and Telegram wants the `t.me/+<number>` form
+     * for that (the "+" character is required).
      */
     if (/^\d+$/.test(handle)) {
       return handle.length >= 9 ? `https://t.me/+${handle}` : null;
@@ -210,7 +212,7 @@ export function socialHref(key: SocialKey, raw: string | null | undefined): stri
   }
 
   if (key === "facebook") {
-    // Номи Facebook метавонад нуқта дошта бошад ва то 50 ҳарф бошад.
+    // A Facebook name may contain a dot and can be up to 50 characters.
     return /^[A-Za-z0-9.]{3,50}$/.test(handle)
       ? `https://facebook.com/${handle}`
       : null;

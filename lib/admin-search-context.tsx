@@ -9,7 +9,7 @@ export function AdminSearchProvider({ children }: { children: React.ReactNode })
   const [query, setQuery] = useState("");
   const pathname = usePathname();
 
-  // Ҷустуҷӯ ба саҳифаи ҷорӣ вобаста аст — ҳангоми гузариш ба саҳифаи дигар тоза мешавад.
+  // The search is tied to the current page — it clears when navigating to another page.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuery("");

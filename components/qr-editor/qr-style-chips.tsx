@@ -1,14 +1,14 @@
 /**
- * Намунаҳои визуалии услуби QR (нусхаи веб — ниг. native
- * `components/QrStyleChips.tsx`, ки аз он портатсия шудааст).
+ * Visual previews of QR style options (web version — ported from the
+ * native `components/QrStyleChips.tsx`).
  *
- * Пештар шакли нуқтаҳо ва кунҷҳо аз рӯи МАТН интихоб мешуданд («Хеле
- * мулоим», «Нуқта») — корбар маҷбур буд ҳар вариантро як-як кушояд ва
- * ба QR нигоҳ кунад, то бифаҳмад кадомаш чист. Ин ҷо ҳар вариант худашро
- * НИШОН медиҳад.
+ * Previously the dot and corner shapes were chosen by TEXT LABEL
+ * ("Extra smooth", "Dot") — the user had to open each option one by one
+ * and look at the QR to figure out what it was. Here each option SHOWS
+ * itself.
  *
- * Математикаи геометрӣ (MINI, roundedPath, Bridge, Piece, EYE_*, OUTER_R,
- * INNER_R) АЙНАН аз native гирифта шудааст — SVG-и оддии браузер ба ҷои
+ * The geometry math (MINI, roundedPath, Bridge, Piece, EYE_*, OUTER_R,
+ * INNER_R) is taken EXACTLY from native — plain browser SVG instead of
  * `react-native-svg`.
  */
 "use client";
@@ -28,7 +28,7 @@ const MINI = [
 const CHIP = 44;
 const M = CHIP / MINI.length;
 
-/** Роҳи росткунҷа бо радиуси ҶУДОГОНАИ ҳар кунҷ (боло-чап, боло-рост, поён-рост, поён-чап). */
+/** Rectangle path with a SEPARATE radius per corner (top-left, top-right, bottom-right, bottom-left). */
 function roundedPath(x: number, y: number, w: number, h: number, r: number[]) {
   const [tl, tr, br, bl] = r;
   return [
@@ -45,7 +45,7 @@ function roundedPath(x: number, y: number, w: number, h: number, r: number[]) {
   ].join(" ");
 }
 
-/** Пул байни ду модули ҳамсоя — танҳо барои услуби «часпида» (rounded). */
+/** Bridge between two neighboring modules — only for the "connected" (rounded) style. */
 function Bridge({ x, y, dir, color }: { x: number; y: number; dir: "h" | "v"; color: string }) {
   const px = x * M;
   const py = y * M;
@@ -57,14 +57,14 @@ function Bridge({ x, y, dir, color }: { x: number; y: number; dir: "h" | "v"; co
 }
 
 /**
- * "diamond" ба намунаи чиппа илова карда шуд, вале ба QRCard НЕ гузашта
- * мешавад: `qr-code-styling` (китобхонаи веб) чунин навъро ТАМОМАН
- * НАДОРАД (ниг. profile/page.tsx, DOT_TYPES). Талаби корбар: чиппа нишон
- * диҳад, ҳарчанд QR-и воқеӣ фарқ накунад.
+ * "diamond" was added to the chip preview, but it's NOT passed through
+ * to QRCard: `qr-code-styling` (the web library) has NO such type AT ALL
+ * (see profile/page.tsx, DOT_TYPES). User request: the chip should show
+ * it anyway, even though the actual QR won't differ.
  */
 export type ChipDotType = DotType | "diamond";
 
-/** Як модул дар услуби додашуда. */
+/** A single module in the given style. */
 function Piece({ type, x, y, color }: { type: ChipDotType; x: number; y: number; color: string }) {
   const px = x * M;
   const py = y * M;
@@ -83,13 +83,13 @@ function Piece({ type, x, y, color }: { type: ChipDotType; x: number; y: number;
     return <rect x={px} y={py} width={M} height={M} rx={r} ry={r} fill={color} />;
   }
   if (type === "diamond") {
-    // Мураббаъи 45°-гардонидашуда — айнан native.
+    // A square rotated 45° — exactly like native.
     const cx = px + M / 2;
     const cy = py + M / 2;
     const h = M / 2;
     return <path d={`M${cx},${cy - h} L${cx + h},${cy} L${cx},${cy + h} L${cx - h},${cy} Z`} fill={color} />;
   }
-  // classy / classy-rounded — ду кунҷи МУҚОБИЛ гирд (боло-чап, поён-рост)
+  // classy / classy-rounded — two OPPOSITE corners rounded (top-left, bottom-right)
   const r = M * 0.5;
   const arc = type === "classy-rounded" ? r : r * 0.6;
   return <path d={roundedPath(px, py, M, M, [arc, 0, arc, 0])} fill={color} />;
@@ -106,7 +106,7 @@ export function DotStyleChip({
   type: ChipDotType;
   qrColor: string;
   bgColor: string;
-  /** Ду ранг. Вақте ҳаст, намуна ҳамон градиенти QR-ро мегирад. */
+  /** Two colors. When present, the preview picks up the same QR gradient. */
   gradientStops?: string[] | null;
   angle?: number;
   bias?: number;
@@ -146,7 +146,7 @@ export function DotStyleChip({
   );
 }
 
-/** Чашмаки кунҷ — 7 модул, нуқтаи дохилӣ. */
+/** Corner eye — 7 modules, inner dot. */
 const EYE_M = CHIP / 7;
 const EYE_INNER = EYE_M * 3;
 
@@ -158,23 +158,23 @@ const INNER_R: Partial<Record<CornerDotType, number>> = {
 };
 
 /**
- * Намунаи "Ҳошияи кунҷҳо" на ҳалқаи пурра, балки ЧОР ГӮШАИ ҶУДОГОНА
- * (мисли рамкаи фокуси камера) мекашад — тасвири воқеии app талаби
- * корбар буд, на он чи дар `QrStyleChips.tsx`-и native ёфт шуд (он ҷо
- * ҳалқаи пурра аст). Ин геометрия аз рӯи СКРИНШОТИ app сохта шуд, на аз
- * рӯи манбаи native — агар баъдтар манбаи воқеӣ ёфт шавад, бо он муқоиса
- * кардан лозим.
+ * The "Corner border" preview draws FOUR SEPARATE BRACKETS (like a
+ * camera focus frame) instead of a full ring — the user wanted the
+ * actual app's look, not what was found in native's `QrStyleChips.tsx`
+ * (which uses a full ring there). This geometry was built from an app
+ * SCREENSHOT, not from the native source — if the real source is found
+ * later, it should be compared against this.
  */
-// Талаби корбар: боз ҳам калонтар (такроран калон карда шуд).
+// User request: make it even bigger (enlarged again).
 const BRACKET_MARGIN = 3;
 const BRACKET_ARM = 19;
 const BRACKET_STROKE = 8;
 /**
- * Талаби корбар: "иконҳо аз якдигар фарқ намекунад" — радиусҳои қаблӣ
- * (0 / 4.5 / 9.1) дар қуттии 44px бо строки 5px хеле наздик буданд.
- * Акнун фарқ калонтар аст, ва `dot` тамоман ГӮША НЕСТ — доираи пурраи
- * ҷудогона (ниг. поён), мисли скриншоти app, ки барои ин навъ доираи
- * возеҳ нишон медиҳад, на гӯшаи гирд.
+ * User request: "the icons look the same as each other" — the previous
+ * radii (0 / 4.5 / 9.1) in a 44px box with a 5px stroke were too close
+ * to each other. Now the difference is bigger, and `dot` isn't a
+ * bracket shape at all — it's a fully separate circle (see below), like
+ * the app screenshot, which shows a clear circle for this type, not a rounded corner.
  */
 const BRACKET_R: Partial<Record<CornerSquareType, number>> = {
   square: 0,
@@ -183,9 +183,10 @@ const BRACKET_R: Partial<Record<CornerSquareType, number>> = {
 };
 
 /**
- * Роҳи як гӯша — ду бозу (уфуқӣ, амудӣ) бо камони пайвасткунандаи
- * радиуси `r`. Самти ҳамаи чор гӯша АЙНАН мутобиқи `roundedPath` (боло)
- * — ба ақрабаки соат — то `sweep flag` (`0 0 1`) дар ҳама ҷо якхела монад.
+ * Path for one bracket — two arms (horizontal, vertical) joined by an
+ * arc of radius `r`. The direction of all four brackets EXACTLY matches
+ * `roundedPath` (above) — clockwise — so the `sweep flag` (`0 0 1`) stays
+ * consistent everywhere.
  */
 function bracketD(corner: "tl" | "tr" | "br" | "bl", r: number) {
   const m = BRACKET_MARGIN;
@@ -203,7 +204,7 @@ function bracketD(corner: "tl" | "tr" | "br" | "bl", r: number) {
   }
 }
 
-/** Ҳошияи чашмак — чор гӯшаи ҷудогона (маркас қасдан кашида намешавад). */
+/** Eye border — four separate corner brackets (the center is deliberately not drawn). */
 export function CornerBorderChip({
   type,
   qrColor,
@@ -214,7 +215,7 @@ export function CornerBorderChip({
   bgColor: string;
 }) {
   if (type === "dot") {
-    // Доираи пурраи ҷудогона, на гӯша — ниг. шарҳи BRACKET_R боло.
+    // A fully separate circle, not a bracket — see the BRACKET_R comment above.
     return (
       <svg width="100%" height="100%" viewBox={`0 0 ${CHIP} ${CHIP}`}>
         <rect x={0} y={0} width={CHIP} height={CHIP} fill={bgColor} />
@@ -248,7 +249,7 @@ export function CornerBorderChip({
   );
 }
 
-/** Маркази чашмак — ТАНҲО шакли дохилӣ, бе ҳалқа. */
+/** Eye center — ONLY the inner shape, no ring. */
 export function CornerCenterChip({
   type,
   qrColor,
@@ -277,7 +278,7 @@ export function CornerCenterChip({
   );
 }
 
-/** Як қатори чиппакҳо бо интихоб. */
+/** A row of selectable chips. */
 export function StyleChipRow<T extends string>({
   options,
   value,
@@ -292,14 +293,14 @@ export function StyleChipRow<T extends string>({
   onChange: (v: T) => void;
   renderChip: (v: T) => React.ReactNode;
   labelFor: (v: T) => string;
-  /** Заминаи ХУДИ чиппа — лозим аст, чунки чиппа мураббаъ нест. */
+  /** The chip's OWN background — needed because the chip isn't square. */
   chipBg?: string;
-  /** Ҳадди боло-и бари чиппа — бе он дар сутуни васеъ чиппаҳо аз ҳад калон мешаванд. */
+  /** Max width cap for the chip — without it, chips get too large in a wide column. */
   chipMaxWidth?: number;
 }) {
-  // `justify-between` — айнан native (`row: { justifyContent: 'space-between' }`):
-  // чиппаҳо `chipMaxWidth` доранд, пас бе он онҳо танҳо чап ҷамъ мешаванд
-  // ва фазои рости қатор холӣ мемонад.
+  // `justify-between` — exactly like native (`row: { justifyContent: 'space-between' }`):
+  // the chips have a `chipMaxWidth`, so without this they'd just cluster
+  // to the left, leaving the right side of the row empty.
   return (
     <div className="flex items-center gap-2 justify-between">
       {options.map((opt) => {
@@ -314,12 +315,13 @@ export function StyleChipRow<T extends string>({
             aria-label={labelFor(opt)}
             style={chipMaxWidth != null ? { maxWidth: chipMaxWidth } : undefined}
             className={cn(
-              // Ҳошия ҲАМЕША шаффоф — native (QrStyleChips.tsx, chipBorder)
-              // қасдан на ҳалқа, на соя истифода мебарад ("ҳарду талаби
-              // дизайнер: дар чиппаи хурд бадандом менамуданд"). Интихоб
-              // танҳо бо КАЛОНШАВӢ (scale) ва бэйҷи чекмарк нишон дода мешавад.
-              // ЧОРКУНҶА (rounded-none), на rounded-xl — талаби корбар:
-              // чиппа бояд мисли модули воқеии QR мураббаъ бошад, на pill.
+              // The border is ALWAYS transparent — native (QrStyleChips.tsx,
+              // chipBorder) deliberately uses neither a ring nor a shadow
+              // ("designer's request: both looked clunky on a small chip").
+              // Selection is shown only by SCALING UP and a checkmark badge.
+              // SQUARE CORNERS (rounded-none), not rounded-xl — user
+              // request: the chip should look square like a real QR
+              // module, not a pill.
               "relative flex-1 aspect-square rounded-none border-2 border-transparent p-0.5 transition-transform",
               active && "scale-[1.12] z-10",
             )}

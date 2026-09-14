@@ -1,22 +1,22 @@
 "use client";
 
 /**
- * Саҳифаи таҳрири эълон.
- * Оптимизатсияшуда барои суръат ва сифати AI.
+ * Item edit page.
+ * Optimized for speed and AI quality.
  */
 
-import { useEffect, useState, useCallback, use } from "react"; // Барои кор бо стейт ва эффектҳо
+import { useEffect, useState, useCallback, use } from "react"; // For working with state and effects
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation"; // Барои гузаштан ба саҳифаҳои дигар
-import { useAuth } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар
-import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { CATEGORIES, Item, UNSPECIFIED_REWARD } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
-import { createClerkSupabaseClient, supabase as anonSupabase } from "@/lib/supabase"; // Барои пайваст шудан ба база
-import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Input } from "@/components/ui/input"; // Компоненти воридкунии матн
-import { Textarea } from "@/components/ui/textarea"; // Компоненти воридкунии матни дароз
-import { Label } from "@/components/ui/label"; // Компоненти тамға
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // Барои интихоби як аз якчандто
+import { useRouter } from "next/navigation"; // For navigating to other pages
+import { useAuth } from "@clerk/nextjs"; // For getting user data
+import { useLanguage } from "@/lib/language-context"; // For language translation
+import { CATEGORIES, Item, UNSPECIFIED_REWARD } from "@/lib/services/item-service"; // For working with listings
+import { createClerkSupabaseClient, supabase as anonSupabase } from "@/lib/supabase"; // For connecting to the database
+import { Button } from "@/components/ui/button"; // Button component
+import { Input } from "@/components/ui/input"; // Text input component
+import { Textarea } from "@/components/ui/textarea"; // Long text input component
+import { Label } from "@/components/ui/label"; // Label component
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; // For selecting one of several options
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -24,11 +24,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"; // Барои рӯйхати интихобшаванда
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Компоненти корт
-import { toast } from "sonner"; // Барои нишон додани хабарҳо
-import { Loader2, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react"; // Иконкаҳо
-import Image from "next/image"; // Барои суратҳо
+} from "@/components/ui/select"; // For a selectable list
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Card component
+import { toast } from "sonner"; // For showing messages
+import { Loader2, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react"; // Icons
+import Image from "next/image"; // For images
 import { compressImage } from "@/lib/image-utils";
 import type { PrivacyRegion } from "@/components/privacy-blur-editor";
 import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
@@ -38,7 +38,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳо
+} from "@/components/ui/tooltip"; // For showing tooltips
 
 const PrivacyBlurEditor = dynamic(() =>
   import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
@@ -49,18 +49,18 @@ export default function EditItemPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // ID-и эълонро аз URL мегирем
+  // Get the listing ID from the URL
   const { id } = use(params);
   const { t, locale } = useLanguage();
   const router = useRouter();
   const { userId, getToken } = useAuth();
 
-  // Стейтҳо барои нигоҳ доштани маълумоти эълон ва ҳолати боргузорӣ (Loading)
+  // States for holding listing data and the loading state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [item, setItem] = useState<Item | null>(null);
 
-  // Стейтҳо барои навъи ашё, категория ва суратҳо
+  // States for item type, category, and images
   const [type, setType] = useState<"lost" | "found">("lost");
   const [category, setCategory] = useState("");
   const [locationType, setLocationType] = useState<
@@ -74,14 +74,14 @@ export default function EditItemPage({
     { url: string; isExisting: boolean }[]
   >([]);
 
-  // Муҳаррири ҳимояи махфият — ниг. items/add/page.tsx
+  // Privacy protection editor — see items/add/page.tsx
   const [privacyReview, setPrivacyReview] = useState<{
     files: File[];
     regions: PrivacyRegion[];
     resolve: (result: File[] | null) => void;
   } | null>(null);
 
-  // Стейтҳои модерация (AI Moderation States)
+  // Moderation states (AI Moderation States)
   const [moderationStatus, setModerationStatus] = useState<
     "idle" | "checking" | "passed" | "failed"
   >("idle");
@@ -89,9 +89,9 @@ export default function EditItemPage({
   const [scanMessage, setScanMessage] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  // Пешфарз true (то боркунии танзимот) — ниг. items/add/page.tsx барои
-  // маънии пурра. Агар хомӯш бошад, санҷиши AI-ро дар edit низ давр
-  // намезанем (харҷи бефоидаи OpenAI), эълон бо ҳолати "pending" мемонад.
+  // Defaults to true (until settings load) — see items/add/page.tsx for the
+  // full explanation. If it's off, we skip the AI check in edit too (no
+  // point spending on OpenAI) — the listing stays in "pending" status.
   const [aiModerationEnabled, setAiModerationEnabled] = useState(true);
 
   useEffect(() => {
@@ -150,7 +150,7 @@ export default function EditItemPage({
   }, [moderationStatus, previews.length, t]);
 
   /**
-   * Функсия барои гирифтани маълумоти эълон аз база
+   * Function for fetching listing data from the database
    */
   const loadItem = useCallback(async () => {
     try {
@@ -165,7 +165,7 @@ export default function EditItemPage({
 
       if (error) throw error;
 
-      // Агар корбар соҳиби эълон набошад, вайро ба главний мефиристем
+      // If the user isn't the owner of the listing, redirect them to the home page
       if (data.user_id !== userId) {
         toast.error(t("accessDenied"));
         router.push("/");
@@ -196,13 +196,13 @@ export default function EditItemPage({
     }
   }, [id, userId, getToken, router, t]);
 
-  // Вақте ки саҳифа кушода мешавад, маълумоти эълонро аз база мехонем
+  // When the page opens, load the listing data from the database
   useEffect(() => {
     if (userId) loadItem();
   }, [userId, loadItem]);
 
   /**
-   * Функсия барои коркарди суратҳои нави интихобшуда
+   * Function for handling newly selected images
    */
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -220,7 +220,7 @@ export default function EditItemPage({
   };
 
   /**
-   * Функсия барои нест кардани сурат аз рӯйхати пешнамоиш (Preview)
+   * Function for removing an image from the preview list
    */
   const removeImage = (index: number) => {
     const previewToRemove = previews[index];
@@ -234,7 +234,7 @@ export default function EditItemPage({
   };
 
   /**
-   * Функсия барои модерацияи AI (Танҳо барои аксҳои нав)
+   * Function for AI moderation (only for new images)
    */
   const runAIModeration = async (
     newFiles: File[],
@@ -249,7 +249,7 @@ export default function EditItemPage({
 
       const formDataAI = new FormData();
 
-      // Мо танҳо файлҳои навро барои тафтиш мефиристем
+      // We only send the new files for checking
       newFiles.forEach((file) => {
         formDataAI.append("image", file);
       });
@@ -289,7 +289,7 @@ export default function EditItemPage({
   };
 
   /**
-   * Функсия барои модерацияи матн (Танҳо барои матни ивазшуда)
+   * Function for text moderation (only for changed text)
    */
   const runTextModeration = async (title: string, description: string) => {
     setModerationStatus("checking");
@@ -330,13 +330,13 @@ export default function EditItemPage({
   };
 
   /**
-   * Функсияи асосӣ барои сабт кардани тағйирот (Update)
+   * Main function for saving changes (Update)
    */
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userId || !item) return;
 
-    // Маълумотро аз форма мегирем
+    // Get data from the form
     const formData = new FormData(e.currentTarget);
     const title = ((formData.get("title") as string) || "").trim();
     const description = ((formData.get("description") as string) || "").trim();
@@ -346,7 +346,7 @@ export default function EditItemPage({
       ? (rewardField as string | null)?.trim() || UNSPECIFIED_REWARD
       : null;
 
-    // Месанҷем, ки ҳамаи майдонҳо пур шудаанд
+    // Check that all fields are filled in
     if (!title || !description || !category || !phone) {
       toast.error(t("fillAllFields"));
       return;
@@ -372,21 +372,21 @@ export default function EditItemPage({
 
       const contentChanged = hasNewImages || textChanged;
 
-      // МОДЕРАТСИЯИ МАҶБУРӢ — танҳо агар AI аз admin фаъол бошад ва воқеан
-      // чизе тағйир ёфта бошад. Агар AI хомӯш бошад, ҳеҷ занги OpenAI
-      // намезанем (бефоида аст) — эълон бо "pending" мемонад, интизори admin.
+      // MANDATORY MODERATION — only if AI is enabled by the admin and
+      // something has actually changed. If AI is off, we don't call OpenAI at
+      // all (pointless) — the listing stays "pending", awaiting the admin.
       if (aiModerationEnabled && hasNewImages) {
-        // Агар акси нав бошад, AI Brain ҳардуро месанҷад (акс + матн)
+        // If there's a new image, AI Brain checks both (image + text)
         const { isSafe, isDocument, privacyRegions, redactedTitle, redactedDescription } = await runAIModeration(images, title, description);
         if (!isSafe) {
           setSaving(false);
           return;
         }
-        // Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
-        // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, корбар минтақаҳои
-        // пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам иваз/илова кунад.
+        // This is the result of the same check above (is_document +
+        // privacy_regions) — not a new AI call. If it's a document, the user
+        // sees the regions AI suggested and can edit/add to them with the pen tool.
         if (isDocument) {
-          // Рақами ҳуҷҷат/шиноснома аз матн нест карда шуд, ном/насаб бетағйир.
+          // The document/passport number was removed from the text, name/surname unchanged.
           finalTitle = redactedTitle;
           finalDescription = redactedDescription;
           finalCategory = "Documents";
@@ -396,7 +396,7 @@ export default function EditItemPage({
             setPrivacyReview({ files: images, regions: privacyRegions, resolve });
           });
           if (!blurred) {
-            // Корбар баромад — сабтро бас мекунем, то акси бе мозаика нашр нашавад.
+            // User canceled — we stop saving, so an unblurred image doesn't get published.
             setSaving(false);
             return;
           }
@@ -404,7 +404,7 @@ export default function EditItemPage({
           setImages(blurred);
         }
       } else if (aiModerationEnabled && textChanged) {
-        // Агар танҳо матн иваз шуда бошад
+        // If only the text was changed
         const isSafe = await runTextModeration(title, description);
         if (!isSafe) {
           setSaving(false);
@@ -420,7 +420,7 @@ export default function EditItemPage({
         previews.length !== existingUrls.length ||
         previews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
 
-      // 1. Боргузории суратҳои нав ба Облако (Storage)
+      // 1. Upload new images to the Cloud (Storage)
       const finalImageUrls: string[] = [];
       const newFiles = finalImages;
       let newFileIdx = 0;
@@ -447,7 +447,7 @@ export default function EditItemPage({
         }
       }
 
-      // 2. Нав кардани маълумоти эълон дар база (Update query)
+      // 2. Update the listing data in the database (Update query)
       const updateData: Omit<Partial<Item>, "reward"> & { reward: string | null } = {
         title: finalTitle,
         description: finalDescription,
@@ -457,8 +457,8 @@ export default function EditItemPage({
         contact_telegram: contactTelegram,
         contact_whatsapp: contactWhatsapp,
         reward: reward ? `${reward}` : null,
-        // Агар AI хомӯш бошад ва чизе воқеан тағйир ёфта бошад, "pending"
-        // мемонад (интизори admin) — вагарна AI аллакай тафтиш кардааст.
+        // If AI is off and something has actually changed, it stays
+        // "pending" (awaiting admin) — otherwise AI has already checked it.
         moderation_status: !aiModerationEnabled && contentChanged ? "pending" : "approved",
         location_type: locationType,
       };
@@ -470,7 +470,7 @@ export default function EditItemPage({
 
       if (updateError) throw updateError;
 
-      // 3. Тоза кардани суратҳои кӯҳна ва сабти суратҳои нав
+      // 3. Remove old images and save new images
       if (imagesChanged) {
         const removedUrls = existingUrls.filter(
           (url) => !finalImageUrls.includes(url),
@@ -509,11 +509,11 @@ export default function EditItemPage({
           console.error("DATABASE ERROR (item_images):", imagesError.message);
       }
 
-      // 4. ТАҶДИДИ ВЕКТОРИ ҶУСТУҶӮ (Vector/Embedding Update)
-      // Ҳамеша embedding-ро аз нав месозем, то visual search кор кунад.
-      // generate-embedding аксҳоро ХУДАШ аз item_images мегирад (ҳамаро).
-      // `force` лозим аст, чунки агар корбар танҳо унвон/тавсифро иваз
-      // карда бошад, сатрҳои акс нав нашудаанд ва вектори кӯҳна боқӣ мемонад.
+      // 4. SEARCH VECTOR REFRESH (Vector/Embedding Update)
+      // We always regenerate the embedding, so visual search keeps working.
+      // generate-embedding fetches the images ITSELF from item_images (all of them).
+      // `force` is needed because if the user only changed the title/description,
+      // the image rows weren't updated and the old vector would remain.
       supabase.functions
         .invoke("generate-embedding", {
           body: {
@@ -528,9 +528,9 @@ export default function EditItemPage({
 
       toast.success(t("updateSuccess"));
       if (!aiModerationEnabled && contentChanged) {
-        // AI хомӯш аст — эълон "pending" шуд, интизори admin. Ба профил
-        // мебарем (на ба саҳифаи худи эълон), то корбар "дар ҳоли санҷиш"-ро
-        // дар "Эълонҳои ман" бинад.
+        // AI is off — the listing became "pending", awaiting admin. We take
+        // the user to their profile (not to the listing's own page), so they
+        // see "under review" in "My Listings".
         router.push("/profile?tab=posts");
       } else {
         router.push(`/items/${id}`);
@@ -539,7 +539,7 @@ export default function EditItemPage({
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : t("error"));
-      // Агар хатогии техникӣ шавад, ба ҳолати аслӣ бармегардем
+      // If a technical error occurs, revert to the original state
       setModerationStatus("idle");
     } finally {
       setSaving(false);
@@ -554,7 +554,7 @@ export default function EditItemPage({
     );
   }
 
-  // Агар дар ҳолати скан кардан бошад, интерфейси Step 3-ро нишон медиҳем
+  // If we're in scanning state, show the Step 3 interface
   if (moderationStatus !== "idle") {
     return (
       <div className="fixed inset-0 z-50 bg-canvas flex flex-col items-center justify-start pt-10 sm:pt-16 px-4">
@@ -672,7 +672,7 @@ export default function EditItemPage({
     <TooltipProvider>
       <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-4 py-8 max-w-2xl">
         <Card className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_-2px_rgba(15,23,42,0.08)] dark:shadow-none">
-          {/* Сарлавҳаи форма */}
+          {/* Form header */}
           <CardHeader className="bg-emerald-600 text-white p-6">
             <CardTitle className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-bold tracking-tight">
               {t("editItemTitle")}
@@ -680,7 +680,7 @@ export default function EditItemPage({
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={onSubmit} className="space-y-6">
-              {/* Интихоби навъи эълон (Радио-кнопкаҳо) */}
+              {/* Listing type selection (Radio buttons) */}
               <div className="space-y-3">
                 <Label className="text-sm min-[1084px]:text-base font-bold tracking-wider text-zinc-400">
                   {t("what_happened")}
@@ -721,7 +721,7 @@ export default function EditItemPage({
                 </RadioGroup>
               </div>
 
-              {/* Майдонҳои асосии маълумот (Title, Category, Description) */}
+              {/* Main data fields (Title, Category, Description) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
@@ -822,7 +822,7 @@ export default function EditItemPage({
                 />
               </div>
 
-              {/* Телефон ва Мукофотпулӣ */}
+              {/* Phone and Reward */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label
@@ -906,7 +906,7 @@ export default function EditItemPage({
                 )}
               </div>
 
-              {/* Қисмати идоракунии суратҳо (Image Upload) */}
+              {/* Image management section (Image Upload) */}
               <div className="space-y-4">
                 <Label className="font-bold text-xs min-[1084px]:text-sm text-zinc-500">
                   {t("addImages")} ({previews.length}/5)
@@ -957,7 +957,7 @@ export default function EditItemPage({
                 </div>
               </div>
 
-              {/* Тугмаи сабт (Submit button) */}
+              {/* Submit button */}
               <Button
                 type="submit"
                 size="lg"

@@ -25,14 +25,14 @@ Deno.serve(async (req) => {
       return new Response("Already moderated, skipping", { status: 200 });
     }
 
-    // Гирифтани аксҳо барои таҳлил
+    // Fetch images for analysis
     const { data: images } = await supabase.from('item_images').select('image_url').eq('item_id', itemId)
     const textToCheck = `${record.title} ${record.description || ''}`;
 
     let isSafe = true;
     let rejectionReason = null;
 
-    // 1. Ҳамаи аксҳоро барои таҳлил омода мекунем
+    // 1. Prepare all images for analysis
     if (images && images.length > 0) {
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -82,7 +82,7 @@ Return JSON ONLY: { "is_safe": boolean, "reason": "Short reason in Tajik or null
       isSafe = result.is_safe;
       rejectionReason = result.reason;
     } else {
-      // Тафтиши танҳо матн агар расм набошад
+      // Text-only check if there's no image
       const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {

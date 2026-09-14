@@ -7,15 +7,15 @@ import { useLanguage } from "@/lib/language-context";
 import { toast } from "sonner";
 
 const POLL_MS = 20_000;
-const TOAST_REMIND_MS = 60 * 60 * 1000; // Такрори ёдоварии toast, агар корбар ҳанӯз надида бошад
+const TOAST_REMIND_MS = 60 * 60 * 1000; // Repeat the toast reminder if the user still hasn't seen it
 const SEEN_STORAGE_KEY = "juyo_seen_notification_ids";
 const OPENED_STORAGE_KEY = "juyo_opened_notification_ids";
 const TOAST_SHOWN_STORAGE_KEY = "juyo_toast_last_shown";
 
 export interface NotificationItem {
-  /** `expiry_confirm` — то нест шудани эълони ХУДИ корбар 72 соат мондааст
-   *  ва ӯ бояд «ҳанӯз лозим» ё «не» гӯяд. Ҷадвали алоҳида надорад: мисли
-   *  `category_post` аз худи маълумот ҳисоб мешавад. */
+  /** `expiry_confirm` — the user's OWN post has 72 hours left before deletion
+   *  and they must say "still needed" or "no". It has no separate table: like
+   *  `category_post`, it is computed from the data itself. */
   kind: "category_post" | "expiry_confirm";
   id: string;
   itemId: string;
@@ -25,7 +25,7 @@ export interface NotificationItem {
   createdAt: string;
   posterName?: string | null;
   posterAvatar?: string | null;
-  /** Танҳо барои `expiry_confirm` — лаҳзаи несткунӣ (`items.expires_at`). */
+  /** Only for `expiry_confirm` — the deletion moment (`items.expires_at`). */
   expiryDeadline?: string;
 }
 
@@ -38,9 +38,9 @@ function loadIds(key: string): Set<string> {
   }
 }
 
-// Вақти охирини нишон додани toast барои ҳар ID — дар localStorage, то
-// ҳангоми reload/remount-и компонент гум нашавад (ана ҳамин боис буд, ки
-// toast ҳар 20 сония такрор мешуд).
+// Last time a toast was shown, for each ID — kept in localStorage so it
+// isn't lost on a component reload/remount (this was exactly why the
+// toast used to repeat every 20 seconds).
 function loadToastTimestamps(): Record<string, number> {
   if (typeof window === "undefined") return {};
   try {
@@ -61,13 +61,13 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
   const { t } = useLanguage();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  // seenIds — назорати рақами badge-и занг (якбора, ҳангоми click ба занг).
+  // seenIds — controls the bell badge count (cleared all at once, on clicking the bell).
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadIds(SEEN_STORAGE_KEY));
-  // openedIds — назорати ранги ҳар сатр дар рӯйхат (алоҳида, ҳангоми кушодани ҳамон сатр).
+  // openedIds — controls each row's color in the list (individually, when that row is opened).
   const [openedIds, setOpenedIds] = useState<Set<string>>(() => loadIds(OPENED_STORAGE_KEY));
-  // Вақти охирини нишондодашудаи toast барои ҳар ID (localStorage-based, на
-  // useRef) — то ҳангоми remount-и компонент (масалан гузариш байни
-  // саҳифаҳо) toast-и якхела ҳар 20 сония такрор нашавад.
+  // Last shown time of the toast for each ID (localStorage-based, not
+  // useRef) — so that on a component remount (e.g. navigating between
+  // pages) the same toast doesn't repeat every 20 seconds.
   const toastShownAt = useRef<Record<string, number>>(loadToastTimestamps());
 
   const fetchAll = useCallback(async () => {
@@ -78,8 +78,8 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     }
     const supabase = createClerkSupabaseClient(getToken);
 
-    // get_my_category_notifications — эълонҳои нави дигар корбарон дар
-    // ҳамон категорияҳое, ки худи корбар низ эълон дорад.
+    // get_my_category_notifications — new posts from other users in the
+    // same categories that the user themself also has posts in.
     const { data: catData } = await supabase.rpc("get_my_category_notifications", { p_limit: categoryLimit });
 
     interface CategoryNotificationRow {
@@ -105,11 +105,11 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       posterAvatar: row.poster_avatar_url ?? null,
     }));
 
-    // Эълонҳои ХУДИ корбар, ки огоҳии «72 соат мондааст» гирифтаанд ва ҳанӯз
-    // нест нашудаанд. Ду шарт ду маъно доранд:
-    //   expiry_notified_at не-холӣ  → огоҳинома рафтааст (лаҳзаи ГУЗАШТА)
-    //   expires_at > ҳозир          → ҳанӯз зинда аст (лаҳзаи ОЯНДА)
-    // RLS кифоя аст — корбар сатрҳои худро мебинад, `supabaseAdmin` лозим нест.
+    // The user's OWN posts that received a "72 hours left" notice and
+    // haven't been deleted yet. The two conditions have two meanings:
+    //   expiry_notified_at not null  → the notice was sent (a PAST moment)
+    //   expires_at > now             → still alive (a FUTURE moment)
+    // RLS is sufficient — the user sees their own rows, `supabaseAdmin` isn't needed.
     const { data: expiring } = await supabase
       .from("items")
       .select("id, title, expires_at, expiry_notified_at, type, item_images(image_url)")
@@ -134,19 +134,19 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       itemTitle: row.title ?? "",
       itemImageUrl: row.item_images?.[0]?.image_url ?? null,
       itemType: row.type ?? null,
-      // Дар рӯйхат вақти ОМАДАНИ огоҳинома нишон дода мешавад…
+      // The list shows the time the notice ARRIVED…
       createdAt: row.expiry_notified_at,
-      // …вале ҳисоби «чанд соат мондааст» аз лаҳзаи НЕСТКУНӢ меояд.
+      // …but the "how many hours left" count is derived from the DELETION moment.
       expiryDeadline: row.expires_at,
     }));
 
-    // Огоҳии несткунӣ ҲАМЕША дар боло — вақташ маҳдуд аст (72 соат), дар ҳоле
-    // ки эълонҳои категория метавонанд интизор шаванд.
+    // The deletion notice is ALWAYS at the top — it's time-limited (72 hours),
+    // whereas category posts can wait.
     const merged = [...expiryRows, ...rows];
 
-    // Toast барои ҳар ID танҳо якбор фавран мебарояд, баъд on то 1 соат
-    // такрор намешавад — ва агар корбар аллакай онро дида бошад (seenIds),
-    // дигар ҳаргиз такрор намешавад, танҳо огоҳиномаҳои воқеан НАВ мебароянд.
+    // The toast for each ID fires once immediately, then doesn't repeat for
+    // up to 1 hour — and once the user has already seen it (seenIds), it
+    // never repeats again; only genuinely NEW notices trigger it.
     const now = Date.now();
     const timestamps = toastShownAt.current;
     let timestampsChanged = false;
@@ -169,9 +169,9 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
   }, [userId, getToken, t, categoryLimit, seenIds]);
 
   useEffect(() => {
-    // Боркунии аввалия ҳангоми mount/иваз шудани userId — дар дохили
-    // fetchAll шохаи "корбар нест" пеш аз await state-ро синхронӣ иваз
-    // мекунад, ки барои эффекти боркунии маълумот коррект аст.
+    // Initial load on mount/when userId changes — inside fetchAll, the
+    // "no user" branch updates state synchronously before any await, which
+    // is correct for a data-loading effect.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll();
     if (!userId) return;
@@ -179,9 +179,8 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     return () => clearInterval(interval);
   }, [userId, fetchAll]);
 
-  // Вақте ки корбар ба занг click мекунад, ҳамаи огоҳиномаҳои ҳозираро
-  // "дида шуд" мегузорем — рақами badge то дархости воқеан нав пайдо
-  // нашуда, боз намепайдояд.
+  // When the user clicks the bell, we mark all current notifications as
+  // "seen" — the badge count won't reappear until an actually new request comes in.
   const markAllSeen = useCallback(() => {
     setSeenIds((prev) => {
       const next = new Set(prev);
@@ -193,8 +192,8 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     });
   }, [items]);
 
-  // Вақте ки як сатри мушаххас дар рӯйхат кушода мешавад — танҳо ранги
-  // ҲАМОН сатр ба ҳолати одӣ мегузарад (аз badge-и умумӣ ҷудо).
+  // When a specific row in the list is opened — only THAT row's color
+  // changes to normal (separate from the overall badge).
   const markOpened = useCallback((id: string) => {
     setOpenedIds((prev) => {
       if (prev.has(id)) return prev;
@@ -207,8 +206,8 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     });
   }, []);
 
-  // Ҳамаи сатрҳои ҳозираро якбора "хондашуда" мегузорад (тугмаи
-  // "Ҳамаро хондашуда қайд кунед").
+  // Marks all current rows as "read" at once (the
+  // "Mark all as read" button).
   const markAllOpened = useCallback(() => {
     setOpenedIds((prev) => {
       const next = new Set(prev);
@@ -223,14 +222,14 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
   const count = items.filter((item) => !seenIds.has(item.id)).length;
   const isOpened = useCallback((id: string) => openedIds.has(id), [openedIds]);
 
-  // Нест кардани як огоҳинома аз рӯйхати корбар — dismiss_notification RPC
-  // ҳамзамон дар dismissed_notifications (то дигар барнагардад) ва
-  // deleted_notifications_archive (барои admin) сабт мекунад.
+  // Removing one notification from the user's list — the dismiss_notification
+  // RPC records it simultaneously in dismissed_notifications (so it doesn't
+  // come back) and deleted_notifications_archive (for admin).
   const dismissNotification = useCallback(
     async (item: NotificationItem) => {
-      // Огоҳии мӯҳлатро пинҳон кардан МУМКИН НЕСТ: пинҳон шуданаш эълонро
-      // наҷот намедиҳад — cron ба ҳар ҳол баъд аз 72 соат онро нест мекунад.
-      // Корбар бояд «Истодааст» ё «Не»-ро интихоб кунад.
+      // The expiry notice CANNOT be dismissed: dismissing it wouldn't save
+      // the post — the cron will delete it after 72 hours regardless.
+      // The user must choose "Keep" or "No".
       if (item.kind === "expiry_confirm") return;
 
       const supabase = createClerkSupabaseClient(getToken);
@@ -250,8 +249,8 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     [getToken],
   );
 
-  /** Ҷавоби соҳиб ба огоҳии мӯҳлат. `keep` — боз як давра, `delete` — фавран
-   *  нест. Route худаш соҳибиро аз рӯи база месанҷад. */
+  /** The owner's response to the expiry notice. `keep` — one more period, `delete` — deletes
+   *  immediately. The route itself verifies ownership against the database. */
   const respondToExpiry = useCallback(
     async (item: NotificationItem, action: "keep" | "delete") => {
       const token = await getToken();
@@ -265,7 +264,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       });
       if (!res.ok) throw new Error(await res.text());
       setItems((prev) => prev.filter((i) => i.id !== item.id));
-      // Рӯйхати эълонҳо дигар шуд — саҳифаҳои кушода бояд навсозӣ шаванд.
+      // The post list has changed — open pages should refresh.
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("items-updated"));
       }

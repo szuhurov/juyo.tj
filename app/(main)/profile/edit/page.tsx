@@ -1,26 +1,26 @@
 /**
- * Ин саҳифа барои таҳрири маълумоти аккаунт (Identity Settings) лозим аст.
- * Мо ин ҷо аз ҷузъи UserProfile-и Clerk истифода мебарем, то корбар
- * тавонад парол ё почтаи худро иваз кунад.
+ * This page is for editing account information (Identity Settings).
+ * We use Clerk's UserProfile component here, so the user can change
+ * their password or email.
  */
 
 "use client";
 
-import { UserProfile } from "@clerk/nextjs"; // Компоненти профили корбар аз Clerk
-import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
+import { UserProfile } from "@clerk/nextjs"; // Clerk's user profile component
+import { useLanguage } from "@/lib/language-context"; // For language translation
 
 export default function EditProfilePage() {
-  // Хук барои гирифтани тарҷумаҳо
+  // Hook for getting translations
   const { t } = useLanguage();
-  
+
   return (
     <div className="container mx-auto px-2.5 sm:px-4 py-8 max-w-4xl">
-      {/* Сарлавҳа */}
+      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <h1 className="text-2xl font-bold tracking-tight">{t('personalInfo')}</h1>
       </div>
 
-      {/* Намоиши интерфейси Clerk барои идоракунии профил (UserProfile Component) */}
+      {/* Rendering Clerk's UI for managing the profile (UserProfile Component) */}
       <div className="flex justify-center">
         <UserProfile 
           routing="hash"

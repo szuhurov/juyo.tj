@@ -1,11 +1,11 @@
 /**
- * Хизматрасониҳо барои кор бо профили корбар (Profile Service).
- * Ин файл тамоми амалиётҳоро бо ҷадвали'profiles'дар Supabase иҷро мекунад.
+ * Services for working with the user profile (Profile Service).
+ * This file performs all operations on the 'profiles' table in Supabase.
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
 
-// Сохтори маълумоти профил
+// Profile data structure
 export interface Profile {
   id: string;
   first_name: string;
@@ -14,14 +14,14 @@ export interface Profile {
   email?: string;
   phone?: string;
   secondary_phone?: string;
-  // Шабакаҳои иҷтимоӣ — ихтиёрӣ. Ҳамон чизе ки корбар навиштааст нигоҳ
-  // дошта мешавад (бе `@`, бе пайванди пурра); пайванд ҳангоми нишон
-  // додан аз `socialHref()` сохта мешавад.
+  // Social networks — optional. Exactly what the user typed is stored
+  // (without `@`, without a full link); the link is built for display
+  // by `socialHref()`.
   telegram?: string;
   instagram?: string;
   whatsapp?: string;
   facebook?: string;
-  /** Рамзи кӯтоҳи 6-ҳарфа барои суроғаи QR — ниг. миграцияи qr_short_code. */
+  /** Short 6-character code for the QR address — see the qr_short_code migration. */
   qr_code?: string;
   is_qr_active?: boolean;
   is_verified?: boolean;
@@ -32,7 +32,7 @@ export interface Profile {
 }
 
 export const ProfileService = {
-  // Гирифтани маълумоти профили корбари ҷорӣ
+  // Fetches the current user's profile data
   async getProfile(
     supabaseClient: SupabaseClient,
     userId: string,
@@ -47,7 +47,7 @@ export const ProfileService = {
     return data;
   },
 
-  // Навсозӣ ё сохтани профили нав (Upsert)
+  // Updates or creates a new profile (Upsert)
   async updateProfile(
     supabaseClient: SupabaseClient,
     userId: string,
@@ -77,7 +77,7 @@ export const ProfileService = {
     }
   },
 
-  // Гирифтани маълумоти оммавии корбар (барои дигарон намоён)
+  // Fetches the user's public data (visible to others)
   async getPublicProfile(supabaseClient: SupabaseClient, userId: string) {
     const { data, error } = await supabaseClient
       .from("profiles")

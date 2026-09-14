@@ -21,7 +21,7 @@ export function useWebPush() {
   const [subscribed, setSubscribed] = useState(false);
 
   useEffect(() => {
-    // Хониши иҷозати браузер (система берун аз React) ва синхронизатсияи он.
+    // Reading the browser permission (a system outside React) and syncing it.
     if (typeof window === "undefined" || !("Notification" in window) || !("serviceWorker" in navigator)) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("unsupported");
@@ -70,9 +70,9 @@ export function useWebPush() {
     }
   }, [userId, getToken]);
 
-  // Браузер иҷозати Notification-ро аз тарафи сайт бекор карда наметавонад
-  // (танҳо худи корбар аз танзимоти браузер) — вале аз pushManager
-  // unsubscribe кардан мумкин аст, то push дигар нарасад.
+  // The site cannot revoke the Notification permission itself (only the
+  // user can, from browser settings) — but it can unsubscribe from
+  // pushManager so that pushes stop arriving.
   const unsubscribe = useCallback(async () => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) return false;
     try {

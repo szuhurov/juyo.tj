@@ -12,10 +12,10 @@ const PrivacyBlurEditor = dynamic(() =>
 );
 
 /**
- * Тугмаи "Мозаика кардан" — ба admin имкон медиҳад, ки дар дилхоҳ эълон
- * (на танҳо ҳангоми сабти он) минтақаҳои ҳассосро дастӣ pixelate кунад.
- * Ягон пешниҳоди AI дар ин ҷо нест (initialRegions=[]) — admin худаш бо
- * қалам мекашад, чун акс дар storage аллакай мавҷуд аст.
+ * The "Мозаика кардан" (Pixelate) button — lets the admin manually pixelate
+ * sensitive areas in any post (not only when it's first submitted).
+ * There's no AI suggestion here (initialRegions=[]) — the admin draws it
+ * themselves, since the image already exists in storage.
  */
 export function PostBlurButton({ postId, images }: { postId: string; images: { id: string; image_url: string }[] }) {
   const [open, setOpen] = useState(false);

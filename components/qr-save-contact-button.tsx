@@ -32,13 +32,13 @@ const rowStyle: React.CSSProperties = {
 };
 
 /**
- * Тугмаи "Захира дар галерея" — расми ТАМОМ бо иттилооти пурра (БЕ ниқоб)
- * месозад ва ба гушии дастгоҳ мебарорад.
+ * "Save to gallery" button — builds a FULL image with complete
+ * information (WITHOUT masking) and exports it to the device's gallery.
  *
- * Ниқоби рӯи экран (5 рақами охир → нуқта, ниг. page.tsx) танҳо барои
- * ХОНИШИ scraper-и HTML аст — амали ин ҷо интихоби ОШКОРОИ худи корбар
- * аст (тугмаи "Захира"-ро худаш мезанад), пас корт бо рақами ПУРРА
- * сохта мешавад, вагарна захиракунӣ бефоида мешуд.
+ * The on-screen mask (last 5 digits → dots, see page.tsx) is only to
+ * defeat HTML scraper READING — the action here is the user's own
+ * EXPLICIT choice (they press "Save" themselves), so the card is built
+ * with the FULL number, otherwise saving it would be pointless.
  */
 export function QrSaveContactButton({
   name,
@@ -90,7 +90,7 @@ export function QrSaveContactButton({
         <span>{labels.save}</span>
       </button>
 
-      {/* Берун аз экран — танҳо манбаи расм барои html-to-image. */}
+      {/* Off-screen — only the image source for html-to-image. */}
       <div
         aria-hidden
         style={{ position: "fixed", top: 0, left: -9999, pointerEvents: "none" }}
@@ -117,7 +117,7 @@ export function QrSaveContactButton({
             }}
           >
             {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- манбаи captures-и html-to-image, на рендери оддии сайт
+              // eslint-disable-next-line @next/next/no-img-element -- html-to-image capture source, not a regular site render
               <img
                 src={avatarUrl}
                 crossOrigin="anonymous"

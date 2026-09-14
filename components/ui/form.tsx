@@ -1,6 +1,6 @@
 /**
- * Ин ҷо компонентҳо барои сохтани формаҳо ҳастанд.
- * Барои валидация ва идоракунии худи форма лозим аст.
+ * These are the components for building forms.
+ * Needed for validation and managing the form itself.
  */
 "use client"
 

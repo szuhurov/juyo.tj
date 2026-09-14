@@ -11,10 +11,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// Web push (VAPID/aes128gcm) такя ба crypto.createECDH-и Node дорад, ки
-// дар Deno's node:crypto polyfill татбиқ нашудааст ("Not implemented:
-// crypto.ECDH") — бинобар ин рамзгузорӣ ва фиристодани воқеӣ на аз ин ҷо,
-// балки аз /api/push/send-и Vercel (runtime-и воқеии Node) иҷро мешавад.
+// Web push (VAPID/aes128gcm) relies on Node's crypto.createECDH, which is
+// not implemented in Deno's node:crypto polyfill ("Not implemented:
+// crypto.ECDH") — so the actual encryption and sending happens not here,
+// but through Vercel's /api/push/send (a real Node runtime).
 async function sendWebPush(token: string, payload: object): Promise<{ ok: boolean; statusCode?: number }> {
   const subscription = JSON.parse(token);
   const res = await fetch(`${SITE_URL}/api/push/send`, {
@@ -27,13 +27,12 @@ async function sendWebPush(token: string, payload: object): Promise<{ ok: boolea
   return result;
 }
 
-// Вақте ки эълони нав тасдиқ (approved) мешавад, ба корбароне push
-// мефиристад, ки дар ҳамон категория эълони НАМУДИ БАРЪАКС доранд (агар
-// эълони нав "гумшуда" бошад — ба соҳибони "ёфтшуда" дар ҳамон категория,
-// ва баръакс) — на ба ҳар кӣ дар ҳамон категория эълон дорад новобаста аз
-// намуд. Аз trigger_notify_category_post() (ниг.
-// supabase/migrations/20260715000000_notify_category_and_qr_scan.sql)
-// даъват мешавад.
+// When a new listing gets approved, sends a push to users who have a
+// listing of the OPPOSITE TYPE in the same category (if the new listing is
+// "lost" — to owners of "found" listings in the same category, and vice
+// versa) — not to everyone who has a listing in that category regardless of
+// type. Called from trigger_notify_category_post() (see
+// supabase/migrations/20260715000000_notify_category_and_qr_scan.sql).
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -55,7 +54,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "item not found" }), { status: 404 });
     }
 
-    // Аксаи якуми эълон — барои намоиши калон (Pinterest-монанд) дар push.
+    // The listing's first image — for the large (Pinterest-like) display in the push.
     const { data: itemImage } = await supabase
       .from("item_images")
       .select("image_url")
@@ -64,8 +63,8 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Намуди баръакс: эълони "гумшуда" ба соҳибони "ёфтшуда" мерасад ва
-    // баръакс — на ба ҳар кӣ дар ҳамон категория эълон дорад.
+    // Opposite type: a "lost" listing reaches owners of "found" listings and
+    // vice versa — not everyone who has a listing in that category.
     const oppositeType = item.type === "lost" ? "found" : "lost";
 
     const { data: peers } = await supabase

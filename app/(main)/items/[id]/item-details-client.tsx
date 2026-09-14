@@ -1,6 +1,6 @@
 /**
- * Ин қисми клиентии саҳифаи тафсилоти эълон ҳаст.
- * Тамоми логикаи интерактивӣ (тугмаҳо, карусел ва ғайра) дар ин ҷост.
+ * This is the client-side part of the item details page.
+ * All interactive logic (buttons, carousel, etc.) lives here.
  */ "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -49,9 +49,9 @@ import { ImagePlaceholder } from "@/components/image-placeholder";
 import { TelegramIcon, WhatsappIcon, socialHref } from "@/components/social-icons";
 
 /**
- * `item.phone_number` танҳо рақами маҳаллист (бе рамзи кишвар). Telegram/
- * WhatsApp бошад рақами байналмилалиро металабанд — пас рамзи "992"-ро
- * илова мекунем, вале агар аллакай бошад (маълумоти кӯҳна), такрор намекунем.
+ * `item.phone_number` is a local number only (no country code). Telegram/
+ * WhatsApp, on the other hand, require the international number — so we add
+ * the "992" code, but if it's already there (old data), we don't duplicate it.
  */
 function toIntlPhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
@@ -108,13 +108,13 @@ export default function ItemDetailsClient({
     });
   };
 
-  // Агар маълумот дар кэш бошад (аз саҳифаи асосӣ), онро фавран истифода мебарем
-  // Бе акс: ба ҷои URL-и берунии placehold.co (дархости шабакавии зиёдатӣ
-  // ва вобастагӣ ба хидмати бегона) рӯйхат холӣ мемонад ва дар render
-  // ҷойгузини маҳаллӣ (ImagePlaceholder) нишон дода мешавад.
+  // If the data is already cached (from the home page), use it immediately
+  // No image: instead of an external placehold.co URL (an extra network
+  // request and a dependency on a third-party service), the list stays empty
+  // and a local placeholder (ImagePlaceholder) is shown at render time.
   const images = item?.images && item.images.length > 0 ? item.images : [];
 
-  // Эффект барои автоматикӣ иваз шудани суратҳо
+  // Effect for automatically cycling through images
   useEffect(() => {
     if (!isAutoPlaying || images.length <= 1 || !scrollContainerRef.current)
       return;
@@ -132,7 +132,7 @@ export default function ItemDetailsClient({
           behavior: "smooth",
         });
       }
-    }, 4000); // Ҳар 4 сония иваз мешавад
+    }, 4000); // Changes every 4 seconds
 
     return () => clearInterval(interval);
   }, [isAutoPlaying, images.length, currentImageIndex]);
@@ -141,9 +141,9 @@ export default function ItemDetailsClient({
     if (isLoaded && item && !viewIncremented.current) {
       const isActuallyOwner = userId === item.user_id;
       if (!isActuallyOwner) {
-        // `localStorage`, на `sessionStorage`: session бо пӯшидани таб тамом
-        // мешавад ва ҳамон одам ҳангоми боздиди дуюм боз +1 медод. Ҳисоб
-        // бояд ЯК БОР барои як шахс бошад.
+        // `localStorage`, not `sessionStorage`: a session ends when the tab
+        // closes, and the same person would add another +1 on their second
+        // visit. The count must happen only ONCE per person.
         const viewKey = `viewed_${id}`;
         if (!localStorage.getItem(viewKey)) {
           viewIncremented.current = true;
@@ -262,7 +262,7 @@ export default function ItemDetailsClient({
   };
 
   if (!item) {
-    // Skeleton нишон медиҳем агар: auth ҳанӯз муайян нашудааст ё query кор мекунад
+    // We show the skeleton if: auth isn't determined yet, or the query is still running
     if (!isLoaded || loading) {
       return (
         <div className="mx-auto max-w-6xl md:pt-8 px-2.5 py-4 md:px-4">
@@ -281,7 +281,7 @@ export default function ItemDetailsClient({
         </div>
       );
     }
-    // Танҳо пас аз тайёр шудани auth ва анҷоми query"ёфт нашуд"нишон медиҳем
+    // Only show "not found" after auth is ready and the query has finished
     return (
       <div className="container mx-auto px-2.5 sm:px-4 py-20 text-center">
         <h1 className="text-2xl font-bold">{t("itemNotFound")}</h1>
@@ -321,11 +321,11 @@ export default function ItemDetailsClient({
                     key={index}
                     className="h-full w-full shrink-0 snap-center relative overflow-hidden"
                   >
-                    {/* Background — ҳамон акс, calon-шуда ва blur-шуда, то
-                        фазои холии canorho (агар нисбати акс мувофиқ
-                        набошад) бо контексти рангии худи акс пур шавад,
-                        на бо ранги ҳамвор (мисли Instagram Stories). */}
-                    {/* Қабати таг — то ҳангоми боршавии акс слайд холӣ намонад. */}
+                    {/* Background — the same image, scaled up and blurred, so that the
+                        empty space of the canvas (if the aspect ratio doesn't match
+                        the image) gets filled with the image's own color context,
+                        rather than a flat color (like Instagram Stories). */}
+                    {/* Bottom layer — so the slide isn't empty while the image loads. */}
                     <ImagePlaceholder />
                     <Image
                       src={img.image_url}
@@ -415,13 +415,13 @@ export default function ItemDetailsClient({
           </div>
 
           <div className="flex flex-col relative z-10 bg-canvas rounded-t-3xl md:rounded-none -mt-8 md:mt-0 px-5 pt-10 md:px-0 md:pt-0 pb-12">
-            {/* Дастаки кашиш (drag handle) — мисли bottom sheet-и iOS/app-и
-                мобилӣ, нишон медиҳад ки ин панел боло-поён мешавад. */}
+            {/* Drag handle — like an iOS/mobile app's bottom sheet,
+                indicating that this panel can be dragged up and down. */}
             <div className="md:hidden flex justify-center -mt-6 mb-4">
               <div className="w-10 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
             </div>
-            {/* Хати ҷудокунанда байни соҳиби эълон ва маълумоти ашё — он
-                ду бахши мазмунан гуногунро аз ҳам ҷудо мекунад. */}
+            {/* Divider line between the listing owner and the item info — it
+                separates these two content sections from each other. */}
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">

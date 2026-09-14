@@ -14,14 +14,14 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
 const ITEM_FIELDS = "*, images:item_images(image_url)";
 
 /**
- * Нест кардани воқеии эълон (аз ҷониби худи соҳиб) — бар хилофи
- * ItemService.deleteItem (soft-delete, status='deleted'), ки ҳам барои
- * "Нест кардан" ва ҳам барои "Ҳал шуд" истифода мешавад. Ин функсия танҳо
- * барои амали "Нест кардан"-и воқеӣ аст: snapshot дар deleted_items_archive,
- * аксҳо аз storage, баъд сатр аз items пурра нест мешавад (CASCADE
- * item_images/saved_items). external_items.published_item_id
- * пеш аз ин FK-ро nullify мекунем (ON DELETE NO ACTION аст, вагарна FK
- * violation медиҳад барои элонҳои воридотӣ).
+ * Actually deletes the listing (by the owner themselves) — as opposed to
+ * ItemService.deleteItem (soft-delete, status='deleted'), which is used
+ * both for "Delete" and for "Resolved". This function is only for the
+ * real "Delete" action: a snapshot is saved to deleted_items_archive,
+ * the images are removed from storage, then the row is fully deleted from
+ * items (CASCADE item_images/saved_items). We nullify the
+ * external_items.published_item_id FK before this (it's ON DELETE NO
+ * ACTION, otherwise it would raise an FK violation for imported listings).
  */
 export async function hardDeleteItem(
   itemId: string,

@@ -12,8 +12,8 @@ import { ReprocessEmbeddingsButton } from "@/components/admin/reprocess-embeddin
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
-// recharts вазнин аст — chunk-и худро мегирад, ба ҷои он ки дар bundle-и
-// асосии admin ҳамроҳ шавад.
+// recharts is heavy — it gets its own chunk instead of being bundled
+// into the main admin bundle.
 const DashboardLineChart = dynamic(
   () => import("@/components/admin/dashboard-line-chart").then((m) => m.DashboardLineChart),
   { loading: () => <Skeleton className="h-64 rounded-2xl" /> },

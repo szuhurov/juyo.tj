@@ -18,7 +18,7 @@ function isActive(pathname: string, href: string) {
   return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 }
 
-/** Badge-и сурхи шумора — барои эълонҳои "дар интизор", ки бе AI moderation омадаанд. */
+/** Red count badge — for "pending" posts that came in without AI moderation. */
 function PendingBadge({ count }: { count: number }) {
   if (count <= 0) return null;
   return (
@@ -28,7 +28,7 @@ function PendingBadge({ count }: { count: number }) {
   );
 }
 
-/** Рӯйхати навигатсия бо матн — барои Sheet-и мобилӣ. */
+/** Navigation list with text — for the mobile Sheet. */
 export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { data: pendingCount = 0 } = usePendingPostsCount();
@@ -58,8 +58,8 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
         );
       })}
 
-      {/* Бозгашт ба сайт — пеш аз ин танҳо дар sidebar-и desktop буд, яъне
-          дар телефон аз панели admin роҳи баромадан ба сайт набуд. */}
+      {/* Back to site — previously this only existed in the desktop sidebar, meaning
+          on mobile there was no way out of the admin panel back to the site. */}
       <Link
         href="/"
         onClick={onNavigate}
@@ -72,8 +72,8 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-/** Sidebar бо аксенти кабуд — панели admin ранги худро дорад, ҷудо аз
- *  сабзи сайти оммавӣ. */
+/** Sidebar with a blue accent — the admin panel has its own color, separate from
+ *  the public site's green. */
 export function AdminSidebar() {
   const pathname = usePathname();
   const { data: pendingCount = 0 } = usePendingPostsCount();

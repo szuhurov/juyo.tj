@@ -1,6 +1,6 @@
 /**
- * Loading UI-и махсуси /qr (redirect-и фаврӣ ба /profile?tab=qr) — то
- * Next.js аз loading.tsx-и умумии гурӯҳи (main) истифода набарад.
+ * A dedicated loading UI for /qr (an instant redirect to /profile?tab=qr)
+ * — so Next.js doesn't fall back to the (main) group's shared loading.tsx.
  */
 export default function QrRedirectLoading() {
   return null;

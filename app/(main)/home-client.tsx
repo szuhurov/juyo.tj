@@ -1,7 +1,7 @@
 /**
- * Қисми клиентии саҳифаи асосӣ (филтрҳо, infinite scroll, ҷустуҷӯ).
- * initialItems аз сервер (ниг. page.tsx) меояд — то HTML-и аввалия
- * итемҳоро аллакай дошта бошад (SEO), бе интизори fetch-и клиентӣ.
+ * Client-side part of the home page (filters, infinite scroll, search).
+ * initialItems comes from the server (see page.tsx) — so the initial HTML
+ * already has the items (SEO), without waiting for a client-side fetch.
  */
 "use client";
 
@@ -32,18 +32,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { DateRangeCalendar } from "@/components/date-range-calendar";
 
-// Тугмаҳои амали зуд — филтри location_type (ба ҷои тугмаи куҳнаи "Такси"-и
-// махсус, ки танҳо аз рӯи як корбари собит филтр мекард — ниг. migration
-// 20260802000000_items_location_type.sql). Ин филтри УМУМӢ барои ҳамаи
-// корбарон аст, аз рӯи посух ба саволи wizard-и items/add. "all" маънии
-// location_type-и нест дорад — тугмаи тоза кардани ин филтр, на филтри воқеӣ.
-// ХАТОГИИ ЁФТШУДА (талаби корбар: ин филтрҳо аз мобилӣ фарқ мекунанд):
-// пештар ин ҷо "gym"/"fintech_center"-и худсохта буданд, ки дар
-// native тамоман вуҷуд надоранд. Ҳоло АЙНАН ҳамон 6-то, ки native
-// дорад (ниг. app/(tabs)/index.tsx) — "none" махсус аст: на "бе
-// филтр" (ҳамон "all"), балки "маҳз ҳамон эълонҳое, ки ҷой
-// нагузоштаанд" (location_type IS NULL — RPC-и search_items ин
-// сатрро махсус мефаҳмад, ниг. p_location_type='none').
+// Quick action buttons — location_type filter (replacing the old dedicated
+// "Taxi" button, which only filtered by one fixed user — see migration
+// 20260802000000_items_location_type.sql). This filter is GENERAL for all
+// users, based on the answer to the wizard question in items/add. "all" does not
+// correspond to a location_type value — it's the button that clears this filter, not a real filter.
+// BUG FOUND (user request: these filters differ from mobile):
+// previously this had made-up "gym"/"fintech_center" values that don't
+// exist at all in native. Now it's EXACTLY the same 6 that native
+// has (see app/(tabs)/index.tsx) — "none" is special: not "no
+// filter" (that's "all"), but "specifically the listings that didn't
+// specify a location" (location_type IS NULL — the search_items RPC
+// understands this string specially, see p_location_type='none').
 const QUICK_ACTIONS = [
   { value: "all", icon: LayoutGrid },
   { value: "taxi", icon: Car },
@@ -54,10 +54,10 @@ const QUICK_ACTIONS = [
   { value: "none", icon: HelpCircle },
 ] as const;
 
-// Нусхаи МУРАТТАБШУДА барои филтри home (на худи CATEGORIES) — "Дигар"
-// дар охир меистад, аммо тартиби аслии CATEGORIES (барои қадами
-// категорияи wizard-и items/add) дахлнопазир мемонад. Айнан ҳамин
-// қолаб дар мобилӣ (juyoapp/app/(tabs)/index.tsx — CAT_FILTER_ITEMS).
+// SORTED copy for the home filter (not CATEGORIES itself) — "Other"
+// stays at the end, but the original order of CATEGORIES (used for the
+// category step of the items/add wizard) remains untouched. The exact same
+// pattern is used on mobile (juyoapp/app/(tabs)/index.tsx — CAT_FILTER_ITEMS).
 const CATEGORY_FILTER_ITEMS = [...CATEGORIES].sort((a, b) =>
   a.name === "Other" ? 1 : b.name === "Other" ? -1 : 0,
 );
@@ -76,21 +76,21 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     setVisualSearchResults,
   } = useHomeState();
 
-  // Филтрҳо дар URL нигоҳ дошта мешаванд, на дар useState.
+  // Filters are kept in the URL, not in useState.
   //
-  // САБАБ: пеш аз ин онҳо ҳолати локалӣ буданд — корбар филтр мекард,
-  // ба эълон медаромад ва ҳангоми бозгашт компонент аз нав сохта мешуд,
-  // яъне ҳамаи филтрҳо ба "Ҳама" бармегаштанд ва scroll ба боло меафтод.
-  // Бо URL ҳолат ба худи таърихи браузер тааллуқ дорад: бозгашт онро
-  // худкор барқарор мекунад, ва ҳамзамон рӯйхати филтршуда пайванди
-  // мубодилашаванда мешавад.
+  // REASON: previously they were local state — the user would filter,
+  // open a listing, and on going back the component would be rebuilt,
+  // meaning all filters reset to "All" and the scroll jumped to the top.
+  // With the URL, the state belongs to the browser history itself: going
+  // back restores it automatically, and at the same time the filtered
+  // list becomes a shareable link.
   const router = useRouter();
   const pathname = usePathname();
 
   const category = searchParams.get("cat") || "All";
-  // Пешфарз — «Ҳама» (талаби корбар): `type`-и холӣ маънои «Ҳама»-ро
-  // дорад ва URL-и саҳифаи асосӣ тоза мемонад — `?type=` танҳо барои
-  // «Ёфтшуда»/«Гумшуда» пайдо мешавад (на баръакс, мисли пештара).
+  // Default — "All" (user request): an empty `type` means "All"
+  // and keeps the home page URL clean — `?type=` only appears for
+  // "Found"/"Lost" (not the other way around, like before).
   const rawType = searchParams.get("type");
   const itemType: "lost" | "found" | null =
     rawType === "lost" || rawType === "found" ? rawType : null;
@@ -98,9 +98,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const dateFrom = searchParams.get("from") || undefined;
   const dateTo = searchParams.get("to") || undefined;
 
-  // `replace` (на `push`) — вагарна ҳар як зеркунии филтр як қадами
-  // таърих месозад ва тугмаи "қафо" корбарро аз байни даҳҳо ҳолати
-  // филтр мегузаронад, ба ҷои он ки ба саҳифаи қаблӣ барад.
+  // `replace` (not `push`) — otherwise every filter click would create a
+  // history entry and the "back" button would step the user through dozens
+  // of filter states instead of taking them to the previous page.
   const setFilterParams = useCallback(
     (updates: Record<string, string | null | undefined>) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -110,11 +110,11 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
       }
       const qs = params.toString();
 
-      // ҲАЛҚАИ БЕПОЁН — муҳофизати ҳатмӣ.
-      // `router.replace` объекти НАВи searchParams месозад → `useCallback`
-      // аз нав эҷод мешавад → ҳар effect-е, ки ба он вобаста аст, дубора
-      // кор мекунад → боз `replace`… Агар URL воқеан тағйир наёбад,
-      // умуман navigation накун.
+      // INFINITE LOOP — mandatory guard.
+      // `router.replace` creates a NEW searchParams object → `useCallback`
+      // is recreated → every effect that depends on it runs again →
+      // `replace` again… If the URL doesn't actually change,
+      // don't navigate at all.
       if (qs === searchParams.toString()) return;
 
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
@@ -124,8 +124,8 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
   const setCategory = (value: string) =>
     setFilterParams({ cat: value === "All" ? null : value });
-  // «Ҳама» пешфарз аст — онро аз URL мебарорем, то суроға тоза монад
-  // (ҳамон мантиқи `setCategory` бо "All").
+  // "All" is the default — we strip it from the URL so the address stays
+  // clean (the same logic as `setCategory` with "All").
   const setItemType = (value: "lost" | "found" | null) =>
     setFilterParams({ type: value });
 
@@ -135,12 +135,13 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const datePickerRef = useRef<HTMLDivElement>(null);
 
   /**
-   * Баландии ВОҚЕИИ бари fixed-и филтрҳо — андозагирии зинда, на рақами
-   * собити тахминӣ. Пештар `HOME_CONTENT_PT` рақами дастӣ (ва аксар вақт
-   * НОДУРУСТ) буд: ё холигии зиёд мемонд, ё баттар — тугмаҳои амали зуд
-   * зери бар медаромаданд (талаби корбар, бо screenshot нишон дода шуд).
-   * `ResizeObserver` ҳар тағйири баландиро (масалан, ивази breakpoint)
-   * фавран пайгирӣ мекунад, пас ҳеҷ гоҳ аз ҳақиқат дур намемонад.
+   * The ACTUAL height of the fixed filter bar — measured live, not an
+   * estimated constant. Previously `HOME_CONTENT_PT` was a hand-picked
+   * number (and often WRONG): either too much empty space was left, or
+   * worse — the quick action buttons ended up hidden under the bar (user
+   * request, demonstrated with a screenshot).
+   * `ResizeObserver` immediately tracks every height change (e.g. a
+   * breakpoint switch), so it never drifts from reality.
    */
   const filterBarRef = useRef<HTMLDivElement>(null);
   const [filterBarHeight, setFilterBarHeight] = useState<number | null>(null);
@@ -172,20 +173,20 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const toggleLocationType = (value: string) =>
     setFilterParams({ loc: locationType === value ? null : value });
 
-  // Тоза кардани ҳамаи филтрҳо — дар як навсозии URL, то ду render-и
-  // пайдарпай нашавад.
+  // Clear all filters — in a single URL update, so it doesn't cause two
+  // consecutive renders.
   const clearAllFilters = useCallback(() => {
     setFilterParams({ cat: null, type: null, loc: null, from: null, to: null });
   }, [setFilterParams]);
 
-  // initialItems танҳо барои filters-и пешфарз (яъне ҳамон чизе, ки дар
-  // сервер гирифта шуда буд) амал мекунад — фарқи filters аз пешфарз
-  // маънои онро дорад, ки корбар аллакай филтреро иваз кардааст.
-  // `type === "found"` ПЕШФАРЗ аст, на филтри интихобкардаи корбар — пас он
-  // ҳолати пешфарз ба ҳисоб меравад. Вагарна `isDefaultFilters` ҳамеша
-  // `false` мешуд, `initialItems`-и сервер ҳеҷ гоҳ истифода намешуд ва ҳар
-  // боркунӣ як fetch-и зиёдатии клиентӣ медод (ниг. page.tsx — он низ маҳз
-  // ҳамин филтрро мегирад).
+  // initialItems applies only for the default filters (i.e. the same ones
+  // that were fetched on the server) — filters differing from the default
+  // mean the user has already changed a filter.
+  // `type === "found"` is the DEFAULT, not a filter chosen by the user — so
+  // it still counts as the default state. Otherwise `isDefaultFilters` would
+  // always be `false`, the server's `initialItems` would never be used, and
+  // every load would trigger an extra client-side fetch (see page.tsx — it
+  // fetches with exactly this same filter).
   const isDefaultFilters =
     !filters.category && filters.type === "found" && !filters.search && !filters.dateFrom && !filters.dateTo && !filters.locationType;
 
@@ -198,7 +199,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     isFetchingNextPage,
   } = useItems(filters, isDefaultFilters ? initialItems : undefined);
 
-  // Боркунии саҳифаи навбатӣ ҳангоми расидан ба охири рӯйхат
+  // Load the next page when the end of the list is reached
   useEffect(() => {
     if (inView && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
@@ -219,10 +220,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   }, [queryClient]);
 
   // Reset filters when visual search results arrive.
-  // `handledVisualRef` кафолат медиҳад, ки бадан як бор ба ҳар натиҷаи
-  // НАВ иҷро шавад — на ҳар дафъае, ки шахсияти `clearAllFilters` иваз
-  // мешавад (он аз searchParams вобаста аст ва пас аз ҳар navigation нав
-  // мешавад).
+  // `handledVisualRef` guarantees the body runs once per NEW result — not
+  // every time `clearAllFilters`'s identity changes (it depends on
+  // searchParams and gets a new identity after every navigation).
   const handledVisualRef = useRef<unknown>(null);
   useEffect(() => {
     if (!visualSearchResults) {
@@ -235,25 +235,25 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [visualSearchResults, clearAllFilters]);
 
-  // Талаби корбар: тугмаҳои амали зуд (қатори такси/меҳмонхона/...) ҳар
-  // дафъае, ки корбар яке аз филтрҳои БОЛО (категория, навъ, сана) зер
-  // мекунад, бояд намоён бошанд.
+  // User request: the quick action buttons (taxi/hotel/... row) must be
+  // visible every time the user clicks one of the filters ABOVE (category,
+  // type, date).
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [category, itemType, dateFrom, dateTo]);
 
   // Reset everything when user clicks the home logo
   //
-  // `handledGoHomeRef` ҲАТМӢ аст — худи ҳамон муҳофизат, ки дар effect-и
-  // болоӣ (`handledVisualRef`) ҳаст. Бе он effect ба ҲАР тағйири URL кор
-  // мекард, зеро `clearAllFilters` аз `searchParams` вобаста аст ва баъд аз
-  // ҳар navigation шахсияти нав мегирад. Натиҷа: агар корбар як бор
-  // тугмаи «Home»-ро аз саҳифаи дигар зада бошад (goHomeSignal ≠ 0), пас
-  // ҳар зеркунии филтр фавран бекор мешуд — тугма ба ҳолати пештара
-  // бармегашт ва URL тоза мемонд.
+  // `handledGoHomeRef` is MANDATORY — the same guard used in the effect
+  // above (`handledVisualRef`). Without it, the effect would run on EVERY
+  // URL change, because `clearAllFilters` depends on `searchParams` and
+  // gets a new identity after every navigation. The result: once the user
+  // clicked the "Home" button from another page (goHomeSignal ≠ 0), every
+  // subsequent filter click would be instantly canceled — the button would
+  // revert to its previous state and the URL would stay clean.
   const handledGoHomeRef = useRef(0);
   useEffect(() => {
-    // Синхронизатсия бо сигнали берунӣ (goHomeSignal аз context).
+    // Sync with the external signal (goHomeSignal from context).
     if (goHomeSignal === 0) return;
     if (handledGoHomeRef.current === goHomeSignal) return;
     handledGoHomeRef.current = goHomeSignal;
@@ -262,7 +262,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [goHomeSignal, setVisualSearchResults, clearAllFilters]);
 
-  // Пӯшидани попапи филтри сана ҳангоми клик берун аз он
+  // Close the date filter popup on click outside it
   useEffect(() => {
     if (!showDatePicker) return;
     const handleClickOutside = (e: MouseEvent) => {
@@ -292,37 +292,38 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     setShowDatePicker(false);
   };
 
-  // Ҷамъоварии ҳамаи ашёҳо аз ҳамаи саҳифаҳо
+  // Flatten all items from all pages
   const allItems = useMemo(() => {
     return data?.pages.flatMap((page) => page) || [];
   }, [data]);
 
-  // Усули"Pro": Намоиши ашёҳо бидуни филтри зиёдатии фронтенд (чун backend аллакай филтр мекунад)
+  // "Pro" approach: display items without extra frontend filtering (since the backend already filters)
   const displayedItems = useMemo(() => {
     if (visualSearchResults) return visualSearchResults;
     return allItems;
   }, [allItems, visualSearchResults]);
 
-  // Тугмаҳои амали зуд ҳангоми ҶУСТУҶӮИ МАТНӢ низ намоён мемонанд.
-  // Ҳангоми ҷустуҷӯи ВИЗУАЛӢ ин қатор ҳамоно пинҳон мешавад, чунки он ҷо
-  // тамоми навор ба тугмаи "тоза кардани натиҷа" иваз мешавад ва падинг
-  // низ дигар аст (pt-[64px]).
+  // The quick action buttons stay visible during TEXT SEARCH as well.
+  // During VISUAL search this row is still hidden, because there the
+  // whole strip is replaced by the "clear results" button and the
+  // padding is different too (pt-[64px]).
   const showTopSections = !visualSearchResults;
 
   return (
     <div className="pb-18 min-h-screen bg-canvas">
-      {/* Қисмати Филтрҳо (Header/Filters) */}
+      {/* Filters section (Header/Filters) */}
       <div ref={filterBarRef} className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-canvas">
         <div className="w-full max-w-7xl mx-auto pl-2.5 sm:pl-4">
-          {/* Худи header аллакай 6px зери майдони ҷустуҷӯ мемонад, пас `pt-0.5`
-              фосиларо ба 8px мебарорад — каме калонтар аз 6px-и байни қаторҳои
-              филтр, то ҷустуҷӯ аз онҳо ҷудо ба назар расад.
-              `pb-1.5` (6px): талаби корбар — тамоми фосилаи қатори навъ↔мӯҳтавои
-              зерин аз ҳамин ҷо биёяд (на аз margin-и мӯҳтавои поён), то ҳатто
-              вақте ки тугмаҳои амали зуд намоён нестанд (масалан ашёи рӯйхат
-              ба лаби бар расидааст), ҳамон фосила бимонад.
-              Ин рақам дигар ба HOME_CONTENT_PT дастӣ вобаста нест — падинги
-              мӯҳтаво баландии ВОҚЕИИ ин барро зинда чен мекунад (filterBarHeight). */}
+          {/* The header itself already sits 6px below the search field, so `pt-0.5`
+              bumps the gap to 8px — slightly larger than the 6px between filter
+              rows, so the search field appears visually separated from them.
+              `pb-1.5` (6px): user request — the entire gap between the type row and
+              the content below should come from here (not from the bottom content's
+              margin), so that even when the quick action buttons aren't visible
+              (e.g. the list has scrolled to the edge of the bar), the same gap
+              remains.
+              This number no longer depends on the hand-picked HOME_CONTENT_PT — the
+              content padding now measures this bar's ACTUAL height live (filterBarHeight). */}
           <div className="w-full pt-0.5 pb-1.5">
           <div
             className={cn(
@@ -374,12 +375,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               )}
           </div>
 
-          {/* Интихоби навъ: Гумшуда ё Ёфтшуда — қатори алоҳида, бе swipe (адади ками tugma) */}
+          {/* Type selector: Lost or Found — a separate row, no swipe (few buttons) */}
           {!visualSearchResults && (
             <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                {/* Ранг ҳамон забони кортҳост: ёфтшуда сабз, гумшуда сурх.
-                    Ҳангоми ғайрифаъол ранг дар МАТН аст, ҳангоми фаъол дар
-                    ЗАМИНА — вагарна матни сурх дар заминаи сабз меафтод. */}
+                {/* The color follows the same convention as the cards: found is green, lost is red.
+                    When inactive the color is on the TEXT, when active it's on the
+                    BACKGROUND — otherwise red text would end up on a green background. */}
                 {(
                   [
                     { value: null, label: t("all"), on: "bg-emerald-500 text-white", off: "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400" },
@@ -400,7 +401,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   </button>
                 ))}
 
-                {/* Филтри бозаи сана (Аз/То) — то лаби рости қатор тела дода мешавад (ml-auto) */}
+                {/* Date range filter (From/To) — pushed to the right edge of the row (ml-auto) */}
                 <div className="relative ml-auto mr-2" ref={datePickerRef}>
                   <button
                     type="button"
@@ -418,10 +419,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
                   {showDatePicker && (
                     <>
-                      {/* Пасманзари торик — то диққат ба худи филтр равад ва
-                          зеркунии берун онро пӯшад. Пештар ин филтр як
-                          рӯйхати афтанда буд, ки дар экрани телефон ба лаби
-                          рост мечаспид ва нимаш берун мемонд. */}
+                      {/* Dark backdrop — to draw attention to the filter itself and let
+                          clicking outside close it. Previously this filter was a
+                          dropdown that stuck to the right edge on phone screens and
+                          half of it ended up off-screen. */}
                       <div
                         className="fixed inset-0 z-40 bg-black/50"
                         onClick={() => setShowDatePicker(false)}
@@ -463,31 +464,31 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         </div>
       </div>
 
-      {/* Мӯҳтавои асосиӣ: Рӯйхати эълонҳо */}
+      {/* Main content: Listings feed */}
       <div
         className={cn(
           "w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5 touch-pan-y",
           visualSearchResults
             ? "pt-[64px] md:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
-            // То андозагирии зинда (filterBarHeight) омода шавад, синфи
-            // тахминӣ HOME_CONTENT_PT истифода мешавад — вагарна дар лаҳзаи
-            // аввали рендер (SSR/пеш аз JS) падинг умуман набуд.
+            // Until the live measurement (filterBarHeight) is ready, the
+            // estimated HOME_CONTENT_PT class is used — otherwise there
+            // would be no padding at all on the very first render (SSR/before JS).
             : filterBarHeight == null && HOME_CONTENT_PT,
         )}
         style={!visualSearchResults && filterBarHeight != null ? { paddingTop: filterBarHeight } : undefined}
       >
-        {/* Тугмаҳои амали зуд — дар мӯҳтавои СКРОЛЛШАВАНДА, на дар бари
-            fixed. Ҳангоми scroll онҳо боло рафта зери филтрбар пинҳон
-            мешаванд; танҳо ҳангоми зеркунии филтрҳои боло (категория/навъ/
-            сана) ё бозгашти пурра ба боло боз намоён мешаванд — талаби
-            корбар: "misli peshina... agar to okhir ravem badan paydo
-            shavad" (на ҳар ҷунбиши болоии scroll).
-            БЕ margin-top: фосилаи 6px аз `pb-1.5`-и дохили бари fixed
-            меояд (ниг. боло).
-            `py-5 -my-5` ҷои соя аст, то соя бурида нашавад. */}
+        {/* Quick action buttons — inside the SCROLLABLE content, not in the
+            fixed bar. When scrolling they move up and hide under the filter bar;
+            they only reappear when the filters above are clicked (category/type/
+            date) or on a full scroll back to the top — user request: "like
+            before... it should reappear once we get back to the top" (not on
+            every small upward scroll movement).
+            NO margin-top: the 6px gap comes from the `pb-1.5` inside the fixed
+            bar (see above).
+            `py-5 -my-5` is room for the shadow, so the shadow isn't clipped. */}
         {showTopSections && (
           <div className="mb-2.5">
-            {/* `mr-[-Npx]`: қатор бояд ба лаби рости ВОҚЕИИ экран расад. */}
+            {/* `mr-[-Npx]`: the row must reach the ACTUAL right edge of the screen. */}
             <div className="flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5 mr-[-10px] sm:mr-[-16px] lg:mr-[-20px]">
               {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
                 const active = value === "all" ? locationType === null : locationType === value;
@@ -552,7 +553,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               ))}
             </div>
 
-            {/* Элемент барои Infinite Scroll */}
+            {/* Element for Infinite Scroll */}
             <div
               ref={ref}
               className="h-10 mt-4 flex items-center justify-center"
@@ -566,12 +567,11 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               )}
             </div>
 
-            {/* Анҷоми рӯйхат. Матн вобаста ба ҳолат фарқ мекунад: агар
-                филтр/ҷустуҷӯ фаъол бошад, корбар бояд бифаҳмад, ки ин
-                анҷоми ҲАМИН натиҷа аст, на анҷоми ҳамаи эълонҳо —
-                вагарна метавонад фикр кунад, ки дар сайт чизи дигаре
-                нест. Барои натиҷаи ҷустуҷӯи визуалӣ pagination нест,
-                бинобар ин он ҷо ин матн намоиш дода намешавад. */}
+            {/* End of the list. The text differs depending on state: if a
+                filter/search is active, the user should understand that this is
+                the end of THIS result set, not the end of all listings —
+                otherwise they might think there's nothing else on the site. There's
+                no pagination for visual search results, so this text isn't shown there. */}
             {!visualSearchResults && !hasNextPage && !isFetchingNextPage && (
               <p className="pb-6 text-center text-xs min-[1084px]:text-[13px] font-medium text-zinc-400 dark:text-zinc-500">
                 {isDefaultFilters ? t("endOfListAll") : t("endOfListFiltered")}

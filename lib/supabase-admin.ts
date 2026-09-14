@@ -1,8 +1,8 @@
 import { createClient, SupabaseClient } from'@supabase/supabase-js';
 
 /**
- * Клиенти Supabase бо service-role key — RLS-ро байпас мекунад.
- * ФАҚАТ дар Server Components / Route Handlers истифода шавад, ҳаргиз дар"use client".
+ * Supabase client with a service-role key — bypasses RLS.
+ * Use ONLY in Server Components / Route Handlers, never in "use client".
  */
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

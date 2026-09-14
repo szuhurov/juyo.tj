@@ -3,13 +3,14 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
- * Сохтани почтаи нав (то ҳанӯз тасдиқнашуда) барои раванди ивази email.
- * Тавассути Backend API (secret key) иҷро мешавад — на user.createEmailAddress()-и
- * клиент, зеро он баъзан reverification металабад (масалан вақте ки почтаи
- * қаблан аз ҳамин ҳисоб нест шударо дубора илова мекунед) ва ҳисобҳои бе
- * parol (масалан бо Google) ба "Cannot verify your account" дучор мешаванд.
- * Фиристодани рамзи тасдиқ (prepareVerification) ҳамчунон дар клиент
- * мемонад — он reverification намепурсад.
+ * Creates a new (not yet verified) email for the email-change flow.
+ * Carried out via the backend API (secret key) — not the client's
+ * user.createEmailAddress(), because that sometimes requires
+ * reverification (for example when re-adding an email that was previously
+ * removed from this same account), and accounts without a password (for
+ * example with Google) would hit "Cannot verify your account". Sending the
+ * verification code (prepareVerification) still happens on the client —
+ * that doesn't ask for reverification.
  */
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -27,8 +28,8 @@ export async function POST(req: NextRequest) {
     const client = await clerkClient();
     const clerkUser = await client.users.getUser(userId);
 
-    // Агар кӯшиши қаблӣ нотамом монда бошад, ин почта аллакай ба ҳисоб
-    // илова шудааст — ҳамонро истифода мебарем, на аз нав месозем.
+    // If a previous attempt was left incomplete, this email has already
+    // been added to the account — we reuse it instead of creating a new one.
     const existing = clerkUser.emailAddresses.find(
       (e) => e.emailAddress.toLowerCase() === normalizedEmail,
     );

@@ -1,21 +1,21 @@
-// Давраи ҳаёти эълон — ҳар рӯз соати 02:00 аз pg_cron (job #1) даъват мешавад.
-// Ҳама чиз ХУДКОР аст: admin ҳеҷ чиз намефиристад.
+// Listing lifecycle — called every day at 02:00 by pg_cron (job #1).
+// Everything is AUTOMATIC: the admin doesn't send anything manually.
 //
-// ДУ МАРҲИЛА, дар як иҷро:
+// TWO STAGES, in one run:
 //
-//   A) То `expires_at` камтар аз 72 соат мондааст ва огоҳинома ҳанӯз
-//      нарафтааст → ба соҳиб push меравад ва `expiry_notified_at` сабт
-//      мешавад. Эълон ҳанӯз ЗИНДА аст.
+//   A) While `expires_at` has less than 72 hours left and the notification
+//      hasn't gone out yet → a push goes to the owner and `expiry_notified_at`
+//      is recorded. The listing is still ALIVE at this point.
 //
-//   B) `expires_at` расид → эълон ВОҚЕАН нест мешавад: аксҳо аз Storage,
-//      сатр аз база.
+//   B) `expires_at` is reached → the listing is ACTUALLY deleted: images
+//      from Storage, the row from the database.
 //
-// «Ҳанӯз лозим»-ро корбар мезанад → app/api/items/[id]/expiry мӯҳлатро аз
-// нав мегузорад ва `expiry_notified_at`-ро холӣ мекунад, пас марҳилаи B
-// ҳаргиз ба он намерасад.
+// If the user clicks "Still needed" → app/api/items/[id]/expiry resets the
+// deadline and clears `expiry_notified_at`, so stage B never reaches it.
 //
-// Агар корбар огоҳинома фаъол накарда бошад, марҳилаи A ба ӯ чизе намедиҳад
-// ва эълон дар `expires_at` бе хабар нест мешавад — қарори соҳиби барнома.
+// If the user hasn't enabled notifications, stage A gives them nothing and
+// the listing is deleted at `expires_at` without any warning — that's the
+// app owner's deliberate decision.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -23,7 +23,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://juyo.tj";
 const PUSH_INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET");
 
-/** Чанд соат ПЕШ аз мӯҳлат огоҳинома меравад. */
+/** How many hours BEFORE the deadline the notification goes out. */
 const WARN_BEFORE_HOURS = 72;
 
 const corsHeaders = {
@@ -31,8 +31,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Web push такя ба crypto.createECDH дорад, ки дар Deno татбиқ нашудааст —
-// фиристодани воқеӣ аз /api/push/send-и Vercel меравад (ниг. notify-category-post).
+// Web push relies on crypto.createECDH, which isn't implemented in Deno —
+// the actual sending happens through Vercel's /api/push/send (see notify-category-post).
 async function sendWebPush(token: string, payload: object) {
   try {
     const res = await fetch(`${SITE_URL}/api/push/send`, {
@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
   const nowIso = now.toISOString();
 
   try {
-    // ─── МАРҲИЛАИ A: огоҳии пешакӣ (72 соат мондааст) ─────────────────────
+    // ─── STAGE A: advance warning (72 hours left) ─────────────────────
     const warnUntil = new Date(now.getTime() + WARN_BEFORE_HOURS * 3600_000).toISOString();
 
     const { data: warnItems, error: warnError } = await supabase
@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
       .select("id, title, user_id")
       .eq("status", "active")
       .not("expires_at", "is", null)
-      .gt("expires_at", nowIso)        // ҳанӯз нарасидааст
-      .lte("expires_at", warnUntil)     // вале камтар аз 72 соат мондааст
+      .gt("expires_at", nowIso)        // hasn't been reached yet
+      .lte("expires_at", warnUntil)     // but has less than 72 hours left
       .is("expiry_notified_at", null);
 
     if (warnError) throw warnError;
@@ -73,20 +73,20 @@ Deno.serve(async (req) => {
     let pushSent = 0;
 
     for (const item of warnItems ?? []) {
-      if (!item.user_id) continue; // эълони меҳмон — соҳиби хабардоршаванда нест
+      if (!item.user_id) continue; // guest listing — no owner to notify
 
       const { data: tokens } = await supabase
         .from("push_tokens")
         .select("token")
         .eq("user_id", item.user_id);
 
-      // Огоҳинома фаъол нест — ҳеҷ чиз намефиристем ва БЕЛГӢ ҳам намегузорем.
-      // Эълон дар `expires_at` бе хабар нест мешавад (марҳилаи B).
+      // Notifications aren't enabled — we send nothing and also don't set the MARKER.
+      // The listing gets deleted at `expires_at` without any warning (stage B).
       if (!tokens?.length) continue;
 
-      // Белгӣ ПЕШ аз фиристодан: агар push ноком шавад, cron набояд ҳар шаб
-      // ҳамон огоҳиномаро такрор кунад. Корбар онро дар саҳифаи
-      // огоҳиномаҳо ба ҳар ҳол мебинад (он аз `expiry_notified_at` меояд).
+      // Mark it BEFORE sending: if the push fails, the cron shouldn't repeat
+      // the same notification every night. The user will see it on the
+      // notifications page regardless (it's driven by `expiry_notified_at`).
       const { error: markError } = await supabase
         .from("items")
         .update({ expiry_notified_at: nowIso })
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       if (stale.length) await supabase.from("push_tokens").delete().in("token", stale);
     }
 
-    // ─── МАРҲИЛАИ B: мӯҳлат расид → нест кардани воқеӣ ────────────────────
+    // ─── STAGE B: deadline reached → actual deletion ────────────────────
     const { data: expiredItems, error: expiredError } = await supabase
       .from("items")
       .select("id")
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // item_images бо CASCADE меравад
+      // item_images is removed via CASCADE
       const { error: deleteError } = await supabase.from("items").delete().eq("id", itemId);
       if (deleteError) console.error(`delete error for ${itemId}:`, deleteError.message);
       else deleted++;

@@ -10,9 +10,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// МОДЕЛҲО — бояд бо supabase/functions/generate-embedding АЙНАН ЯКХЕЛА бошанд.
-// Вектори дархост ва вектори захирашуда танҳо дар сурате муқоисашаванда
-// мебошанд, ки аз як модел ва бо як андоза сохта шуда бошанд.
+// MODELS — must be EXACTLY THE SAME as supabase/functions/generate-embedding.
+// The query vector and the stored vector are only comparable if they were
+// built from the same model at the same size.
 const EMBEDDING_MODEL = "text-embedding-3-large"
 const EMBEDDING_DIMENSIONS = 1536
 const VISION_MODEL = "gpt-4o-mini"
@@ -95,13 +95,13 @@ Deno.serve(async (req) => {
 
     // 3. GLOBAL VECTOR SEARCH
     //
-    // Як занги ягона бо p_type='all' — пеш аз ин ду занги алоҳида
-    // (lost/found) бо ҳадди 15-тоӣ буд, ки тақсимоти сунъӣ месохт:
-    // агар ҳамаи 20 мувофиқати беҳтарин 'lost' мебуданд, панҷтоаш
-    // партофта мешуд, то ҷой ба 'found'-и заифтар дода шавад.
+    // A single call with p_type='all' — previously there were two separate
+    // calls (lost/found) with a limit of 15 each, which created an
+    // artificial split: if all of the top 20 matches were 'lost', five of
+    // them would get dropped just to make room for weaker 'found' matches.
     //
-    // match_item_images аз ҳар ашё танҳо БЕҲТАРИН аксашро бармегардонад,
-    // вагарна ашёи серакс якчанд бор дар натиҷа такрор мешуд.
+    // match_item_images returns only the BEST image from each item,
+    // otherwise an item with many images would show up repeatedly in the results.
     const { data: similarItems, error: searchError } = await supabase.rpc('match_item_images', {
       query_embedding: embedding,
       match_threshold: 0.35,
@@ -112,18 +112,19 @@ Deno.serve(async (req) => {
     if (searchError) throw searchError;
 
     /**
-     * ХАТОГИИ ЁФТШУДА (талаби корбар: "натиҷаҳо акс надоранд, санааш
-     * NaN.NaN.NaN аст"): пештар ин ҷо танҳо
-     * {id, score, title, description, image_url} бармегашт — шакли
-     * КОМИЛАН ФАРҚ аз `Item`-и клиент (ниг. lib/services/item-service.ts),
-     * ки `images: {image_url}[]` (на `image_url`-и танҳо) ва `date`
-     * мехоҳад. `ItemFeedCard` бо ин шакли нотамом акс намеёфт (`images`
-     * холӣ буд) ва `format(new Date(undefined))` → Invalid Date медод.
+     * BUG FOUND (user complaint: "results have no image, the date shows as
+     * NaN.NaN.NaN"): this used to return only
+     * {id, score, title, description, image_url} — a shape COMPLETELY
+     * DIFFERENT from the client's `Item` (see lib/services/item-service.ts),
+     * which expects `images: {image_url}[]` (not a lone `image_url`) and
+     * `date`. `ItemFeedCard` couldn't find an image with this incomplete
+     * shape (`images` was empty) and `format(new Date(undefined))` produced
+     * Invalid Date.
      *
-     * Ҳал: барои ID-ҳои ёфтшуда (аз рӯи тартиби similarity аллакай аз
-     * `match_item_images` омада) сатрҳои ПУРРАи `items` (бо аксҳояшон)
-     * мегирем — АЙНАН ҳамон шакле, ки `search_items` RPC (ҷустуҷӯи
-     * матнӣ) медиҳад — то клиент бе ҳеҷ харитасозии иловагӣ кор кунад.
+     * Fix: for the IDs found (already in similarity order from
+     * `match_item_images`), we fetch the FULL `items` rows (with their
+     * images) — EXACTLY the same shape that the `search_items` RPC (text
+     * search) returns — so the client works with no extra mapping needed.
      */
     const itemIds = (similarItems || []).map((it: any) => it.item_id);
     let results: unknown[] = [];
@@ -145,8 +146,8 @@ Deno.serve(async (req) => {
       );
       const itemsById = new Map((fullItems || []).map((it: any) => [it.id, it]));
 
-      // Тартиби АСЛИИ similarity (аз `match_item_images`) нигоҳ дошта
-      // мешавад — на тартиби худсарии `.in()`.
+      // The ORIGINAL similarity order (from `match_item_images`) is
+      // preserved — not `.in()`'s arbitrary order.
       results = itemIds
         .map((id: string) => itemsById.get(id))
         .filter(Boolean)

@@ -1,13 +1,13 @@
 /**
- * Воридоти якдафъаинаи 150 паёми охирин аз канали t.me/oluchaveshi, ба номи
- * Ali Mirzoev (allimirzoev2000@icloud.com, бо розигии ӯ). Аз importer.ts-и
- * умумӣ (recurring, барои TARGET_USER_ID-и "juyo") қасдан ҷудо аст, то он
- * скрипти давравиро дигаргун накунад:
- *  - унвон: як калима (на 2-4 калимаи AI)
- *  - рақами телефон: ҳамеша собит (на аз матни паём)
- *  - тавсиф: матни аслӣ бетағйир (мисли importer.ts)
+ * One-time import of the last 150 posts from the t.me/oluchaveshi channel, on
+ * behalf of Ali Mirzoev (allimirzoev2000@icloud.com, with his consent). Kept
+ * deliberately separate from the shared importer.ts (recurring, for the
+ * "juyo" TARGET_USER_ID) so it doesn't alter that recurring script:
+ *  - title: a single word (not the 2-4 AI-generated words)
+ *  - phone number: always fixed (not taken from the post text)
+ *  - description: original text unchanged (same as importer.ts)
  *
- * Иҷро: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi.ts
+ * Run: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi.ts
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./config";
@@ -57,10 +57,10 @@ async function publishToFeed(
     .insert({
       user_id: TARGET_USER_ID,
       title,
-      description: post.text, // Матни аслӣ бетағйир — агар дар матн рақами дигар бошад, ҳамон ҷо мемонад.
+      description: post.text, // Original text unchanged — if the text contains a different phone number, it stays there as-is.
       category: classification.category,
       type: classification.status ?? "lost",
-      phone_number: FIXED_PHONE, // Собит, на аз матни паём.
+      phone_number: FIXED_PHONE, // Fixed, not taken from the post text.
       date: post.date.slice(0, 10),
       is_resolved: false,
       is_guest: false,

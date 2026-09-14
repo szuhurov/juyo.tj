@@ -1,7 +1,7 @@
-import * as React from "react" // Аз React мегирем
-import { cva, type VariantProps } from "class-variance-authority" // Барои намудҳои гуногуни баҷ
+import * as React from "react" // Imported from React
+import { cva, type VariantProps } from "class-variance-authority" // For the different badge variants
 
-import { cn } from "@/lib/utils" // Ин барои класси CSS
+import { cn } from "@/lib/utils" // This is for CSS classes
 
 const badgeVariants = cva(
   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",

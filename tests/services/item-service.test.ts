@@ -216,7 +216,7 @@ describe('ItemService.getItems', () => {
 // getItemDetails
 // ─────────────────────────────────────────────
 describe('ItemService.getItemDetails', () => {
-  // Ёрирасон барои сохтани mock бо ду query алоҳида
+  // Helper for building a mock with two separate queries
   const makeItemDetailsMock = (
     itemResult = { data: { id: 'item-1', user_id: 'user-1', title: 'Телефон', images: [] } as any, error: null as any },
     profileResult = { data: { first_name: 'Алӣ', last_name: 'Алиев', avatar_url: null } as any, error: null as any }

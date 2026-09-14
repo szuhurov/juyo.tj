@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * Card-и ашё барои feed-и саҳифаи асосӣ (2 дар як қатор, на list). Аз
- * ItemCard/ItemListRow фарқ мекунад: type+share дар рӯи акс, унвон+мукофот
- * дар як сатр, description, ва дар охир сана + icon-и "даромадан". Услуб —
- * product-card (акси inset бо padding, соя-и мулоим, rounded калон).
+ * Item card for the home page feed (2 per row, not a list). Differs from
+ * ItemCard/ItemListRow: type+share on top of the image, title+reward on
+ * one line, description, and at the end date + "enter" icon. Style is
+ * product-card (inset image with padding, soft shadow, large rounded corners).
  */
 import Image from "next/image";
 import Link from "next/link";
@@ -20,9 +20,9 @@ export function ItemFeedCard({ item }: { item: Item }) {
   const { t } = useLanguage();
   const thumb = item.images?.[0]?.image_url;
   const exactDate = format(new Date(item.date), "dd.MM.yyyy");
-  // Танҳо `thumb`-ро санҷидан кофӣ нест: URL метавонад мавҷуд бошад,
-  // вале акс бор нашавад (404, файли нобудшуда). onError ин ҳолатро
-  // мегирад ва ҷойгузинро нишон медиҳад.
+  // Checking just `thumb` isn't enough: the URL may exist but the image
+  // may still fail to load (404, deleted file). onError catches this
+  // case and shows the placeholder instead.
   const [imgFailed, setImgFailed] = useState(false);
 
   return (
@@ -31,12 +31,13 @@ export function ItemFeedCard({ item }: { item: Item }) {
       prefetch
       className="group flex flex-col gap-0 rounded-lg bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
     >
-      {/* Акс аз ҳар чор тараф мудаввар — нишони навъ аз ин ҷо ба тугмаи
-          поёнӣ кӯчид, пас кунҷи ботинии mask ва `-mb-px` дигар лозим нест. */}
+      {/* Image is rounded on all four sides — the type indicator moved
+          from here to the bottom button, so the mask's inner corner and
+          `-mb-px` are no longer needed. */}
       <div className="relative aspect-[4/3] rounded-lg bg-zinc-100 dark:bg-zinc-700">
-        {/* Placeholder ҲАМЕША дар таг аст, акс болои он мебарояд.
-            Пеш аз ин он танҳо ҳангоми набудан/хатои акс нишон дода мешавад
-            ва дар лаҳзаи БОРШАВӢ ҷои акс холии хокистарӣ мемонд. */}
+        {/* Placeholder is ALWAYS underneath, with the image rendering on
+            top of it. Before this it was only shown when the image was
+            missing/failed, so during LOADING its spot was an empty gray box. */}
         <ImagePlaceholder className="rounded-lg" />
         {thumb && !imgFailed && (
           <Image
@@ -55,9 +56,10 @@ export function ItemFeedCard({ item }: { item: Item }) {
         )}
       </div>
 
-      {/* Талаби корбар: қисми поёни корт (зери акс) ~10-15% паст шавад, вале
-          унвон/сана даст нахӯранд — пас танҳо padding/margin кам шуд, на
-          андозаи матн. Акс низ даст нахӯрд: `aspect-[4/3]` бетағйир аст. */}
+      {/* User request: the card's bottom section (under the image) should
+          shrink by ~10-15%, but title/date should stay untouched — so only
+          padding/margin was reduced, not text size. The image was also
+          left untouched: `aspect-[4/3]` is unchanged. */}
       <div className="px-3 pt-1 pb-1 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
@@ -68,31 +70,34 @@ export function ItemFeedCard({ item }: { item: Item }) {
           </span>
         </div>
 
-        {/* Тавсиф — ЯК сатр, хокистарӣ ва хурдтар аз унвон, то иерархия
-            вайрон нашавад. `truncate` ҳатмист: баландии корт дар grid бояд
-            новобаста аз дарозии матн якхела монад. Матн ҳангоми нашр аллакай
-            аз рақамҳои ҳуҷҷат тоза шудааст (`stripDocumentNumbers` дар
-            саҳифаи `items/add`), пас ин ҷо филтр лозим нест. */}
+        {/* Description — ONE line, gray and smaller than the title, so the
+            hierarchy isn't broken. `truncate` is mandatory: the card's
+            height in the grid must stay consistent regardless of text
+            length. The text has already been stripped of document numbers
+            at publish time (`stripDocumentNumbers` on the `items/add`
+            page), so no filtering is needed here. */}
         {item.description && (
           <p className="-mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
             {item.description}
           </p>
         )}
 
-        {/* Ба ҷои тавсиф — навъи ашё ва тирча ҳамчун ЯК тугма.
-            `span` аст, на `button`: тамоми корт аллакай `<a>` мебошад ва
-            тугма дар дохили пайванд HTML-и нодуруст медиҳад. */}
-        {/* Тугма аз ҳар чор тараф мудаввар, аз контент 4px васеътар (`-mx-1`),
-            заминааш ҳамон фони барнома. Талаби корбар: гӯшаҳои тугма аз
-            гӯшаҳои худи корт КАМТАР мудаввар (rounded-md, на rounded-lg),
-            каме фосила аз тавсиф (`mt-0.5`) ва аз лаби корт (`mb-0.5`).
-            Соя дар доираи тирча аст, на дар худи тугма. */}
+        {/* Below the description — item type and arrow as ONE button.
+            It's a `span`, not a `button`: the whole card is already an
+            `<a>`, and a button nested inside a link produces invalid HTML. */}
+        {/* The button is rounded on all four sides, 4px wider than its
+            content (`-mx-1`), with the same background as the app.
+            User request: the button's corners should be LESS rounded
+            than the card's own corners (rounded-md, not rounded-lg), with
+            a small gap from the description (`mt-0.5`) and from the
+            card's edge (`mb-0.5`). The shadow is around the arrow, not
+            on the button itself. */}
         <span className="-mx-1 mt-0.5 mb-0.5 flex items-center justify-between gap-2 rounded-md bg-canvas p-0.5 pl-2.5">
-          {/* Ранги навъ — сер, на хира: «Гумшуда» ва «Ёфтшуда» бояд аз як
-              назар фарқ кунанд. Тобишҳои 700 дар заминаи `--canvas`
-              контрасти WCAG AA-ро мегузаранд (500/600 не).
-              Андоза — талаби корбар: аз унвон хурдтар, аз тавсиф калонтар
-              (унвон text-sm/base, тавсиф text-[11px]/xs). */}
+          {/* Type color — saturated, not muted: "Lost" and "Found" must be
+              distinguishable at a glance. 700 shades pass WCAG AA contrast
+              against the `--canvas` background (500/600 don't).
+              Size — user request: smaller than the title, larger than the
+              description (title text-sm/base, description text-[11px]/xs). */}
           <span
             className={cn(
               "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-bold",

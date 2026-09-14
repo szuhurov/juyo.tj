@@ -1,6 +1,6 @@
 /**
- * Ин саҳифаи тафсилоти эълон ҳаст (Item View).
- * Барои SEO ва Share дар Telegram/WhatsApp, Metadata дар сервер сохта мешавад.
+ * This is the item details page (Item View).
+ * Metadata is generated on the server for SEO and sharing on Telegram/WhatsApp.
  */
 
 import { Metadata } from "next";
@@ -19,7 +19,7 @@ interface Props {
 }
 
 /**
- * Генератсияи Metadata дар сервер барои Telegram, WhatsApp ва SEO.
+ * Server-side metadata generation for Telegram, WhatsApp, and SEO.
  */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -48,12 +48,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         images: [
           {
             url: imageUrl,
-            width: 1200, // Андозаи стандартӣ барои WhatsApp/Telegram
+            width: 1200, // Standard size for WhatsApp/Telegram
             height: 630,
             alt: title,
           }
         ],
-        type: "article", // Барои эълонҳо беҳтар аст
+        type: "article", // Better suited for listings
       },
       twitter: {
         card: "summary_large_image",
@@ -97,8 +97,8 @@ function ItemDetailSkeleton() {
 export default async function ItemDetailsPage({ params }: Props) {
   const { id } = await params;
 
-  // Server-side fetch: anon client (танҳо approved item-ҳоро мебинад)
-  // Ин барои Google crawler аст — мӯҳтавои саҳифа дар HTML аввалия мавҷуд аст
+  // Server-side fetch: anon client (only sees approved items)
+  // This is for the Google crawler — the page content is present in the initial HTML
   let initialItem = null;
   let jsonLd: object | null = null;
   try {
@@ -119,7 +119,7 @@ export default async function ItemDetailsPage({ params }: Props) {
       };
     }
   } catch {
-    // Structured data ихтиёрӣ аст — хатогӣ рендерро манъ намекунад
+    // Structured data is optional — an error here doesn't block rendering
   }
 
   return (

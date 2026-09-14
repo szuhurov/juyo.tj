@@ -22,7 +22,7 @@ export function StatCard({
   value: string | number;
   accent?: keyof typeof ACCENTS;
   hint?: string;
-  /** Фарқи фоизӣ нисбат ба давраи қаблӣ — танҳо вақте гузошта мешавад, ки маълумоти воқеӣ мавҷуд аст. */
+  /** Percentage change vs. the previous period — only set when real data is available. */
   trend?: number;
 }) {
   const hasTrend = typeof trend === "number" && Number.isFinite(trend);

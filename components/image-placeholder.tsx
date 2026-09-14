@@ -1,13 +1,15 @@
 /**
- * Ҷойгузини акс — се ҳолатро мепӯшонад: эълон акс НАДОРАД, акс бор
- * нашуд (404, шабака, файли вайрон), ва акс ҳанӯз БОР ШУДА ИСТОДААСТ.
+ * Image placeholder — covers three cases: the listing has NO image, the
+ * image FAILED to load (404, network, corrupt file), and the image is
+ * STILL LOADING.
  *
- * Ҳолати сеюм муҳим аст: он ҳамчун қабати ТАГ гузошта мешавад ва акс
- * болои он мебарояд. Пеш аз ин placeholder алтернативаи акс буд, пас
- * дар лаҳзаи боршавӣ ҷои акс росткунҷаи холии хокистарӣ мемонд.
+ * The third case matters: it's placed as a layer UNDERNEATH, with the
+ * image rendering on top of it. Before this, the placeholder was an
+ * image alternative, so during loading the image's spot was left as an
+ * empty gray rectangle.
  *
- * `absolute inset-0` аст, чунки контейнери акс дар ҳама ҷо `relative`
- * ва бо `aspect-*` баландӣ мегирад.
+ * It's `absolute inset-0` because the image container is `relative`
+ * everywhere and gets its height from `aspect-*`.
  */
 import { Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";

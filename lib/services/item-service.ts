@@ -1,11 +1,11 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 
-// Қимати махсуси майдони reward — вақте ки корбар мукофот медиҳад, аммо
-// маблағро нишон додан намехоҳад (checkbox фаъол, лекин input холӣ).
+// Special value for the reward field — used when the user offers a reward
+// but doesn't want to show the amount (checkbox checked, but input empty).
 export const UNSPECIFIED_REWARD = "unspecified";
 
-// Сохтори маълумотии Ашё (Interface)
+// Data structure for an Item (Interface)
 export interface Item {
   id: string;
   user_id: string;
@@ -38,7 +38,7 @@ export interface Item {
   };
 }
 
-// Категорияҳои асосии ашёҳо барои филтр ва ҷустуҷӯ
+// Main item categories for filtering and search
 export const CATEGORIES = [
   { id: "1", name: "Electronics", icon: "📱" },
   { id: "2", name: "Documents", icon: "📄" },
@@ -52,9 +52,9 @@ export const CATEGORIES = [
 
 export const ItemService = {
   /**
-   * Гирифтани рӯйхати ашёҳо бо истифода аз филтрҳо ва пагинация.
-   * Ин функсия имкон медиҳад, ки корбар аз рӯи категория, намуд (гумшуда/ёфтшуда)
-   * ва матни ҷустуҷӯӣ эълонҳоро пайдо кунад.
+   * Fetches the list of items using filters and pagination.
+   * This function lets the user find listings by category, type (lost/found),
+   * and search text.
    */
   async getItems(
     filters: {
@@ -88,10 +88,10 @@ export const ItemService = {
       ? search.trim().slice(0, 200).replace(/[%_\\]/g, "\\$&")
       : undefined;
 
-    // search_items — RPC-и PostgreSQL, ки ҳангоми ҷустуҷӯ натиҷаҳоро аввал
-    // аз рӯи мувофиқат (сарлавҳаи айнан баробар > аз он оғоз мешавад >
-    // дар бар мегирад > фақат тавсиф), баъд аз рӯи сана sort мекунад —
-    // на танҳо аз рӯи сана, чун пештара (ниг. supabase/migrations/20260714000000_search_items_rpc.sql).
+    // search_items — a PostgreSQL RPC that, when searching, sorts results
+    // first by relevance (exact title match > starts with it >
+    // contains it > description only), then by date —
+    // not just by date as before (see supabase/migrations/20260714000000_search_items_rpc.sql).
     const { data, error } = await client.rpc("search_items", {
       p_search: s || null,
       p_category: category && category !== "All" ? category : null,
@@ -118,33 +118,33 @@ export const ItemService = {
 
     if (error) throw error;
 
-    // Edge function (supabase/functions/visual-search) аллакай сатрҳои
-    // ПУРРАи `items` (бо `images:item_images(image_url)` ва
-    // `similarity_score`) бармегардонад — айнан шакли `Item`. Дубора
-    // харита сохтан ин ҷо лозим нест — пештар чунин мешуд ва маҳз ҳамин
-    // майдонҳои аллакай-дурустро бо шакли кӯҳна (`image_url`/`score`-и
-    // ҳамвор) иваз мекард, ки дигар вуҷуд надоранд — натиҷа бе акс ва
-    // бе фоизи мувофиқат мебаромад.
+    // The edge function (supabase/functions/visual-search) already returns
+    // FULL `items` rows (with `images:item_images(image_url)` and
+    // `similarity_score`) — exactly in `Item` shape. Re-mapping here is
+    // not needed — it used to be done this way, and it replaced these
+    // already-correct fields with the old flat shape (`image_url`/`score`),
+    // which no longer exist — the result came out without images and
+    // without a match percentage.
     return (data.results ?? []) as Item[];
   },
 
   /**
-   * Гирифтани маълумоти муфассали як ашё ва профили соҳиби он.
+   * Fetches detailed information about a single item and its owner's profile.
    *
-   * `phone_number` қасдан аз SELECT-и `items` берун аст: пас аз
-   * миграцияи 20260824020000 стуни он барои anon/authenticated бо
-   * REVOKE пӯшида шудааст (пеш аз он `select=phone_number,user_id` —
-   * дархости мустақими PostgREST бо танҳо калиди ошкоро — рақами
-   * ТАМОМИ эълонҳои тасдиқшударо дар як дархост медод). Рақам акнун
-   * танҳо як-эълон-дар-як-дархост тавассути RPC-и `get_item_phone`
-   * гирифта мешавад — ҳамон шарти намоёнӣ, вале bulk-scraping имконнопазир.
+   * `phone_number` is deliberately excluded from the `items` SELECT: after
+   * migration 20260824020000 its column is closed off for anon/authenticated
+   * via REVOKE (before that, `select=phone_number,user_id` — a direct
+   * PostgREST request with just the public key — would return the phone
+   * number of ALL approved listings in a single request). The number is now
+   * fetched only one-listing-per-request via the `get_item_phone` RPC —
+   * the same visibility rule, but bulk-scraping is no longer possible.
    */
   async getItemDetails(id: string, supabaseClient?: SupabaseClient) {
     const client = supabaseClient || supabase;
 
-    // Рӯйхати стунҳо ДАСТӢ аст (на `*`) — маҳз барои берун мондани
-    // `phone_number`. Агар сутуни нав ба `items` илова шавад, инро низ
-    // навсозӣ кунед.
+    // The column list is MANUAL (not `*`) — specifically to leave out
+    // `phone_number`. If a new column is added to `items`, update this
+    // list too.
     const ITEM_COLUMNS =
       "id, user_id, title, description, category, type, date, reward, " +
       "is_resolved, is_guest, views, moderation_status, moderation_result, " +
@@ -152,12 +152,12 @@ export const ItemService = {
       "expiry_notified_at, contact_telegram, contact_whatsapp, " +
       "handoff_type, handoff_photo_url";
 
-    // Query 1: item (бе phone_number/handoff_phone) + аксҳо. Эълони
-    // нест-шуда (status = 'deleted') ҳатто барои соҳиби худаш низ "ёфт
-    // нашуд" бошад — RLS танҳо соҳибиро месанҷад, on статуси нест-шударо
-    // намедонад, бинобар ин филтр ҳамин ҷо лозим аст.
-    // Query 2, 3 (параллел): рақамҳо, алоҳида, тавассути RPC (ҳамон
-    // ҳимояи як-эълон-дар-як-дархост, ниг. изоҳи боло).
+    // Query 1: the item (without phone_number/handoff_phone) + images. A
+    // deleted listing (status = 'deleted') should read as "not found" even
+    // for its own owner — RLS only checks ownership, it doesn't know about
+    // the deleted status, so the filter is needed here too.
+    // Query 2, 3 (in parallel): phone numbers, fetched separately via RPC
+    // (the same one-listing-per-request protection, see the comment above).
     const [{ data: item, error }, { data: phone }, { data: handoffPhone }] =
       await Promise.all([
         client
@@ -173,7 +173,7 @@ export const ItemService = {
     if (error) throw error;
     if (!item) return null;
 
-    // Query 4: profile аз VIEW ба таври алоҳида (барои пешгирии мушкили FK дар VIEW)
+    // Query 4: the profile from a VIEW, fetched separately (to avoid an FK issue in the VIEW)
     const { data: profile } = await client
       .from("public_profiles")
       .select("first_name, last_name, avatar_url, is_verified")
@@ -196,7 +196,7 @@ export const ItemService = {
   },
 
   /**
-   * Илова ё нест кардани ашё аз рӯйхати"Захирашудаҳо"(Bookmarks).
+   * Adds or removes an item from the "Saved" list (Bookmarks).
    */
   async toggleSaveItem(
     supabaseClient: SupabaseClient,
@@ -204,7 +204,7 @@ export const ItemService = {
     itemId: string,
   ) {
     try {
-      // Санҷиши мавҷудияти ашё дар рӯйхати захирашудаҳо
+      // Check whether the item already exists in the saved list
       const { data: existing, error: checkError } = await supabaseClient
         .from("saved_items")
         .select("item_id")
@@ -215,7 +215,7 @@ export const ItemService = {
       if (checkError) throw checkError;
 
       if (existing) {
-        // Агар аллакай захира шуда бошад, онро нест мекунем
+        // If it's already saved, remove it
         const { error: deleteError } = await supabaseClient
           .from("saved_items")
           .delete()
@@ -225,7 +225,7 @@ export const ItemService = {
         if (deleteError) throw deleteError;
         return false;
       } else {
-        // Агар захира нашуда бошад, илова мекунем
+        // If it's not saved, add it
         const { error: insertError } = await supabaseClient
           .from("saved_items")
           .insert([{ user_id: userId, item_id: itemId }]);
@@ -240,7 +240,7 @@ export const ItemService = {
   },
 
   /**
-   * Гирифтани рӯйхати ашёҳои захиракардаи корбар.
+   * Fetches the list of items the user has saved.
    */
   async getSavedItems(supabaseClient: SupabaseClient, userId: string) {
     const { data, error } = await supabaseClient
@@ -252,16 +252,17 @@ export const ItemService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    // Supabase-и бе Database-generated types муносибати items-ро ҳамчун
-    // массив тахмин мезанад (гарчанде дар воқеият як-ба-як аст) — d.items
-    // санҷиши сахти навъро гирифта наметавонад, аз ин рӯ ба Item мустақим cast мешавад.
+    // Supabase without Database-generated types assumes the items relation
+    // is an array (even though it's actually one-to-one) — d.items
+    // can't pass strict type checking, so it's cast directly to Item.
     return data.map((d: { items: unknown }) => d.items as Item);
   },
 
   /**
-   * Нест кардани эълон (soft-delete): ашё аз база ва аксҳояш нест намешаванд,
-   * танҳо status='deleted' мешавад, то маълумоти вобаста (захирашуда,
-   * дархостҳои тасдиқ, таърих) дуруст боқӣ монад ва админ тавонад баркунад.
+   * Deletes a listing (soft-delete): the item and its images are not
+   * removed from the database, only status='deleted' is set, so that
+   * related data (saves, confirmation requests, history) stays intact and
+   * an admin can restore it.
    */
   async deleteItem(supabaseClient: SupabaseClient, id: string) {
     const { error } = await supabaseClient

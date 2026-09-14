@@ -5,9 +5,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://juyo.tj";
 const PUSH_INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET");
 
-// Ҳисоби admin (zuhurovsamariddinn1@gmail.com) — эълонҳое, ки бе AI
-// moderation (хомӯшкардаи admin) бо moderation_status='pending' нашр
-// мешаванд, танҳо ба ҳамин ҳисоб огоҳӣ мефиристанд.
+// The admin's account (zuhurovsamariddinn1@gmail.com) — listings published
+// with moderation_status='pending' without AI moderation (disabled by the
+// admin) send their notification only to this account.
 const ADMIN_USER_ID = "user_3GTmOz49mVZU6KeypHzMV14Dx10";
 
 const corsHeaders = {
@@ -16,7 +16,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-// ниг. notify-category-post барои сабаби ин relay (web-push дар Deno кор намекунад).
+// see notify-category-post for why this relay exists (web push doesn't work in Deno).
 async function sendWebPush(token: string, payload: object): Promise<{ ok: boolean; statusCode?: number }> {
   const subscription = JSON.parse(token);
   const res = await fetch(`${SITE_URL}/api/push/send`, {
@@ -29,10 +29,10 @@ async function sendWebPush(token: string, payload: object): Promise<{ ok: boolea
   return result;
 }
 
-// Вақте ки эълони нав бе AI moderation (admin онро аз dashboard хомӯш
-// карда буд) бо moderation_status='pending' сохта мешавад, ба admin
-// огоҳии фарқкунанда мефиристад — ниг. trigger_notify_pending_review()
-// дар supabase/migrations/20260731000000_notify_pending_review.sql.
+// When a new listing is created with moderation_status='pending' without AI
+// moderation (the admin disabled it from the dashboard), sends a distinct
+// notification to the admin — see trigger_notify_pending_review() in
+// supabase/migrations/20260731000000_notify_pending_review.sql.
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -82,8 +82,8 @@ Deno.serve(async (req) => {
               sent++;
             }
           } else if (row.platform === "web") {
-            // vibrate ва tag фарқкунанда — то ин навъи огоҳӣ аз
-            // огоҳиномаҳои муқаррарӣ (category_post) фарқ шавад.
+            // Distinct vibrate and tag — so this notification type is
+            // distinguishable from regular notifications (category_post).
             const result = await sendWebPush(row.token, {
               title,
               body,

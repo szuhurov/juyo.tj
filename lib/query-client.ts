@@ -1,8 +1,8 @@
 /**
- * Танзимоти React Query барои идоракунии маълумот.
- * Кэш ва навсозии автоматии маълумотро таъмин мекунад.
+ * React Query configuration for data management.
+ * Provides caching and automatic refreshing of data.
  */
-import { QueryClient } from "@tanstack/react-query"; // Ин барои кэши маълумотҳост
+import { QueryClient } from "@tanstack/react-query"; // This is for caching data
 
 export const queryClient = new QueryClient({
   defaultOptions: {

@@ -42,11 +42,11 @@ export default function AdminPostsPage() {
   const { data: stats } = useAdminStats();
 
   useEffect(() => {
-    // Бознишонии саҳифа ба 0 ҳангоми иваз шудани ҷустуҷӯ (сигнали берунӣ).
+    // Reset the page to 0 when the search changes (an external signal).
     if (!filters.page) return;
     setFilters({ ...filters, page: 0 });
-    // Танҳо ба `search` вокуниш нишон медиҳем — иловаи `filters` ин ҷо
-    // ҳалқа месозад, чунки худи setFilters онро иваз мекунад.
+    // We only react to `search` — adding `filters` here would create a
+    // loop, since setFilters itself changes it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 

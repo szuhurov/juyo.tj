@@ -1,15 +1,16 @@
 /**
- * Grid-и якхелаи корти эълонҳо (ItemCard) — дар ҳама ҷое ки рӯйхати
- * эълонҳо grid-и cards нишон медиҳад истифода мешавад (home, profile
- * posts/saved, my-posts), то тарҳбандӣ дар ҳама ҷо як хел бошад.
+ * Uniform grid for item cards (ItemCard) — used everywhere a listing
+ * list shows a grid of cards (home, profile posts/saved, my-posts), so
+ * the layout is consistent everywhere.
  *
- * auto-fill + minmax() ба ҷои шумораи собити сутунҳо (масалан
- * "md:grid-cols-4") интихоб шудааст: шумораи сутунҳо худкор мутобиқи
- * фазои воқеии дастрас зиёд/кам мешавад — на "ҷаҳиш"-и якбора дар як
- * breakpoint (масалан аз 2 сутун ба 4 якбора), балки афзоиши мулоим.
- * Ҳадди поёнӣ (minmax min) дар ҳар tier то андозаи корт ҳаргиз хеле
- * хурд нашавад, ва `1fr` (на ҳадди боло/px собит) кафолат медиҳад, ки
- * фазои холии уфуқӣ намонад — сутунҳои мавҷуда токи охир паҳн мешаванд.
+ * auto-fill + minmax() was chosen instead of a fixed column count (e.g.
+ * "md:grid-cols-4"): the column count automatically increases/decreases
+ * to match the actually available space — not a sudden "jump" at a
+ * single breakpoint (e.g. from 2 columns straight to 4), but a smooth
+ * increase. The lower bound (minmax min) at each tier keeps the card
+ * size from ever getting too small, and `1fr` (rather than a fixed upper
+ * bound/px) guarantees there's no empty horizontal space — the existing
+ * columns stretch to fill it.
  */
 export const ITEM_GRID_CLASS =
   "grid gap-2 sm:gap-3 md:gap-3 lg:gap-4 xl:gap-5 " +
@@ -21,77 +22,78 @@ export const ITEM_GRID_CLASS =
   "2xl:grid-cols-[repeat(auto-fill,minmax(225px,1fr))]";
 
 /**
- * Grid-и саҳифаи АСОСӢ — шумораи СОБИТИ сутунҳо дорад (2 дар мобилӣ), бар
- * хилофи ITEM_GRID_CLASS-и auto-fill.
+ * The grid for the HOME page — has a FIXED column count (2 on mobile), as
+ * opposed to the auto-fill ITEM_GRID_CLASS.
  *
- * Ин константа маҳз барои он ҷудо аст, ки skeleton ва рӯйхати воқеӣ
- * ҲАМЕША як хел бошанд — пештар loading.tsx ITEM_GRID_CLASS-и дигарро
- * истифода мебурд ва ҳангоми омадани маълумот тарҳбандӣ меҷаҳид.
+ * This constant is deliberately kept separate so that the skeleton and the
+ * actual list are ALWAYS identical — previously loading.tsx used a
+ * different ITEM_GRID_CLASS and the layout jumped once the data arrived.
  *
- * ЗИНАҲО ба breakpoint-ҳои СТАНДАРТИИ Tailwind басташудаанд ва дар 5 сутун
- * қатъ мешаванд. Зинаҳои пештара (855/1503/1920) кор карда наметавонанд:
- * мӯҳтаво акнун дар `max-w-7xl` (1280px) маҳдуд аст, пас дар мониторе, ки
- * 1920px аст, 6 сутун ба ҳамон 1280px тиққонда мешуд ва кортҳо майда
- * мешуданд. Ҳоло аз `md` боло паҳноии корт қариб собит ~232px мемонад:
+ * The TIERS are pinned to Tailwind's STANDARD breakpoints and stop at 5
+ * columns. The earlier tiers (855/1503/1920) don't work: the content is
+ * now capped at `max-w-7xl` (1280px), so on a 1920px monitor 6 columns
+ * would get squeezed into that same 1280px and the cards would become
+ * tiny. Now, from `md` up, the card width stays nearly constant at ~232px:
  *
- *   md  (768)  3 сутун → (768-32-32)/3  ≈ 234px
- *   lg  (1024) 4 сутун → (1024-40-60)/4 ≈ 231px
- *   xl  (1280) 5 сутун → (1280-40-80)/5 ≈ 232px
+ *   md  (768)  3 columns → (768-32-32)/3  ≈ 234px
+ *   lg  (1024) 4 columns → (1024-40-60)/4 ≈ 231px
+ *   xl  (1280) 5 columns → (1280-40-80)/5 ≈ 232px
  */
 export const HOME_GRID_CLASS =
   "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 " +
-  // Фосилаи байни кортҳо дар ҳар зина ба шофияи канорӣ баробар аст
-  // (`px-2.5 sm:px-4 lg:px-5` дар home-client ва loading): 10/16/20px.
-  // Агар яке иваз шавад, дигаре низ бояд иваз шавад.
+  // The gap between cards at each tier matches the side padding
+  // (`px-2.5 sm:px-4 lg:px-5` in home-client and loading): 10/16/20px.
+  // If one is changed, the other must be changed too.
   "gap-2.5 sm:gap-4 lg:gap-5";
 
 /**
- * Падинги ЗАХИРАВИИ болои мӯҳтавои саҳифаи асосӣ.
+ * FALLBACK top padding for the home page content.
  *
- * Ин рақамҳо ФАҚАТ ҳамчун fallback-и лаҳзаи аввали рендер (пеш аз он ки
- * JS-и home-client.tsx баландии ВОҚЕИИ бари fixed-ро бо `ResizeObserver`
- * чен кунад) истифода мешаванд — ниг. `filterBarHeight` дар он ҷо.
- * Гузаштан аз рақами дастӣ ба чен кардани зинда маҳз аз ин сабаб буд, ки
- * ду бор рақами дастӣ НОДУРУСТ баромад: як бор холигии зиёд монд, дигар
- * бор — тугмаҳои амали зуд зери бар медаромаданд.
+ * These numbers are used ONLY as a fallback for the very first render
+ * moment (before home-client.tsx's JS measures the ACTUAL height of the
+ * fixed bar with `ResizeObserver`) — see `filterBarHeight` there.
+ * The move from a hardcoded number to live measurement happened precisely
+ * because the hardcoded number came out WRONG twice: once there was too
+ * much empty space, another time the quick-action buttons got hidden
+ * underneath the bar.
  *
- * `HomeFiltersSkeleton` низ аз ҳамин истифода мебарад (он ҷо JS ҳанӯз
- * барои чен кардан ба кор надаромадааст).
+ * `HomeFiltersSkeleton` also uses this same value (there, JS hasn't
+ * started measuring yet).
  *
- * ХАТОГИИ ЁФТШУДА (талаби корбар: "кунҷи болои skeleton мудаввар нест,
- * гӯё чизе ин ҷоро пӯшидааст"): рақамҳои пешина (76/92) аз баландии
- * воқеии `HomeFiltersSkeleton` 4px камтар буданд — ҳисоб: py-1.5(6)
- * + қатори категория(28/36) + қатори навъ(mt-1.5(6)+28/36+mb-1.5(6))
- * + py-1.5(6) = 80px (мобилӣ) / 96px (md+), на 76/92. Ҳамин 4px-и
- * норасо боиси он мешуд, ки навори филтр (fixed, фони яклухт) болои
- * қатори якуми кортҳоро каме мепӯшид — кунҷи мудаввар буридашуда
- * менамуд.
+ * BUG FOUND (user report: "the skeleton's top corner isn't rounded, as if
+ * something is covering it"): the previous numbers (76/92) were 4px less
+ * than the actual height of `HomeFiltersSkeleton` — the math: py-1.5(6)
+ * + category row(28/36) + type row(mt-1.5(6)+28/36+mb-1.5(6))
+ * + py-1.5(6) = 80px (mobile) / 96px (md+), not 76/92. That missing
+ * 4px caused the filter bar (fixed, solid background) to slightly cover
+ * the first row of cards — making the rounded corner look cut off.
  */
 export const HOME_CONTENT_PT =
   "pt-[80px] min-[768px]:pt-[96px]";
 
 /**
- * Алоқа байни саҳифаи илова ва рӯйхати эълонҳо.
+ * Communication between the "add listing" page and the listing list.
  *
- * "Тамом" ФАВРАН ба профил мегузарад — сабти эълон дар паси парда идома
- * меёбад ва метавонад баъд аз гузариш тамом шавад. Пас id-и эълони нав
- * бо event эълон карда мешавад (агар рӯйхат аллакай кушода бошад) ва
- * ҳамзамон дар sessionStorage навишта мешавад (агар рӯйхат баъдтар
- * кушода шавад). Рӯйхат онро гирифта, дар болои ҳамон корт ҳисобкунаки
- * санҷишро нишон медиҳад.
+ * "Done" navigates to the profile IMMEDIATELY — the listing is still
+ * being saved in the background and may finish only after the navigation.
+ * So the new listing's id is announced via an event (if the list is
+ * already open) and simultaneously written to sessionStorage (in case the
+ * list is opened later). The list picks it up and shows a verification
+ * countdown on top of that same card.
  */
 export const JUST_PUBLISHED_EVENT = "juyo-item-published";
 export const JUST_PUBLISHED_KEY = "juyo-just-published";
 
-/** Ҳисобкунак ба `startedAt` баста мешавад, на ба лаҳзаи пайдо шудани
- *  корт — вагарна он баъд аз боркунии аксҳо (3-5 сония) аз нав аз 10
- *  сар мешуд, дар ҳоле ки санҷиш аллакай кайҳо оғоз шудааст. */
+/** The countdown is tied to `startedAt`, not to the moment the card
+ *  appears — otherwise it would restart from 10 after the images finish
+ *  uploading (3-5 seconds), even though verification had already started
+ *  long before. */
 export const PUBLISH_COUNTDOWN_SECONDS = 10;
 export const PUBLISH_COUNTDOWN_MS = PUBLISH_COUNTDOWN_SECONDS * 1000;
 
 export interface JustPublishedState {
-  /** То тамом шудани сабт маълум нест. */
+  /** Unknown until the save completes. */
   id?: string;
-  /** Лаҳзаи пахши "Нашр" (Date.now()). */
+  /** The moment "Publish" was pressed (Date.now()). */
   startedAt: number;
 }

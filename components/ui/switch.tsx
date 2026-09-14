@@ -1,6 +1,6 @@
 /**
- * Компоненти toggle-switch (Switch).
- * Бо истифода аз Radix UI сохта шудааст.
+ * Toggle-switch component (Switch).
+ * Built using Radix UI.
  */
 "use client"
 

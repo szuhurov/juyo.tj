@@ -1,9 +1,9 @@
 /**
- * Якдафъаина: аксҳои эълонҳои аллакай нашршударо (ки то ҳол ба URL-и
- * somon.tj ишора мекунанд — image/octet-stream, дар Next.js Image кор
- * намекунад) ба storage-и худамон мекӯчонад ва item_images-ро нав мекунад.
+ * One-off: mirrors images of already-published listings (that still
+ * point to a somon.tj URL — image/octet-stream, doesn't work in Next.js
+ * Image) to our own storage and updates item_images.
  *
- * Истифода: npx tsx --env-file=.env.local scripts/somon-import/backfill-images.ts
+ * Usage: npx tsx --env-file=.env.local scripts/somon-import/backfill-images.ts
  */
 import { getClient, mirrorImageToStorage } from "./importer";
 import { logger } from "./logger";

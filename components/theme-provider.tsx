@@ -1,19 +1,20 @@
 "use client";
 
 /**
- * Провайдери мавзӯъ (равшан / торик / система).
+ * Theme provider (light / dark / system).
  *
- * `next-themes` аллакай дар package.json буд, вале ҳеҷ гоҳ васл нашуда
- * буд — бинобар ин 341 класси `dark:`-и мавҷуда ҳеҷ гоҳ фаъол намешуданд.
+ * `next-themes` was already in package.json, but had never been wired
+ * up — so the existing 341 `dark:` classes were never actually active.
  *
- * `attribute="class"` — чунки globals.css `@custom-variant dark (&:is(.dark *))`
- * дорад, яъне Tailwind маҳз ба класси `.dark` такя мекунад, на ба
- * `prefers-color-scheme`.
+ * `attribute="class"` — because globals.css has
+ * `@custom-variant dark (&:is(.dark *))`, meaning Tailwind relies
+ * specifically on the `.dark` class, not on `prefers-color-scheme`.
  *
- * `defaultTheme="system"` — талаби корбар: пешфарз аз системаи дастгоҳ.
+ * `defaultTheme="system"` — user request: default to the device's system setting.
  *
- * `disableTransitionOnChange` — бе он ҳамаи `transition-colors`-и сайт
- * ҳангоми иваз кардани мавзӯъ якбора "мешинанд" ва ранг-ранг мешавад.
+ * `disableTransitionOnChange` — without this, all of the site's
+ * `transition-colors` fire at once when the theme changes and it flashes
+ * through colors.
  */
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 

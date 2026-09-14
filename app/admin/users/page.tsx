@@ -44,7 +44,7 @@ export default function AdminUsersPage() {
   const { data: stats } = useAdminStats();
 
   useEffect(() => {
-    // Бознишонии саҳифа ба 0 ҳангоми иваз шудани ҷустуҷӯ (сигнали берунӣ).
+    // Reset the page to 0 when the search changes (an external signal).
     if (!filters.page && filters.pageSize === INITIAL_PAGE_SIZE) return;
     setFilters({ ...filters, page: 0, pageSize: INITIAL_PAGE_SIZE });
     // eslint-disable-next-line react-hooks/exhaustive-deps

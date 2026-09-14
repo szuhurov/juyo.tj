@@ -24,9 +24,9 @@ export function MobileNavbar() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
 
-  // Тугмаи "+" (эълони нав) танҳо барои корбари воридшуда — `/items/add`
-  // аллакай тавассути middleware муҳофизат мешавад, вале нишон додани он
-  // ба корбари бе login бесамар аст (пахш → бозгашт ба sign-in).
+  // The "+" button (new listing) is only for signed-in users — `/items/add`
+  // is already protected by middleware, but showing it to a logged-out
+  // user would be pointless (tap → bounced back to sign-in).
   const navItems = [
     { label: t("home"), href: "/", icon: Home },
     { id: "qr", label: "QR", href: "/profile?tab=qr", icon: QrCode },
@@ -55,9 +55,9 @@ export function MobileNavbar() {
       }
     } catch (err) {
       console.error("Navigation error:", err);
-      // Fallback: агар router.push бо ягон сабаб партояд, гузариши пурраи
-      // саҳифа (full page navigation) — ин ягона роҳи боэътимоди идомаи
-      // корбар аст, on-render mutation нест (танҳо дар event handler).
+      // Fallback: if router.push throws for whatever reason, do a full
+      // page navigation — this is the only reliable way to let the user
+      // continue; it's not an on-render mutation (only in an event handler).
       // eslint-disable-next-line react-hooks/immutability
       window.location.href = href;
     }
@@ -71,9 +71,9 @@ export function MobileNavbar() {
   };
 
   return (
-    // Навор ба лаби поён мечаспад (сабки Alif): паҳнои пурра, бе мудаввар,
-    // танҳо як хати ҷудокунанда дар боло. safe-area ба ХУДИ навор дода
-    // мешавад, то дар iPhone мӯҳтаво ба хати home ламс накунад.
+    // The bar is anchored to the bottom edge (Alif style): full width, no
+    // rounding, just a separator line on top. The safe-area is applied to
+    // the bar ITSELF, so the content doesn't touch the home indicator on iPhone.
     <nav
       data-nosnippet
       className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden bg-white dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-800"

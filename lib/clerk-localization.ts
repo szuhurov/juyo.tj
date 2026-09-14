@@ -1,18 +1,18 @@
 import { translations, type TranslationValue } from "./translations";
 import { ruRU, enUS } from "@clerk/localizations";
 
-// Луғати `clerk`-и ҳар забон дар воқеъ як объекти ҳамвор (флеш) аз сатрҳост
-// (бо як зерқисми `errors`) — ин намуд онро аз навъи умумии рекурсивии
-// TranslationValue ба шакли воқеиаш дуруст мекунад, то дастрасии `t.xyz`
-// амну бе `any` кор кунад.
+// Each language's `clerk` dictionary is actually a flat object of strings
+// (with one `errors` sub-section) — this type narrows it from the general
+// recursive TranslationValue type to its actual shape, so `t.xyz` access
+// works safely without `any`.
 type ClerkDict = Record<string, string> & { errors: Record<string, string> };
 const asClerkDict = (value: TranslationValue): ClerkDict => value as unknown as ClerkDict;
 
 /**
- * Функсия барои сохтани объекти тарҷумаи Clerk аз луғати асосии барнома.
+ * Function for building the Clerk localization object from the app's main dictionary.
  */
 export const getClerkLocalization = (locale: string) => {
-  // Агар забон русӣ бошад, аз тарҷумаи расмии Clerk истифода мебарем
+  // If the language is Russian, use Clerk's official translation
   if (locale === 'ru') {
     const t = asClerkDict(translations['ru'].clerk);
     return {
@@ -129,7 +129,7 @@ export const getClerkLocalization = (locale: string) => {
     };
   }
   
-  // Агар забон англисӣ бошад, аз тарҷумаи расмии Clerk истифода мебарем
+  // If the language is English, use Clerk's official translation
   if (locale === 'en') {
     const t = asClerkDict(translations['en'].clerk);
     return {
@@ -238,7 +238,7 @@ export const getClerkLocalization = (locale: string) => {
     };
   }
 
-  // Барои забони тоҷикӣ тарҷумаи худамонро истифода мебарем
+  // For Tajik, use our own translation
   const t = asClerkDict(translations[locale]?.clerk ?? translations['tg'].clerk);
 
   return {
@@ -266,9 +266,9 @@ export const getClerkLocalization = (locale: string) => {
         resendButton: t.resendCode,
       },
       password: {
-        // `password` набудани навъи расмии Clerk-и enUS.signUp аст (версияи
-        // фаъли @clerk/localizations онро эълон намекунад, вале runtime-и
-        // воқеӣ дороаш) — cast-и мушаххас ба ҷои `any`.
+        // `password` is missing from Clerk's official enUS.signUp type (the
+        // active version of @clerk/localizations doesn't declare it, but the
+        // actual runtime has it) — a specific cast instead of `any`.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ...(enUS.signUp as any)?.password,
         title: t.signUpPasswordLabel,
@@ -369,7 +369,7 @@ export const getClerkLocalization = (locale: string) => {
     formFieldLabel__newPassword: t.newPasswordLabel,
     formFieldLabel__confirmPassword: t.confirmPasswordLabel,
     formFieldLabel__signOutOfOtherSessions: t.signOutOfOtherSessionsLabel,
-    // Ҳам 'Placeholder' ва ҳам 'InputPlaceholder'-ро илова мекунем барои боварӣ
+    // We add both 'Placeholder' and 'InputPlaceholder' to be safe
     formFieldPlaceholder__emailAddress: t.emailLabel,
     formFieldPlaceholder__firstName: t.firstNameLabel,
     formFieldPlaceholder__lastName: t.lastNameLabel,
@@ -378,7 +378,7 @@ export const getClerkLocalization = (locale: string) => {
     formFieldInputPlaceholder__firstName: t.firstNameLabel,
     formFieldInputPlaceholder__lastName: t.lastNameLabel,
     formFieldInputPlaceholder__password: t.signInPasswordPlaceholder,
-    // Махсус барои Sign Up, агар Clerk инҳоро истифода барад
+    // Specifically for Sign Up, in case Clerk uses these
     formFieldLabel__createPassword: t.signUpPasswordLabel,
     formFieldInputPlaceholder__createPassword: t.signUpPasswordPlaceholder,
     formFieldPlaceholder__signUpPassword: t.signUpPasswordPlaceholder,

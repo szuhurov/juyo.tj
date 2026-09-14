@@ -4,10 +4,10 @@ import { hardDeleteItem } from "@/lib/services/item-deletion";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
- * Худи корбар эълони худро воқеан нест мекунад (на soft-delete-и
- * ItemService.deleteItem, ки барои "Ҳал шуд" низ истифода мешавад).
- * Native низ ҳамин route-ро бо Bearer-и Clerk занг мезанад (сервери худро
- * надорад — ниг. lib/account-api.ts барои ҳамин алго).
+ * The user themselves actually deletes their own post (not the soft-delete
+ * of ItemService.deleteItem, which is also used for "Resolved").
+ * Native also calls this same route with a Clerk Bearer token (it has no
+ * server of its own — see lib/account-api.ts for the same algorithm).
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();

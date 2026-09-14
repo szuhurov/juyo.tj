@@ -1,13 +1,14 @@
 /**
- * Оркестратсия: listener (Telegram) + classifier (AI) → Supabase.
+ * Orchestration: listener (Telegram) + classifier (AI) → Supabase.
  *
- * Ҳар паём фавран ба лентаи умумии juyo.tj нашр мешавад — ба ҳисоби
- * худи корбар (TARGET_USER_ID, аз рӯи хости возеҳи корбар), на профили
- * сохта. Тавсиф = матни аслии паём БЕ ТАҒЙИР (AI даст намезанад), унвон
- * ва категория аз AI, рақами телефон низ айнан аз матни ҳамон паём (на
- * рақами шахсии корбар!). external_items ҳамчун журнали дедупликатсия
- * дар паси парда истифода мешавад (то паёми якхела ду бор нашр нашавад)
- * — UI-и admin барои он вуҷуд надорад, мустақим кор мекунад.
+ * Every post is published immediately to juyo.tj's shared feed — under
+ * the user's own account (TARGET_USER_ID, per the user's explicit
+ * request), not a fabricated profile. Description = the original post
+ * text UNCHANGED (the AI doesn't touch it), title and category come from
+ * the AI, and the phone number is also taken exactly from that same
+ * post's text (not the user's personal number!). external_items is used
+ * behind the scenes as a deduplication journal (so the same post isn't
+ * published twice) — there's no admin UI for it, it works automatically.
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./config";
@@ -16,7 +17,7 @@ import { fetchChannelPosts, disconnectListener, type TelegramPost } from "./list
 import { classifyPost, type Classification } from "./classifier";
 
 const SOURCE = "Telegram";
-// Ба хости возеҳи корбар: ҳамаи эълонҳои воридшуда ба ҳамин ҳисоб нашр мешаванд.
+// Per the user's explicit request: all imported listings are published to this account.
 const TARGET_USER_ID = "user_3GTmOz49mVZU6KeypHzMV14Dx10";
 
 function getClient() {
@@ -49,10 +50,10 @@ async function publishToFeed(
     .insert({
       user_id: TARGET_USER_ID,
       title: classification.title,
-      description: post.text, // Матни аслӣ, бе тағйир — AI ба тавсиф даст намезанад.
+      description: post.text, // The original text, unchanged — the AI doesn't touch the description.
       category: classification.category,
       type: classification.status ?? "lost",
-      phone_number: classification.phone, // Рақами аз худи паём — на рақами шахсии корбар.
+      phone_number: classification.phone, // The number from the post itself — not the user's personal number.
       date: post.date.slice(0, 10),
       is_resolved: false,
       is_guest: false,
@@ -73,9 +74,9 @@ async function publishToFeed(
 
 export interface ImportOptions {
   dryRun?: boolean;
-  /** "newer" (пешфарз) — паёмҳои нав аз охирин воридшуда. "older" — backfill ба қафо, аз кӯҳнатарин воридшуда. */
+  /** "newer" (default) — new posts after the last imported one. "older" — backfill backwards, from the oldest imported one. */
   direction?: "newer" | "older";
-  /** Агар дода шавад, ба ҷои config.messagesPerChannel истифода мешавад. */
+  /** If given, used instead of config.messagesPerChannel. */
   limit?: number;
 }
 

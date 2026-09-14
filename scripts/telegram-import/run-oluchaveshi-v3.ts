@@ -1,24 +1,24 @@
 /**
- * Воридоти сеюм (ниҳоӣ) аз t.me/oluchaveshi, ба номи Ali Mirzoev
- * (allimirzoev2000@icloud.com, бо розигии ӯ). OpenAI credit илова шуд —
- * ҳоло ҳам таснифи AI, ҳам moderation-и AI воқеан кор мекунанд.
+ * Third (final) import from t.me/oluchaveshi, on behalf of Ali Mirzoev
+ * (allimirzoev2000@icloud.com, with his consent). OpenAI credit was added —
+ * now both AI classification and AI moderation actually work.
  *
- * Қоидаҳо (аз дархости admin):
- *  - тавсиф: матни аслии паём БЕТАҒЙИР
- *  - унвон: AI аз рӯи матн ВА акс — 1-2 калима
- *  - навъ (гумшуда/ёфтшуда): AI муайян мекунад; агар муайян накард — "ёфтшуда"
- *  - категория: AI интихоб мекунад
- *  - сана: санаи АСЛИИ паём дар Telegram (на вақти import)
- *  - телефон: собит 111212331
- *  - мукофот: агар зикр шуда бошад — андоза (агар маълум) ё матни умумӣ
- *    (агар номаълум); вагарна холӣ
- *  - паёмҳои "аллакай баргардонда шуд" ва паёмҳои бе робита ба гумшуда/
- *    ёфтшуда (confidence паст) партофта мешаванд — сабт намешаванд
- *  - moderation: ВОҚЕӢ (pending → trigger → AI) — moderation_exempt-и Ali
- *    муваққатан хомӯш карда мешавад
- *  - ҳадаф: 92 элони нави муваффақ (дар барнома аллакай 8 элон ҳаст, то 100 расад)
+ * Rules (per admin's request):
+ *  - description: original post text UNCHANGED
+ *  - title: AI-generated from text AND image — 1-2 words
+ *  - type (lost/found): AI determines it; if it can't — defaults to "found"
+ *  - category: AI chooses it
+ *  - date: the post's ACTUAL date on Telegram (not the import time)
+ *  - phone: fixed at 111212331
+ *  - reward: if mentioned — the amount (if known) or general text
+ *    (if unknown); otherwise empty
+ *  - posts that are "already resolved" and posts unrelated to lost/found
+ *    (low confidence) are dropped — not recorded
+ *  - moderation: REAL (pending → trigger → AI) — Ali's moderation_exempt is
+ *    temporarily disabled
+ *  - goal: 92 new successful listings (the app already has 8 listings, to reach 100)
  *
- * Иҷро: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi-v3.ts
+ * Run: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi-v3.ts
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./config";
@@ -31,7 +31,7 @@ const CHANNEL = "oluchaveshi";
 const TARGET_USER_ID = "user_3H0PTIOzFRgmfVuBGBrKYR6RcFO"; // Ali Mirzoev
 const FIXED_PHONE = "111212331";
 const TARGET_NEW = 92;
-const FETCH_LIMIT = 100; // танҳо 100 паёми охирин (аз дархости admin)
+const FETCH_LIMIT = 100; // only the last 100 posts (per admin's request)
 const MIN_CONFIDENCE = 0.6;
 const BATCH_SIZE = 8;
 const BATCH_DELAY_MS = 4000;
@@ -74,13 +74,13 @@ async function insertItem(
       title: classification.title,
       description: post.text,
       category: classification.category,
-      type: classification.status ?? "found", // агар AI муайян накард — пешфарз "ёфтшуда"
+      type: classification.status ?? "found", // if AI couldn't determine it — default to "found"
       phone_number: FIXED_PHONE,
       reward: classification.reward,
-      date: post.date.slice(0, 10), // санаи аслии Telegram, на вақти import
+      date: post.date.slice(0, 10), // actual Telegram date, not the import time
       is_resolved: false,
       is_guest: false,
-      moderation_status: "pending", // ВОҚЕӢ тафтиш мешавад
+      moderation_status: "pending", // goes through REAL review
     })
     .select("id")
     .single();
@@ -119,11 +119,11 @@ async function insertItem(
 async function main() {
   const supabase = getClient();
 
-  // 1. Муваққатан хомӯш кардани bypass, то moderation воқеан кор кунад.
+  // 1. Temporarily disable the bypass so moderation actually runs.
   await supabase.from("profiles").update({ moderation_exempt: false }).eq("id", TARGET_USER_ID);
   logger.info("moderation_exempt муваққатан хомӯш карда шуд.");
 
-  // 2. Гирифтани захираи паёмҳои охирин (аз ҳама навтарин ба қафо).
+  // 2. Fetch a pool of recent posts (newest to oldest).
   const posts = await fetchChannelPosts(CHANNEL, FETCH_LIMIT);
   logger.info("Паём ёфт шуд", { channel: CHANNEL, count: posts.length });
 
@@ -132,7 +132,7 @@ async function main() {
   let skippedLowConfidence = 0;
   let failed = 0;
 
-  // 3. Дар партияҳои хурд коркард мекунем, то батс ба TARGET_NEW расад.
+  // 3. Process in small batches until the count reaches TARGET_NEW.
   for (let i = 0; i < posts.length && insertedIds.length < TARGET_NEW; i += BATCH_SIZE) {
     const batch = posts.slice(i, i + BATCH_SIZE);
     for (const post of batch) {
@@ -170,7 +170,7 @@ async function main() {
   await disconnectListener();
   logger.info("Воридкунӣ тамом шуд", { imported: insertedIds.length, skippedResolved, skippedLowConfidence, failed });
 
-  // 4. Интизори тамом шудани moderation-и воқеӣ.
+  // 4. Wait for real moderation to finish.
   const start = Date.now();
   while (Date.now() - start < MAX_WAIT_MS) {
     const { data: pending } = await supabase
@@ -184,11 +184,11 @@ async function main() {
     await sleep(POLL_INTERVAL_MS);
   }
 
-  // 5. Барқарор кардани bypass барои элонҳои ояндаи Ali (тавассути wizard-и оддӣ).
+  // 5. Restore the bypass for Ali's future listings (submitted through the normal wizard).
   await supabase.from("profiles").update({ moderation_exempt: true }).eq("id", TARGET_USER_ID);
   logger.info("moderation_exempt барқарор шуд.");
 
-  // 6. Хулосаи ниҳоӣ.
+  // 6. Final summary.
   const { data: finalItems } = await supabase
     .from("items")
     .select("id, title, moderation_status, moderation_result")

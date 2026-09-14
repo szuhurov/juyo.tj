@@ -1,13 +1,13 @@
 ﻿/**
- * Ин саҳифаи Профили корбар ҳаст.
- * Дар ин ҷо корбар метавонад эълонҳои худро идора кунад, маълумоти шахсиашро иваз кунад,
- * ва QR-коди худро созад.
+ * This is the User Profile page.
+ * Here the user can manage their listings, change their personal information,
+ * and create their QR code.
  */ "use client";
 
-import { useEffect, useState, useRef, Suspense } from "react"; // Барои идоракунии вақт, ҳолат ва боргирии саҳифа
+import { useEffect, useState, useRef, Suspense } from "react"; // For managing timing, state, and page loading
 import dynamic from "next/dynamic";
-import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // Барои кор бо маълумоти корбари воридшуда ва баромад аз сайт
-import { useLanguage } from "@/lib/language-context"; // Барои идоракунии забони интерфейс
+import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // For working with the signed-in user's data and signing out
+import { useLanguage } from "@/lib/language-context"; // For managing the interface language
 import {
   ITEM_GRID_CLASS,
   JUST_PUBLISHED_EVENT,
@@ -17,16 +17,16 @@ import {
 } from "@/lib/ui-constants";
 import { useTheme } from "next-themes";
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
-import { Profile, ProfileService } from "@/lib/services/profile-service"; // Барои идоракунии маълумоти шахсии корбар
-import { ItemCard } from "@/components/item-card"; // Барои нишон додани карточкаҳои эълонҳо
-import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Барои нишон додани сурати корбар
-import { Skeleton } from "@/components/ui/skeleton"; // Барои ҳолати боргирии муваққатӣ
-import { Input } from "@/components/ui/input"; // Майдони воридкунии матн
-import { PhoneInput } from "@/components/phone-input"; // Майдони телефон бо рамзи давлат
-import { Label } from "@/components/ui/label"; // Сарлавҳаҳо барои майдонҳои форма
-import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба базаи Supabase
-import { getErrorMessage } from "@/lib/error-utils"; // Паёми хониданӣ аз хатогии Clerk/Supabase
+import { Profile, ProfileService } from "@/lib/services/profile-service"; // For managing the user's personal data
+import { ItemCard } from "@/components/item-card"; // For displaying listing cards
+import { Button } from "@/components/ui/button"; // Button component
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // For displaying the user's photo
+import { Skeleton } from "@/components/ui/skeleton"; // For temporary loading state
+import { Input } from "@/components/ui/input"; // Text input field
+import { PhoneInput } from "@/components/phone-input"; // Phone field with country code
+import { Label } from "@/components/ui/label"; // Labels for form fields
+import { createClerkSupabaseClient } from "@/lib/supabase"; // For connecting to the Supabase database
+import { getErrorMessage } from "@/lib/error-utils"; // Readable message from a Clerk/Supabase error
 import {
   User,
   Settings,
@@ -60,10 +60,10 @@ import {
   Home,
   type LucideIcon,
 } from "lucide-react";
-// Иконкаҳои гуногун барои интерфейс
-import Link from "next/link"; // Барои пайвандҳо ба саҳифаҳои дигар
-import { useRouter, useSearchParams } from "next/navigation"; // Барои идоракунии адрес ва параметрҳои URL
-import { cn } from "@/lib/utils"; // Барои пайваст кардани классҳои CSS
+// Various icons for the interface
+import Link from "next/link"; // For links to other pages
+import { useRouter, useSearchParams } from "next/navigation"; // For managing the address and URL parameters
+import { cn } from "@/lib/utils"; // For combining CSS classes
 import { readableTextOn, isNearWhite } from "@/lib/qr-palette";
 import { DotStyleChip, CornerBorderChip, CornerCenterChip, StyleChipRow, type ChipDotType } from "@/components/qr-editor/qr-style-chips";
 import { PercentSlider, GradientBiasToggle } from "@/components/qr-editor/percent-slider";
@@ -72,19 +72,19 @@ import {
   socialPrefix,
   sanitizeSocialInput,
   type SocialKey,
-} from "@/components/social-icons"; // Нишонаҳои брендии Telegram/Instagram/WhatsApp
-import { toast } from "sonner"; // Барои нишон додани огоҳиномаҳо
+} from "@/components/social-icons"; // Telegram/Instagram/WhatsApp brand icons
+import { toast } from "sonner"; // For showing notifications
 import {
   TooltipProvider,
-} from "@/components/ui/tooltip"; // Барои нишон додани маслиҳатҳои кӯтоҳ
+} from "@/components/ui/tooltip"; // For showing short tooltips
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"; // Барои тирезаҳои тасдиқкунанда (модалкаҳо)
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"; // Тирезаи умумии тасдиқи амал
+} from "@/components/ui/dialog"; // For confirmation dialogs (modals)
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"; // Generic action-confirmation dialog
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,43 +92,43 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// Интеграцияи QR
-// Ин компонент html-to-image ва react-colorful-ро истифода мебарад (вазнин)
-// ва танҳо дар tab-и QR лозим аст — на дар tab-ҳои "Эълонҳо"/"Захирашуда",
-// ки дефолт мебошанд.
+// QR integration
+// This component uses html-to-image and react-colorful (heavy) and is only
+// needed on the QR tab — not on the "Listings"/"Saved" tabs, which are the
+// default.
 const QRCard = dynamic(
   () => import("@/components/qr-editor/qr-card").then((m) => m.QRCard),
   {
-    // Бе ин, ҳангоми боркунии аввалини chunk-и QRCard, React suspend
-    // мешавад ва азбаски ҷои худаш Suspense надорад, ба Suspense-и
-    // берунии ProfilePage (spinner-и калони сиёҳ, поён дар ин файл)
-    // мебарояд — тамоми саҳифа паси skeleton-и дуруст боз як бор бо
-    // spinner иваз мешуд.
+    // Without this, React would suspend during QRCard's first chunk load,
+    // and since it has no Suspense boundary of its own, it would fall
+    // through to ProfilePage's outer Suspense (the big black spinner,
+    // further down in this file) — the whole page, already past the
+    // correct skeleton, would get swapped for the spinner once more.
     loading: () => (
       <Skeleton className="aspect-square w-[210px] h-[210px] rounded-2xl" />
     ),
   },
 );
-import type { DotType, CornerSquareType, CornerDotType } from "qr-code-styling"; // Навъҳои дурусти услуби QR (ба ҷои `any`)
-import { toPng } from "html-to-image"; // Барои табдил додани HTML ба сурати PNG
-import { HexColorPicker } from "react-colorful"; // Барои интихоби ранги QR-код
+import type { DotType, CornerSquareType, CornerDotType } from "qr-code-styling"; // Correct types for QR style (instead of `any`)
+import { toPng } from "html-to-image"; // For converting HTML to a PNG image
+import { HexColorPicker } from "react-colorful"; // For picking the QR code color
 
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   useUserItems,
   useSavedItems,
-} from "@/lib/hooks/use-items"; // Хукҳои махсус барои гирифтани ашёҳо аз база
-import { useQueryClient } from "@tanstack/react-query"; // Барои идоракунии кэши маълумотҳо
+} from "@/lib/hooks/use-items"; // Dedicated hooks for fetching items from the database
+import { useQueryClient } from "@tanstack/react-query"; // For managing the data cache
 import { VerifiedBadge } from "@/components/verified-badge";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
 
-// Клерк одатан хатогиро ҳамчун { errors: [{ code, longMessage, message }] }
-// мефиристад — вале `message`/`longMessage` ҲАМЕША бо забони англисӣ меоянд,
-// новобаста аз забони интихобии сайт. Талаби корбар: "дар ҳама ҳолат ... бо
-// забони интихобшуда нишон дода шавад" — пас ба ҷои матни хоми Clerk, КОДИ
-// хаторо (устувор, аз забон вобаста нест) ба калиди тарҷумаи худамон
-// мегардонем (ҳамон `clerk.errors.*`-е, ки `lib/clerk-localization.ts`
-// барои виҷетҳои тайёри Clerk истифода мебарад — ин ҷо низ ҳамонҳоро).
+// Clerk normally sends errors as { errors: [{ code, longMessage, message }] }
+// — but `message`/`longMessage` are ALWAYS in English, regardless of the
+// site's selected language. User request: "it should always be shown ... in
+// the selected language" — so instead of Clerk's raw text, we map the error
+// CODE (stable, language-independent) to our own translation key (the same
+// `clerk.errors.*` keys that `lib/clerk-localization.ts` uses for Clerk's
+// ready-made widgets — the same ones here too).
 const CLERK_ERROR_CODE_TO_KEY: Record<string, string> = {
   form_password_length_too_short: "clerk.errors.passwordTooShort",
   form_identifier_not_found: "clerk.errors.userNotFound",
@@ -148,13 +148,13 @@ function getClerkErrorMessage(
     const code = (err as { errors?: { code?: string }[] }).errors?.[0]?.code;
     if (code && CLERK_ERROR_CODE_TO_KEY[code]) return t(CLERK_ERROR_CODE_TO_KEY[code]);
   }
-  // Ҳеҷ гоҳ матни хоми Clerk намонад — хатои умумии тарҷумашуда бехатартар аст.
+  // Never leave Clerk's raw text — a translated generic error is safer.
   return fallback;
 }
 
-/** Барчаспи майдонҳои танзимоти QR — панҷ майдон пештар се услуби гуногун
- *  доштанд (яке бе иконка, дигаре бо андоза ва ранги дигар). Як компонент
- *  кафолат медиҳад, ки ҳамаашон якхела монанд. */
+/** Label for the QR settings fields — five fields previously had three
+ *  different styles (one without an icon, another with a different size and
+ *  color). One component guarantees they all look the same. */
 function QrFieldLabel({
   icon: Icon,
   children,
@@ -172,73 +172,75 @@ function QrFieldLabel({
   );
 }
 
-/** Сатҳи ягонаи ҳамаи идоракунандаҳои QR (Select ва тугмаҳои ранг), то
- *  баландӣ, кунҷ ва рафтори hover дар ҳарду режим якхела бошанд. Пештар
- *  `hover:bg-zinc-50` варианти `dark:` надошт — дар режими торик ҳангоми
- *  hover майдон сафед мешуд. */
+/** A single level for all the QR controls (Select and color buttons), so
+ *  the height, corners, and hover behavior are the same in both modes.
+ *  Previously `hover:bg-zinc-50` had no `dark:` variant — in dark mode the
+ *  field would turn white on hover. */
 /**
- * Ду сатҳи QR.
+ * Two QR tiers.
  *
- *   basic — QR-и стандартӣ, ҳеҷ танзимот, бепул
- *   pro   — ранг/шакл/матни худӣ + градиент
+ *   basic — the standard QR, no customization, free
+ *   pro   — custom color/shape/text + gradient
  *
- * Дар `pro` худи КӮШИШИ тағйир озод аст — қулф танҳо ҳангоми БОРГИРӢ
- * меафтад. Ин қасдан аст: корбар бояд натиҷаро бинад, баъд қарор кунад,
- * ки харад.
+ * In `pro`, the ATTEMPT to customize itself is free — the lock only
+ * kicks in on DOWNLOAD. This is deliberate: the user should see the result
+ * first, and only then decide whether to buy.
  */
 type QrTier = "basic" | "pro";
 
-/** Тартиб, нишона ва матни ҳар сатҳ — як манбаъ барои ҳар ду тугма. */
+/** Order, icon, and text for each tier — a single source for both buttons. */
 const QR_TIERS = [
   { id: "basic" as const, icon: QrCode, labelKey: "qrTierBasic" },
   { id: "pro" as const, icon: Sparkles, labelKey: "qrTierPro" },
 ];
 
 /**
- * Қарори маҳсулот (муваққатӣ, мувофиқи native): азбаски «Худӣ» ҳоло
- * ройгон аст, гузариш ба «Оддӣ» маъно надорад — тугмаи интихоби сатҳ
- * ПИНҲОН. Мантиқи «Оддӣ» (isBasicTier, QR_BASIC) НЕСТ карда НАШУДААСТ —
- * танҳо роҳи UI ба он баста шуд.
+ * Product decision (temporary, matching native): since "Custom" is currently
+ * free, switching to "Basic" doesn't make sense — the tier-selector button
+ * is HIDDEN. The "Basic" logic (isBasicTier, QR_BASIC) has NOT been removed
+ * — only the UI path to it is closed off.
  */
 const SHOW_TIER_SELECTOR = false;
 
 /**
- * Фоизи АЗ НУҚТАИ НАЗАРИ stop-и додашуда — айнан formula-и native (ниг.
- * `biasPercentForStop` дар `juyoapp/app/(tabs)/profile.tsx`). Барои
- * stopIdx=0 фоизи БАРЪАКС нишон дода мешавад (100-percent), барои
- * stopIdx=1 — айнан. Ин ҳам ба рақами НИШОНДОДАШУДА, ҳам ба bias-и
- * ВОҚЕИИ рендер таъсир мерасонад — бе ин ду репо рақами гуногун
- * медиҳанд, гарчанде дар база як арзиш захира шудааст.
+ * The percentage FROM THE PERSPECTIVE of the given stop — the exact same
+ * formula as native (see `biasPercentForStop` in
+ * `juyoapp/app/(tabs)/profile.tsx`). For stopIdx=0, the INVERTED percentage
+ * is shown (100-percent); for stopIdx=1 — as-is. This affects both the
+ * DISPLAYED number and the ACTUAL rendering bias — without this, the two
+ * repos would show different numbers even though one value is stored in
+ * the database.
  */
 const biasPercentForStop = (percent: number, stopIdx: number) => (stopIdx === 0 ? 100 - percent : percent);
 
-/** Ранги ягонаи намунаҳои chip — на ранги ҷории QR, то муқоисаи шакл равшан монад. */
+/** A single color for the chip previews — not the QR's current color, so shape comparison stays clear. */
 const QR_CHIP_INK = "#000000";
 
 /**
- * Вариантҳои шакл барои chip-picker.
+ * Shape variants for the chip-picker.
  *
- * ХАТОГИИ ЁФТШУДА (талаби корбар: "тугмаи шакли нуқтаи 4 ба QR таъсир
- * намерасонад"): пештар "diamond" низ дар рӯйхат буд — native (мобилӣ)
- * ин шаклро воқеан дорад, вале `qr-code-styling` (китобхонаи ВЕБ) чунин
- * навъро ТАМОМАН НАДОРАД (DotType-и он танҳо
- * dots|rounded|classy|classy-rounded|square|extra-rounded аст), пас
- * интихоби он ба QRCard ҳамеша "square" мефиристод — тугма буд, вале
- * ҳеҷ таъсире надошт. Ҳал: "diamond" аз рӯйхат бардошта шуд — танҳо
- * шаклҳое мемонанд, ки воқеан QR-ро тағйир медиҳанд.
+ * BUG FOUND (user request: "the 4th dot shape button doesn't affect the
+ * QR"): previously "diamond" was also in the list — native (mobile) really
+ * does have this shape, but `qr-code-styling` (the WEB library) doesn't
+ * have this type AT ALL (its DotType is only
+ * dots|rounded|classy|classy-rounded|square|extra-rounded), so selecting it
+ * always sent "square" to QRCard — the button existed, but had no effect.
+ * Fix: "diamond" was removed from the list — only shapes that actually
+ * change the QR remain.
  */
 const DOT_TYPES: ChipDotType[] = ["square", "rounded", "extra-rounded", "classy-rounded"];
 /**
- * "rounded" АЗ РӮЙХАТ БАРДОШТА ШУД: талаби корбар, баъд аз он ки
- * ошкор шуд `qr-code-styling` (китобхонаи ВЕБ, на native) чунин навъро
- * воқеан НАДОРАД — dispatcher-и китобхона (`QRCornerSquare.draw`) танҳо
- * "square" ва "extra-rounded"-ро алоҳида кор мефармояд, ҳар чизи дигар
- * (аз ҷумла "rounded") ба "dot" мегузарад. Пас интихоби "rounded" дар QR-и
- * воқеӣ АЙНАН ҳамон "dot"-ро медод — фарқе набуд. Ниг. санҷиши манбаи
+ * "rounded" REMOVED FROM THE LIST: user request, after discovering that
+ * `qr-code-styling` (the WEB library, not native) doesn't actually have
+ * this type — the library's dispatcher (`QRCornerSquare.draw`) only
+ * handles "square" and "extra-rounded" separately, everything else
+ * (including "rounded") falls through to "dot". So selecting "rounded"
+ * produced the EXACT SAME "dot" in the actual QR — there was no
+ * difference. See the source check in
  * `node_modules/qr-code-styling/lib/qr-code-styling.common.js`.
  */
 const CORNER_TYPES: (CornerSquareType & CornerDotType)[] = ["square", "extra-rounded", "dot"];
-/** Ҳадди боло-и бари ҳар чиппа — айнан native (`chipMaxWidth={30}`). */
+/** Upper width limit for each chip — exactly matching native (`chipMaxWidth={30}`). */
 const CHIP_MAX_WIDTH = 30;
 const DOT_LABEL_KEYS: Record<ChipDotType, string> = {
   square: "qrDotSquare",
@@ -249,7 +251,7 @@ const DOT_LABEL_KEYS: Record<ChipDotType, string> = {
   "classy-rounded": "qrDotClassyRounded",
   diamond: "qrDotDiamond",
 };
-/** Ҳамон CORNER_LABEL_KEYS-и native: «extra-rounded» = «Мулоим» дар ҳарду. */
+/** Same as native's CORNER_LABEL_KEYS: "extra-rounded" = "Soft" in both. */
 const CORNER_LABEL_KEYS: Partial<Record<CornerSquareType | CornerDotType, string>> = {
   square: "qrCornerSquare",
   rounded: "qrCornerRounded",
@@ -257,32 +259,32 @@ const CORNER_LABEL_KEYS: Partial<Record<CornerSquareType | CornerDotType, string
   dot: "qrCornerDot",
 };
 
-/** Ҳолати «Оддӣ» — нуқтаи ҳисоб барои он ки чӣ «тағйирёфта» аст. */
+/** The "Basic" state — the reference point for what counts as "customized". */
 const QR_BASIC = {
   color: "#26ba90",
   bg: "#eefbf5",
   /**
-   * Нуқтаҳои сатҳи БЕПУЛ чоркунҷаанд.
+   * The FREE tier's dots are square.
    *
-   * Ин ҳудуди байни бепул ва пулакиро равшан мекунад: шаклҳои мулоим ва
-   * классикӣ маҳз чизеанд, ки корбар барояшон мехарад. Мураббаъ шакли
-   * аслии QR аст ва ҳамеша беҳтарин сканшавандагӣ дорад.
+   * This makes the boundary between free and paid clear: soft and classic
+   * shapes are exactly what the user is paying for. Square is the QR's
+   * native shape and always has the best scannability.
    */
   dots: "square" as DotType,
   /**
-   * Кунҷҳои сатҳи БЕПУЛ мураббаъанд — ҳамон мантиқи нуқтаҳо.
+   * The FREE tier's corners are square — same logic as the dots.
    */
   corners: "square" as CornerSquareType & CornerDotType,
 };
 
 function ProfileContent() {
-  // Хукҳо барои гирифтани маълумоти корбар ва забони сайт
+  // Hooks for getting user data and the site's language
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
   const { t, locale, setLocale } = useLanguage();
-  // Мавзӯъ. `themeMounted` — то hydration мавзӯи воқеӣ (хусусан "system")
-  // дар сервер номаълум аст; бе ин байрақ тугмаи нодуруст фаъол менамояд
-  // ва React огоҳии hydration mismatch медиҳад.
+  // Theme. `themeMounted` — before hydration, the actual theme (especially
+  // "system") is unknown on the server; without this flag the wrong button
+  // would appear active and React would raise a hydration mismatch warning.
   const { theme, setTheme } = useTheme();
   const [themeMounted, setThemeMounted] = useState(false);
   useEffect(() => {
@@ -292,25 +294,25 @@ function ProfileContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Стейтҳо барои идоракунии табҳо (вкладки) ва танзимоти QR
+  // States for managing tabs and QR settings
   const [activeTab, setActiveTab] = useState(
     searchParams.get("tab") || "posts",
   );
   const qrRef = useRef<HTMLDivElement | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  /** Кадом stop-и кадом градиент ҳозир дар picker кушода аст. */
+  /** Which stop of which gradient is currently open in the picker. */
   const [activePicker, setActivePicker] = useState<{ kind: "text" | "bg"; index: number } | null>(
     null,
   );
   const [showWhyQRModal, setShowWhyQRModal] = useState(false);
-  /** Обои-и экрани қулф хусусияти телефонӣ аст — дар веб тугма ҳаст (мисли native), вале модали шарҳдиҳанда мекушояд. */
+  /** Lock-screen wallpaper is a phone-only feature — on web the button exists (like native), but it opens an explanatory modal instead. */
   const [showWallpaperInfoModal, setShowWallpaperInfoModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
-  // ADMIN_USER_IDS дар сервер аст (env-и берун аз NEXT_PUBLIC_) — ин
-  // саҳифа "use client" аст, пас статуси admin-ро тавассути API-и хурд
-  // мегирем (танҳо ба худи корбар мегӯяд, ки ӯ admin аст ё не).
+  // ADMIN_USER_IDS lives on the server (an env var outside NEXT_PUBLIC_) —
+  // this page is "use client", so we get the admin status through a small
+  // API (it only tells the user themselves whether they are an admin or not).
   const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     fetch("/api/admin/whoami")
@@ -337,7 +339,7 @@ function ProfileContent() {
     setResendCooldown(0);
   };
 
-  // Ҳисоб аз 59 сония то иҷозати аз нав фиристодани рамз.
+  // Countdown from 59 seconds until resending the code is allowed.
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const timer = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
@@ -363,10 +365,10 @@ function ProfileContent() {
     if (!user || !newEmailInput) return;
     setEmailSubmitting(true);
     try {
-      // Сохтани почтаи нав аз сервер (Backend API) — то бо ҳисобҳои бе
-      // parol (масалан бо Google) ё ҳангоми дубора илова кардани почтае,
-      // ки қаблан аз ин ҳисоб нест шуда буд, ба "Cannot verify your
-      // account" дучор нашавем.
+      // Creating the new email from the server (Backend API) — so that
+      // accounts without a password (e.g. via Google), or re-adding an
+      // email that was previously removed from this account, don't run into
+      // "Cannot verify your account".
       const res = await fetch("/api/account/start-email-change", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -397,12 +399,12 @@ function ProfileContent() {
     try {
       await pendingEmailAddress.attemptVerification({ code: emailCodeInput });
 
-      // Боқии кор — асосӣ кардани почтаи нав, канда партофтани пайвасти
-      // беруна (агар почтаи куҳна ба Google пайваст бошад), нест кардани
-      // почтаи куҳна ва синхронизатсия бо Supabase — аз сервер (Backend
-      // API, бо secret key) иҷро мешавад. Ин reverification талаб
-      // намекунад, пас ҳисобҳои бе parol (масалан бо Google) низ бе
-      // "Cannot verify your account" кор мекунанд.
+      // The rest of the work — making the new email primary, unlinking an
+      // external connection (if the old email was linked to Google),
+      // deleting the old email, and syncing with Supabase — runs on the
+      // server (Backend API, with the secret key). This doesn't require
+      // reverification, so accounts without a password (e.g. via Google)
+      // also work without hitting "Cannot verify your account".
       const res = await fetch("/api/account/change-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -425,9 +427,10 @@ function ProfileContent() {
     if (!user) return;
     setDeletingAccount(true);
     try {
-      // Route-и сервер ҳам Clerk (Backend API, secret key) ва ҳам Supabase-ро
-      // мустақим нест мекунад — reverification (парол/телефон) лозим намекунад,
-      // пас ҳисобҳои бе parol (масалан бо Google) низ бе мушкил нест мешаванд.
+      // The server route deletes directly from both Clerk (Backend API,
+      // secret key) and Supabase — no reverification (password/phone) is
+      // needed, so accounts without a password (e.g. via Google) also
+      // delete without issues.
       const res = await fetch("/api/account/delete", { method: "POST" });
       if (!res.ok) throw new Error("Failed to delete account");
 
@@ -440,26 +443,26 @@ function ProfileContent() {
     }
   };
 
-  // Стейтҳо барои нигоҳ доштани маълумоти профил ва нишон додани модалҳо
+  // States for holding profile data and showing modals
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- setter истифода мешавад, вале UI-и он (MandatoryPhoneModal) ба дарахти компонент васл нашудааст, ниг. ёддошти аудит
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- the setter is used, but its UI (MandatoryPhoneModal) isn't mounted in the component tree, see audit notes
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [showSecondaryPhoneModal, setShowSecondaryPhoneModal] = useState(false);
   /**
-   * Кадом амал модали пуркуниро кушод.
+   * Which action opened the fill-in modal.
    *
-   * Модал акнун аз ду ҷо кушода мешавад — боргирӣ ва фаъол кардани
-   * статус — ва пас аз захира бояд маҳз ҳамон амал идома ёбад. Бе ин
-   * ҳарду роҳ ба боргирӣ мебурданд.
+   * The modal now opens from two places — downloading and activating the
+   * status — and after saving, that exact same action needs to continue.
+   * Without this, both paths would lead to downloading.
    */
   const [pendingQrAction, setPendingQrAction] =
     useState<"download" | "activate" | null>(null);
   const [secondaryLoading, setSecondaryLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  // Шабакаҳои иҷтимоӣ — ИХТИЁРӢ, пас на ба шарти боргирӣ дохил мешаванд
-  // ва на тугмаро ғайрифаъол мекунанд. Пӯшида меоянд, то формаро дароз
-  // накунанд; корбар худаш мекушояд, агар хоҳад.
+  // Social networks are OPTIONAL, so they're neither part of the download
+  // requirement nor do they disable the button. They start collapsed, so
+  // they don't lengthen the form; the user opens them themselves if they want to.
   const [showSocial, setShowSocial] = useState(false);
   const [social, setSocial] = useState<Record<SocialKey, string>>({
     telegram: "",
@@ -468,11 +471,11 @@ function ProfileContent() {
     facebook: "",
   });
   /**
-   * Ҳамон шабакаҳо, вале барои ФОРМАИ «Танзимот» — алоҳида аз `social`
-   * (он барои модали боргирӣ аст ва қасдан ҳамеша холӣ оғоз мешавад).
-   * Ин ҷо баръакс: бояд қиматҳои ҳозираи профилро нишон диҳад, то
-   * префикси @/+ (ниг. `socialPrefix`) ҳамон тавре ки дар модал кор
-   * кунад — талаби корбар.
+   * The same social networks, but for the "Settings" FORM — separate from
+   * `social` (which is for the download modal and deliberately always
+   * starts empty). Here it's the opposite: it must show the profile's
+   * current values, so the @/+ prefix (see `socialPrefix`) works the same
+   * way as in the modal — user request.
    */
   const [infoSocial, setInfoSocial] = useState<Record<SocialKey, string>>({
     telegram: "",
@@ -491,25 +494,25 @@ function ProfileContent() {
   }, [profile]);
   const [showTermsDetails, setShowTermsDetails] = useState(false);
 
-  // Стейт барои танзимоти намуди зоҳирии QR-код (рангҳо ва шакл).
-  // Пешфарз "pro" — мувофиқи native (SHOW_TIER_SELECTOR боло).
+  // State for the QR code's visual settings (colors and shape).
+  // Defaults to "pro" — matching native (SHOW_TIER_SELECTOR above).
   const [qrTier, setQrTier] = useState<QrTier>("pro");
   /**
-   * Градиенти МАТН/нуқтаҳо — то 2 ранг. Пешфарз ҳамон ҷуфти native
-   * (кабуд → сабзи брендии JUYO, 74% ба сабз).
+   * TEXT/dots gradient — up to 2 colors. Defaults to the same pair as
+   * native (blue → JUYO's brand green, 74% toward green).
    */
   const [qrGradientStops, setQrGradientStops] = useState<string[]>(["#2563EB", "#26BA90"]);
   const [qrGradientBiasPercent, setQrGradientBiasPercent] = useState(74);
-  /** Кадом stop ҳозир "интихобшуда" (барои `biasPercentForStop`) — пешфарз 0, мисли native. */
+  /** Which stop is currently "selected" (for `biasPercentForStop`) — defaults to 0, like native. */
   const [gradientStopIdx, setGradientStopIdx] = useState(0);
   /**
-   * Кунҷи градиенти МАТН — талаби корбар: тугмаи "давр" (rotate) бояд
-   * кунҷро давр занонад (45°→135°→225°→315°, 4 ҳолат), НА рангҳоро
-   * ҷойиваз кунад. Пештар `onRotate` рангҳоро reverse мекард — акнун
-   * рангҳо СОБИТ мемонанд, танҳо кунҷ мечархад.
+   * TEXT gradient angle — user request: the "rotate" button should cycle
+   * through the angle (45°→135°→225°→315°, 4 states), NOT swap the colors.
+   * Previously `onRotate` reversed the colors — now the colors stay FIXED,
+   * only the angle rotates.
    */
   const [qrGradientAngle, setQrGradientAngle] = useState(45);
-  /** Градиенти ЗАМИНА (BG) — ҳамон сохтор, алоҳида. */
+  /** BACKGROUND gradient (BG) — same structure, separate. */
   const [qrBgGradientStops, setQrBgGradientStops] = useState<string[]>(["#FFFFFF", "#EEFBF5"]);
   const [qrBgGradientBiasPercent, setQrBgGradientBiasPercent] = useState(50);
   const [bgGradientStopIdx, setBgGradientStopIdx] = useState(0);
@@ -519,17 +522,17 @@ function ProfileContent() {
     cornersSquareType: "dot" as CornerSquareType,
     cornersDotType: "dot" as CornerDotType,
   });
-  // Профил — тавассути React Query (кэши 2 дақиқа), на бо fetch-и дастии
-  // бе кэш — пеш аз ин ҳар гузариш ба /profile (масалан home → QR →
-  // бозгашт) skeleton-и наверо нишон медод, ҳатто агар чанд сония пеш
-  // аллакай fetch шуда буд.
+  // Profile — via React Query (a 2-minute cache), not a manual uncached
+  // fetch — before this, every navigation to /profile (e.g. home → QR →
+  // back) would show a fresh skeleton, even if it had already been fetched
+  // a few seconds earlier.
   const { data: queriedProfile, isError: profileQueryError } = useProfileQuery(userId, getToken);
   useEffect(() => {
     if (queriedProfile !== undefined) {
       setProfile(queriedProfile);
       setProfileLoading(false);
 
-      // Агар рақами телефон набошад, тирезаи махсусро нишон медиҳем (ТАНҲО рақами асосӣ)
+      // If there's no phone number, show the special dialog (PRIMARY number ONLY)
       if (queriedProfile && (!queriedProfile.phone || queriedProfile.phone.trim() === "")) {
         setShowPhoneModal(true);
       }
@@ -538,7 +541,7 @@ function ProfileContent() {
     }
   }, [queriedProfile, profileQueryError]);
 
-  // Гирифтани рӯйхати эълонҳо, ашёҳои захирашуда ва ашёҳои "Қуттии бехатарӣ"
+  // Fetching the listings, saved items, and "Safety Box" items
   const { data: myItems = [], isLoading: postsLoading } = useUserItems(
     userId || undefined,
     getToken,
@@ -547,32 +550,32 @@ function ProfileContent() {
     userId || undefined,
     getToken,
   );
-  // Эълоне, ки корбар ҳозир нашр кард — дар болои акси он ҳисобкунаки
-  // санҷиш нишон дода мешавад.
+  // The listing the user just published — a check countdown is shown on
+  // top of its photo.
   //
-  // "Тамом" фавран ба ин ҷо мегузарад, вале сабти эълон метавонад ҳанӯз
-  // дар паси парда идома дошта бошад. Пас id аз ду роҳ меояд: event (агар
-  // сабт баъд аз кушода шудани ин саҳифа тамом шавад) ё sessionStorage
-  // (агар пеш аз он тамом шуда бошад).
+  // "Done" navigates here immediately, but the listing's write may still be
+  // continuing in the background. So the id arrives via two paths: an event
+  // (if the write finishes after this page opens) or sessionStorage (if it
+  // finished before that).
   const [justPublished, setJustPublished] =
     useState<JustPublishedState | null>(null);
 
   useEffect(() => {
-    // Ҳолати кӯҳна (масалан аз нашри дирӯза, ки корбар онро надид) набояд
-    // ҳисобкунакро дубора нишон диҳад.
+    // Stale state (e.g. from yesterday's publish that the user never saw)
+    // shouldn't show the countdown again.
     const isFresh = (s: JustPublishedState) =>
       Date.now() - s.startedAt < PUBLISH_COUNTDOWN_MS;
 
     const take = (state: JustPublishedState | null) => {
       if (!state || !isFresh(state)) return;
       setJustPublished(state);
-      // Танҳо баъд аз он ки id расид, тоза мекунем — вагарна қайди
-      // "нашр дар ҷараён" пеш аз расидани эълон гум мешавад.
+      // We only clear it after the id has arrived — otherwise the "publish
+      // in progress" marker gets lost before the listing arrives.
       if (state.id) {
         try {
           sessionStorage.removeItem(JUST_PUBLISHED_KEY);
         } catch {
-          // Safari-и private mode — зарар нест.
+          // Safari private mode — no harm done.
         }
       }
     };
@@ -581,7 +584,7 @@ function ProfileContent() {
       const raw = sessionStorage.getItem(JUST_PUBLISHED_KEY);
       if (raw) take(JSON.parse(raw) as JustPublishedState);
     } catch {
-      // хониш ё JSON-и вайрон — сарфи назар мекунем.
+      // read failure or corrupt JSON — we ignore it.
     }
 
     const onPublished = (e: Event) =>
@@ -592,18 +595,18 @@ function ProfileContent() {
 
   const justPublishedId = justPublished?.id ?? null;
   const [infoSubmitting, setInfoSubmitting] = useState(false);
-  // Табҳои "Танзимот" ба сабки рӯйхати iOS сохта шудаанд — маълумоти шахсӣ
-  // ва рӯйхати корбарони басташуда ба ҷои ҳамеша кушода будан, бо клик
-  // ба сатри худашон боз/пӯшида мешаванд.
+  // The "Settings" tab is built in the iOS list style — personal info and
+  // the list of blocked users expand/collapse on clicking their own row,
+  // instead of always being open.
   const [openSetting, setOpenSetting] = useState<"profile" | null>(null);
 
-  // Синхронизатсия кардани таби фаъол бо URL.
+  // Syncing the active tab with the URL.
   //
-  // ХАТОГИИ ЁФТШУДА (талаби корбар: "тугмаҳои навбар кор намекунанд"):
-  // пештар ин ҷо ФАҚАТ вақте `activeTab` иваз мешуд, ки `tab` дар URL
-  // МАВҶУД бошад. Тугмаи "Профиль" (href="/profile", БЕ tab) аз таби
-  // QR клик карда, URL-ро иваз мекард, вале `activeTab` "qr" мемонд —
-  // корбар ҳамон мӯҳтавои QR-ро мебинад, гӯё тугма кор намекунад.
+  // BUG FOUND (user request: "the navbar buttons don't work"): previously
+  // `activeTab` only changed here when `tab` was PRESENT in the URL. The
+  // "Profile" button (href="/profile", WITHOUT a tab), clicked from the QR
+  // tab, would change the URL, but `activeTab` stayed "qr" — the user kept
+  // seeing the QR content, as if the button didn't work.
   useEffect(() => {
     const tab = searchParams.get("tab");
     const validTab =
@@ -612,7 +615,7 @@ function ProfileContent() {
   }, [searchParams]);
 
   /**
-   * Функсия барои иваз кардани таб (вкладка) ва нав кардани URL
+   * Function for switching tabs and updating the URL
    */
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
@@ -621,7 +624,7 @@ function ProfileContent() {
     router.push(`/profile?${params.toString()}`, { scroll: false });
   };
 
-  // Элементҳои менюи паҳлӯӣ (Sidebar Menu)
+  // Sidebar menu items (Sidebar Menu)
   const LANGUAGES: Array<{ code: "tg" | "ru" | "en"; label: string }> = [
     { code: "tg", label: "Тоҷикӣ" },
     { code: "ru", label: "Русский" },
@@ -634,8 +637,8 @@ function ProfileContent() {
     { value: "dark", labelKey: "themeDark" },
   ];
 
-  // Ҳамаи icon-ҳои меню як ранг (emerald) доранд — рангҳои гуногун
-  // (кабуд/бунафш/индиго) маънои алоҳида надоштанд ва танҳо оройиш буданд.
+  // All menu icons share one color (emerald) — the different colors
+  // (blue/purple/indigo) had no distinct meaning and were purely decorative.
   const menuItems = [
     {
       id: "posts",
@@ -697,29 +700,29 @@ function ProfileContent() {
   }, [activePicker]);
 
   /**
-   * Логикаи асосии боргирии QR-код (барои он ки аз ду ҷой истифода барем)
+   * Core QR code download logic (so we can use it from two places)
    */
   const executeQRDownload = async () => {
     if (!qrRef.current) return;
 
     setIsDownloading(true);
     try {
-      // Интизори хурд барои боварӣ аз он ки ҳама элементҳо дуруст рендер шудаанд
+      // A short wait to make sure all elements have rendered correctly
       await new Promise((resolve) => setTimeout(resolve, 300));
 
       const dataUrl = await toPng(qrRef.current, {
         cacheBust: true,
-        pixelRatio: 4, // Баланд бардоштани сифат барои чоп
+        pixelRatio: 4, // Increase quality for printing
         skipFonts: false,
-        backgroundColor: undefined, // Ин имкон медиҳад, ки кунҷҳои rounded шаффоф монанд
+        backgroundColor: undefined, // This lets the rounded corners stay transparent
         style: {
           transform: "scale(1)",
           transformOrigin: "top left",
-          borderRadius: "0.8rem", // Боварӣ ҳосил мекунем, ки кунҷҳо мудаввар мемонанд (medium)
+          borderRadius: "0.8rem", // Make sure the corners stay rounded (medium)
         },
       });
 
-      // Агар дар дохили React Native WebView бошад
+      // If inside a React Native WebView
       if (typeof window !== "undefined" && window.ReactNativeWebView) {
         window.ReactNativeWebView.postMessage(
           JSON.stringify({ type: "DOWNLOAD_QR", payload: dataUrl }),
@@ -728,7 +731,7 @@ function ProfileContent() {
         return;
       }
 
-      // Стандарт боргирӣ (Desktop ва Mobile Web Browser)
+      // Standard download (Desktop and Mobile Web Browser)
       const link = document.createElement("a");
       link.download = `juyo-qr-sticker.png`;
       link.href = dataUrl;
@@ -743,32 +746,32 @@ function ProfileContent() {
   };
 
   /**
-   * Танзимоти ВОҚЕАН кашидашаванда.
+   * The settings that are ACTUALLY rendered.
    *
-   * Дар «Оддӣ» ҳамеша ҳолати стандартӣ кашида мешавад, ҳатто агар корбар
-   * пештар дар «Худсоз» чизе иваз карда бошад — вагарна гузариш ба «Оддӣ»
-   * QR-и худсозро нишон медод ва маънои сатҳҳо гум мешуд. Интихоби корбар
-   * гум намешавад: он дар `qrSettings` мемонад ва ҳангоми бозгашт ба
-   * «Худсоз» барқарор мешавад.
+   * In "Basic", the standard state is always rendered, even if the user
+   * had previously changed something in "Custom" — otherwise switching to
+   * "Basic" would show the customized QR and the whole point of tiers would
+   * be lost. The user's choice isn't lost: it stays in `qrSettings` and is
+   * restored when switching back to "Custom".
    */
   /**
-   * Маълумоти ҳатмӣ пур нашудааст.
+   * Required data hasn't been filled in.
    *
-   * Ҳам боргирӣ ва ҳам фаъол кардани статус аз ҳамин як шарт мегузаранд —
-   * вагарна ду ҷои код метавонистанд аз ҳам дур шаванд.
+   * Both downloading and activating the status go through this same
+   * condition — otherwise the two pieces of code could drift apart.
    */
   const isQrDataMissing =
     !profile?.phone ||
     !profile?.secondary_phone ||
     profile?.accepted_terms !== true;
 
-  /** Калид танҳо вақте фаъол менамояд, ки QR воқеан кор карда тавонад. */
+  /** The toggle only turns on when the QR can actually work. */
   const qrToggleOn = !!profile?.is_qr_active && !isQrDataMissing;
 
   /**
-   * Иваз кардани статуси фаъол/хомӯши QR — аз таби QR ба «Танзимот»
-   * кӯчонида шуд (мисли native), пас ба функсияи алоҳида баровардем, то
-   * дар ҷои нав такрор нашавад.
+   * Toggling the QR's active/off status — moved from the QR tab to
+   * "Settings" (like native), so we extracted it into a separate function
+   * to avoid duplicating it in the new place.
    */
   const handleToggleQrActive = async () => {
     if (!profile) return;
@@ -776,12 +779,12 @@ function ProfileContent() {
     const newState = !previousState;
 
     /**
-     * ФАЪОЛ кардан маълумоти пурра талаб мекунад.
+     * TURNING ON requires complete data.
      *
-     * QR-и фаъол бе рақами телефон маънӣ надорад: ёбанда саҳифаро
-     * мекушояд ва он ҷо ҳеҷ роҳи тамос намебинад. Бинобар ин ба ҷои
-     * гузоштани калид модали пуркуниро мекушоем ва баъд аз захира
-     * худамон фаъол мекунем. ХОМӮШ кардан ҳамеша озод аст.
+     * An active QR without a phone number is meaningless: the finder opens
+     * the page and sees no way to make contact there. So instead of setting
+     * the toggle, we open the fill-in modal and activate it ourselves after
+     * saving. Turning OFF is always free.
      */
     if (newState && isQrDataMissing) {
       setPendingQrAction("activate");
@@ -818,9 +821,10 @@ function ProfileContent() {
   const effQrColor = isBasicTier ? QR_BASIC.color : qrGradientStops[0];
   const effBgColor = isBasicTier ? QR_BASIC.bg : qrBgGradientStops[0];
   const effBgGradientColor = !isBasicTier && qrBgGradientStops.length >= 2 ? qrBgGradientStops[1] : null;
-  // "diamond" танҳо дар chip аст (ниг. DOT_TYPES боло) — QRCard навъи
-  // воқеии китобхонаро (DotType) мехоҳад, пас ин ҷо ба "square" мегузарад,
-  // АЙНАН ҳамон пешфарзи дохилии `qr-code-styling` барои навъи номаълум.
+  // "diamond" only exists in the chip (see DOT_TYPES above) — QRCard wants
+  // the library's actual type (DotType), so it falls through to "square"
+  // here, EXACTLY the same internal default `qr-code-styling` uses for an
+  // unknown type.
   const effDotsType: DotType = isBasicTier
     ? QR_BASIC.dots
     : qrSettings.dotsType === "diamond"
@@ -828,7 +832,7 @@ function ProfileContent() {
       : qrSettings.dotsType;
   const effCornersSquareType = isBasicTier ? QR_BASIC.corners : qrSettings.cornersSquareType;
   const effCornersDotType = isBasicTier ? QR_BASIC.corners : qrSettings.cornersDotType;
-  /** Тақсимот (%) → bias: 50% = 1 (баробар), 90% = 1.8, 10% = 0.2. */
+  /** Split (%) → bias: 50% = 1 (even), 90% = 1.8, 10% = 0.2. */
   const effGradientBias = activeGradient
     ? biasPercentForStop(qrGradientBiasPercent, gradientStopIdx) / 50
     : 1;
@@ -836,7 +840,7 @@ function ProfileContent() {
     ? biasPercentForStop(qrBgGradientBiasPercent, bgGradientStopIdx) / 50
     : 1;
 
-  /** Оё корбар аз ҳолати стандартӣ дур рафтааст? */
+  /** Has the user moved away from the standard state? */
   const isQrCustomized =
     effQrColor.toLowerCase() !== QR_BASIC.color.toLowerCase() ||
     effBgColor.toLowerCase() !== QR_BASIC.bg.toLowerCase() ||
@@ -847,20 +851,20 @@ function ProfileContent() {
     !!effBgGradientColor;
 
   /**
-   * Қарори маҳсулот (муваққатӣ): «Худӣ» ҳоло РОЙГОН аст — то backend-и
-   * воқеии пардохт (SmartPay) пайваст шавад, тугмаи «Харидан» ҳоло
-   * танҳо toast бо «Ба қарибӣ дастрас мешавад» мебарорад, пас қулфи
-   * харид бе хариди воқеӣ маънои надорад. Вақте SmartPay пайваст шавад,
-   * ин байрақро `true` кунед.
+   * Product decision (temporary): "Custom" is currently FREE — until a real
+   * payment backend (SmartPay) is connected, the "Buy" button currently
+   * just shows a "Coming soon" toast, so a purchase lock without an actual
+   * purchase doesn't make sense. Once SmartPay is connected, set this flag
+   * to `true`.
    */
   const PAYWALL_ENABLED = false;
   const isQrLocked = PAYWALL_ENABLED && !isBasicTier && isQrCustomized;
 
   /**
-   * Блоки градиент — барои МАТН ва барои ЗАМИНА такрор мешавад, ҳамон
-   * тавре ки native ин ду блокро (бо танзимоти ҷудогона) такрор мекунад.
-   * Функсия аст, на компонент, то holo давра дар ҳар render аз нав
-   * СОХТА нашавад (танҳо JSX мебарорад).
+   * Gradient block — repeated for TEXT and for BACKGROUND, the same way
+   * native repeats these two blocks (with separate settings). It's a
+   * function, not a component, so it isn't RECREATED from scratch on every
+   * render (it just produces JSX).
    */
   const renderGradientBlock = (kind: "text" | "bg") => {
     const stops = kind === "text" ? qrGradientStops : qrBgGradientStops;
@@ -874,7 +878,7 @@ function ProfileContent() {
     const secondColorDefault = kind === "text" ? "#26BA90" : "#EEFBF5";
     const showStops = stops.length >= 2;
     const isPickerOpenHere = activePicker?.kind === kind;
-    /** Фоизи НИШОНДОДАШУДА — аз нуқтаи назари stop-и ҳозир интихобшуда. */
+    /** The DISPLAYED percentage — from the perspective of the currently selected stop. */
     const displayPercent = biasPercentForStop(rawBiasPercent, stopIdx);
     const setDisplayPercent = (v: number) => setRawBiasPercent(biasPercentForStop(v, stopIdx));
 
@@ -883,10 +887,10 @@ function ProfileContent() {
         <QrFieldLabel icon={kind === "text" ? Sparkles : Droplet}>{t(labelKey)}</QrFieldLabel>
 
         <div className="relative mt-2">
-          {/* Талаби корбар (ҳамон ислоҳе, ки native аллакай дорад):
-              навори калони пешнамоиши градиент бардошта шуд — пахш
-              кардан ба он таъсире надошт, ва доираҳои поён (ки воқеан
-              таҳриршавандаанд) аллакай ҳарду рангро нишон медиҳанд. */}
+          {/* User request (the same fix native already has): the large
+              gradient preview strip was removed — tapping it had no effect,
+              and the circles below (which are actually editable) already
+              show both colors. */}
           {!showStops && (
             <button
               type="button"
@@ -964,7 +968,7 @@ function ProfileContent() {
             )}
           </div>
 
-          {/* Талаби корбар: слайдер ҳамеша кушода мемонад. */}
+          {/* User request: the slider always stays open. */}
           {showStops && (
             <PercentSlider value={displayPercent} onChange={setDisplayPercent} />
           )}
@@ -1000,7 +1004,7 @@ function ProfileContent() {
   };
 
   /**
-   * Функсия барои боргирии QR-код ҳамчун сурат (Download)
+   * Function for downloading the QR code as an image (Download)
    */
   const handleDownloadQR = async () => {
     if (isQrDataMissing) {
@@ -1013,7 +1017,7 @@ function ProfileContent() {
   };
 
   /**
-   * Функсия барои захира кардани маълумоти амниятӣ ва давом додани боргирӣ
+   * Function for saving safety data and continuing the download
    */
   const handleSaveSecondaryPhone = async (
     e: React.FormEvent<HTMLFormElement>,
@@ -1047,8 +1051,9 @@ function ProfileContent() {
       const updates: Partial<Profile> = {};
       if (needsPhone) updates.phone = phone;
       if (needsSecondary) updates.secondary_phone = secondary_phone;
-      // Шабакаҳо ихтиёрианд: танҳо онҳое, ки корбар воқеан пур кардааст,
-      // фиристода мешаванд — вагарна сатрҳои холӣ қиматҳои кӯҳнаро мепӯшонанд.
+      // Social networks are optional: only the ones the user actually
+      // filled in are sent — otherwise empty strings would overwrite the
+      // old values.
       for (const key of SOCIALS.map((sn) => sn.key)) {
         const v = social[key].trim();
         if (v) updates[key] = v;
@@ -1069,7 +1074,7 @@ function ProfileContent() {
       setShowSecondaryPhoneModal(false);
       toast.success(t("success"));
 
-      // Пас аз захира ҳамон амале идома меёбад, ки модалро кушода буд.
+      // After saving, the same action that opened the modal continues.
       const next = pendingQrAction;
       setPendingQrAction(null);
       if (next === "activate") {
@@ -1082,10 +1087,10 @@ function ProfileContent() {
         await executeQRDownload();
       }
     } catch (err) {
-      // `err` (масалан PostgrestError-и Supabase) дар console.error
-      // ҳамчун `{}` намоён мешавад, чунки хосиятҳояш дар JSON-и объекти
-      // хом дуруст сериализатсия намешаванд — `getErrorMessage` онҳоро
-      // мустақим мехонад (`.message`), пас паёми воқеӣ дида мешавад.
+      // `err` (e.g. a Supabase PostgrestError) shows up as `{}` in
+      // console.error, because its properties don't serialize correctly in
+      // the raw object's JSON — `getErrorMessage` reads them directly
+      // (`.message`), so the actual message is visible.
       console.error("Error saving profile setup:", getErrorMessage(err), err);
       toast.error(t("error"));
     } finally {
@@ -1094,17 +1099,17 @@ function ProfileContent() {
   };
 
   /**
-   * Функсияи паҳн кардани QR-код (Share)
+   * Function for sharing the QR code (Share)
    */
   if (!userLoaded) return null;
 
-  // Нишон додани мӯҳтаво вобаста ба таби интихобшуда
+  // Show content based on the selected tab
   const renderContent = () => {
     switch (activeTab) {
       case "posts":
         return (
           <div className="space-y-6">
-            {/* Рӯйхати эълонҳои шахсӣ */}
+            {/* List of personal listings */}
             <div>
               {postsLoading ? (
                 <div className={ITEM_GRID_CLASS}>
@@ -1141,7 +1146,7 @@ function ProfileContent() {
       case "posts2":
         return (
           <div className="space-y-6">
-            {/* Рӯйхати эълонҳои шахсӣ */}
+            {/* List of personal listings */}
             <div className="">
               {postsLoading ? (
                 <div className={ITEM_GRID_CLASS}>
@@ -1168,10 +1173,10 @@ function ProfileContent() {
         );
 
       case "qr":
-        // profile ҳанӯз client-side fetch мешавад (Clerk token → Supabase) —
-        // то он вақт skeleton нишон медиҳем, на UI-и нопурраи бо
-        // profile=null (тугмаҳои вайрон, QR-и холӣ), то гузариш аз дигар
-        // саҳифа ба ин таб "холӣ меистад" ҳис нашавад.
+        // profile is still fetched client-side (Clerk token → Supabase) —
+        // until then we show a skeleton, not the incomplete UI with
+        // profile=null (broken buttons, an empty QR), so navigating from
+        // another page to this tab doesn't feel like it "stands empty".
         if (profileLoading) {
           return (
             <div className="space-y-8 pb-32">
@@ -1187,15 +1192,15 @@ function ProfileContent() {
           );
         }
         return (
-          // `pb-4`, на `pb-32`: талаби корбар — саҳифа набояд аз таги
-          // QR-код scroll шавад. `pb-32` барои ҷуброни навбари поёнии
-          // мобил буд, вале акнун панели танзимот худаш дар дохили худ
-          // `max-h-[50dvh]` scroll мешавад (ниг. шарҳи он поён), пас ин
-          // фазои иловагӣ дигар лозим нест.
+          // `pb-4`, not `pb-32`: user request — the page shouldn't scroll
+          // past the bottom of the QR code. `pb-32` was there to compensate
+          // for the mobile bottom navbar, but now the settings panel scrolls
+          // within itself via `max-h-[50dvh]` (see its comment below), so
+          // this extra space is no longer needed.
           <div className="space-y-8 pb-4">
-            {/* Интихоби сатҳ — болои ҳама чиз, то корбар пеш аз ҳама
-                бифаҳмад, ки кадом реҷа фаъол аст.
-                Пинҳон (SHOW_TIER_SELECTOR): ниг. шарҳи он дар боло. */}
+            {/* Tier selector — above everything, so the user understands
+                right away which mode is active.
+                Hidden (SHOW_TIER_SELECTOR): see its explanation above. */}
             {SHOW_TIER_SELECTOR && (
             <div className="px-2">
               <div role="tablist" className="grid grid-cols-2 gap-3 max-w-md mx-auto">
@@ -1211,7 +1216,7 @@ function ProfileContent() {
                         "flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-colors",
                         active
                           ? "bg-emerald-500 text-white"
-                          // Матн ва нишона СИЁҲ, на хокистарӣ — сабки тугмаҳои Telegram.
+                          // Text and icon are BLACK, not gray — matching Telegram's button style.
                           : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-700",
                       )}
                     >
@@ -1224,34 +1229,34 @@ function ProfileContent() {
             </div>
             )}
 
-            {/* Танзимоти намуди зоҳирии QR */}
+            {/* QR visual settings */}
             <div className="space-y-8">
-              {/* `gap-5` дар мобил (на `gap-8`): талаби корбар — панели
-                  танзимот бояд ба тугмаҳо наздиктар бошад ва саҳифа
-                  scroll нашавад. `gap-3` санҷида шуд — хеле танг буд
-                  (талаби корбар: "аз ҳад зиёд боло бурдед"), `gap-5`
-                  мобайнист. Дар md+ (сутунҳои паҳлӯӣ) гапи калон (12)
-                  мемонад — он ҷо танзимот дар зери тугмаҳо нест. */}
+              {/* `gap-5` on mobile (not `gap-8`): user request — the
+                  settings panel needs to sit closer to the buttons and the
+                  page must not scroll. `gap-3` was tried — too cramped
+                  (user request: "you moved it up too much"), `gap-5` is the
+                  middle ground. On md+ (side-by-side columns) the large gap
+                  (12) stays — there the settings aren't below the buttons. */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-12 items-start px-2">
-                {/* Пешнамоиши QR (Preview) */}
-                {/* Сутуни пешнамоиш. Танҳо ХУДИ QR sticky аст — корти
-                    статус, тугмаҳо ва танзимот аз таги он мегузаранд. */}
+                {/* QR preview (Preview) */}
+                {/* Preview column. Only the QR ITSELF is sticky — the status
+                    card, buttons, and settings scroll past underneath it. */}
                 <div className="flex flex-col">
                 <div className="sticky top-[12px] sm:top-[66px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
-                  {/* Корти САФЕД бо хати мулоим — ҳамон намуди кортҳои
-                      профил. Пештар ин ҷо хати РЕХТА буд: он ба «ҷои холии
-                      интизорӣ» ишора мекунад, дар ҳоле ки корт мӯҳтавои
-                      пурра дорад. */}
-                  {/* `w-full`: талаби корбар — панели QR бояд ҳамон паҳноии
-                      панели танзимот (поён)-ро дошта бошад, то лаби чапу
-                      рости ду корт дар як сутун баробар шаванд. Пештар
-                      `w-fit` буд, то корт танҳо ба андозаи QR танг шавад —
-                      вале ин ду кортро номувозӣ менамуд.
+                  {/* WHITE card with a soft border — matching the profile
+                      cards' look. Previously this had a DASHED border: it
+                      suggests an "empty state waiting to be filled", while
+                      the card actually has full content. */}
+                  {/* `w-full`: user request — the QR panel should have the
+                      same width as the settings panel (below), so the left
+                      and right edges of the two cards in one column line up.
+                      Previously it was `w-fit`, so the card would hug just
+                      the QR's size — but that made the two cards uneven.
 
-                      `aspect-square`: талаби корбар — панел бояд КВАДРАТ
-                      бошад, ва `w-full` (бе ҳадди max-w) — талаби корбар:
-                      "квадрат full width бошад". Ҳадди max-w-[280px] (барои
-                      "бе scroll") бозгашт дода шуд. */}
+                      `aspect-square`: user request — the panel must be
+                      SQUARE, and `w-full` (no max-w limit) — user request:
+                      "the square should be full width". The max-w-[280px]
+                      limit (for "no scroll") was reverted. */}
                   <div className="relative group bg-white dark:bg-zinc-800 rounded-3xl p-3 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 w-full aspect-square overflow-hidden shadow-none transition-all duration-300">
                     <div className="scale-95 md:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
@@ -1281,23 +1286,24 @@ function ProfileContent() {
                   </div>
                 </div>
 
-                {/* Статуси QR аз ин ҷо БАРОМАД — мисли native, акнун дар
-                    таби «Танзимот» (гурӯҳи «Афзалиятҳо»), зеро ба тарҳи
-                    стикер дахл надорад. Ниг. `handleToggleQrActive`. */}
+                {/* The QR status MOVED OUT of here — like native, it's now
+                    in the "Settings" tab (the "Preferences" group), since it
+                    has nothing to do with the sticker's design. See
+                    `handleToggleQrActive`. */}
 
 
-                {/* Боргирӣ — ё озод, ё қулф.
-                    Қулф танҳо вақте меафтад, ки корбар воқеан аз ҳолати
-                    стандартӣ дур рафта бошад: дар табҳои худсоз, вале бе
-                    тағйирот, боргирӣ бепул мемонад. */}
-                {/* `mt-4`: талаби корбар — панели танзимот бояд ба тугмаҳо
-                    наздиктар шавад ва саҳифа scroll нашавад (ниг. `gap-3`-и
-                    грид низ боло). Талаби нав: дар desktop (md+) ин
-                    тугмаҳо на дар сутуни QR, балки дар сутуни рост, ЗЕРИ
-                    панели танзимот меистанд — пас дар ин ҷо (сутуни QR)
-                    танҳо дар мобил намоён аст (`md:hidden`); нусхаи
-                    дуюм (`md:flex`, бе `md:hidden`) поёнтар, дар сутуни
-                    рост меояд. */}
+                {/* Download — either free, or locked.
+                    The lock only kicks in when the user has actually moved
+                    away from the standard state: in custom tabs but with no
+                    changes, the download stays free. */}
+                {/* `mt-4`: user request — the settings panel needs to sit
+                    closer to the buttons and the page must not scroll (see
+                    the grid's `gap-3` above too). New request: on desktop
+                    (md+), these buttons sit not in the QR column, but in the
+                    right column, BELOW the settings panel — so here (the QR
+                    column) they're only visible on mobile (`md:hidden`); the
+                    second copy (`md:flex`, without `md:hidden`) comes
+                    further down, in the right column. */}
                 {isQrLocked ? (
                   <div className="md:hidden mt-5 w-full px-1">
                     <Button
@@ -1321,10 +1327,10 @@ function ProfileContent() {
                       )}
                       {t("download")}
                     </Button>
-                    {/* Обои-и экрани қулф хусусияти телефонӣ аст — дар веб
-                        имконнопазир. Тугма мисли native намоён аст (талаби
-                        мутобиқат), вале пахш модали шарҳдиҳанда мекушояд, на
-                        амали воқеӣ. */}
+                    {/* Lock-screen wallpaper is a phone-only feature —
+                        impossible on web. The button is shown like native
+                        (a consistency requirement), but tapping it opens an
+                        explanatory modal, not the actual action. */}
                     <Button
                       onClick={() => setShowWallpaperInfoModal(true)}
                       variant="outline"
@@ -1337,32 +1343,33 @@ function ProfileContent() {
                 )}
                 </div>
 
-                {/* Сутуни рост: танзимот, ва зери он (танҳо md+) ҳамон
-                    тугмаҳои боргирӣ/обои — талаби корбар. */}
+                {/* Right column: settings, and below it (md+ only) the same
+                    download/wallpaper buttons — user request. */}
                 <div className="flex flex-col gap-5">
-                {/* Ҳама танзимот танҳо дар «Худсоз» ва «Pro».
-                    Дар «Оддӣ» сутун қасдан холӣ мемонад. */}
+                {/* All settings only exist in "Custom" and "Pro".
+                    In "Basic" the column stays intentionally empty. */}
                 {!isBasicTier && (
-                // Панел: px-3, space-y-1.5 АЙНАН native-и `qrPanel`
-                // (paddingHorizontal:12) + `gap:6`-и байни сексияҳо.
+                // Panel: px-3, space-y-1.5 EXACTLY matches native's
+                // `qrPanel` (paddingHorizontal:12) + the `gap:6` between
+                // sections.
                 //
-                // `pt-2 pb-3` (на native-и pt-3.5/pb-7): талаби корбар —
-                // саҳифа УМУМАН набояд scroll шавад, ва панел бояд ба
-                // тугмаҳои боло наздиктар бошад. Ба ин хотир бошиши
-                // native-ро қасдан кам кардем.
+                // `pt-2 pb-3` (not native's pt-3.5/pb-7): user request —
+                // the page must NOT scroll at all, and the panel needs to
+                // sit closer to the buttons above. For that reason we
+                // deliberately reduced native's padding.
                 <div className="space-y-1.5 px-3 pt-4 pb-6 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                  {/* Градиенти матн ва градиенти замина дар ЯК қатор —
-                      АВВАЛ меоянд (тартиби native: градиент → шакли нуқтаҳо
-                      → кунҷҳо, на баръакс). */}
+                  {/* Text gradient and background gradient in ONE row —
+                      they come FIRST (native's order: gradient → dot shape
+                      → corners, not the other way around). */}
                   <div className="flex gap-4">
                     {renderGradientBlock("text")}
                     {renderGradientBlock("bg")}
                   </div>
 
-                  {/* Шакли нуқтаҳо — chip-и визуалӣ, на dropdown-и матнӣ:
-                      ҳар вариант худашро нишон медиҳад. Намунаҳо ЯКРАНГАНД
-                      (QR_CHIP_INK, на ранги ҷории QR) — талаби мутобиқат
-                      бо native. */}
+                  {/* Dot shape — a visual chip, not a text dropdown: each
+                      variant shows itself. The samples are ONE COLOR
+                      (QR_CHIP_INK, not the QR's current color) — a
+                      consistency requirement with native. */}
                   <div className="space-y-2">
                     <QrFieldLabel icon={Grid2x2}>{t("qrDotsStyle")}</QrFieldLabel>
                     <StyleChipRow
@@ -1375,8 +1382,9 @@ function ProfileContent() {
                     />
                   </div>
 
-                  {/* Фосилаи КАЛОН (28px, айнан native) байни ду гурӯҳ —
-                      бо фосилаи хурд онҳо як қатори ягона менамуданд. */}
+                  {/* A LARGE gap (28px, exactly matching native) between the
+                      two groups — with a smaller gap they looked like a
+                      single row. */}
                   <div className="flex gap-7">
                     <div className="flex-1 space-y-2 min-w-0">
                       <QrFieldLabel icon={Scan}>{t("qrCornersStyle")}</QrFieldLabel>
@@ -1390,9 +1398,9 @@ function ProfileContent() {
                       />
                     </div>
 
-                    {/* Маркази чашмак — интихоби СЕЮМИ мустақил.
-                        Пештар он аз ҳошия бармеомад ва корбар ба он даст
-                        расонда наметавонист. */}
+                    {/* Eye center — a THIRD independent choice.
+                        Previously it fell outside the margin and the user
+                        couldn't reach it. */}
                     <div className="flex-1 space-y-2 min-w-0">
                       <QrFieldLabel icon={Scan}>{t("qrCornerCenterStyle")}</QrFieldLabel>
                       <StyleChipRow
@@ -1408,7 +1416,7 @@ function ProfileContent() {
                 </div>
                 )}
 
-                {/* Нусхаи desktop-и тугмаҳо (ниг. шарҳи `md:hidden` боло). */}
+                {/* Desktop copy of the buttons (see the `md:hidden` comment above). */}
                 {isQrLocked ? (
                   <div className="hidden md:block w-full px-1">
                     <Button
@@ -1451,11 +1459,11 @@ function ProfileContent() {
       case "info":
         return (
           <div className="pb-20">
-            {/* Сарлавҳаи таби Танзимот */}
-            {/* Full-bleed: `-mx-*` шофияи волидро мекашад ва `px-*` онро
-                дубора медиҳад — бинобар ин ҳарду бояд БАЙНИ breakpoint-ҳо
-                бо шофияи волид (`px-2 sm:px-4`) баробар монанд, вагарна
-                банд аз экран мебарояд ва scroll-и уфуқӣ пайдо мешавад. */}
+            {/* Settings tab header */}
+            {/* Full-bleed: `-mx-*` cancels the parent's padding and `px-*`
+                adds it back — so both must match the parent's padding
+                (`px-2 sm:px-4`) ACROSS breakpoints, otherwise the block runs
+                off the screen and a horizontal scroll appears. */}
             <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-4">
               <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                 {t("settings")}
@@ -1463,7 +1471,7 @@ function ProfileContent() {
             </div>
 
             <div className="max-w-2xl px-2 space-y-6">
-              {/* Корти профил — аватар, ном, почта */}
+              {/* Profile card — avatar, name, email */}
               <div className="bg-white dark:bg-zinc-800 rounded-2xl p-4 flex items-center gap-4">
                 <div className="relative shrink-0">
                   <Avatar className="w-14 h-14 rounded-full overflow-hidden">
@@ -1505,13 +1513,13 @@ function ProfileContent() {
                 </div>
               </div>
 
-              {/* Гурӯҳи "Ҳисоб" */}
+              {/* "Account" group */}
               <div className="space-y-2">
                 <p className="text-[11px] font-bold tracking-wider text-zinc-400 px-4">
                   {t("account")}
                 </p>
                 <div className="bg-white dark:bg-zinc-800 rounded-2xl divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
-                  {/* Маълумоти шахсӣ — сатри кушодашаванда */}
+                  {/* Personal info — an expandable row */}
                   <button
                     type="button"
                     onClick={() => setOpenSetting(openSetting === "profile" ? null : "profile")}
@@ -1531,7 +1539,7 @@ function ProfileContent() {
 
                   {openSetting === "profile" && (
                   <div className="px-4 py-4">
-                  {/* Формаи таҳрири маълумоти профил */}
+                  {/* Profile data edit form */}
                   <form
                     key={profile?.id || "new"}
                     onSubmit={async (e) => {
@@ -1552,13 +1560,13 @@ function ProfileContent() {
                       }
 
                       /**
-                       * Шабакаҳо ҲАМЕША ҳар чор фиристода мешаванд, ҳатто
-                       * холӣ.
+                       * Social networks are ALWAYS sent, all four, even
+                       * when empty.
                        *
-                       * Route сатри холиро ба `null` табдил медиҳад, яъне
-                       * пайвандро нест мекунад. Модали боргирӣ баръакс кор
-                       * мекунад — он танҳо майдонҳои пуршударо мефиристад
-                       * ва аз он ҷо нест кардан ғайриимкон аст.
+                       * The route converts an empty string to `null`, i.e.
+                       * removes the link. The download modal works the
+                       * opposite way — it only sends the fields that were
+                       * filled in, so deleting from there is impossible.
                        */
                       const socialValues = Object.fromEntries(
                         SOCIALS.map(({ key }) => [
@@ -1569,10 +1577,11 @@ function ProfileContent() {
 
                       setInfoSubmitting(true);
                       try {
-                        // Ном/насаб ва рақамҳоро аз сервер (Backend API)
-                        // иваз мекунем — то бо ҳисобҳои бе parol (масалан
-                        // бо Google) ба хатогии "first_name is not a
-                        // valid parameter" ё reverification дучор нашавем.
+                        // We update the name/surname and phone numbers from
+                        // the server (Backend API) — so accounts without a
+                        // password (e.g. via Google) don't run into the
+                        // "first_name is not a valid parameter" error or
+                        // reverification.
                         const res = await fetch("/api/account/update-profile", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
@@ -1645,8 +1654,7 @@ function ProfileContent() {
                       </div>
                     </div>
 
-                    {/* Шабакаҳои иҷтимоӣ. Майдони холӣ = пайванд нест
-                        мешавад. */}
+                    {/* Social networks. An empty field = the link gets removed. */}
                     <div className="space-y-1.5">
                       <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.socialBtn")}
@@ -1660,8 +1668,9 @@ function ProfileContent() {
                                 size={18}
                                 className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
                               />
-                              {/* Аломат ба қимат дохил намешавад — танҳо
-                                  намоишӣ, мисли дар модали боргирӣ. */}
+                              {/* The prefix symbol isn't included in the
+                                  value — display only, same as in the
+                                  download modal. */}
                               <span
                                 aria-hidden
                                 className="absolute left-9 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none"
@@ -1706,7 +1715,7 @@ function ProfileContent() {
                   </div>
                   )}
 
-                  {/* Почтаи электронӣ */}
+                  {/* Email */}
                   <button
                     type="button"
                     onClick={() => setShowEmailChangeModal(true)}
@@ -1722,7 +1731,7 @@ function ProfileContent() {
                     <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
                   </button>
 
-                  {/* Рамз */}
+                  {/* Password */}
                   <button
                     type="button"
                     onClick={() => setShowChangePasswordModal(true)}
@@ -1737,13 +1746,13 @@ function ProfileContent() {
                 </div>
               </div>
 
-              {/* Гурӯҳи "Афзалиятҳо" */}
+              {/* "Preferences" group */}
               <div className="space-y-2">
                 <p className="text-[11px] font-bold tracking-wider text-zinc-400 px-4">
                   {t("preferences")}
                 </p>
                 <div className="bg-white dark:bg-zinc-800 rounded-2xl divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
-                  {/* Забон — арзиши ҷорӣ дар тарафи рост, мисли намунаи iOS */}
+                  {/* Language — the current value on the right side, like the iOS pattern */}
                   <div className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <Globe className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
@@ -1770,9 +1779,10 @@ function ProfileContent() {
                     </div>
                   </div>
 
-                  {/* Мавзӯъ — ҳамон намуди segmented мисли забон.
-                      `mounted` лозим аст, чунки то hydration мавзӯи воқеӣ
-                      маълум нест ва бе он тугмаи нодуруст фаъол менамояд. */}
+                  {/* Theme — the same segmented style as language.
+                      `mounted` is needed because before hydration the
+                      actual theme is unknown, and without it the wrong
+                      button would appear active. */}
                   <div className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <Palette className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
@@ -1799,9 +1809,9 @@ function ProfileContent() {
                     </div>
                   </div>
 
-                  {/* Статуси QR — аз таби QR кӯчид ба ин ҷо (мисли native):
-                      ба тарҳи стикер дахл надорад, бо кадом ранг кашида
-                      шуданаш аҳамият надорад. */}
+                  {/* QR status — moved here from the QR tab (like native):
+                      it has nothing to do with the sticker's design,
+                      regardless of what color it's drawn in. */}
                   <div className="px-4 py-3.5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <QrCode className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
@@ -1837,10 +1847,10 @@ function ProfileContent() {
                 </div>
               </div>
 
-              {/* Нест кардани ҳисоб — гурӯҳи алоҳида, то бо танзимоти
-                  муқаррарӣ омехта нашавад (амали бебозгашт). Талаби
-                  корбар: ранги ХОКИСТАРӢ (на сурх) — "Хуруҷ" акнун
-                  сурхтарин аст. */}
+              {/* Delete account — a separate group, so it isn't confused
+                  with regular settings (an irreversible action). User
+                  request: GRAY color (not red) — "Sign out" is now the
+                  reddest one. */}
               <div className="space-y-2">
                 <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden">
                   <button
@@ -1860,8 +1870,8 @@ function ProfileContent() {
                 </p>
               </div>
 
-              {/* Хуруҷ аз ҳисоб — талаби корбар: ПОЁНИ "Нест кардани
-                  ҳисоб", ва рангаш аз он СУРХТАР. */}
+              {/* Sign out — user request: BELOW "Delete account", and
+                  REDDER in color than it. */}
               <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden">
                 <SignOutButton>
                   <button
@@ -1883,14 +1893,14 @@ function ProfileContent() {
       case "saved":
         return (
           <div className="space-y-6">
-            {/* Сарлавҳаи таби Захирашудаҳо */}
+            {/* Saved tab header */}
             <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-6">
               <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
                 {t("savedItems")}
               </h3>
             </div>
 
-            {/* Рӯйхати ашёҳои захирашуда */}
+            {/* List of saved items */}
             <div className="">
               {savedLoading ? (
                 <div className={ITEM_GRID_CLASS}>
@@ -2017,12 +2027,12 @@ function ProfileContent() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12 px-0 sm:px-0">
-          {/* Менюи Sidebar (Менюи паҳлӯӣ) */}
+          {/* Sidebar Menu */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-9 h-fit z-20 space-y-6">
               <div className="flex flex-col gap-3">
-                {/* Тугмаи бозгашт ба саҳифаи асосӣ — талаби корбар: дар
-                    сатри якуми меню, на танҳо тавассути навбари поёнӣ. */}
+                {/* Back-to-home button — user request: on the first row of
+                    the menu, not only via the bottom navbar. */}
                 <Link
                   href="/"
                   className="flex items-center justify-between p-3 min-[1084px]:p-3.5 min-[1503px]:p-4 rounded-xl transition-all group shadow-sm border bg-white border-zinc-100 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-800 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700"
@@ -2075,7 +2085,7 @@ function ProfileContent() {
                 ))}
               </div>
 
-              {/* Тугмаи баромад (Log out) */}
+              {/* Sign out button (Log out) */}
               <div className="pt-4 border-t border-zinc-100 dark:border-zinc-900">
                 <SignOutButton>
                   <Button
@@ -2090,14 +2100,14 @@ function ProfileContent() {
             </div>
           </div>
 
-          {/* Мӯҳтавои асосии табҳо */}
+          {/* Main tab content */}
           <div className="lg:col-span-3">
             <div className="min-h-[60vh]">{renderContent()}</div>
           </div>
         </div>
       </div>
 
-      {/* Модалкаи ҳатмии рақами телефон ва амният ҳангоми насби QR */}
+      {/* Mandatory phone number and safety modal when setting up the QR */}
       <Dialog
         open={showSecondaryPhoneModal}
         onOpenChange={setShowSecondaryPhoneModal}
@@ -2123,7 +2133,7 @@ function ProfileContent() {
               className="space-y-6 text-left"
             >
               <div className="space-y-6">
-                {/* Рақами асосӣ (агар набошад) */}
+                {/* Primary number (if missing) */}
                 {(!profile?.phone || profile.phone.trim() === "") && (
                   <div className="space-y-1.5">
                     <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
@@ -2137,7 +2147,7 @@ function ProfileContent() {
                   </div>
                 )}
 
-                {/* Рақами дуюм (агар набошад) */}
+                {/* Secondary number (if missing) */}
                 {!profile?.secondary_phone && (
                   <>
                     <div className="space-y-1.5">
@@ -2159,8 +2169,8 @@ function ProfileContent() {
                   </>
                 )}
 
-                {/* Шабакаҳои иҷтимоӣ — ИХТИЁРӢ.
-                    Пӯшида меистад, то формаи ҳатмиро дароз накунад. */}
+                {/* Social networks — OPTIONAL.
+                    Stays collapsed, so it doesn't lengthen the required form. */}
                 <div className="space-y-1.5">
                   <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
                     {t("qrSecondaryModal.socialBtn")}
@@ -2172,8 +2182,8 @@ function ProfileContent() {
                     aria-label={t("qrSecondaryModal.socialBtn")}
                     className="w-full flex items-center justify-between gap-2 py-3 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                   >
-                    {/* Танҳо нишонаҳо, дар ранги брендии худ: чашм онҳоро
-                        зудтар аз матн мешиносад. */}
+                    {/* Icons only, in their own brand colors: the eye
+                        recognizes them faster than text. */}
                     <span className="flex items-center gap-3">
                       {SOCIALS.map(({ key, Icon }) => (
                         <Icon key={key} size={26} />
@@ -2190,17 +2200,18 @@ function ProfileContent() {
                   {showSocial && (
                     <div
                       className="space-y-2"
-                      // Майдонҳо дар охири формаи ғилдиракдор меафтанд ва бе
-                      // ин корбар танҳо тугмаи кушодашударо медид.
+                      // The fields land at the bottom of the scrollable
+                      // form, and without this the user would only see the
+                      // opened button.
                       ref={(el) =>
                         el?.scrollIntoView({ behavior: "smooth", block: "nearest" })
                       }
                     >
-                      {/* Ҳеҷ кадомашон ҳатмӣ нест — ин бояд ПЕШ аз майдонҳо
-                          хонда шавад, вагарна корбар аллакай ҳар чорро пур
-                          карда, баъд ишораро мебинад. */}
-                      {/* Сабз, на хокистарӣ: ин ишора бояд ХОНДА шавад —
-                          хокистарӣ дар байни майдонҳо гум мешуд. */}
+                      {/* None of them are required — this needs to be read
+                          BEFORE the fields, otherwise the user fills in all
+                          four first and only then sees the hint. */}
+                      {/* Green, not gray: this hint needs to be READ —
+                          gray got lost among the fields. */}
                       <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 px-1 pb-1 leading-snug">
                         {t("qrSecondaryModal.socialPickHint")}
                       </p>
@@ -2212,10 +2223,10 @@ function ProfileContent() {
                               size={16}
                               className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
                             />
-                            {/* Аломат ба қимат дохил намешавад — танҳо
-                                намоишӣ. Ҷои он ҳамеша нигоҳ дошта мешавад
-                                (`pl-[3.25rem]`), то ҳангоми пайдо шудани
-                                он матн наҷаҳад. */}
+                            {/* The prefix symbol isn't included in the
+                                value — display only. Its space is always
+                                reserved (`pl-[3.25rem]`), so the text
+                                doesn't jump when it appears. */}
                             <span
                               aria-hidden
                               className="absolute left-10 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400 pointer-events-none"
@@ -2247,7 +2258,7 @@ function ProfileContent() {
                   )}
                 </div>
 
-                {/* Қабули шартҳо (агар қабул нашуда бошад) */}
+                {/* Accepting the terms (if not yet accepted) */}
                 {profile?.accepted_terms !== true && (
                   <div className="flex items-start space-x-3 pt-2 px-1">
                     <Checkbox
@@ -2327,7 +2338,7 @@ function ProfileContent() {
           </Button>
         </DialogContent>
       </Dialog>
-      {/* Обои — хусусияти телефонӣ, дар веб танҳо шарҳ медиҳем. */}
+      {/* Wallpaper — a phone-only feature, on web we just explain it. */}
       <Dialog open={showWallpaperInfoModal} onOpenChange={setShowWallpaperInfoModal}>
         <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
@@ -2338,8 +2349,9 @@ function ProfileContent() {
               {t("qrWallpaperWebTitle")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-medium text-sm leading-relaxed">
-              {/* Талаби корбар: "JUYO" (номи лотинӣ дар матни кириллӣ)
-                  хурдтар аз бақияи ҷумла бошад — ба чашм намезад. */}
+              {/* User request: "JUYO" (a Latin name within Cyrillic text)
+                  should be smaller than the rest of the sentence — so it
+                  doesn't stand out. */}
               {(() => {
                 const desc = t("qrWallpaperWebDesc");
                 const [before, after] = desc.split("JUYO");
@@ -2480,7 +2492,7 @@ function ProfileContent() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Мисоли аксӣ — саҳифаи воридшавӣ бо ишора ба "Рамзро фаромӯш кардед?" */}
+          {/* Visual example — the sign-in page pointing at "Forgot your password?" */}
           <div className="mt-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 p-4 space-y-2.5">
             <div className="text-center space-y-0.5 mb-2">
               <p className="font-bold text-[11px] text-zinc-900 dark:text-white">
@@ -2535,10 +2547,10 @@ function ProfileContent() {
       <Dialog
         open={showEmailChangeModal}
         onOpenChange={(open) =>
-          // Дар зинаи ворид кардани рамз, click-и тасодуфӣ ба берун модалро
-          // напӯшонад — почта аллакай сохта/тасдиқшуда аст, гум кардани
-          // ин ҳолат боиси "почта аллакай гирифта шудааст" мешавад ҳангоми
-          // такрор. Танҳо тугмаи "Бекор кардан" метавонад пӯшад.
+          // At the code-entry step, an accidental click outside shouldn't
+          // close the modal — the email has already been created/verified,
+          // and losing this state causes "email already taken" on retry.
+          // Only the "Cancel" button can close it.
           !emailSubmitting &&
           emailStep !== "verify" &&
           (open ? setShowEmailChangeModal(true) : resetEmailModal())
@@ -2654,7 +2666,7 @@ function ProfileContent() {
 }
 
 /**
- * Саҳифаи асосии Профил бо Suspense
+ * Main Profile page with Suspense
  */
 export default function ProfilePage() {
   return (

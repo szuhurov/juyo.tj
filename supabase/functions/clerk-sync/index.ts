@@ -51,9 +51,9 @@ Deno.serve(async (req) => {
     if (type === "user.created" || type === "user.updated") {
       const { id, first_name, last_name, image_url, phone_numbers, email_addresses, primary_email_address_id, primary_phone_number_id } = data
 
-      // Клерк тартиби массивро кафолат намедиҳад — бояд аниқ бо
-      // primary_*_id мувофиқат кунем, на танҳо индекси 0-ро гирем
-      // (вагарна email метавонад холӣ ё нодуруст сабт шавад).
+      // Clerk doesn't guarantee array order — we must match precisely by
+      // primary_*_id instead of just taking index 0
+      // (otherwise the email could be saved empty or wrong).
       const primaryPhone = phone_numbers?.find((p: any) => p.id === primary_phone_number_id)
       const phone = primaryPhone?.phone_number || phone_numbers?.[0]?.phone_number || null
 
@@ -75,21 +75,22 @@ Deno.serve(async (req) => {
       if (error) throw error
     }
 
-    // 6. Ҳисоби Clerk воқеан нест карда шуд. Барои "Пурра нест кардан"-и
-    // admin, тозакунии Supabase аллакай мустақим дар API route рӯй медиҳад
-    // (то ба фаъол будани ин webhook дар Clerk Dashboard такя накунад) — ин
-    // ҷо танҳо fallback/идемпотент такрор аст (агар profile аллакай нест
-    // бошад, ҳеҷ коре намекунад). Барои "худи корбар ҳисобашро нест мекунад"
-    // (user.delete() дар Танзимот), ИН ҶО ЯГОНА роҳест, ки rӯй медиҳад — пас
-    // "user.deleted" бояд дар Clerk Dashboard → Webhooks фаъол бошад,
-    // вагарна ҳисобҳои худ-нестшуда ҳаргиз аз Supabase пок намешаванд.
-    // Ҳарду роҳ якхела: snapshot дар deleted_accounts_archive, тоза кардани
-    // файлҳои Storage (аксҳои эълонҳо + avatar) ва push_tokens (FK надоранд),
-    // баъд DELETE-и худи profile — ки CASCADE FK ҳамаи items/item_images/
-    // saved_items-ро низ пок мекунад.
-    // Admin-и soft-delete ("Нест кардан"-и оддӣ, дар trash) Clerk-ро тамоман
-    // ламс намекунад, пас ин ҷо ҳаргиз намерасад — фақат ҳангоми "Пурра нест
-    // кардан" ё худи корбар.
+    // 6. The Clerk account was actually deleted. For the admin's "Delete
+    // Permanently", the Supabase cleanup already happens directly in the API
+    // route (so it doesn't depend on this webhook being enabled in the Clerk
+    // Dashboard) — this here is just a fallback/idempotent repeat (if the
+    // profile is already gone, it does nothing). For "the user deletes their
+    // own account" (user.delete() in Settings), THIS IS THE ONLY path that
+    // runs it — so "user.deleted" must be enabled in Clerk Dashboard →
+    // Webhooks, otherwise self-deleted accounts never get cleaned up from
+    // Supabase. Both paths do the same thing: snapshot into
+    // deleted_accounts_archive, clean up Storage files (listing photos +
+    // avatar) and push_tokens (they have no FK), then DELETE the profile
+    // itself — whose CASCADE FK also cleans up all items/item_images/
+    // saved_items.
+    // The admin's soft-delete ("Delete" in the regular sense, into the
+    // trash) never touches Clerk at all, so it never reaches this code —
+    // only "Delete Permanently" or the user themselves trigger it.
     if (type === "user.deleted") {
       const { id } = data
 
@@ -116,8 +117,8 @@ Deno.serve(async (req) => {
           items_count: itemIds.length,
         }])
 
-        // Ҳар эълони корбар низ алоҳида дар deleted_items_archive сабт мешавад,
-        // то саҳифаи Эълонҳо → "Нестшудаҳо" онҳоро низ бинад.
+        // Each of the user's listings is also separately recorded in
+        // deleted_items_archive, so the Listings → "Deleted" page can see them too.
         if ((items ?? []).length > 0) {
           await supabase.from("deleted_items_archive").insert(
             (items ?? []).map((item: any) => ({
@@ -159,9 +160,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 7. Воридшавии нав — барои "Last Login" дар admin panel.
-    // ЭЗОҲ: ин рӯйдод бояд дар танзимоти webhook-и Clerk Dashboard фаъол шавад
-    // (session.created), вагарна ҳеҷ гоҳ фиристода намешавад.
+    // 7. New sign-in — for "Last Login" in the admin panel.
+    // NOTE: this event must be enabled in the Clerk Dashboard webhook settings
+    // (session.created), otherwise it will never be sent.
     if (type === "session.created") {
       const userId = data.user_id
       if (userId) {

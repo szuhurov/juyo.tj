@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     const textToCheck = `${title} ${description || ""}`;
 
-    // Санҷиши матн бо модели OpenAI
+    // Check the text with the OpenAI model
     const aiResponse = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {

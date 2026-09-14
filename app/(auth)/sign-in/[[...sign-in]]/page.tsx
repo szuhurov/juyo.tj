@@ -1,13 +1,13 @@
 /**
- * Саҳифаи воридшавӣ (Sign In Page).
- * Дар ин ҷо корбарон ба профили худ ворид мешаванд (логин мекунанд).
- * Ҳамааш дар асоси Clerk кор мекунад.
+ * Sign In Page.
+ * This is where users sign in to their profile (log in).
+ * Everything runs on top of Clerk.
  */
 "use client";
 
-import { SignIn } from "@clerk/nextjs"; // Барои ворид шудан ба профил
-import { useLanguage, type Locale } from "@/lib/language-context"; // Барои иваз кардани забони сайт
-import { Button } from "@/components/ui/button"; // Компоненти тугма
+import { SignIn } from "@clerk/nextjs"; // For signing in to the profile
+import { useLanguage, type Locale } from "@/lib/language-context"; // For switching the site's language
+import { Button } from "@/components/ui/button"; // Button component
 import { ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -15,7 +15,7 @@ export default function Page() {
   const { t, locale, setLocale } = useLanguage();
   const router = useRouter();
 
-  // Рӯйхати забонҳо барои тугмаҳо
+  // List of languages for the buttons
   const languages = [
     { code: "tg", label: "Тоҷикӣ" },
     { code: "ru", label: "Русский" },
@@ -23,10 +23,10 @@ export default function Page() {
   ];
 
   return (
-    // Контейнер барои марказонидани (center) формаи воридшавӣ
+    // Container for centering the sign-in form
     <main className="min-h-screen flex flex-col items-center bg-zinc-50 dark:bg-zinc-950 p-4 pt-6 sm:pt-12">
 
-      {/* Сарлавҳаи боло: Тугмаи Ба қафо ва Ивази забон */}
+      {/* Top header: Back button and Language switcher */}
       <div className="w-full max-w-[480px] relative flex items-center justify-center mb-10 sm:mb-14">
         <Button
           variant="ghost"
@@ -59,7 +59,7 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Виҷети тайёри Clerk барои логин */}
+      {/* Clerk's ready-made widget for login */}
       <div className="w-full max-w-[480px] flex justify-center -mt-4 sm:-mt-6">
         <SignIn
           path="/sign-in"
@@ -70,11 +70,11 @@ export default function Page() {
             elements: {
               card: "w-full shadow-none border-none bg-transparent",
               rootBox: "w-full",
-              // Талаби корбар: input/тугмаҳои Clerk аз ҳад зиёд rounded
-              // буданд (пешфарзи Clerk) — ба ҳамон радиуси боқии
-              // Талаби такрории корбар: боз ҳам камтар — акнун АЙНАН
-              // ба радиуси тугмаҳои интихоби забон дар боло мутобиқ
-              // (rounded-lg, 8px), на --radius-control (14px).
+              // User request: Clerk's inputs/buttons were too rounded
+              // (Clerk's default) — matched to the same radius as the rest of the
+              // Repeated user request: even less — now matching EXACTLY
+              // the radius of the language selection buttons above
+              // (rounded-lg, 8px), not --radius-control (14px).
               formFieldInput: "rounded-lg",
               formButtonPrimary: "rounded-lg",
               socialButtonsBlockButton: "rounded-lg",

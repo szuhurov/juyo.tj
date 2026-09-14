@@ -16,9 +16,9 @@ export default async function AdminLayout({
   }
 
   return (
-    // bg-canvas — ҳамон токене, ки тамоми сайт истифода мебарад (равшан
-    // #f1f5f9, торик сиёҳ). Пеш аз ин панел `bg-zinc-100`-и собит дошт ва
-    // дар реҷаи торик сафеди кӯркунанда мемонд.
+    // bg-canvas — the same token used across the whole site (light #f1f5f9,
+    // dark black). Before this, the panel had a hardcoded `bg-zinc-100` and
+    // stayed blindingly white in dark mode.
     <div className="min-h-screen md:h-screen bg-white dark:bg-zinc-900 md:bg-canvas md:p-4">
       <div className="flex flex-col md:flex-row min-h-screen md:h-full bg-white dark:bg-zinc-900 md:rounded-[28px] md:border md:border-zinc-200 md:dark:border-zinc-800 md:overflow-hidden">
         <AdminSidebar />

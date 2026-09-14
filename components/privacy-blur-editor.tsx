@@ -1,22 +1,22 @@
 /**
- * Муҳаррири ҳимояи махфият — вақте ки AI moderation (final_check/
- * moderation_only дар ai-brain) муайян кард, ки акс ҳуҷҷат аст
- * (is_document), ин тиреза кушода мешавад. Ягон даъвати AI-и АЛОҲИДА
- * барои ин кор намешавад — ҳамон санҷиши moderation-е, ки аллакай
- * иҷро шудааст, минтақаҳои пешниҳодшударо низ медиҳад (privacy_regions),
- * то суръат гум нашавад. Корбар метавонад ин минтақаҳоро қабул кунад
- * ё бо "қалам" (кашидан бо муш/ангушт) худаш илова/андоза/ҳаракат/нест
- * кунад. Ҳама минтақа pixelate (мозаика, на blur-и оддӣ — зеро blur
- * баъзан баргардонида мешавад, pixelation не) мешавад.
+ * Privacy protection editor — opens when AI moderation (final_check/
+ * moderation_only in ai-brain) determines the image is a document
+ * (is_document). No SEPARATE AI call is made for this — the same
+ * moderation check that already ran also returns suggested regions
+ * (privacy_regions), so no speed is lost. The user can accept these
+ * regions or add/resize/move/delete them manually with a "pen" (dragging
+ * with mouse/finger). Every region is pixelated (mosaic, not a plain
+ * blur — because blur can sometimes be reversed, pixelation cannot).
  *
- * Минтақаҳои AI низ ПУРРА қобили таҳриранд. Пеш аз ин онҳо қулф буданд,
- * вале координатаи модели vision лағжиш дорад — дар як паспорти воқеӣ
- * қуттӣ аз худи рақам ба тарафи рост лағжид ва корбар онро дида, вале
- * ислоҳ карда наметавонист.
+ * AI regions are also FULLY editable. Previously they were locked, but
+ * the vision model's coordinates can drift — in one real passport the
+ * box drifted to the right of the actual number, and the user could see
+ * the problem but couldn't fix it.
  *
- * Якчанд акс якҷоя: ҳама аксҳо дар ҳамин ЯК тиреза бо тугмаҳои чап/рост
- * тафтиш мешаванд (на як-як дар тирезаҳои алоҳида) — то корбар озодона
- * байни аксҳо гузарад ва ба акси қаблӣ баргардад, пеш аз тасдиқи ниҳоӣ.
+ * Multiple images at once: all images are reviewed in this ONE dialog
+ * with left/right buttons (not one at a time in separate dialogs) — so
+ * the user can freely move between images and go back to a previous one
+ * before final confirmation.
  */
 "use client";
 
@@ -35,8 +35,8 @@ import { cn } from "@/lib/utils";
 
 export interface PrivacyRegion {
   label?: string;
-  /** Кадом аксро дар назар дорад (0-асосӣ), вақте якчанд акс якҷоя ба
-   *  ai-brain фиристода мешавад — ниг. шарҳи decodeSlot дар поён. */
+  /** Which image this refers to (0-based), when several images are sent
+   *  to ai-brain together — see the decodeSlot comment below. */
   imageIndex?: number;
   x: number; // 0-1
   y: number; // 0-1
@@ -50,9 +50,9 @@ interface EditableRegion {
   y: number; // 0-1
   width: number; // 0-1
   height: number; // 0-1
-  rotation: number; // дараҷа, 0-360
-  /** Танҳо барои намуди канора — ҳарду навъ баробар қобили таҳриранд.
-   *  "ai" — пешниҳоди AI (канораш хатчадор). "user" — бо қалам кашидашуда. */
+  rotation: number; // degrees, 0-360
+  /** Only affects the border style — both kinds are equally editable.
+   *  "ai" — AI suggestion (dashed border). "user" — drawn with the pen. */
   origin: "ai" | "user";
 }
 
@@ -74,7 +74,7 @@ interface DragState {
   startPointerX: number; // 0-1
   startPointerY: number; // 0-1
   startRegion: EditableRegion;
-  // Барои "new": ҳамаи нуқтаҳои роҳи қалам — bbox дар анҷом аз инҳо ҳисоб мешавад.
+  // For "new": all points along the pen's path — the bbox at the end is computed from these.
   pathMinX?: number;
   pathMinY?: number;
   pathMaxX?: number;
@@ -82,25 +82,26 @@ interface DragState {
 }
 
 const MAX_WORKING_WIDTH = 1400;
-const MIN_SIZE = 0.03; // Ҳадди ақали минтақа — то каши хеле хурд/тасодуфӣ намонад
-const PEN_PADDING = 0.02; // Изофаи атрофи роҳи қалам, то мукаммал пӯшад
-const AI_REGION_MAX_AREA = 0.25; // Ҳадди ақсои масоҳати як минтақаи AI (аз масоҳати умумии акс) — агар AI хато карда, минтақаи аз ҳад калон дода бошад (масалан қариб тамоми ҳуҷҷат), ба ин андоза кам мешавад.
+const MIN_SIZE = 0.03; // Minimum region size — so a very small/accidental drag doesn't stick around
+const PEN_PADDING = 0.02; // Padding around the pen's path, so it covers fully
+const AI_REGION_MAX_AREA = 0.25; // Max area of a single AI region (relative to the total image area) — if AI made a mistake and gave an oversized region (e.g. almost the whole document), it's shrunk to this size.
 
-// Изофаи минтақаҳои AI. Моделҳои vision координатаро ДАҚИҚ намедиҳанд —
-// қуттӣ одатан 3-8% лағжиш дорад. Изофаи собити 2% ин лағжишро намепӯшид:
-// дар як паспорти воқеӣ қуттии рақам ба тарафи рост лағжид ва худи рақам
-// кушода монд. Ҳоло изофа МУТАНОСИБ аст — қуттии хурд нисбатан бештар
-// изофа мегирад, чунки маҳз дар қуттиҳои хурд лағжиш ҳалокатбор аст.
+// Padding for AI regions. Vision models don't give EXACT coordinates —
+// the box typically drifts by 3-8%. A fixed 2% padding didn't cover this
+// drift: in one real passport the number's box drifted to the right and
+// the number itself was left exposed. Now the padding is PROPORTIONAL —
+// a small box gets relatively more padding, because drift is most
+// damaging exactly for small boxes.
 const AI_PAD_MIN = 0.02;
 const AI_PAD_X_RATIO = 0.18;
 const AI_PAD_Y_RATIO = 0.55;
 
-// MRZ (сатрҳои мошинхонии поёни паспорт/ID) — ин ягона майдонест, ки
-// сохтори он ПЕШАКӢ маълум аст: ҳамеша тасмаи ПУРРАИ паҳнои ҳуҷҷат, 2-3
-// сатри monospace дар поён. Модел бошад, онро ҳамчун қуттии хурд медиҳад
-// ва танҳо як пораашро мепӯшонад. Бинобар ин барои MRZ ба координатаи
-// модел такя намекунем: паҳноро ба 100% мекушоем ва баландиро ба тамоми
-// тасма мерасонем.
+// MRZ (the machine-readable lines at the bottom of a passport/ID) — this
+// is the one field whose structure is known IN ADVANCE: it's always a
+// FULL-width strip of the document, 2-3 monospace lines at the bottom.
+// The model, however, gives it as a small box and covers only part of
+// it. So for MRZ we don't rely on the model's coordinates: we open the
+// width to 100% and extend the height to cover the whole strip.
 const MRZ_MIN_HEIGHT = 0.1;
 
 function clamp01(v: number) {
@@ -132,10 +133,10 @@ function initialRegionsFor(suggested: PrivacyRegion[] | undefined): EditableRegi
       width = Math.min(1 - x, r.width + padX * 2);
       height = Math.min(1 - y, r.height + padY * 2);
 
-      // Агар AI минтақаи хеле калон пешниҳод кунад (масалан аз хатои
-      // рамзкушоӣ), онро ба маркази худаш нигоҳ дошта, то ҳадди ақсои
-      // масоҳат хурд мекунем — то ҳеҷ гоҳ тамоми ҳуҷҷат пӯшида нашавад.
-      // MRZ аз ин қоида озод аст — тасмаи пурра қасдан калон аст.
+      // If AI suggests a way-too-large region (e.g. from a decoding
+      // error), we shrink it to the max area while keeping it centered
+      // on itself — so the whole document never ends up covered.
+      // MRZ is exempt from this rule — the full strip is deliberately large.
       if (width * height > AI_REGION_MAX_AREA) {
         const scale = Math.sqrt(AI_REGION_MAX_AREA / (width * height));
         const cx = x + width / 2;
@@ -159,11 +160,11 @@ function initialRegionsFor(suggested: PrivacyRegion[] | undefined): EditableRegi
   });
 }
 
-// Ҳисоби "contain"-fit — акс бояд пурра дар доираи фазои корӣ ҷой шавад,
-// на аз паҳно бурида шавад (агар дароз бошад), на аз баландӣ (агар паҳн
-// бошад). Ҳамеша аз рӯи андозаи ВОҚЕИИ ҳозираи контейнер ҳисоб мешавад
-// (на андозаи тахминӣ дар лаҳзаи боркунии акс — то ҳангоми анимацияи
-// кушодани тиреза акс бурида/берун аз тиреза набарояд).
+// "Contain"-fit calculation — the image must fit entirely within the
+// working area, not be cropped by width (if it's tall) nor by height (if
+// it's wide). Always computed from the container's ACTUAL current size
+// (not an estimated size at the moment the image loads — so the image
+// doesn't get cropped/overflow the dialog during its opening animation).
 function fitContain(naturalW: number, naturalH: number, availW: number, availH: number) {
   if (!naturalW || !naturalH || !availW || !availH) return { w: 0, h: 0 };
   let dispW = availW;
@@ -175,8 +176,8 @@ function fitContain(naturalW: number, naturalH: number, availW: number, availH: 
   return { w: dispW, h: dispH };
 }
 
-// Боркунӣ ва рамзкушоии як акс дар canvas-и корӣ (андозаи маҳдуд барои
-// суръат) — минтақаҳо бо пешниҳоди AI (агар бошад) сар мешаванд.
+// Loads and decodes a single image into a working canvas (size capped
+// for speed) — regions start out with the AI suggestions (if any).
 function decodeSlot(file: File, suggested: PrivacyRegion[] | undefined): Promise<ImageSlot> {
   return new Promise((resolve) => {
     const img = new window.Image();
@@ -208,10 +209,11 @@ function decodeSlot(file: File, suggested: PrivacyRegion[] | undefined): Promise
   });
 }
 
-// Мозаикаи возеҳ бо блокҳои қатъӣ (канораш тез, на хира) — ҳамон намуде,
-// ки бо қалам аввал месохтем. Блокҳо калонтар аз кӯшиши аввал (то 7 ҳуҷра
-// дар паҳлӯи кӯтоҳтар) — то ҳеҷ шакли ҳарф/рақам зинда намонад, вале намуди
-// "пиксели калон"-и возеҳ (на пахши сиёҳ, на хираи ҳамвор) нигоҳ дошта шавад.
+// A crisp mosaic with hard block edges (sharp, not blurry) — the same
+// look we originally produced with the pen. Blocks are larger than the
+// first attempt (up to 7 cells along the shorter side) — so no
+// letter/digit shape survives, while still keeping the clear "big pixel"
+// look (not a solid black fill, not a smooth blur).
 function redactRect(
   source: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
@@ -243,8 +245,8 @@ function redactRect(
   if (!rotationDeg) {
     ctx.drawImage(tmp, 0, 0, smallW, smallH, cx, cy, cw, ch);
   } else {
-    // Минтақаи гардонидашуда — мозаикаро дар атрофи маркази ХУДИ
-    // росткунҷа мегардонем, то бо намоиши CSS-и overlay мувофиқ ояд.
+    // Rotated region — we rotate the mosaic around the rectangle's OWN
+    // center, so it matches the overlay's CSS display.
     ctx.save();
     ctx.translate(cx + cw / 2, cy + ch / 2);
     ctx.rotate((rotationDeg * Math.PI) / 180);
@@ -263,13 +265,13 @@ export function PrivacyBlurEditor({
 }: {
   open: boolean;
   files: File[];
-  /** Минтақаҳои пешниҳодкардаи ҳамон санҷиши moderation-е, ки аллакай
-   * иҷро шудааст (privacy_regions) — ба ҳар акс якхела татбиқ мешавад.
-   * Корбар метавонад қабул кунад ё бо қалам худаш иваз/илова/нест кунад. */
+  /** Regions suggested by the moderation check that has already run
+   * (privacy_regions) — applied identically to each image.
+   * The user can accept them or replace/add/delete them with the pen. */
   initialRegions?: PrivacyRegion[];
   onConfirm: (finalFiles: File[]) => void;
-  /** Пахши "×"/Escape/click-и берун — ҳамаи аксҳо бе тасдиқ мемонанд
-   * (акси бе тасдиқ ҳаргиз ба upload намеравад). */
+  /** Pressing "×"/Escape/clicking outside — all images remain unconfirmed
+   * (an unconfirmed image never goes to upload). */
   onCancel: () => void;
 }) {
   const { t } = useLanguage();
@@ -284,23 +286,24 @@ export function PrivacyBlurEditor({
   const [ready, setReady] = useState(false);
 
   const current = slots[currentIndex] as ImageSlot | undefined;
-  // useMemo: агар `current` мавҷуд набошад, `?? []` дар ҳар render як
-  // массиви НАВ месозад — ин reference-и `render`-и useCallback (поён)-ро
-  // бе сабаб мешиканад.
+  // useMemo: if `current` doesn't exist, `?? []` would create a NEW array
+  // on every render — this would needlessly break the reference identity
+  // of `render`'s useCallback (below).
   const regions = useMemo(() => current?.regions ?? [], [current]);
   const history = current?.history ?? [[]];
   const historyIndex = current?.historyIndex ?? 0;
 
-  // Андозаи ВОҚЕИИ ҳозираи контейнер (px) — бо ResizeObserver пайгирӣ
-  // мешавад, на як бор дар лаҳзаи боркунии акс ҳисоб карда мешавад. Ин
-  // муҳим аст, зеро дар лаҳзаи кушодани тиреза (ҳангоми анимацияи
-  // zoom-in-95) андозаи воқеии он ҳанӯз муқаррар нашуда буд — бо тахмини
-  // қаблӣ (масалан 800px) акс метавонист аз тиреза калонтар ҳисоб шавад
-  // ва бурида/берун аз он намоён гардад.
+  // The container's ACTUAL current size (px) — tracked with a
+  // ResizeObserver, not computed once when the image loads. This matters
+  // because at the moment the dialog opens (during the zoom-in-95
+  // animation) its real size hadn't settled yet — with a previous guess
+  // (e.g. 800px) the image could be sized larger than the dialog and
+  // appear cropped/overflowing.
   const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
-  // Агар андозагирӣ ҳанӯз нарасида бошад (масалан фрейми аввали кушодани
-  // portal-и Dialog), ба ҷои 0 (= акси нонамоён) андозаи мулоими эҳтиётӣ
-  // мегирем — ResizeObserver баъдтар онро бо андозаи воқеӣ иваз мекунад.
+  // If measurement hasn't arrived yet (e.g. the first frame of the
+  // Dialog portal opening), instead of 0 (= invisible image) we fall
+  // back to a gentle default size — the ResizeObserver later replaces it
+  // with the real size.
   const dispSize = current?.base
     ? fitContain(
         current.base.width,
@@ -319,8 +322,8 @@ export function PrivacyBlurEditor({
       }
     };
     update();
-    // Андозагирии дуюм як фрейм баъд — агар аввалин (синхронӣ) ҳанӯз пеш аз
-    // тайёр шудани layout-и portal-и Dialog иҷро шуда бошад.
+    // A second measurement one frame later — in case the first (sync)
+    // one ran before the Dialog portal's layout was ready.
     const raf = requestAnimationFrame(update);
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -330,14 +333,13 @@ export function PrivacyBlurEditor({
     };
   }, [open]);
 
-  // Боркунӣ ва рамзкушоии ҲАМАИ аксҳо якбора, вақте ки тиреза кушода
-  // мешавад (на ба таъхир, барои ҳар акс алоҳида) — то тасдиқи ниҳоӣ
-  // ҳамеша ҳамаи аксҳоро дошта бошад, новобаста аз он ки корбар воқеан
-  // ба ҳар яки онҳо гузаштааст ё не.
+  // Loads and decodes ALL images at once, when the dialog opens (not
+  // lazily, one image at a time) — so the final confirmation always has
+  // every image, regardless of whether the user actually visited each of them.
   useEffect(() => {
-    // Бозоғозии state танҳо дар лаҳзаи ГУЗАРИШИ open → true (бо ref пайгирӣ
-    // мешавад, на бо оддии `open` дар deps) — синхронизатсия бо prop-и
-    // берунӣ, на "state аз рендер ҳисобшуда".
+    // Reset state only at the moment `open` TRANSITIONS to true (tracked
+    // with a ref, not a plain `open` in deps) — this syncs with an
+    // external prop, it's not "state computed from render".
     if (open && !wasOpenRef.current) {
       wasOpenRef.current = true;
       if (files.length === 0) return;
@@ -345,13 +347,13 @@ export function PrivacyBlurEditor({
       setReady(false);
       setCurrentIndex(0);
       setSelectedId(null);
-      // ХАТОГИИ ЁФТШУДА (талаби корбар: "чизҳое, ки бояд пинҳон шаванд,
-      // пинҳон намешаванд"): пештар ҲАМАИ минтақаҳо (аз ҳар чанд акс) ба
-      // ҲАР акс якхела татбиқ мешуданд — координатаҳои акси 1 дар акси 2
-      // ҷои нодуруст мепӯшонданд ва рақами воқеӣ кушода мемонд. Ҳоло
-      // ai-brain ба ҳар минтақа `imageIndex` медиҳад (ниг.
-      // supabase/functions/ai-brain) — ҳамин ҷо танҳо минтақаҳои ҳамон
-      // акси мушаххас ба он акс мерасанд.
+      // BUG FOUND (user report: "things that should be hidden aren't
+      // being hidden"): previously ALL regions (from however many images)
+      // were applied identically to EVERY image — image 1's coordinates
+      // covered the wrong spot on image 2, leaving the actual number
+      // exposed. Now ai-brain assigns each region an `imageIndex` (see
+      // supabase/functions/ai-brain) — here, only the regions belonging
+      // to that specific image are applied to it.
       Promise.all(
         files.map((file, i) =>
           decodeSlot(
@@ -368,13 +370,13 @@ export function PrivacyBlurEditor({
     }
   }, [open, files, initialRegions]);
 
-  // touch-action CSS-и танҳо баъзан кор мекунад (алалхусус Safari-и iOS) —
-  // бо гӯш кардани мустақими "touchmove" (passive:false) кафолат медиҳем,
-  // ки браузер ҳаргиз тамоми САҲИФАРО (сарлавҳа, тугмаҳо, ҳама чиз) pinch-
-  // zoom накунад — на танҳо дохили худи акс, зеро ангуштони корбар метавонанд
-  // берун аз он ҳам расанд (масалан ба матн ё тугма) ва браузер тамоми
-  // тирезаро калон кунад. Гӯш дар сатҳи document, то ин ҳолатро дар ҲАР
-  // ҷои тиреза дошта бошад, на танҳо дар канвас.
+  // The touch-action CSS only sometimes works (especially in iOS Safari)
+  // — by listening directly for "touchmove" (passive:false) we guarantee
+  // the browser never pinch-zooms the whole PAGE (title, buttons,
+  // everything) — not just inside the image itself, since the user's
+  // fingers can also land outside it (e.g. on text or a button) and the
+  // browser would zoom the entire dialog. Listening at the document
+  // level so this holds EVERYWHERE in the dialog, not just on the canvas.
   useEffect(() => {
     if (!open) return;
     const onTouchMove = (e: TouchEvent) => {
@@ -384,10 +386,10 @@ export function PrivacyBlurEditor({
     return () => document.removeEventListener("touchmove", onTouchMove);
   }, [open]);
 
-  // Ҳамон масъала дар desktop: pinch дар trackpad ё Ctrl+ғилдирак ҳамчун
-  // "wheel" бо ctrlKey=true меояд — браузер онро zoom-и тамоми саҳифа
-  // мешуморад. Агар ин рӯй диҳад берун аз худи акс (масалан болои матн ё
-  // тугма), боз ҳам пешгирӣ мекунем.
+  // Same issue on desktop: a trackpad pinch or Ctrl+wheel arrives as a
+  // "wheel" event with ctrlKey=true — the browser treats it as zooming
+  // the whole page. If this happens outside the image itself (e.g. over
+  // text or a button), we still prevent it.
   useEffect(() => {
     if (!open) return;
     const onWheel = (e: WheelEvent) => {
@@ -397,7 +399,7 @@ export function PrivacyBlurEditor({
     return () => document.removeEventListener("wheel", onWheel);
   }, [open]);
 
-  // Рендери canvas: акси асосии ҲОЗИРА + пахши хираи ҳар минтақаи он
+  // Renders the canvas: the CURRENT base image + the mosaic fill of each of its regions
   const render = useCallback(() => {
     const base = current?.base;
     const canvas = canvasRef.current;
@@ -487,10 +489,10 @@ export function PrivacyBlurEditor({
 
     if (role === "handle" && regionId) {
       const region = regions.find((r) => r.id === regionId);
-      // Минтақаҳои AI низ қобили таҳриранд. Пеш аз ин онҳо қулф буданд —
-      // вале координатаи модел лағжиш дорад, ва корбар хатогиро медид,
-      // аммо ислоҳ карда наметавонист: қуттии лағжида ҳамчун мозаикаи
-      // бефоида боқӣ мемонд ва худи рақам кушода.
+      // AI regions are also editable. Previously they were locked — but
+      // the model's coordinates can drift, and the user could see the
+      // problem but couldn't fix it: the drifted box remained as a
+      // useless mosaic while the actual number stayed exposed.
       if (!region) return;
       setSelectedId(regionId);
       dragRef.current = {
@@ -530,9 +532,10 @@ export function PrivacyBlurEditor({
       return;
     }
 
-    // Каши холӣ — ин ҳамеша "қалам"-и нав аст (addMode лозим нест,
-    // кашидан худи амали пешфарз аст). Танҳо минтақаи корбар қобили таҳрир
-    // ва гардиш аст — минтақаи AI ҳамеша қулф мемонад.
+    // Dragging on empty space — this is always a new "pen" stroke
+    // (no addMode needed, dragging is itself the default action). Only a
+    // user region is editable and rotatable this way — an AI region
+    // always stays locked.
     const id = `region-new-${Date.now()}`;
     const newRegion: EditableRegion = {
       id,
@@ -564,8 +567,8 @@ export function PrivacyBlurEditor({
     const pos = getRelPos(e);
 
     if (drag.kind === "new") {
-      // Роҳи қаламро васеъ мекунем (на танҳо аввал→ҳозир, балки ҳамаи
-      // нуқтаҳое, ки қалам аз онҳо гузашт) — то каши каҷ низ пурра пӯшида шавад.
+      // We expand the pen's path (not just start→current, but all the
+      // points the pen has passed through) — so a curved stroke is also fully covered.
       drag.pathMinX = Math.min(drag.pathMinX!, pos.x);
       drag.pathMinY = Math.min(drag.pathMinY!, pos.y);
       drag.pathMaxX = Math.max(drag.pathMaxX!, pos.x);
@@ -579,8 +582,8 @@ export function PrivacyBlurEditor({
     }
 
     if (drag.kind === "rotate") {
-      // Кунҷро дар фазои воқеии пиксел ҳисоб мекунем (на 0-1 нормалӣ), то
-      // агар акс мураббаъ набошад, гардиш каҷ нашавад.
+      // We compute the angle in real pixel space (not normalized 0-1),
+      // so the rotation isn't skewed when the image isn't square.
       const base = current?.base;
       const aspectW = base?.width ?? 1;
       const aspectH = base?.height ?? 1;
@@ -647,8 +650,9 @@ export function PrivacyBlurEditor({
     setSlots((prev) =>
       prev.map((s, i) => {
         if (i !== currentIndex) return s;
-        // Каши хеле хурд (пахши тасодуфӣ бе кашидан) — ба ҳадди ақал мерасонем,
-        // на бекор мекунем, то як tap-и оддӣ низ доғи дидашавандаи блур диҳад.
+        // A very small drag (an accidental tap without dragging) — we
+        // bump it up to the minimum size instead of discarding it, so
+        // even a plain tap leaves a visible blur mark.
         const cleaned = s.regions.map((r) => {
           if (r.id !== drag.regionId) return r;
           if (r.width >= MIN_SIZE && r.height >= MIN_SIZE) return r;
@@ -676,7 +680,7 @@ export function PrivacyBlurEditor({
     pushHistory(next);
   };
 
-  // Ҳар акси кориро (бо мозаикаҳояш) ба File-и ниҳоӣ табдил медиҳад.
+  // Converts each working image (with its mosaics) into a final File.
   const exportSlot = (slot: ImageSlot): Promise<File> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement("canvas");
@@ -713,8 +717,8 @@ export function PrivacyBlurEditor({
     onConfirm(finalFiles);
   };
 
-  // Дар акси охирин — тасдиқи ниҳоӣ (ҳамаи аксҳо якҷоя). Дар акси
-  // ғайри-охирин — танҳо ба акси навбатӣ мегузарад.
+  // On the last image — final confirmation (all images at once). On a
+  // non-last image — just moves to the next one.
   const isLastSlot = currentIndex >= slots.length - 1;
   const handleFooterButton = () => {
     if (isLastSlot) {
@@ -783,8 +787,8 @@ export function PrivacyBlurEditor({
                 <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
                 {regions.map((r) => {
                   const selected = r.id === selectedId;
-                  // Хатчаи канора танҳо аломати пайдоиш аст (AI ё қалам) —
-                  // ҳарду навъ баробар қобили ҳаракат, андоза ва несткунӣ.
+                  // The dashed border is just an origin marker (AI or pen)
+                  // — both kinds are equally movable, resizable, and deletable.
                   const fromAi = r.origin === "ai";
                   return (
                     <div key={r.id}>
@@ -866,7 +870,7 @@ export function PrivacyBlurEditor({
               </div>
             )}
 
-            {/* Гузариш байни аксҳо — танҳо агар зиёда аз як акс бошад */}
+            {/* Navigation between images — only if there is more than one image */}
             {ready && slots.length > 1 && (
               <>
                 <button
@@ -891,7 +895,7 @@ export function PrivacyBlurEditor({
             )}
           </div>
 
-          {/* Нуқтаҳои акс — гузариши мустақим ба ҳар акс */}
+          {/* Image dots — direct navigation to each image */}
           {ready && slots.length > 1 && (
             <div className="flex items-center justify-center gap-1.5 mt-2.5">
               {slots.map((_, i) => (

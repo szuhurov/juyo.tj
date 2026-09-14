@@ -1,7 +1,7 @@
 /**
- * Саҳифаи ҷамъиятии дархости нест кардани ҳисоб — талаботи Google Play
- * Data Safety (аз дек 2023): бе воридшавӣ/насб кардани барнома низ бояд
- * роҳи дархости нест кардани маълумот вуҷуд дошта бошад.
+ * Public page for account deletion requests — a Google Play Data Safety
+ * requirement (as of Dec 2023): there must be a way to request data
+ * deletion even without signing in to or installing the app.
  */
 import { cookies } from "next/headers";
 import type { Metadata } from "next";

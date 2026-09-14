@@ -1,8 +1,8 @@
 /**
- * Қабати HTTP — танҳо гирифтани HTML-и саҳифаҳои ошкори somon.tj
- * (robots.txt-ро риоя мекунад: /search/... манъ нест, танҳо баъзе
- * query-параметрҳо ва /mobile_search/, /profile/ ва ғ. манъ ҳастанд,
- * ки ин скрипт ба онҳо ҳаргиз намеравад).
+ * The HTTP layer — only fetches the HTML of somon.tj's public pages
+ * (respects robots.txt: /search/... is not disallowed, only some
+ * query parameters and /mobile_search/, /profile/, etc. are disallowed,
+ * and this script never goes to those).
  */
 import { config } from "./config";
 import { logger } from "./logger";

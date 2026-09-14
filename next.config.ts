@@ -17,7 +17,7 @@ const remotePatterns: RemotePattern[] = [
     port: "",
     pathname: "/**",
   },
-  // Аксҳои эълонҳои воридшуда аз somon.tj (ниг. scripts/somon-import/).
+  // Images of listings imported from somon.tj (see scripts/somon-import/).
   { protocol: "https", hostname: "files.somon.tj", port: "", pathname: "/**" },
 ];
 
@@ -54,29 +54,28 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  // Нишондиҳандаи "Compiling…"-и Next.js дар кунҷи чапи поён. Он танҳо
-  // дар режими dev вуҷуд дорад (дар production ҳаргиз намоён нест), вале
-  // дар мобилӣ маҳз болои navbar меафтад ва санҷиши намуди зоҳириро
-  // халалдор мекунад — бинобар ин хомӯш карда шуд.
+  // Next.js's "Compiling…" indicator in the bottom-left corner. It only
+  // exists in dev mode (never visible in production), but on mobile it
+  // lands right on top of the navbar and gets in the way of checking the
+  // visual appearance — hence disabled.
   devIndicators: false,
 
   experimental: {
-    // Танҳо icon-ҳои воқеан истифодашударо bundle мекунад (на тамоми
-    // китобхонаро) — lucide-react ва radix дар тамоми барнома васеъ
-    // истифода мешаванд.
+    // Only bundles the icons actually used (not the whole library) —
+    // lucide-react and radix are used extensively throughout the app.
     optimizePackageImports: ["lucide-react", "date-fns"],
-    // Пешфарзи Next.js барои саҳифаҳои dynamic (ҳамаи саҳифаҳои мо, чун
-    // cookies()/auth() истифода мешавад) = 0 сония — яъне ҲАР гузариш
-    // (ҳатто ба саҳифае, ки чанд сония пеш дидаед) маҷбуран ба сервер
-    // меравад ва loading.tsx-ро нишон медиҳад, ҳатто агар React Query
-    // маълумоти клиентиро аллакай кэш карда бошад (масалан home → qr →
-    // home). 30 сония барои гузариши воқеан зуд-зуд кофӣ буд, вале дар
-    // амал корбар аксар вақт байни ду ташриф зиёда аз 30 сония сарф
-    // мекунад (масалан як screenshot гирифтан ё чат хондан) — пас 5
-    // дақиқа (300 сония) доираи воқеан "ҳамин session" аст. Маълумот
-    // боз ҳам тоза мемонад: React Query/`items-updated` event-ҳо дар
-    // паси парда навсозӣ мекунанд, инҷо танҳо flash-и loading.tsx-ро
-    // пешгирӣ мекунад.
+    // Next.js's default for dynamic pages (all of our pages, since
+    // cookies()/auth() are used) is 0 seconds — meaning EVERY navigation
+    // (even to a page you viewed a few seconds ago) is forced back to the
+    // server and shows loading.tsx, even if React Query has already
+    // cached the client-side data (e.g. home → qr → home). 30 seconds was
+    // enough for genuinely fast back-and-forth navigation, but in
+    // practice a user often spends more than 30 seconds between two
+    // visits (e.g. taking a screenshot or reading a chat) — so 5
+    // minutes (300 seconds) is a more realistic window for "the same
+    // session". Data still stays fresh: React Query/`items-updated`
+    // events refresh it behind the scenes, this setting only prevents
+    // the loading.tsx flash.
     staleTimes: {
       dynamic: 300,
     },
@@ -85,11 +84,11 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns,
     contentDispositionType: "inline",
-    // Ҳадди Image Optimization-и Vercel (шумораи аксҳои беназир дар моҳ)
-    // тамом шуд (402 Payment Required — OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED)
-    // баъд аз воридкунии якчанд садто акси нав аз Telegram. Бе optimizer,
-    // аксҳо мустақим аз URL-и аслӣ (Supabase Storage/Clerk) фиристода
-    // мешаванд — андозаашон каме калонтар, вале ягон ҳад/пардохт лозим нест.
+    // Vercel's Image Optimization limit (number of unique images per month)
+    // ran out (402 Payment Required — OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED)
+    // after importing several hundred new images from Telegram. Without the
+    // optimizer, images are served directly from their original URL
+    // (Supabase Storage/Clerk) — slightly larger in size, but no limit/payment needed.
     unoptimized: true,
   },
 

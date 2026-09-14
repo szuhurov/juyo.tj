@@ -1,9 +1,10 @@
 /**
- * Саҳифаи пурраи огоҳиномаҳо — эълонҳои нав дар категорияҳои корбар.
- * Ҳар сатр на ба саҳифаи эълон мегузарад, балки дар ҳамин ҷо кушода
- * мешавад (аксаи эълон + пайванди "Дидани эълон"). Сатрҳои нодидашуда
- * рангашон фарқ мекунад; кушодани сатр ранги ҳамон сатрро ба ҳолати одӣ мегузаронад.
- * Нест кардан бо тугмаи сатил дар банди кушода ё интихоби гурӯҳӣ мешавад.
+ * Full notifications page — new listings in the user's categories.
+ * Each row doesn't navigate to the listing page — instead it expands
+ * right here (the listing's photo + a "View listing" link). Unread rows
+ * have a different color; expanding a row switches that row's color to normal.
+ * Deletion happens via the trash button in the expanded row, or via
+ * group selection.
  */
 "use client";
 
@@ -43,15 +44,15 @@ function NotificationRow({
   t: (key: string) => string;
 }) {
   const isExpiry = item.kind === "expiry_confirm";
-  // Вақти ҷорӣ дар effect гирифта мешавад, на дар render: ҳам `Date.now()`
-  // дар render функсияи нопок аст, ҳам вақти сервер бо вақти браузер
-  // мувофиқ намеояд ва ҳангоми hydration номутобиқатӣ медод. `null` то
-  // mount — дар ин лаҳза сатри вақт умуман нишон дода намешавад.
+  // The current time is captured in an effect, not during render: calling
+  // `Date.now()` during render is an impure function, and the server's time
+  // won't match the browser's time, causing a hydration mismatch. `null`
+  // until mount — during that time the time row isn't shown at all.
   const [nowMs, setNowMs] = useState<number | null>(null);
   useEffect(() => {
     if (!isExpiry) return;
-    // Синхронизатсия бо соати браузер (системаи берун аз React) — ҳамон
-    // намунаи `mounted` дар components/header.tsx.
+    // Sync with the browser's clock (a system outside React) — the same
+    // pattern as `mounted` in components/header.tsx.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setNowMs(Date.now());
     const id = setInterval(() => setNowMs(Date.now()), 60_000);
@@ -72,15 +73,15 @@ function NotificationRow({
 
   return (
     <div className="relative">
-      {/* Swipe-барои-нест-кардан бароварда шуд. Нест кардан ду роҳи возеҳ
-          дорад: тугмаи сатил дар банди кушода ва интихоби гурӯҳӣ. */}
+      {/* Swipe-to-delete was removed. Deletion has two clear paths:
+          the trash button in the expanded row, and group selection. */}
       <div
         className={cn(
           "relative z-10 rounded-2xl border overflow-hidden",
           selected && "ring-2 ring-emerald-500",
-          // Огоҳии мӯҳлат ранги ҳушдор мегирад — он вақти маҳдуд дорад ва
-          // бе ҷавоб эълон нест мешавад, пас набояд бо огоҳиномаҳои
-          // муқаррарӣ омехта шавад.
+          // The expiry notice gets a warning color — it has a time limit
+          // and the listing gets deleted without a response, so it
+          // shouldn't be confused with regular notifications.
           isExpiry
             ? "bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-900/60"
             : unread
@@ -149,9 +150,9 @@ function NotificationRow({
             </div>
           )}
           {isExpiry ? (
-            /* Ду интихоби возеҳ. Тугмаи «нест кардан» ба ҷои `onDeleteClick`
-               (пинҳон кардани огоҳинома) эълони ВОҚЕИРО нест мекунад — пас
-               ранги сурх ва матни он бояд ҳамин маъноро диҳад. */
+            /* Two clear choices. The "delete" button, unlike `onDeleteClick`
+               (which dismisses the notification), deletes the ACTUAL listing
+               — so its red color and text need to convey that meaning. */
             <>
               <p className="mb-3 text-xs min-[1084px]:text-sm font-medium text-zinc-600 dark:text-zinc-300 leading-relaxed">
                 {t("expiryQuestion")}
@@ -218,7 +219,7 @@ export default function NotificationsPage() {
   const { status, subscribed, subscribe, unsubscribe } = useWebPush();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectMode, setSelectMode] = useState(false);
-  // Кадом эълон ҳозир ҷавоб мефиристад — то тугмаҳо ду бор зада нашаванд.
+  // Which notification is currently sending a response — so the buttons can't be double-clicked.
   const [respondingId, setRespondingId] = useState<string | null>(null);
 
   const handleExpiryRespond = async (item: NotificationItem, action: "keep" | "delete") => {
@@ -323,11 +324,11 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {/* Рӯйхат */}
+      {/* List */}
       {loading ? (
-        // Геометрия бо NotificationRow як хел: ҳамон rounded-2xl, ҳамон
-        // p-4, ҳамон андозаи аватар ва сатрҳо — то ҳангоми омадани
-        // маълумот рӯйхат наҷаҳад.
+        // Geometry matches NotificationRow: the same rounded-2xl, the same
+        // p-4, the same avatar and row sizes — so the list doesn't jump
+        // when the data arrives.
         <div className="space-y-2">
           {[0, 1, 2, 3, 4].map((i) => (
             <div

@@ -181,14 +181,14 @@ export default function ScanPage() {
   };
 
   useEffect(() => {
-    // Огози скан як маротиба ҳангоми mount — дархости иҷозати камера.
+    // Start scanning once on mount — request camera permission.
     startScanner();
     return () => {
       if (html5QrCodeRef.current?.isScanning) {
         html5QrCodeRef.current.stop().catch(console.error);
       }
     };
-    // startScanner на мемоизатсия шудааст — маҳз якборагӣ дар mount лозим аст.
+    // startScanner isn't memoized — it's specifically needed to run once on mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

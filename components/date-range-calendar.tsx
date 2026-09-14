@@ -1,15 +1,15 @@
 /**
- * Календари интихоби бозаи сана (Аз/То) — филтри саҳифаи асосӣ.
+ * Date range picker calendar (From/To) — main page filter.
  *
- * Пештар ин ҷо `<input type="date">`-и браузерӣ буд, вале дар баъзе
- * браузерҳои мобилӣ ҳангоми зеркунӣ picker-и воқеӣ намебаромад (талаби
- * корбар). Барои рафтори якхела дар ҳама ҷо ва мутобиқат бо намуди
- * барномаи native, ин ҷо шабакаи моҳи худсохта аст (date-fns барои
- * ҳисоби рӯзҳо, бе китобхонаи иловагӣ).
+ * This used to be a browser `<input type="date">`, but on some mobile
+ * browsers tapping it didn't bring up the actual picker (user complaint).
+ * For consistent behavior everywhere and to match the look of a native
+ * app, this is a custom-built month grid instead (date-fns is used only
+ * for date calculations, no extra library).
  *
- * Номҳои моҳ/рӯзи ҳафта дар ин ҷо алоҳида нигоҳ дошта мешаванд (на дар
- * `t()`-и умумӣ) — мисли `lib/date-locales.ts`, ки барои маҳз ҳамин сабаб
- * локали тоҷикии худро алоҳида месозад.
+ * Month/weekday names are kept separately here (not in the shared `t()`)
+ * — similar to `lib/date-locales.ts`, which builds its own Tajik locale
+ * for exactly this same reason.
  */
 "use client";
 
@@ -35,9 +35,9 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/language-context";
 
 /**
- * "👈"/"👉" на SVG-анд: барномаи лоиҳа аллакай эмоҷиро ҳамчун нишона
- * истифода мебарад (масалан `CATEGORIES` дар item-service.ts), пас ин ҷо
- * низ китобхонаи нави icon лозим нест.
+ * "👈"/"👉" instead of SVGs: the project already uses emoji as icons
+ * elsewhere (e.g. `CATEGORIES` in item-service.ts), so there's no need
+ * for a new icon library here either.
  */
 const DATE_FORMAT_HINT: Record<string, string> = {
   tg: "рр.мм.сссс",
@@ -58,7 +58,7 @@ const WEEKDAY_NAMES: Record<string, string[]> = {
 };
 
 interface DateRangeCalendarProps {
-  /** yyyy-MM-dd, ё холӣ */
+  /** yyyy-MM-dd, or empty */
   from?: string;
   to?: string;
   onChange: (next: { from?: string; to?: string }) => void;
@@ -72,8 +72,8 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
   const fromDate = from && isValid(parseISO(from)) ? parseISO(from) : undefined;
   const toDate = to && isValid(parseISO(to)) ? parseISO(to) : undefined;
 
-  // Нуқтае, ки зеркунии рӯзи навбатӣ ба он мерасад — ниг. `handleDayClick`.
-  // Ҳамин мантиқ дар ин ҷо низ такрор мешавад, то "Аз"/"То" дуруст сабз шавад.
+  // Which point the next day-click will set — see `handleDayClick`.
+  // The same logic is repeated here so "From"/"To" highlight correctly.
   const target: "from" | "to" = !fromDate || (fromDate && toDate) ? "from" : "to";
 
   const [viewMonth, setViewMonth] = useState(() =>
@@ -86,13 +86,13 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
   });
 
   const handleDayClick = (day: Date) => {
-    // На нуқтаи ибтидо ҳаст, на охир — ё ҳарду аллакай интихоб шудаанд:
-    // интихоби нав аз сар мешавад.
+    // Neither a start nor an end point exists yet — or both are already
+    // selected: start a new selection.
     if (!fromDate || (fromDate && toDate)) {
       onChange({ from: format(day, "yyyy-MM-dd"), to: undefined });
       return;
     }
-    // Агар рӯзи зершуда пеш аз "Аз" бошад, ҳамчун ибтидои нав мегирем.
+    // If the clicked day is before "From", treat it as the new start.
     if (isBefore(day, fromDate)) {
       onChange({ from: format(day, "yyyy-MM-dd"), to: undefined });
       return;
@@ -101,7 +101,7 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
   };
 
   const dateFormatHint = DATE_FORMAT_HINT[locale] ?? DATE_FORMAT_HINT.en;
-  // Ҳарду аллакай интихобшуда — ишора дигар лозим нест (талаби корбар).
+  // Both are already selected — no hint needed anymore (user request).
   const isComplete = Boolean(fromDate && toDate);
 
   return (
@@ -125,8 +125,8 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
           </span>
         </div>
 
-        {/* Як ишора, на ду — самташ вобаста ба он ки навбат ба кадомаш аст.
-            Агар ҳарду аллакай интихобшуда бошанд, ишора нест мешавад. */}
+        {/* One hint, not two — its direction depends on which one is next.
+            If both are already selected, the hint disappears. */}
         {!isComplete && (
           <span aria-hidden className="text-xl">
             {target === "from" ? "👈" : "👉"}

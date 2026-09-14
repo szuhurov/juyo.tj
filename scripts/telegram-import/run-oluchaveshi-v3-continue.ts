@@ -1,12 +1,12 @@
 /**
- * Идомаи воридоти v3 — паёмҳои 101-200 (кӯҳнатар аз паёми №1380, ки борои
- * охирин дар batch-и аввал коркард шуда буд). Ҳадаф: расидан ба 100
- * элони фаъоли Ali дар маҷмӯъ (ҳозир 74 — 26 то дигар лозим).
- * Ҳамон қоидаҳо: тавсиф бетағйир, унвон аз матн+акс (1-2 калима), навъ
- * пешфарз "ёфтшуда", moderation воқеӣ, "аллакай баргардонда" ва
- * эҳтимоли паст partофта мешаванд.
+ * Continuation of the v3 import — posts 101-200 (older than post #1380, which
+ * was the last one processed in the first batch). Goal: reach 100 active
+ * listings for Ali in total (currently 74 — 26 more needed).
+ * Same rules: description unchanged, title generated from text+image (1-2
+ * words), type defaults to "found", real moderation, "already resolved" and
+ * low-confidence posts are dropped.
  *
- * Иҷро: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi-v3-continue.ts
+ * Run: node --env-file=.env.local --import tsx scripts/telegram-import/run-oluchaveshi-v3-continue.ts
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./config";
@@ -19,8 +19,8 @@ const CHANNEL = "oluchaveshi";
 const TARGET_USER_ID = "user_3H0PTIOzFRgmfVuBGBrKYR6RcFO"; // Ali Mirzoev
 const FIXED_PHONE = "111212331";
 const TARGET_NEW = 8;
-const FETCH_LIMIT = 60; // захира барои филтр
-const MAX_ID = 1342; // паёми охирине, ки дар batch-и қаблӣ коркард шуда буд — аз ин поёнтар меравем
+const FETCH_LIMIT = 60; // reserve for filtering
+const MAX_ID = 1342; // the last post processed in the previous batch — we go below this
 const MIN_CONFIDENCE = 0.6;
 const BATCH_SIZE = 8;
 const BATCH_DELAY_MS = 4000;

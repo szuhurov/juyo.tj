@@ -1,7 +1,7 @@
 /**
- * Loading UI-и худкори admin — Sidebar/Topbar (дар layout.tsx) бетаъсир
- * мемонанд, танҳо мӯҳтавои саҳифа skeleton нишон медиҳад — ниг.
- * app/(main)/loading.tsx барои шарҳи пурра.
+ * Automatic admin loading UI — the Sidebar/Topbar (in layout.tsx) stay
+ * unaffected; only the page content shows a skeleton — see
+ * app/(main)/loading.tsx for the full explanation.
  */
 import { Skeleton } from "@/components/ui/skeleton";
 

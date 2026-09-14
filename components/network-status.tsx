@@ -1,51 +1,51 @@
 "use client";
 
 /**
- * Статуси шабака (NetworkStatus).
- * Ин компонент барои санҷидани интернет хизмат мекунад.
- * Агар интернет гум шавад ё пайдо шавад, дар болои экран хабар медиҳад.
+ * Network status (NetworkStatus).
+ * This component checks the internet connection.
+ * If the internet is lost or comes back, it shows a banner at the top of the screen.
  */
 
-import { useEffect, useState } from "react"; // Хукҳои React
-import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { WifiOff } from "lucide-react"; // Иконкаи интернет
-import { cn } from "@/lib/utils"; // Барои якҷоя кардани классҳои CSS
+import { useEffect, useState } from "react"; // React hooks
+import { useLanguage } from "@/lib/language-context"; // For language translation
+import { WifiOff } from "lucide-react"; // Internet icon
+import { cn } from "@/lib/utils"; // For combining CSS classes
 
 export function NetworkStatus() {
   const { t } = useLanguage();
-  // Ҳолати интернет: idle (ором), online (пайваст), offline (қатъ)
+  // Internet status: idle, online (connected), offline (disconnected)
   const [status, setStatus] = useState<"idle" | "online" | "offline">("idle");
 
   useEffect(() => {
-    // Санҷиши аввалия: хониши ҳолати навигатор (система берун аз React) ва
-    // синхронизатсияи он ба state — маҳз барои ҳамин мавридҳо effect лозим аст.
+    // Initial check: reading the navigator's state (a system outside React)
+    // and syncing it to state — this is exactly the kind of case an effect is for.
     if (!navigator.onLine) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("offline");
     }
 
-    // Логика: Вақте интернет пайдо мешавад
+    // Logic: when the internet comes back
     const handleOnline = () => {
       setStatus("online");
-      // Пас аз 3 сония баннерро пинҳон мекунем
+      // Hide the banner after 3 seconds
       const timer = setTimeout(() => {
         setStatus("idle");
       }, 3000);
       return () => clearTimeout(timer);
     };
 
-    // Логика: Вақте интернет гум мешавад
+    // Logic: when the internet is lost
     const handleOffline = () => {
       if (!window.location.pathname.startsWith("/offline")) {
         window.location.href = "/offline.html";
       }
     };
 
-    // Слушательҳо (Listeners) барои тағйирёбии шабака
+    // Listeners for network changes
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    // Тоза кардани слушательҳо ҳангоми нест шудани компонент
+    // Clean up listeners when the component unmounts
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -64,7 +64,7 @@ export function NetworkStatus() {
       )}
     >
 
-      {/* Контейнери баннер: сурх барои офлайн, сабз барои онлайн */}
+      {/* Banner container: red for offline, green for online */}
       <div
         className={cn(
           "h-full flex items-center justify-center gap-2 px-4 shadow-md transition-colors duration-500",

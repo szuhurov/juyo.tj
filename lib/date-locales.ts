@@ -1,12 +1,12 @@
 /**
- * Созгузории забонҳо барои китобхонаи date-fns.
- * Барои дуруст нишон додани сана ва вақт бо забонҳои гуногун.
+ * Locale setup for the date-fns library.
+ * For correctly displaying dates and times in different languages.
  */
-import { ru, enUS, type Locale } from "date-fns/locale"; // Барои забонҳои русиву англисӣ
+import { ru, enUS, type Locale } from "date-fns/locale"; // For Russian and English
 
-// Омода кардани локали оддии тоҷикӣ барои date-fns. Танҳо `formatDistance`
-// амалан истифода мешавад (аз ин рӯ на ҳамаи хосиятҳои Locale пур карда
-// шудаанд) — Partial<Locale> инро дуруст ифода мекунад, на `any`.
+// Preparing a simple Tajik locale for date-fns. Only `formatDistance` is
+// actually used (which is why not all Locale properties are filled in) —
+// Partial<Locale> expresses this correctly, instead of `any`.
 const tgLocale: Partial<Locale> = {
   code: 'tg',
   formatDistance: (token, count) => {
@@ -30,7 +30,7 @@ const tgLocale: Partial<Locale> = {
     const result = format[token] || format.xMinutes;
     return result.replace('%{count}', count.toString());
   },
-  // Илова кардани дигар хосиятҳои лозимӣ агар лозим бошад
+  // Add other necessary properties if needed
 };
 
 export const getDateLocale = (locale: string) => {

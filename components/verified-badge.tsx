@@ -1,7 +1,7 @@
 import { BadgeCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/** Нишони кабуди "тасдиқшуда" — admin онро ба ҳисобҳои воқеӣ/ширкатҳо медиҳад. */
+/** Blue "verified" badge — the admin grants it to real accounts/companies. */
 export function VerifiedBadge({ className }: { className?: string }) {
   return (
     <BadgeCheck

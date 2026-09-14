@@ -28,9 +28,9 @@ export interface AdminPostDetail {
   };
 }
 
-// Шумораи эълонҳои "дар интизор" (pending) — барои badge-и сурх дар
-// admin sidebar. Пуллинг ҳар 30 сония, то admin бе refresh-и дастӣ низ
-// (масалан баъд аз push-и notify-pending-review) шумораи навро бинад.
+// Count of "pending" posts — for the red badge in the admin sidebar.
+// Polls every 30 seconds so the admin sees the updated count even without
+// a manual refresh (e.g. after a notify-pending-review push).
 export function usePendingPostsCount() {
   return useQuery({
     queryKey: [...ADMIN_KEYS.posts(), "pending-count"],

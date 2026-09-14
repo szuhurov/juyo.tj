@@ -15,11 +15,12 @@ interface ExpiryStats {
 }
 
 /**
- * Давраи ҳаёти эълонҳо: мӯҳлат + омор.
+ * Post lifecycle: expiry period + stats.
  *
- * Ҷараён пурра ХУДКОР аст — cron-и рӯзонаи 02:00 огоҳиномаро мефиристад ва
- * несткуниро иҷро мекунад. Ин панел танҳо мӯҳлатро танзим мекунад ва вазъро
- * нишон медиҳад; ҳеҷ тугмаи «фиристодан» надорад ва набояд дошта бошад.
+ * The process is fully AUTOMATIC — a daily 02:00 cron job sends the
+ * notification and performs the deletion. This panel only configures the
+ * expiry period and shows status; it has no "submit" button and should not
+ * have one.
  */
 export function PostExpiryPanel() {
   const { data: settingsData } = useAdminSettings();
@@ -38,8 +39,8 @@ export function PostExpiryPanel() {
   const savedDays = settingsData?.settings?.post_lifetime_days ?? 180;
   const [days, setDays] = useState(String(savedDays));
 
-  // Синхронизатсия аз сервер — вагарна пас аз боршавии танзимот майдон
-  // қимати кӯҳнаро нишон медод.
+  // Sync from the server — otherwise, after settings load, the field would
+  // show the stale value.
   useEffect(() => {
     setDays(String(savedDays));
   }, [savedDays]);
@@ -110,9 +111,9 @@ export function PostExpiryPanel() {
         <Stat icon={Trash2} label="Ҳамагӣ эълон" value={stats?.total ?? 0} tone="zinc" />
       </div>
 
-      {/* Ин рақам бояд ҲАМЕША 0 бошад — trigger `expires_at`-ро ҳангоми сабт
-          мегузорад. Агар аз 0 зиёд шавад, trigger кор намекунад ва он
-          эълонҳо ҳаргиз нест намешаванд. */}
+      {/* This number should ALWAYS be 0 — the trigger sets `expires_at` on
+          insert. If it's greater than 0, the trigger isn't working and those
+          posts will never be deleted. */}
       {(stats?.withoutExpiry ?? 0) > 0 && (
         <div className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 p-3">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />

@@ -11,21 +11,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-// Пештар ин ҷо ҳар дархост клиенти НАВ бо `global.headers.Authorization`
-// (header-и дастӣ) месохт. Ин усули КӮҲНА буд — Supabase онро ҳамчун
-// header-и оддӣ мегирад, на ҳамчун токени Third-Party Auth, пас баъзе
-// хизматҳо (масалан Storage) кӯшиш мекарданд онро бо масири кӯҳнаи
-// HS256 тасдиқ кунанд ва бо хатои "Key for RS256 algorithm must be
-// CryptoKey... received Uint8Array" меафтоданд — токен RS256 буд (Clerk),
-// вале тасдиқ бо сирри кӯҳна (Uint8Array) кӯшиш мешуд.
+// This used to build a NEW client on every request here with
+// `global.headers.Authorization` (a manual header). That approach was
+// OUTDATED — Supabase treats it as a plain header, not as a Third-Party
+// Auth token, so some services (e.g. Storage) would try to verify it via
+// the old HS256 path and fail with "Key for RS256 algorithm must be
+// CryptoKey... received Uint8Array" — the token was RS256 (Clerk), but
+// verification was attempted with the old secret (Uint8Array).
 //
-// ХАЛ (ҳамон намунае, ки барномаи мобилӣ аллакай истифода мебарад — ниг.
-// https://supabase.com/docs/guides/auth/third-party/clerk): опсияи
-// расмии `accessToken` supabase-js-ро — вай ин callback-ро ДАР ҲАР
-// дархост худаш дубора даъват мекунад, пас (1) template/header-и дастӣ
-// лозим нест, (2) 60-сонияи lifetime-и токен масъала намешавад (ҳамеша
-// тоза гирифта мешавад), (3) ба ҷои як client барои ҳар токен, ҳамагӣ
-// ЯК client барои тамоми сессия кофист.
+// FIX (the same pattern the mobile app already uses — see
+// https://supabase.com/docs/guides/auth/third-party/clerk): supabase-js's
+// official `accessToken` option — it calls this callback again ITSELF on
+// EVERY request, so (1) a manual template/header is not needed, (2) the
+// token's 60-second lifetime is not an issue (a fresh one is always
+// fetched), (3) instead of one client per token, just ONE client for the
+// whole session is enough.
 let cachedClerkGetToken: (() => Promise<string | null>) | null = null;
 let authedClient: SupabaseClient | null = null;
 

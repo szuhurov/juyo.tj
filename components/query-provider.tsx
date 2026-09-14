@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Провайдери React Query.
- * Ин компонент барои идоракунии кэш ва запросҳо (data fetching) дар тамоми барнома лозим аст.
+ * React Query provider.
+ * This component is needed for managing cache and data fetching throughout the app.
  */
 
 import { QueryClientProvider } from "@tanstack/react-query";

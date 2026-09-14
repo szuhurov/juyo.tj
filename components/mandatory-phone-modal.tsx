@@ -1,28 +1,28 @@
 "use client";
 
 /**
- * Модали ҳатмии рақами телефон.
- * Ин компонент намегузорад, ки корбар бе рақами телефон ва қабули шартҳо барномаро истифода барад.
+ * Mandatory phone number modal.
+ * This component doesn't let the user use the app without a phone number and accepting the terms.
  */
 
-import { useEffect, useState } from "react"; // Хукҳои React
-import { useUser, useAuth, useClerk } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар ва хуруҷ
-import { useLanguage, type Locale } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { ProfileService } from "@/lib/services/profile-service"; // Барои кор бо профили корбар
-import { createClerkSupabaseClient } from "@/lib/supabase"; // Барои пайваст шудан ба база
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // Барои тирезаҳои огоҳӣ
-import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { PhoneInput } from "@/components/phone-input"; // Майдони телефон бо рамзи давлат
-import { Label } from "@/components/ui/label"; // Компоненти тамға
-import { Phone, Loader2 } from "lucide-react"; // Иконкаҳо
-import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
-import { Checkbox } from "@/components/ui/checkbox"; // Компоненти чексбокс
-import { cn } from "@/lib/utils"; // Барои пайваст кардани стилҳо
+import { useEffect, useState } from "react"; // React hooks
+import { useUser, useAuth, useClerk } from "@clerk/nextjs"; // For getting user data and signing out
+import { useLanguage, type Locale } from "@/lib/language-context"; // For language translation
+import { ProfileService } from "@/lib/services/profile-service"; // For working with the user profile
+import { createClerkSupabaseClient } from "@/lib/supabase"; // For connecting to the database
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"; // For dialog windows
+import { Button } from "@/components/ui/button"; // Button component
+import { PhoneInput } from "@/components/phone-input"; // Phone field with country code
+import { Label } from "@/components/ui/label"; // Label component
+import { Phone, Loader2 } from "lucide-react"; // Icons
+import { toast } from "sonner"; // For short notifications
+import { Checkbox } from "@/components/ui/checkbox"; // Checkbox component
+import { cn } from "@/lib/utils"; // For combining styles
 
 export function MandatoryPhoneModal() {
   const { user, isLoaded: userLoaded } = useUser();
   const { getToken, userId } = useAuth();
-  const { signOut } = useClerk(); // Функсияи хуруҷ аз Clerk
+  const { signOut } = useClerk(); // Clerk sign-out function
   const { t, locale, setLocale } = useLanguage();
   
   const [showModal, setShowModal] = useState(false);
@@ -37,7 +37,7 @@ export function MandatoryPhoneModal() {
       try {
         const supabase = createClerkSupabaseClient(getToken);
 
-        // Маҷбур мекунем, ки маълумоти охиринро аз сервер гирад (бе кэш)
+        // Force it to fetch the latest data from the server (no cache)
         const { data, error } = await supabase
           .from('profiles')
           .select('phone, accepted_terms, accepted_at, terms_version')
@@ -46,7 +46,7 @@ export function MandatoryPhoneModal() {
 
         if (error) return;
 
-        // Агар профил нест (data === null) ё маълумоти ҳатмӣ намерасад, модалро нишон медиҳем
+        // If the profile doesn't exist (data === null) or required data is missing, show the modal
         const isMissingData = 
           !data ||
           !data.phone || 

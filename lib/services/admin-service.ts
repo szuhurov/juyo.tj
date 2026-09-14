@@ -1,5 +1,5 @@
 /**
- * Хизматрасонии клиентӣ барои панели admin — тамоми дархостҳо ба /api/admin/*.
+ * Client-side service for the admin panel — all requests go to /api/admin/*.
  */
 
 async function adminFetch<T>(url: string, init?: RequestInit): Promise<T> {

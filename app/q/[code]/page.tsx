@@ -1,15 +1,16 @@
 /**
- * Масири кӯтоҳи QR: `/q/<code>` → `/qr/<id>`.
+ * Short QR path: `/q/<code>` → `/qr/<id>`.
  *
- * Стикерҳо маҳз ба ин суроға ишора мекунанд. Кӯтоҳии он сабаби техникӣ
- * дорад, на зебоӣ: суроғаи дарози `/qr/user_3Dqp9UtdA…` (51 ҳарф) QR-и
- * 41×41 месохт ва нуқтаҳояш майда мебаромаданд. Бо рамзи 6-ҳарфа он
- * 29×29 мешавад — нуқтаҳо 41% калонтар, бе кам кардани сатҳи ҳимоя.
+ * Stickers point specifically to this address. Its shortness has a
+ * technical reason, not an aesthetic one: the long address
+ * `/qr/user_3Dqp9UtdA…` (51 characters) produced a 41×41 QR whose dots
+ * came out tiny. With a 6-character code it becomes 29×29 — dots are
+ * 41% bigger, without reducing the error-correction level.
  *
- * Ин ҷо танҳо равонакунӣ аст, то саҳифаи тамос ЯК нусха бошад: ҳар
- * тағйири он ҷо ба ҳарду масир мерасад.
+ * This is purely a redirect, so the contact page stays a SINGLE copy: any
+ * change there reaches both paths.
  *
- * Стикерҳои кӯҳна кор мекунанд — `/qr/<id>` нест нашудааст.
+ * Old stickers still work — `/qr/<id>` hasn't been removed.
  */
 import { redirect, notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
@@ -19,10 +20,10 @@ interface Props {
   params: Promise<{ code: string }>;
 }
 
-// Рамз → ID. Кэш 5 дақиқа: рамз ҳаргиз тағйир намеёбад, пас ҳар скан
-// набояд ба пойгоҳ равад. `supabaseAdmin` — пас аз миграцияи
-// 20260824020000 ин RPC низ аз anon/authenticated REVOKE шудааст (ниг.
-// шарҳи муфассал дар app/qr/[id]/page.tsx).
+// Code → ID. Cached for 5 minutes: the code never changes, so not every
+// scan should have to hit the database. `supabaseAdmin` — after
+// migration 20260824020000 this RPC was also REVOKEd from anon/authenticated
+// (see the detailed comment in app/qr/[id]/page.tsx).
 const getCachedId = unstable_cache(
   async (code: string) => {
     const { data } = await supabaseAdmin.rpc("get_id_by_qr_code", { p_code: code });
@@ -35,8 +36,8 @@ const getCachedId = unstable_cache(
 export default async function ShortQrPage({ params }: Props) {
   const { code } = await params;
 
-  // Алифбои рамз маълум аст — санҷиши шакл пеш аз ҳар дархости пойгоҳ
-  // онро аз скани тасодуфии суроғаҳои бегона ҳимоя мекунад.
+  // The code's alphabet is known — validating its shape before any database
+  // request protects it from random scans of unrelated addresses.
   if (!/^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/i.test(code)) notFound();
 
   const id = await getCachedId(code.toUpperCase());

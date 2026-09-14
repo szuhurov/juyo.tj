@@ -4,11 +4,11 @@ import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getErrorMessage } from "@/lib/error-utils";
 
-// Backfill-и партияи калон (масалан садҳо ашё) метавонад аз маҳдудияти
-// пешфарзи вақти Vercel (10с) зиёд шавад — ҳар АКС ду занги OpenAI мехоҳад.
-// Vercel худаш инро ба ҳадди тарофаи лоиҳа маҳдуд мекунад, пас гузоштани
-// қиммати баланд бехатар аст. Бо вуҷуди ин partiя маҳдуд карда мешавад
-// (ниг. DEFAULT_BATCH) — 300с барои сад ашё кифоя нест.
+// Backfilling a large batch (e.g. hundreds of items) can exceed Vercel's
+// default time limit (10s) — each image requires two OpenAI calls.
+// Vercel itself caps this at the project's plan limit, so setting a high
+// value is safe. Even so, the batch is still limited
+// (see DEFAULT_BATCH) — 300s isn't enough for a hundred items.
 export const maxDuration = 300;
 
 const DEFAULT_BATCH = 25;
@@ -28,10 +28,10 @@ interface Target {
   totalImages: number;
 }
 
-// generate-embedding акнун ҲАМАИ аксҳои ашёро коркард мекунад, пас ин ҷо
-// ашёҳо ҷамъбаст мешаванд, на аксҳои алоҳида. `rebuildAll` ашёеро низ
-// мегирад, ки аллакай вектор дорад — барои вақте ки модел ё prompt иваз
-// шуд ва векторҳои кӯҳна дигар бо вектори дархост муқоисашаванда нестанд.
+// generate-embedding now processes ALL of an item's images, so here
+// items are aggregated, not individual images. `rebuildAll` also picks up
+// items that already have a vector — for when the model or prompt has
+// changed and the old vectors are no longer comparable to the query vector.
 async function findTargets(rebuildAll: boolean): Promise<Target[]> {
   const { data, error } = await supabaseAdmin
     .from("item_images")
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
 
     let processed = 0;
     let failed = 0;
-    // Пай дар пай, на параллел — то ба квотаи OpenAI якбора зарба назанем.
+    // Sequential, not parallel — so we don't hit the OpenAI quota all at once.
     for (const target of batch) {
       const { error } = await supabaseAdmin.functions.invoke("generate-embedding", {
         body: {

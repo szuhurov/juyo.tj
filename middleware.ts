@@ -13,18 +13,19 @@ const isProtectedRoute = createRouteMatcher([
 const isAdminRoute = createRouteMatcher(["/admin(.*)", "/api/admin(.*)"]);
 
 /**
- * Rate limit барои масирҳое, ки маълумоти тамос (рақами телефон) медиҳанд:
- * `/qr/<id>`, `/q/<code>`, `/items/<id>`. Ин ҳимояи ИЛОВАГӢ аст — ҳимояи
- * АСОСӢ (пас аз миграцияи 20260824020000) дар сатҳи RLS/RPC-и Supabase
- * аст, чунки scraper метавонад бевосита ба REST/RPC-и Supabase равад, на
- * танҳо ба ин масирҳои Next.js. Ин ҷо мо танҳо "як-як тамошои ҳазорон
- * саҳифа дар лоуп"-ро сусттар мекунем.
+ * Rate limit for routes that expose contact info (phone number):
+ * `/qr/<id>`, `/q/<code>`, `/items/<id>`. This is an ADDITIONAL layer of
+ * protection — the MAIN protection (after migration 20260824020000) is
+ * at the Supabase RLS/RPC level, since a scraper can go directly to
+ * Supabase's REST/RPC endpoints, not only through these Next.js routes.
+ * Here we're only slowing down "looping through thousands of pages
+ * one by one".
  *
- * ДИҚҚАТ: дар-ҳофиза (in-memory) аст. Edge runtime-и Vercel метавонад
- * якчанд нусхаи параллел дошта бошад (минтақаҳои гуногун, cold start) —
- * пас ин 100% муҳофизат НЕСТ, балки монеаи воқеӣ барои scraper-и оддии
- * якхаттагӣ. Муҳофизати пурраи тақсимшуда бидуни Redis/Upstash (ё
- * Vercel Firewall дар сатҳи dashboard) имконнопазир аст.
+ * NOTE: this is in-memory. Vercel's Edge runtime can have several
+ * parallel instances (different regions, cold starts) — so this is NOT
+ * 100% protection, but a real obstacle for a simple single-threaded
+ * scraper. Full distributed protection isn't possible without
+ * Redis/Upstash (or Vercel Firewall at the dashboard level).
  */
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 30;
@@ -41,8 +42,8 @@ function isRateLimited(request: Request, path: string): boolean {
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
     request.headers.get("x-real-ip") ||
     "unknown";
-  // Аз рӯи ноҳияи масир (na ID) гурӯҳбандӣ мешавад, то шумориш дар байни
-  // саҳифаҳои гуногуни ҳамон навъ ҷамъ шавад (ин маҳз рафтори scraper аст).
+  // Grouped by the route's area (not the ID), so the count accumulates
+  // across different pages of the same type (this is exactly how a scraper behaves).
   const bucket = path.startsWith("/qr/") ? "qr" : path.startsWith("/q/") ? "q" : "items";
   const key = `${ip}:${bucket}`;
   const now = Date.now();

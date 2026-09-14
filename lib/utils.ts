@@ -1,39 +1,39 @@
 /**
- * Функсияҳои ёрирасон (Utilities).
- * Ин файл функсияҳои умумиро барои кор бо CSS классҳо ва дигар амалиётҳои хурд дар бар мегирад.
+ * Helper functions (Utilities).
+ * This file contains general-purpose functions for working with CSS classes and other small operations.
  */
 
-import { clsx, type ClassValue } from "clsx" // Ин барои классҳост
-import { twMerge } from "tailwind-merge" // Барои классҳои Tailwind-и зӯр
+import { clsx, type ClassValue } from "clsx" // This is for classes
+import { twMerge } from "tailwind-merge" // For resolving conflicting Tailwind classes
 
-// Функсия барои якҷоя кардани Tailwind классҳо бе мушкилӣ
+// Function for merging Tailwind classes without conflicts
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
 /**
- * Панҷараи эҳтиётӣ барои матни ҳуҷҷат: пайдарпаии 6+ рақамро нест мекунад.
+ * A safety net for document text: strips runs of 6+ digits.
  *
- * Худи AI аллакай вазифадор аст рақами шиносномаро аз матн барорад
- * (ниг. DOCUMENT_TEXT_RULES дар supabase/functions/ai-brain). Ин танҳо
- * барои он аст, ки агар модел як бор онро сар диҳад, рақами ҳуҷҷати як
- * одами воқеӣ ба саҳифаи ОММАВӢ нарасад.
+ * The AI itself is already responsible for leaving passport numbers out of
+ * the text (see DOCUMENT_TEXT_RULES in supabase/functions/ai-brain). This
+ * is only here so that if the model slips up once, a real person's
+ * document number doesn't end up on the PUBLIC page.
  *
- * Ном/насаб, сана ва рақами телефон дар формати оддӣ даст нахӯрда мемонанд —
- * онҳо ашёро шинохтанӣ мекунанд ва бояд боқӣ монанд.
+ * Name/surname, date, and phone number in plain format are left untouched —
+ * they make the item identifiable and must be preserved.
  */
 export function stripDocumentNumbers(text: string): string {
   return (
     text
-      // Силсила ҳамроҳ бо рақам ("A1234567", "AB 1234567") — вагарна ҳарфи
-      // танҳомонда мисли "№ A" боқӣ мемонад. Ҳарфи пешина бармегардонда
-      // мешавад ($1), вагарна аз "рақами 1234567" калимаи "рақами" бурида
-      // мешуд. Lookbehind истифода намешавад — Safari-и кӯҳна онро дар
-      // вақти таҳлил рад мекунад ва тамоми саҳифа меафтад.
+      // A prefix attached to the number ("A1234567", "AB 1234567") —
+      // otherwise a lone leftover letter like "№ A" would remain. The
+      // preceding character is restored ($1), otherwise "рақами 1234567"
+      // would have the word "рақами" cut off. Lookbehind is not used —
+      // old Safari rejects it at parse time and the whole page crashes.
       .replace(/(^|[^\p{L}\p{N}])[\p{L}]{0,2}[\s-]?\d{6,}/gu, "$1")
-      // Ҳолати часпида ("рақами1234567"), ки қоидаи боло намегирад.
+      // The glued-together case ("рақами1234567"), which the rule above doesn't catch.
       .replace(/\d{6,}/g, "")
-      // "№"-и бесоҳиб, ки пас аз буридани рақам монд.
+      // A leftover "№" with nothing after it, once the number has been stripped.
       .replace(/[№#]\s*(?=[,.!?;:)]|$)/g, "")
       .replace(/\s{2,}/g, " ")
       .replace(/\s+([,.!?;:])/g, "$1")

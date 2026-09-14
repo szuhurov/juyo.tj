@@ -137,8 +137,8 @@ export interface DeletedAccountSnapshot {
 export interface DeletedAccountEntry {
   id: string;
   user_id: string;
-  // Сабтҳои кӯҳна (пеш аз васеъ кардани snapshot) profile_snapshot-и ҳамвор доранд —
-  // барои ҳамин ҳарду шакл иҷозат дода мешавад, normalizeDeletedAccountSnapshot онро ҳал мекунад.
+  // Old records (before the snapshot was expanded) have a flat profile_snapshot —
+  // that's why both shapes are allowed; normalizeDeletedAccountSnapshot resolves it.
   profile_snapshot: DeletedAccountSnapshot | DeletedAccountSnapshotProfile;
   items_count: number;
   deleted_at: string;

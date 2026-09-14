@@ -1,6 +1,6 @@
 /**
- * Ин саҳифа барои илова кардани эълони нав ҳаст (Add Item Page).
- * Дар ин ҷо мо формаро ба чанд қадам (steps) ҷудо кардем, то ки истифодааш осон ва зебо бошад.
+ * This is the page for adding a new listing (Add Item Page).
+ * Here we split the form into several steps, to make it easy and pleasant to use.
  */ "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
@@ -54,10 +54,10 @@ import {
   type JustPublishedState,
 } from "@/lib/ui-constants";
 
-// Ин ду компонент (муҳаррири canvas-и privacy blur, модали камера) вазнин
-// ва танҳо дар ҳолатҳои хос (ҳуҷҷат ошкор шуд / камера кушода шуд) лозиманд
-// — next/dynamic онҳоро аз chunk-и асосии саҳифаи "Илова кардани эълон"
-// ҷудо мекунад.
+// These two components (the privacy blur canvas editor, the camera modal) are
+// heavy and only needed in specific cases (a document was detected / the
+// camera was opened) — next/dynamic splits them out of the main chunk of
+// the "Add Listing" page.
 const PrivacyBlurEditor = dynamic(() =>
   import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
 );
@@ -76,14 +76,14 @@ function AddItemForm() {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [showCameraCapture, setShowCameraCapture] = useState(false);
 
-  // Ҳолатҳои форма (Form States)
+  // Form states (Form States)
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [rewardEnabled, setRewardEnabled] = useState(false);
   const [contactTelegram, setContactTelegram] = useState(false);
   const [contactWhatsapp, setContactWhatsapp] = useState(false);
 
-  // Маълумоти эълон (Consolidated State for better stability)
+  // Listing data (Consolidated State for better stability)
   const [formData, setFormData] = useState({
     type: null as "lost" | "found" | null,
     title: "",
@@ -93,21 +93,21 @@ function AddItemForm() {
     reward: "",
     locationType: null as "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym" | null,
   });
-  // Қадами 6 ("дар куҷо?") аз рӯи интихоб маҷбурист — вале "Дигар" низ як
-  // интихоби эътиборнок аст (locationType ҳамоно null мемонад). Ин flag
-  // танҳо барои фарқ кардани "ҳанӯз интихоб накардааст" аз "Дигарро
-  // интихоб кард" лозим аст, то RadioGroup аз аввал холӣ намояд.
+  // Step 6 ("where?") requires a selection to proceed — but "Other" is also
+  // a valid choice (locationType still stays null). This flag is only needed
+  // to distinguish "hasn't chosen yet" from "chose Other", so the
+  // RadioGroup doesn't render empty from the start.
   const [locationAnswered, setLocationAnswered] = useState(false);
 
-  // Танҳо барои formData.type === "found": корбар ашёро худаш нигоҳ
-  // медорад, ё ба ҷои наздик (мағоза, дӯкон) месупорад.
+  // Only for formData.type === "found": whether the user keeps the item
+  // themselves, or hands it over to a nearby place (shop, store).
   const [foundHandoff, setFoundHandoff] = useState<"self" | "nearby" | null>(null);
   const [handoffPhoto, setHandoffPhoto] = useState<File | null>(null);
   const [handoffPreview, setHandoffPreview] = useState<string | null>(null);
 
-  // Тартиби воқеии қадамҳо аз рӯи навигатсия — қадами 3 (санҷиши AI)
-  // охирин аст, на сеюм; қадами 6 ("дар куҷо?") пас аз тафсилот ҷойгир аст.
-  // Қадами 7 (нигоҳ доштан ё супоридан) танҳо барои "found" илова мешавад.
+  // The actual navigation order of the steps — step 3 (AI check) comes
+  // last, not third; step 6 ("where?") is placed after the details step.
+  // Step 7 (keep or hand over) is only added for "found".
   const stepOrder =
     formData.type === "found" ? [1, 2, 6, 4, 7, 5, 3] : [1, 2, 6, 4, 5, 3];
   const stepIndex = stepOrder.indexOf(step);
@@ -115,19 +115,19 @@ function AddItemForm() {
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
 
-  // Муҳаррири ҳимояи махфият — на даъвати AI-и алоҳида, балки ҳамон
-  // натиҷаи final_check-и аллакай-иҷрошуда (is_document + privacy_regions)
-  // истифода мешавад. Агар ҳуҷҷат бошад, пас аз тасдиқи moderation, ин
-  // тиреза барои ҳар акс паси ҳам кушода мешавад — бо минтақаҳои
-  // пешниҳодкардаи AI, ки корбар метавонад бо қалам иваз/илова кунад.
+  // Privacy protection editor — not a separate AI call, it uses the same
+  // result from the already-run final_check (is_document + privacy_regions).
+  // If it's a document, after moderation is confirmed, this dialog opens for
+  // each image in turn — with the regions AI suggested, which the user can
+  // edit/add to with the pen tool.
   const [privacyReview, setPrivacyReview] = useState<{
     files: File[];
     regions: PrivacyRegion[];
     resolve: (result: File[] | null) => void;
   } | null>(null);
 
-  // Огоҳии бехатарӣ БАЪД аз блур (агар ҳуҷҷат бошад), вале ПЕШ аз худи
-  // нашри воқеӣ нишон дода мешавад — нашр танҳо пас аз "Фаҳмидам" оғоз мешавад.
+  // The safety notice is shown AFTER the blur step (if it's a document), but
+  // BEFORE the actual publish — publishing only starts after "Got it".
   const [safetyAck, setSafetyAck] = useState<{ resolve: (proceed: boolean) => void } | null>(null);
   const [postSuccessRedirect, setPostSuccessRedirect] = useState("/profile?tab=posts");
   const [showPhotoChoice, setShowPhotoChoice] = useState(false);
@@ -142,9 +142,9 @@ function AddItemForm() {
   const [scanMessage, setScanMessage] = useState("");
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  // Пешфарз true (то боркунии танзимот) — агар admin AI moderation-ро аз
-  // dashboard хомӯш карда бошад (масалан токени OpenAI тамом шуда бошад),
-  // эълонҳо бе санҷиши AI, бо moderation_status='pending' нашр мешаванд.
+  // Defaults to true (until settings load) — if the admin has turned off AI
+  // moderation from the dashboard (e.g. the OpenAI token ran out), listings
+  // are published without an AI check, with moderation_status='pending'.
   const [aiModerationEnabled, setAiModerationEnabled] = useState(true);
 
   useEffect(() => {
@@ -201,7 +201,7 @@ function AddItemForm() {
     };
   }, [moderationStatus, t]);
 
-  // Боргузории рақами телефон аз профил
+  // Load the phone number from the profile
   useEffect(() => {
     const fetchProfile = async () => {
       if (!userId) return;
@@ -234,7 +234,7 @@ function AddItemForm() {
     setModerationStatus("idle");
   };
 
-  // Танҳо ЯК акс барои ҷои супоридан — натиҷаи навро ҷойгузин мекунад.
+  // Only ONE photo for the handoff location — replaces the previous result with the new one.
   const setHandoffFile = (file: File | null) => {
     if (handoffPreview) URL.revokeObjectURL(handoffPreview);
     setHandoffPhoto(file);
@@ -257,20 +257,20 @@ function AddItemForm() {
     setModerationStatus("idle");
   };
 
-  // Санҷиши қадамҳо пеш аз гузаштан
+  // Validate steps before moving forward
   const nextStep = () => {
     if (step === 1) {
       if (images.length === 0) {
         toast.error(t("pickImage"));
         return;
       }
-      setStep(2); // Ба қадами интихоби намуд мегузарем
+      setStep(2); // Move to the type-selection step
     } else if (step === 2) {
       if (!formData.type) {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(6); // "Дар куҷо?" фавран пас аз навъ — ҳамон савол давом мекунад
+      setStep(6); // "Where?" comes right after the type — this continues the same question
     } else if (step === 4) {
       if (
         !formData.title.trim() ||
@@ -280,13 +280,13 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(formData.type === "found" ? 7 : 5); // Тафсилот → нигоҳ/супоридан (агар found) → тамос
+      setStep(formData.type === "found" ? 7 : 5); // Details → keep/hand over (if found) → contact
     } else if (step === 6) {
       if (!locationAnswered) {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(4); // Ҷой → тафсилот
+      setStep(4); // Location → details
     } else if (step === 7) {
       if (!foundHandoff) {
         toast.error(t("fillAllFields"));
@@ -303,9 +303,9 @@ function AddItemForm() {
   };
 
   const prevStep = () => {
-    // Талаби корбар: дар қадами 1 низ тугмаи "Бозгашт" лозим аст —
-    // пештар он ҷо тугма умуман набуд (санг. шарти `step > 1` дар
-    // footer поён), корбар роҳи баромад аз wizard-ро надошт.
+    // User request: a "Back" button is needed on step 1 too — previously
+    // there was no button there at all (see the `step > 1` condition in the
+    // footer below), so the user had no way to exit the wizard.
     if (step === 1) {
       router.push("/");
       return;
@@ -335,12 +335,13 @@ function AddItemForm() {
     let finalModerationStatus: "approved" | "pending" = "approved";
     let finalModerationResult: string | null = "Approved by AI Brain";
 
-    // Пурсиши иҷозати огоҳиномаро ҳамин ҷо оғоз мекунем (на баъд аз upload/insert) —
-    // то браузер онро ҳамчун идомаи бевоситаи клики корбар шиносад (баъзе браузерҳо
-    // permission prompt-ро пас аз чанд await рад мекунанд). Fire-and-forget аст,
-    // нашри эълонро интизор намемонад. Пеш аз prompt як izoh-и кӯтоҳ нишон медиҳем,
-    // то корбар фаҳмад ин пурсиш барои чист (ин ягона ҷои "хомӯш" буд, ки дар боз
-    // кардани notification permission ягон изоҳ надошт).
+    // We start the notification permission prompt right here (not after
+    // upload/insert) — so the browser recognizes it as a direct continuation
+    // of the user's click (some browsers reject the permission prompt after
+    // a few awaits). It's fire-and-forget, it doesn't block publishing the
+    // listing. We show a short note before the prompt, so the user
+    // understands what it's for (this was the one "silent" spot that opened
+    // the notification permission without any explanation).
     if (pushStatus === "default") {
       toast.info(t("pushPromptOnPublish"));
       subscribeToPush().catch(() => {});
@@ -349,10 +350,10 @@ function AddItemForm() {
     setStep(3);
 
     if (aiModerationEnabled) {
-      // 1. САНҶИШИ ЯГОНАИ БЕХАТАРӢ — акс (ниҳоӣ) + матн (ниҳоӣ) якҷоя, як бор,
-      // дар ҳамин ҷо, пеш аз нашр. Ин ягона нуқтаи AI moderation дар тамоми
-      // раванди илова кардани эълон аст (mode=suggest дар қадами 3 ҳеҷ гоҳ
-      // рад намекунад — танҳо тавсиф медиҳад).
+      // 1. SINGLE SAFETY CHECK — image (final) + text (final) together, once,
+      // right here, before publishing. This is the only AI moderation point
+      // in the entire add-listing flow (mode=suggest in step 3 never
+      // rejects — it only provides a description).
       setModerationStatus("checking");
       setScanMessage(
         t("ai_steps.checking_custom_text") || "AI эълони шуморо месанҷад...",
@@ -370,8 +371,8 @@ function AddItemForm() {
         finalCheckData.append("type", formData.type || "lost");
         finalCheckData.append("mode", "final_check");
 
-        // ai-brain акнун тавассути route-и худи сервер (na бевосита аз
-        // браузер ба Supabase) даъват мешавад — ниг. app/api/items/moderate.
+        // ai-brain is now called through the server's own route (not
+        // directly from the browser to Supabase) — see app/api/items/moderate.
         const checkRes = await fetch("/api/items/moderate", {
           method: "POST",
           body: finalCheckData,
@@ -394,31 +395,32 @@ function AddItemForm() {
           return;
         }
 
-        // 1.4 ТОЗАКУНИИ МАТН — ваъдаи placeholder-и "AI онро дуруст мекунад".
-        // Корбар метавонад шитобон ва бо хатоҳо нависад; AI онро ба тавсифи
-        // хонданбоб табдил медиҳад ва унвонро ба як калима кӯтоҳ мекунад.
+        // 1.4 TEXT CLEANUP — fulfills the placeholder's promise "AI will fix
+        // it". The user can write quickly and with typos; AI turns it into a
+        // readable description and shortens the title to a few words.
         //
-        // Ин занги АЛОҲИДА нест — ҳамон санҷиши final_check-и боло ҳарду
-        // натиҷаро якҷоя бармегардонад (мисли privacy_regions), пас ягон
-        // таъхири нав ба вуҷуд намеояд.
+        // This is NOT a separate call — the same final_check above returns
+        // both results together (like privacy_regions), so no new delay is
+        // introduced.
         finalTitle = checkData?.polished_title || formData.title;
         finalDescription = checkData?.polished_description || formData.description;
 
-        // 1.5 Ин натиҷаи ҳамин санҷиши боло аст (is_document + privacy_regions)
-        // — на даъвати AI-и нав. Агар ҳуҷҷат бошад, пеш аз боркунӣ корбар
-        // минтақаҳои пешниҳодкардаи AI-ро мебинад ва метавонад бо қалам
-        // иваз/илова кунад пеш аз тасдиқ. Экрани "муваффақият" танҳо БАЪД аз
-        // тамом шудани ҳамаи блурҳо нишон дода мешавад — на пеш аз он.
+        // 1.5 This is the result of the same check above (is_document +
+        // privacy_regions) — not a new AI call. If it's a document, before
+        // uploading, the user sees the regions AI suggested and can edit/add
+        // to them with the pen tool before confirming. The "success" screen
+        // is only shown AFTER all the blurring is done — not before.
         if (checkData?.is_document) {
-          // Рақами ҳуҷҷат/шиноснома аз матн нест карда мешавад, ном/насаб
-          // бетағйир мемонад. Prompt аз AI талаб мекунад, ки polished_* низ
-          // аллакай бе рақам бошад — `stripDocumentNumbers` танҳо панҷараи
-          // эҳтиётист, агар модел онро сар диҳад. Ин ҷо хато қиммати баланд
-          // дорад: рақами шиносномаи як одами воқеӣ ошкор мешавад.
+          // The document/passport number is stripped from the text, the
+          // name/surname stays unchanged. The prompt asks AI to already
+          // return polished_* without the number — `stripDocumentNumbers` is
+          // just a safety net in case the model lets it slip through. An
+          // error here is high-stakes: a real person's passport number gets
+          // exposed.
           finalTitle = stripDocumentNumbers(finalTitle);
           finalDescription = stripDocumentNumbers(finalDescription);
-          // Категория маҷбуран "Ҳуҷҷатҳо" мешавад, новобаста аз он ки корбар
-          // кадом категорияро интихоб карда буд.
+          // The category is forced to "Documents", regardless of which
+          // category the user had selected.
           finalCategory = "Documents";
 
           setModerationStatus("idle");
@@ -427,8 +429,8 @@ function AddItemForm() {
             setPrivacyReview({ files: images, regions: suggestedRegions, resolve });
           });
           if (!blurred) {
-            // Корбар аз тирезаи блур баромад — нашрро бас мекунем, то
-            // ҳуҷҷати бе мозаика ҳаргиз нашр нашавад.
+            // The user exited the blur dialog — we stop publishing, so a
+            // document without blurring is never published.
             setStep(4);
             setLoading(false);
             return;
@@ -443,20 +445,21 @@ function AddItemForm() {
         return;
       }
     } else {
-      // AI moderation аз admin dashboard хомӯш карда шудааст (масалан
-      // токени OpenAI тамом шудааст) — бе санҷиш, эълон бо ҳолати "дар
-      // интизор" нашр мешавад: танҳо дар профили худи корбар намоён аст
-      // (search_items RPC чунин филтр мекунад), то admin дастӣ тафтиш кунад.
+      // AI moderation has been turned off from the admin dashboard (e.g. the
+      // OpenAI token ran out) — without a check, the listing is published
+      // with a "pending" status: it's only visible in the user's own profile
+      // (the search_items RPC filters it that way), so the admin can review
+      // it manually.
       finalModerationStatus = "pending";
-      // ДИҚҚАТ: moderation_result ба корбар дар саҳифаи эълон намоён аст
-      // (ниг. item-details-client.tsx). Бинобар ин инҷо ҳеҷ сабабе навишта
-      // намешавад — корбар набояд бидонад, ки AI хомӯш аст; барои ӯ ин
-      // ҳамон ҳолати муқаррарии "дар ҳоли санҷиш" аст.
+      // NOTE: moderation_result is visible to the user on the listing page
+      // (see item-details-client.tsx). So no reason is written here — the
+      // user shouldn't know that AI is off; for them it's just the normal
+      // "under review" state.
       finalModerationResult = null;
     }
 
-    // 1.6 Пеш аз худи нашр маслиҳати бехатариро нишон медиҳем — нашр
-    // танҳо пас аз "Фаҳмидам" оғоз мешавад.
+    // 1.6 We show the safety notice right before publishing — publishing
+    // only starts after "Got it".
     setModerationStatus("idle");
     const proceed = await new Promise<boolean>((resolve) => {
       setSafetyAck({ resolve });
@@ -467,37 +470,36 @@ function AddItemForm() {
       return;
     }
 
-    // 2. НАШРИ ЭЪЛОН — санҷиши AI ва тасдиқҳои корбар аллакай тамом
-    // шуданд. Фавран экрани муваффақиятро нишон медиҳем — боркунии аксҳо
-    // ва сабти воқеӣ дар база дар паси парда идома меёбанд, то корбар
-    // мунтазир намонад. Агар дар паси парда хатогӣ рӯй диҳад, огоҳии toast
-    // мебарояд (экран ба ҳолати "ноком" бознамегардад, зеро корбар аллакай
-    // "муваффақият"-ро дидааст).
+    // 2. PUBLISHING THE LISTING — the AI check and user confirmations are
+    // already done. We show the success screen immediately — uploading the
+    // images and the actual database write continue in the background, so
+    // the user doesn't have to wait. If an error occurs in the background, a
+    // toast warning appears (the screen doesn't revert to a "failed" state,
+    // since the user has already seen "success").
     setPostSuccessRedirect("/profile?tab=posts");
     setModerationStatus("passed");
 
-    // "Тамом" интизор намешавад — корбар метавонад аллакай дар саҳифаи
-    // профил бошад, вақте ки сабт тамом мешавад. Пас ҳам event (агар
-    // рӯйхат кушода бошад), ҳам sessionStorage (агар баъдтар кушода
-    // шавад) лозим аст.
+    // "Done" isn't awaited — the user may already be on the profile page by
+    // the time the write finishes. So we need both the event (if the list is
+    // open) and sessionStorage (if it's opened later).
     //
-    // `startedAt` ҲОЗИР гирифта мешавад, на баъд аз сабт: боркунии аксҳо
-    // 3-5 сония мегирад ва бе ин ҳисобкунак дар корт аз нав аз 10 сар
-    // мешуд, дар ҳоле ки санҷиш аллакай оғоз шудааст.
+    // `startedAt` is captured NOW, not after saving: uploading the images
+    // takes 3-5 seconds, and without this counter the card's timer would
+    // restart from 10 even though the check had already begun.
     const startedAt = Date.now();
     const announce = (id?: string) => {
       const state: JustPublishedState = { id, startedAt };
       try {
         sessionStorage.setItem(JUST_PUBLISHED_KEY, JSON.stringify(state));
       } catch {
-        // Safari-и private mode — event худаш кифоя аст.
+        // Safari private mode — the event alone is enough.
       }
       window.dispatchEvent(
         new CustomEvent(JUST_PUBLISHED_EVENT, { detail: state }),
       );
     };
 
-    // Фавран, пеш аз боркунӣ — то ҳисобкунак аз ҳамин лаҳза ҳисоб шавад.
+    // Immediately, before uploading — so the counter starts from this exact moment.
     announce();
 
     const announcePublished = (id: string) => {
@@ -572,7 +574,7 @@ function AddItemForm() {
         .single();
       if (itemError) throw itemError;
 
-      // Эълони беакс — аксҳо интизор карда намешаванд.
+      // A photo-less listing — no images to wait for.
       if (imageUrls.length === 0) announcePublished(item.id);
 
       if (imageUrls.length > 0) {
@@ -586,31 +588,33 @@ function AddItemForm() {
           .from("item_images")
           .insert(imageRecords);
 
-        // Аз ҳамин лаҳза эълон бо аксаш дар рӯйхат намоён аст. Сохтани
-        // вектор (поён) дар паси парда мемонад ва рӯйхатро нигоҳ намедорад.
+        // From this moment, the listing with its image is visible in the
+        // list. Building the vector (below) stays in the background and
+        // doesn't hold up the list.
         announcePublished(item.id);
 
         if (imagesError) {
           console.error("DATABASE ERROR:", imagesError.message);
         } else {
-          // Vector-и visual-search бояд гум нашавад — на fire-and-forget.
-          // Мунтазир мешавем ва як бор такрор мекунем, агар кӯшиши аввал
-          // ноком шавад; агар боз ҳам ноком шавад, эълон аллакай нашр
-          // шудааст (маводи АСОСӢ дар хатар нест), танҳо ҷустуҷӯи аксӣ
-          // барои ин ашё кор намекунад — корбарро бо огоҳии мулоим хабар медиҳем.
-          // МУҲИМ: вектор бояд аз АКС сохта шавад, на аз матни хом.
+          // The visual-search vector must not be lost — this is not
+          // fire-and-forget. We wait and retry once if the first attempt
+          // fails; if it still fails, the listing is already published (the
+          // MAIN content isn't at risk), only visual search won't work for
+          // this item — we notify the user with a gentle warning.
+          // IMPORTANT: the vector must be built from the IMAGE, not from the
+          // raw text.
           //
-          // visual-search дархостро ҳамчун "forensic description"-и англисӣ
-          // аз акс месозад (ниг. supabase/functions/visual-search). Агар
-          // вектори захирашуда аз `title + description`-и кӯтоҳи тоҷикӣ
-          // сохта шавад, ду вектор дар фазоҳои тамоман гуногун меафтанд —
-          // ашёи дуруст ҳаргиз ёфт намешавад, ба ҷои он ашёи тасодуфӣ
-          // мебарояд.
+          // visual-search builds its query as an English "forensic
+          // description" from the image (see
+          // supabase/functions/visual-search). If the stored vector were
+          // built from a short Tajik `title + description`, the two vectors
+          // would land in completely different spaces — the correct item
+          // would never be found, and random items would come up instead.
           //
-          // generate-embedding аксҳоро ХУДАШ аз item_images мегирад (ҳамаро,
-          // на танҳо аввалинро), пас ин ҷо `image_url` фиристода намешавад.
-          // `text` ба модели vision ҳамчун контекст дода мешавад, то ба
-          // ҳамон тавсифи англисӣ ҳамроҳ гардад.
+          // generate-embedding fetches the images ITSELF from item_images
+          // (all of them, not just the first), so `image_url` isn't sent
+          // here. `text` is given to the vision model as context, so it gets
+          // combined with that same English description.
           let embeddingOk = false;
           for (let attempt = 0; attempt < 2 && !embeddingOk; attempt++) {
             const { error: embError } = await supabase.functions.invoke(
@@ -653,26 +657,26 @@ function AddItemForm() {
     setLoading(false);
   };
 
-  // МИҚЁСИ КУНҶҲО — ҳамин панҷро истифода баред, қимати нав насозед.
-  // Пештар дар ин саҳифа 9 радиуси гуногун буд, аз ҷумла `rounded-[1.5rem]`
-  // ва `rounded-3xl`, ки АЙНАН як қиматанд (24px), ва ду dialog-и якхела бо
-  // кунҷи гуногун. Маҳз ҳамин парокандагӣ ба чашм мезанад.
+  // CORNER RADIUS SCALE — use these five values, don't invent new ones.
+  // This page previously had 9 different radii, including `rounded-[1.5rem]`
+  // and `rounded-3xl`, which are the EXACT same value (24px), plus two
+  // identical dialogs with different corners. This inconsistency was exactly
+  // what stood out.
   //
-  //   rounded-md    6px   checkbox ва нишонаҳои хеле хурд
-  //   rounded-xl   12px   input, select, иконкаҳои 32–40px, тугмаи пӯшидан
-  //   rounded-2xl  16px   тугмаҳо, кортҳо, иконкаҳои ~64px
-  //   rounded-3xl  24px   dialog, панелҳои калон, иконкаҳои ~80px+
-  //   rounded-full        pill ва доираҳо
+  //   rounded-md    6px   checkbox and very small indicators
+  //   rounded-xl   12px   input, select, 32–40px icons, close button
+  //   rounded-2xl  16px   buttons, cards, ~64px icons
+  //   rounded-3xl  24px   dialog, large panels, ~80px+ icons
+  //   rounded-full        pill shapes and circles
   return (
     <div className="mx-auto w-full max-w-7xl px-0 sm:px-0 py-0 sm:py-0 h-[calc(100dvh-128px)] sm:h-[calc(100dvh-64px)] flex flex-col">
       <Card className="flex-1 rounded-none overflow-hidden border-none shadow-none flex flex-col bg-canvas">
         {/* Step Indicator */}
-        {/* Тартиби воқеии қадамҳо аз рӯи навигатсия 1→2→3→4→5 НЕСТ — қадами
-            3 (санҷиши AI) охирин аст, танҳо ҳангоми нашр (onFinalSubmit)
-            нишон дода мешавад: 1 → 2 → 4 → 5 → 3. Муқоисаи рақамии оддии
-            step > i+1 нодуруст буд — вақте ки step=3 мешуд, қадамҳои 4 ва 5
-            (ки аллакай гузашта буданд) хато холӣ (khokistarranga) нишон
-            дода мешуданд. */}
+        {/* The actual navigation order of the steps is NOT 1→2→3→4→5 — step
+            3 (AI check) is last, shown only when publishing (onFinalSubmit):
+            1 → 2 → 4 → 5 → 3. A simple numeric comparison step > i+1 was
+            wrong — once step=3, steps 4 and 5 (which had already passed)
+            were incorrectly shown as empty (gray). */}
         <div className="w-full flex h-1.5 gap-1 bg-white dark:bg-zinc-800 overflow-hidden shrink-0">
           {stepOrder.map((s, i) => (
             <div
@@ -863,7 +867,7 @@ function AddItemForm() {
             </div>
           )}
 
-          {/* Step 6: Ҷои гумшудан/ёфтшудан (ихтиёрӣ) */}
+          {/* Step 6: Location of loss/finding (optional) */}
           {step === 6 && (
             <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1">
@@ -924,7 +928,7 @@ function AddItemForm() {
             </div>
           )}
 
-          {/* Step 7: Нигоҳ медорӣ ё месупорӣ? — танҳо барои formData.type === "found" */}
+          {/* Step 7: Keep it or hand it over? — only for formData.type === "found" */}
           {step === 7 && (
             <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1">
@@ -1066,11 +1070,11 @@ function AddItemForm() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        // Санҷиши ниҳоӣ акс+матнро якҷоя месанҷад — агар
-                        // сабаби рад акс бошад, корбарро ба қадами акс (1)
-                        // бармегардонем ва аксҳои радшударо тоза мекунем, то
-                        // акси наверо интихоб кунад; агар танҳо матн бошад,
-                        // ба қадами тавсиф (4) бармегардонем.
+                        // The final check evaluates image+text together — if
+                        // the rejection reason is the image, we send the user
+                        // back to the photo step (1) and clear the rejected
+                        // images, so they can pick new ones; if it's only the
+                        // text, we send them back to the description step (4).
                         if (
                           moderationViolationSource === "image" ||
                           moderationViolationSource === "both"
@@ -1095,9 +1099,9 @@ function AddItemForm() {
                 </div>
               )}
 
-              {/* Passed State UI — то дар фосилаи байни қабули AI ва
-                  нашри ниҳоӣ (боркунии аксҳо, сабти база) экран холӣ/сафед
-                  нанамояд. */}
+              {/* Passed State UI — so the screen doesn't go blank/white
+                  during the gap between AI approval and the final publish
+                  (uploading images, writing to the database). */}
               {moderationStatus === "passed" && (
                 <div className="space-y-6 max-w-sm mx-auto w-full">
                   <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
@@ -1120,8 +1124,8 @@ function AddItemForm() {
                 </div>
               )}
 
-              {/* Idle — вақте ки корбар дар тирезаи блур аст (privacyReview
-                  боз аст) ё AI натиҷаро аллакай пеш аз боркунии ниҳоӣ дод. */}
+              {/* Idle — when the user is in the blur dialog (privacyReview is
+                  open) or AI has already returned a result before the final upload. */}
               {moderationStatus === "idle" && (
                 <div className="space-y-4">
                   <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-3xl bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
@@ -1141,9 +1145,10 @@ function AddItemForm() {
                 </Label>
                 <Input
                   placeholder={t("titleLabel")}
-                  // placeholder:font-medium — худи унвон ғафс мемонад, вале
-                  // placeholder бо ҳамон вазни placeholder-и тавсиф, вагарна
-                  // ғафсӣ онро серангтар нишон медиҳад.
+                  // placeholder:font-medium — the title itself stays bold,
+                  // but the placeholder matches the same weight as the
+                  // description's placeholder, otherwise the boldness makes
+                  // it look too prominent.
                   className="rounded-xl h-11 min-[1084px]:h-12 bg-white dark:bg-zinc-800 border-none text-sm min-[1084px]:text-base font-bold placeholder:font-medium shadow-none"
                   value={formData.title}
                   onChange={(e) =>
@@ -1200,10 +1205,10 @@ function AddItemForm() {
                   {t("description")}
                 </Label>
                 <Textarea
-                  // Ваъдаи ин placeholder воқеӣ аст: вақте AI фаъол бошад,
-                  // final_check матнро тоза мекунад (polished_description).
-                  // Вақте хомӯш бошад, ҳеҷ кас онро дуруст намекунад — пас
-                  // аз корбар матни пурраро мепурсем.
+                  // This placeholder's promise is real: when AI is enabled,
+                  // final_check cleans up the text (polished_description).
+                  // When it's off, no one fixes it — so we ask the user for
+                  // the full text instead.
                   placeholder={
                     aiModerationEnabled
                       ? t("descPlaceholderAi")
@@ -1412,7 +1417,7 @@ function AddItemForm() {
         </div>
       </Card>
 
-      {/* Safety Advice Modal — баъд аз блур (агар ҳуҷҷат бошад), пеш аз худи нашр */}
+      {/* Safety Advice Modal — after the blur step (if it's a document), before the actual publish */}
       <Dialog
         open={!!safetyAck}
         onOpenChange={(v) => {

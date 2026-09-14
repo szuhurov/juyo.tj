@@ -1,8 +1,8 @@
 /**
- * Саҳифаи ҷамъиятии профил (QR Scan View - Server Side)
+ * Public profile page (QR Scan View - Server Side)
  *
- * Ин саҳифа бо истифода аз Server Components сохта шудааст, то ки
- * маълумот лаҳзавӣ (бе лоудинги сиёҳ) нишон дода шавад.
+ * This page is built using Server Components so that
+ * the data displays instantly (without a blank loading state).
  */
 
 import { Metadata } from "next";
@@ -25,20 +25,20 @@ interface Props {
   searchParams: Promise<{ lang?: string }>;
 }
 
-// get_qr_contact — RPC-и махдуд (на ҷадвали profiles мустақим), то ки танҳо
-// як профили мушаххас (бо id) намоён шавад. Пештар ин ду бор фетч мешуд
-// (як бор дар generateMetadata тавассути ItemService.getItemDetails-и
-// вазнин — item+images+profile, боз як бор дар худи саҳифа тавассути
-// ҳамин RPC) ва бе кэш — ҳар гузариш ба саҳифа 400-800ms мегирифт. Ҳоло
-// як RPC-и сабук, кэшшуда (10 сония) — ҳам generateMetadata, ҳам саҳифа
-// аз ҳамин истифода мебаранд. increment_qr_scan_count АЗ ин кэш берун
-// аст (поён), чунки ҳар кушоиши воқеӣ бояд ҳамчун scan ҳисоб шавад.
+// get_qr_contact — a restricted RPC (not the profiles table directly), so that
+// only one specific profile (by id) is exposed. It used to be fetched twice
+// (once in generateMetadata via the heavy ItemService.getItemDetails —
+// item+images+profile, and again on the page itself via this same RPC)
+// with no cache — every page visit took 400-800ms. Now it's a
+// single lightweight, cached (10 seconds) RPC — both generateMetadata and
+// the page use this same call. increment_qr_scan_count is deliberately
+// OUTSIDE this cache (below), because every real page open must count as a scan.
 //
-// `supabaseAdmin` (на анони ошкоро) қасдан: пас аз миграцияи
-// 20260824020000 ин RPC-ҳо аз anon/authenticated REVOKE шудаанд — то
-// касе бо калиди ошкорои `NEXT_PUBLIC_SUPABASE_ANON_KEY` мустақим
-// (бе гузаштан аз ин саҳифа) рақами ҳазорон корбарро паси ҳам талаб
-// карда натавонад. Рафтори намоён барои корбар айнан ҳамин мемонад.
+// `supabaseAdmin` (not the public anon key) is deliberate: after
+// migration 20260824020000 these RPCs were REVOKEd from anon/authenticated —
+// so no one can use the public `NEXT_PUBLIC_SUPABASE_ANON_KEY` to
+// directly (bypassing this page) request thousands of users' phone
+// numbers one after another. The visible behavior for the user stays exactly the same.
 const getCachedQrContact = unstable_cache(
   async (id: string) => {
     const { data, error } = await supabaseAdmin.rpc("get_qr_contact", { p_id: id });
@@ -81,7 +81,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
   const { lang } = await searchParams;
   const cookieStore = await cookies();
 
-  // Афзалият: 1. Параметри URL (?lang=) 2. Cookie 3. Дефолт (tg)
+  // Priority: 1. URL parameter (?lang=) 2. Cookie 3. Default (tg)
   const locale = lang || cookieStore.get("juyo-locale")?.value || "tg";
   const t = (key: string) => {
     const value = translations[locale]?.[key];
@@ -94,14 +94,14 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  // Ҳар кушоиши саҳифаи фаъол як scan аст (касе QR-и чопшударо scan карда,
-  // ин ҷо расидааст). Дар Server Component await лозим аст — баъд аз ба охир
-  // расидани render, кори "background" кафолат надорад, ки иҷро шавад.
+  // Every open of an active page is a scan (someone scanned the printed QR
+  // and landed here). In a Server Component, await is required — after
+  // rendering finishes, there's no guarantee that "background" work will run.
   if (profile.is_qr_active) {
     await supabaseAdmin.rpc("increment_qr_scan_count", { p_id: id });
   }
 
-  // Агар QR ҒАЙРИФАЪОЛ БОШАД
+  // If the QR is INACTIVE
   if (!profile.is_qr_active) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center bg-white dark:bg-zinc-950">
@@ -123,24 +123,24 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     );
   }
 
-  // 5 рақами охирро бо нуқта мепӯшонад — пайванди воқеӣ (tel:/wa.me/t.me)
-  // пурра мемонад, танҳо матни РӮИ ЭКРАН барои scraper хондашаванда намемонад.
+  // Masks the last 5 digits with dots — the actual link (tel:/wa.me/t.me)
+  // stays complete, only the text ON SCREEN becomes unreadable to scrapers.
   const maskTail = (raw: string) => (raw.length > 5 ? raw.slice(0, -5) + "....." : raw);
 
-  // `profile.phone`/`secondary_phone` дар пойгоҳ рамзи кишвар (992)
-  // надоранд — фақат он илова мешавад, боқимонда РАҚАМ (бо "00"-и
-  // ибтидоияш низ) айнан ҳамон тавре ки сабт шудааст мемонад.
+  // `profile.phone`/`secondary_phone` don't have the country code (992)
+  // in the database — only that is added; the rest of the NUMBER (including
+  // its leading "00" if any) stays exactly as it was stored.
   const toE164 = (raw: string) => {
     const digits = raw.replace(/\D/g, "");
     return digits.startsWith("992") ? `+${digits}` : `+992${digits}`;
   };
 
-  // Танҳо шабакаҳое, ки соҳиб пур кардааст ВА пайвандашон эътибор дорад.
-  // `socialHref` барои матни нодуруст `null` бармегардонад — беҳтар аст
-  // нишона набошад, назар ба он ки ба саҳифаи вуҷуднадошта барад.
-  // `display` — қимати воқеӣ (@ном ё +рақам), то дар паҳлуи иконаи ҳар
-  // шабака чӣ будани он намоён бошад, на танҳо номи шабака. Барои
-  // рақамҳо (WhatsApp ҳамеша, Telegram агар рақам бошад) ниқоб мехӯрад.
+  // Only networks the owner has filled in AND whose link is valid.
+  // `socialHref` returns `null` for invalid text — better to show no
+  // icon than link to a page that doesn't exist.
+  // `display` — the actual value (@handle or +number), so next to each
+  // network's icon it's visible what it actually is, not just the network's name.
+  // For numbers (WhatsApp always, Telegram if it's a number) it gets masked.
   const socialLinks = SOCIALS.map((s) => {
     const raw = (profile[s.key] ?? "").trim();
     const isPhoneLike = s.key === "whatsapp" || (s.key === "telegram" && /^\d+$/.test(raw));
@@ -157,10 +157,10 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
   const phoneShown = phoneIntl ? maskTail(phoneIntl) : "";
   const secondaryPhoneShown = secondaryPhoneIntl ? maskTail(secondaryPhoneIntl) : "";
 
-  // Агар QR ФАЪОЛ БОШАД - САҲИФАИ ПУРРА (як экран, бе скролл)
+  // If the QR is ACTIVE - FULL PAGE (one screen, no scrolling)
   return (
     <div className="h-dvh w-full overflow-hidden flex flex-col p-5 sm:p-8">
-      {/* Селектори забон */}
+      {/* Language selector */}
       <div className="flex items-center justify-center mb-4 sm:mb-6">
         <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1 border border-zinc-200 dark:border-zinc-800">
           {[
@@ -184,7 +184,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      {/* Аватар (калон, дар марказ) + ном дар зери он */}
+      {/* Avatar (large, centered) + name below it */}
       <div className="flex flex-col items-center text-center shrink-0">
         <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 shadow-lg relative">
           {profile.avatar_url ? (
@@ -210,9 +210,9 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         </p>
       </div>
 
-      {/* Рӯйхат: шабакаҳои иҷтимоӣ (иконаи брендӣ + ном/рақам) ва тугмаҳои
-          занг — ҳама ҳамчун сатрҳои як рӯйхат, канори каме гирд (аз
-          намунаи мисол камтар). */}
+      {/* List: social networks (brand icon + name/number) and call
+          buttons — all as rows of a single list, with slightly rounded corners
+          (less than the reference example). */}
       <div className="min-h-0 overflow-y-auto flex flex-col gap-2 mt-5 sm:mt-6">
         {profile.phone ? (
           <a
@@ -265,8 +265,8 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         ))}
       </div>
 
-      {/* Ду spacer-и flex-1-и баробар — тугма дар маркази фазои холии
-          боқимонда меистад, то фосила аз рӯйхат ва то поёни экран баробар шавад. */}
+      {/* Two equal flex-1 spacers — the button sits centered in the
+          remaining empty space, so the gap from the list and to the bottom of the screen is equal. */}
       <div className="flex-1" />
       <div className="shrink-0">
         <QrSaveContactButton

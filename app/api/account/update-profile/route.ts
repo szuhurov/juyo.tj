@@ -4,14 +4,14 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
- * Тағйири ном, насаб ва рақамҳои телефон. Номро дар Clerk тавассути
- * Backend API (бо secret key) иваз мекунад — на тавассути user.update()-и
- * клиент, зеро баъзе ҳисобҳо (масалан бо Google, ки ном аз IdP меояд)
- * ба "first_name is not a valid parameter for this request" ё
- * reverification дучор мешаванд. Дархости сервер-ба-сервер ин
- * маҳдудиятҳоро надорад. Агар навсозии Clerk бо ягон сабаб ноком шавад,
- * навсозии Supabase (манбаи асосии барнома) ҳамоно идома меёбад, то
- * корбар ҳаргиз ин хатогиро набинад.
+ * Updates the first name, last name, and phone numbers. Changes the name
+ * in Clerk via the backend API (with the secret key) — not via the
+ * client's user.update(), because some accounts (for example with Google,
+ * where the name comes from the IdP) hit "first_name is not a valid
+ * parameter for this request" or reverification. A server-to-server
+ * request doesn't have these restrictions. If the Clerk update fails for
+ * any reason, the Supabase update (the app's primary data source) still
+ * proceeds, so the user never sees this error.
  */
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
@@ -23,11 +23,12 @@ export async function POST(req: NextRequest) {
   const { firstName, lastName, phone, secondaryPhone } = body;
 
   /**
-   * Шабакаҳои иҷтимоӣ — ихтиёрӣ ва аз клиент меоянд, пас ҳар кадомро
-   * ин ҷо маҳдуд мекунем: танҳо сатр, буридашуда, ва бо ҳадди дарозӣ
-   * ки ба `check`-и миграция мувофиқ аст. Майдони НАФИРИСТОДАШУДА
-   * тамоман ба `update` дохил намешавад, вагарна `undefined` қимати
-   * мавҷударо мешуст. Сатри холӣ маънои «тоза кун» дорад → `null`.
+   * Social networks — optional and coming from the client, so we
+   * constrain each one here: string only, trimmed, and capped at a
+   * length that matches the migration's `check`. A field that was NOT
+   * SENT is not included in `update` at all, otherwise `undefined` would
+   * wipe out the existing value. An empty string means "clear it" →
+   * `null`.
    */
   const MAX = { telegram: 64, instagram: 64, whatsapp: 24, facebook: 64 } as const;
   const socials: Record<string, string | null> = {};

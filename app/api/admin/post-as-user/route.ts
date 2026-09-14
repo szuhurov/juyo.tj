@@ -1,9 +1,9 @@
 /**
- * Танҳо admin: илова кардани эълон аз номи ягон корбари дигар, бе гузаштан
- * аз санҷиши AI (ai-brain) — барои ҳолатҳое ки корбар худаш имкони
- * истифодаи wizard надорад (масалан тавассути Telegram/Instagram ба admin
- * менависад). Ҳимояи махфият тавассути мозаикаи ДАСТИИ admin (пеш аз
- * фиристодан ба ин route, дар клиент) таъмин мешавад — на AI.
+ * Admin only: add a post on behalf of any other user, without going
+ * through AI moderation (ai-brain) — for cases where the user themselves
+ * can't use the wizard (for example, they write to the admin via
+ * Telegram/Instagram). Privacy protection is provided via the admin's
+ * MANUAL blurring (on the client, before sending to this route) — not AI.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
@@ -85,9 +85,10 @@ export async function POST(req: NextRequest) {
       if (imgError) {
         console.error("item_images навишта нашуд:", imgError.message);
       } else {
-        // Бе ин занг эълони admin-сабтшуда ҳеҷ вектор намегирифт ва дар
-        // ҷустуҷӯи аксӣ тамоман пайдо намешуд — ҳол он ки маҳз ҳамин
-        // эълонҳо аз Telegram/Instagram меоянд.
+        // Without this call, a post created by admin would never get a
+        // vector and would never show up in semantic search at all — even
+        // though these are exactly the posts that come from
+        // Telegram/Instagram.
         const { error: embError } = await supabaseAdmin.functions.invoke("generate-embedding", {
           body: { item_id: item.id, text: `${title} ${description}` },
         });

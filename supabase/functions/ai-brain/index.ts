@@ -97,15 +97,15 @@ Deno.serve(async (req) => {
       return encodeBase64(arrayBuffer);
     }));
 
-    // ХАТОГИИ ЁФТШУДА (талаби корбар: "чизҳое, ки бояд пинҳон шаванд,
-    // пинҳон намешаванд"): вақте якчанд акс якҷоя фиристода мешаванд,
-    // модел ФАҚАТ ЯК privacy_regions бармегардонд — бе нишон додани он
-    // ки минтақа ба КАДОМ акс тааллуқ дорад. Клиент ҳамон як маҷмӯи
-    // минтақаҳоро ба ҲАМАИ аксҳо якхела татбиқ мекард — дар аксе, ки
-    // рақами ҳуҷҷат дар ҷои дигар буд (ё тамоман набуд), координатаҳо
-    // нодуруст меафтоданд ва рақам кушода мемонд. Ҳал: пеш аз ҳар акс
-    // барчаспи матнии индексаш ("Image N:") гузошта мешавад, то модел
-    // дар privacy_regions майдони image_index-ро дуруст пур кунад.
+    // BUG FOUND (user complaint: "things that should be hidden aren't
+    // being hidden"): when several images are sent together, the model
+    // returned only ONE privacy_regions set — without indicating which
+    // image each region belonged to. The client applied that same single
+    // set of regions identically to ALL images — on an image where the
+    // document number was in a different spot (or absent entirely), the
+    // coordinates landed wrong and the number stayed exposed. Fix: an
+    // index label ("Image N:") is placed before each image, so the model
+    // correctly fills in the image_index field in privacy_regions.
     const contentPayload: unknown[] = [];
     base64Images.forEach((b64, i) => {
       contentPayload.push({ type: "text", text: `Image ${i}:` });
@@ -323,9 +323,9 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
               const y = Math.max(0, Math.min(1, r.y));
               return {
                 label: typeof r.label === "string" ? r.label : "sensitive",
-                // Пеш аз ин image_index набуд — минтақаҳои акси якум ба
-                // ХАМАИ аксҳо якхела татбиқ мешуданд (ниг. шарҳи contentPayload
-                // дар боло). Пешфарз 0, агар модел ин майдонро надиҳад.
+                // Previously there was no image_index — the first image's regions
+                // were applied identically to ALL images (see the contentPayload
+                // comment above). Defaults to 0 if the model doesn't provide this field.
                 imageIndex: typeof r.image_index === "number" && r.image_index >= 0
                   ? Math.round(r.image_index)
                   : 0,
@@ -338,12 +338,12 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
         : [];
       const isDocument = !!result.is_document;
 
-      // polished_* танҳо дар final_check бармегардад — он ҳамон гузариши
-      // moderation-ро истифода мебарад (мисли privacy_regions), пас ягон
-      // занги иловагии AI ва ягон таъхири нав нест.
+      // polished_* is only returned in final_check — it reuses that same
+      // moderation pass (like privacy_regions), so there's no extra AI call
+      // and no added latency.
       //
-      // Агар модел ҷавоби нодуруст диҳад, матни худи корбар боқӣ мемонад —
-      // эълон ҳаргиз бе матн намемонад.
+      // If the model returns a bad response, the user's own text is kept as
+      // a fallback — a listing must never end up with no text at all.
       const rawTitle = String(formData.get('title') || '');
       const rawDescription = String(formData.get('description') || '');
       const polish = (value: unknown, fallback: string) => {

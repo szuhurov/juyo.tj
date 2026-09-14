@@ -1,6 +1,6 @@
 /**
- * Хукҳои фармоишӣ барои кор бо эълонҳо (Items Hooks).
- * Ин файл аз React Query барои гирифтани маълумот, кэш ва навсозии автоматии рӯйхати ашёҳо истифода мебарад.
+ * Custom hooks for working with posts (Items Hooks).
+ * This file uses React Query for fetching data, caching, and automatically refreshing the item list.
  */
 
 import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
@@ -32,15 +32,15 @@ export const ITEM_KEYS = {
 };
 
 const PAGE_SIZE = 20;
-const MAX_PAGES = 10; // Ҳадди аксари саҳифаҳо дар хотира (200 ашё)
+const MAX_PAGES = 10; // Maximum number of pages kept in memory (200 items)
 
-// initialItems — саҳифаи аввали натиҷа, ки дар сервер (Server Component)
-// аллакай гирифта шудааст (ниг. app/(main)/page.tsx) — React Query онро
-// ҳамчун "саҳифаи 0"-и кэш истифода мебарад, то HTML-и аввалия аллакай
-// итемҳоро дошта бошад (барои Google/SEO), бе интизори fetch-и клиентӣ.
-// Танҳо барои query-и БОИСТОДА (filters-и пешфарз, ки дар сервер гирифта
-// шуда буд) амал мекунад — вақте ки корбар филтр иваз кунад, queryKey
-// дигар мешавад ва fetch-и муқаррарии клиентӣ рӯй медиҳад.
+// initialItems — the first page of results, already fetched on the server
+// (Server Component) (see app/(main)/page.tsx) — React Query uses it as
+// "page 0" of the cache, so the initial HTML already has the items (for
+// Google/SEO), without waiting for a client-side fetch.
+// This only applies to the DEFAULT query (the default filters, which were
+// fetched on the server) — once the user changes a filter, the queryKey
+// changes and a normal client-side fetch happens.
 export function useItems(filters?: ItemFilters, initialItems?: Item[]) {
   return useInfiniteQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
@@ -59,9 +59,9 @@ export function useItems(filters?: ItemFilters, initialItems?: Item[]) {
   });
 }
 
-// Хук барои гирифтани маълумоти муфассали як ашё
-// isSignedIn: undefined = auth ҳанӯз муайян нашудааст, false = вуруд накарда, true = вуруд кардааст
-// initialData: маълумоти server-side (барои SSR/SEO — Google фавран мебинад)
+// Hook for fetching the detailed data of a single item
+// isSignedIn: undefined = auth not yet determined, false = not signed in, true = signed in
+// initialData: server-side data (for SSR/SEO — Google sees it immediately)
 export function useItemDetails(
   id: string,
   isSignedIn: boolean | undefined,
@@ -80,10 +80,10 @@ export function useItemDetails(
       }
       return ItemService.getItemDetails(id, supabaseClient);
     },
-    // Маълумоти server-side фавран нишон дода мешавад (SSR → Google мебинад)
+    // Server-side data is shown immediately (SSR → Google sees it)
     initialData: initialData ?? undefined,
-    initialDataUpdatedAt: initialData ? 0 : undefined, // 0 = stale, refetch мешавад
-    // Истифодаи маълумоти кэш (Home, Profile, Saved) барои намоиши лаҳзавӣ то query тайёр шавад
+    initialDataUpdatedAt: initialData ? 0 : undefined, // 0 = stale, will refetch
+    // Use cached data (Home, Profile, Saved) for an instant display until the query is ready
     placeholderData: initialData ? undefined : () => {
       const findItem = (data: unknown): Item | undefined => {
         if (!data || typeof data !== 'object') return undefined;
@@ -122,19 +122,19 @@ export function useItemDetails(
 
       return undefined;
     },
-    // Фақат пас аз муайян шудани ҳолати auth query иҷро мешавад.
-    // Агар зудтар иҷро шавад, anon client эълонҳои pending/rejected-ро дида наметавонад.
+    // The query only runs once the auth state is determined.
+    // If it ran sooner, the anon client wouldn't be able to see pending/rejected posts.
     enabled: !!id && isSignedIn !== undefined,
     staleTime: 1000 * 30,
-    // Ҳар дафъае, ки саҳифаи муфассал кушода мешавад, ҳатман аз сервер нав
-    // мегирад (на кэши куҳна) — moderation_status ва аксҳо метавонанд байни
-    // боздидҳо тағир ёбанд (RLS-и item_images ба moderation_status вобаста
-    // аст), пас кэши stale метавонад акси нодуруст/холӣ нишон диҳад.
+    // Every time the detail page is opened, it always fetches fresh from
+    // the server (not the stale cache) — moderation_status and images can
+    // change between visits (item_images' RLS depends on moderation_status),
+    // so a stale cache could show a wrong/empty image.
     refetchOnMount: "always",
   });
 }
 
-// Хук барои гирифтани эълонҳои худи корбар
+// Hook for fetching the user's own posts
 export function useUserItems(userId?: string, getToken?: () => Promise<string | null>) {
   return useQuery({
     queryKey: ITEM_KEYS.userItems(userId || ""),
@@ -147,11 +147,11 @@ export function useUserItems(userId?: string, getToken?: () => Promise<string | 
       return ItemService.getItems({ user_id: userId }, supabaseClient);
     },
     enabled: !!userId && !!getToken,
-    staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
+    staleTime: 1000 * 60 * 5, // 5 minute cache
     refetchOnWindowFocus: false,
-    // Санҷиши AI дар сервер async аст (якчанд сония мегирад) — то он
-    // тамом шавад, эълон "pending" мемонад. Бе ин, staleTime-и 5-дақиқагӣ
-    // корбарро то reload-и дастӣ бо "Дар ҳоли санҷиш"-и кӯҳна мегузорад.
+    // The AI check on the server is async (takes a few seconds) — until it
+    // finishes, the post stays "pending". Without this, the 5-minute
+    // staleTime would leave the user with a stale "Under review" state until a manual reload.
     refetchInterval: (query) =>
       query.state.data?.some((item) => item.moderation_status === "pending")
         ? 3000
@@ -159,7 +159,7 @@ export function useUserItems(userId?: string, getToken?: () => Promise<string | 
   });
 }
 
-// Хук барои гирифтани ашёҳои захирашуда (Saved)
+// Hook for fetching saved items (Saved)
 export function useSavedItems(userId?: string, getToken?: () => Promise<string | null>) {
   return useQuery({
     queryKey: ITEM_KEYS.savedItems(userId || ""),
@@ -170,7 +170,7 @@ export function useSavedItems(userId?: string, getToken?: () => Promise<string |
       return ItemService.getSavedItems(supabase, userId);
     },
     enabled: !!userId && !!getToken,
-    staleTime: 1000 * 60 * 5, // 5 дақиқа кэш
+    staleTime: 1000 * 60 * 5, // 5 minute cache
   });
 }
 

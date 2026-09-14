@@ -1,12 +1,13 @@
 /**
- * Оркестратсия: scraper (HTTP) + parser (HTML→маълумот) → Supabase.
+ * Orchestration: scraper (HTTP) + parser (HTML→data) → Supabase.
  *
- * Ҳар сабт ду қадам дорад:
- *  1. Upsert дар `external_items` (бо (source, external_id) unique — иҷрои
- *     такрорӣ ҳаргиз duplicate намесозад, ниг. journal-и дедупликатсия).
- *  2. Агар ҳанӯз нашр нашуда бошад (published_item_id холӣ), ба ҷадвали
- *     умумии `items` низ нашр мекунад — ба ҳисоби TARGET_USER_ID (аз рӯи
- *     хости возеҳи корбар), на профили сохта.
+ * Each record has two steps:
+ *  1. Upsert into `external_items` (with a (source, external_id) unique
+ *     constraint — running it again never creates a duplicate, see the
+ *     deduplication journal).
+ *  2. If not yet published (published_item_id is empty), also publish it
+ *     to the shared `items` table — under the TARGET_USER_ID account (per
+ *     the user's explicit request), not a fabricated profile.
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "./config";
@@ -16,13 +17,13 @@ import { parseSearchResults, parseDetailPage, guessType } from "./parser";
 import type { ImportRow } from "./types";
 
 const SOURCE = "Somon.tj";
-// Ба хости возеҳи корбар: ҳамаи эълонҳои воридшуда ба ҳамин ҳисоб нашр мешаванд.
+// Per the user's explicit request: all imported listings are published to this account.
 const TARGET_USER_ID = "user_3GTmOz49mVZU6KeypHzMV14Dx10";
 
 export interface ImportOptions {
   query?: string;
   dryRun?: boolean;
-  /** Агар true, эълони нав ба items низ нашр мешавад (пешфарз: true). */
+  /** If true, the new listing is also published to items (default: true). */
   publishToFeed?: boolean;
 }
 
@@ -47,9 +48,9 @@ async function collectRows(query: string): Promise<ImportRow[]> {
     try {
       const detailHtml = await fetchDetailPage(card.url);
       const detail = parseDetailPage(detailHtml);
-      // Баъзе эълонҳо акси воқеӣ надоранд — somon.tj ба ҷои он icon-и
-      // dummy (масалан /static/images/advert/icon_photo_dummy.svg)
-      // нишон медиҳад; онро акси воқеӣ ҳисоб намекунем.
+      // Some listings don't have a real image — somon.tj shows a dummy
+      // icon instead (e.g. /static/images/advert/icon_photo_dummy.svg);
+      // we don't count that as a real image.
       const cardImage = card.cardImage && !card.cardImage.includes("icon_photo_dummy") ? card.cardImage : null;
       rows.push({
         external_id: card.externalId,
@@ -72,16 +73,17 @@ async function collectRows(query: string): Promise<ImportRow[]> {
   return rows;
 }
 
-// Ҳамаи натиҷаҳои ҷустуҷӯи "паспорт" ба категорияи "Ҳуҷҷатҳо" мувофиқанд.
+// All "паспорт" (passport) search results correspond to the "Documents" category.
 function mapCategory(): string {
   return "Documents";
 }
 
-// somon.tj аксҳоро бо Content-Type: application/octet-stream мефиристад
-// (на image/webp) — Next.js Image онро "акс не" ҳисоб карда рад мекунад,
-// ҳарчанд домен дар remotePatterns иҷозат дода шудааст. Ҳалли устувор:
-// аксҳоро ба storage-и худамон мекӯчонем (мисли аксҳои воқеии корбарон),
-// то ҳам ин мушкил ҳал шавад, ҳам вобастагӣ ба сомонаи беруна намонад.
+// somon.tj serves images with Content-Type: application/octet-stream
+// (not image/webp) — Next.js Image treats that as "not an image" and
+// rejects it, even though the domain is allowed in remotePatterns. The
+// robust fix: mirror the images to our own storage (like real users'
+// images), which both solves this problem and removes the dependency on
+// the external site.
 export async function mirrorImageToStorage(supabase: ReturnType<typeof getClient>, sourceUrl: string): Promise<string | null> {
   try {
     const res = await fetch(sourceUrl, { headers: { "User-Agent": config.userAgent } });
@@ -173,7 +175,7 @@ export async function runImport(options: ImportOptions = {}): Promise<ImportResu
 
   if (publishToFeed && upserted) {
     for (const row of upserted) {
-      if (row.published_item_id) continue; // аллакай нашр шудааст — дубора нашр намекунем
+      if (row.published_item_id) continue; // already published — don't publish again
       try {
         await publishRowToFeed(supabase, row.id, row as any);
         result.published++;

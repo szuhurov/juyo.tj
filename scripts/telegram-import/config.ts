@@ -1,5 +1,5 @@
 /**
- * Танзимот барои воридкунандаи Telegram — тавассути env vars (--env-file=.env.local).
+ * Configuration for the Telegram importer — via env vars (--env-file=.env.local).
  */
 import { existsSync, readFileSync } from "fs";
 
@@ -25,10 +25,10 @@ export const config = {
   supabaseServiceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
 
-  // https://my.telegram.org/apps — app-и худатон (рӯйхати роҳнамо дар README).
+  // https://my.telegram.org/apps — your own app (setup guide in the README).
   telegramApiId: Number(process.env.TELEGRAM_API_ID ?? 0),
   telegramApiHash: process.env.TELEGRAM_API_HASH ?? "",
-  /** login.ts як бор дар компютери шумо иҷро мешавад, ин қиматро мебарорад — баъд ба .env.local гузоред. */
+  /** login.ts is run once on your computer, it outputs this value — then put it into .env.local. */
   telegramSession: process.env.TELEGRAM_SESSION ?? "",
 
   channels: (process.env.TELEGRAM_CHANNELS ?? "poteryashki_tj")
@@ -36,12 +36,12 @@ export const config = {
     .map((c) => c.trim())
     .filter(Boolean),
 
-  /** Ба ҳар канал чанд паёми охирин дар як run санҷида шавад (бори аввал/фосилаи дуру дароз). */
+  /** How many of the most recent messages per channel to check in one run (first run / long gap between runs). */
   messagesPerChannel: Number(process.env.TELEGRAM_MESSAGES_PER_RUN ?? 500),
 
-  /** Пешфарз ҳар 30 дақиқа — Telegram паёмҳои нав тезтар аз somon.tj пайдо мешаванд. */
+  /** Defaults to every 30 minutes — new Telegram messages appear faster than on somon.tj. */
   cronSchedule: process.env.TELEGRAM_CRON_SCHEDULE ?? "*/30 * * * *",
 
-  /** Танҳо агар AI бо ин дараҷаи боварӣ ё зиёдтар ҷавоб дод, категория/навъро эътимод мекунем (вагарна "Other"/null мемонад, барои баррасии дастӣ). */
+  /** We only trust the category/type if the AI responded with this confidence level or higher (otherwise it stays "Other"/null, for manual review). */
   minConfidence: Number(process.env.TELEGRAM_MIN_CONFIDENCE ?? 0.6),
 };

@@ -12,9 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 const PAGE_SIZE = 20;
 
 /**
- * Ҳамон филтр/ҷадвали эълонҳо, ки дар /admin/posts истифода мешавад (намуд,
- * категория, ҳолати тасдиқ, ҳал, Фаъол/Нестшуда), вале маҳдуд ба ЯГОНА
- * корбар — user_id ҳамеша собит аст, дигар филтрҳо озоданд.
+ * The same posts filter/table used in /admin/posts (type, category,
+ * moderation status, resolved, Active/Deleted), but scoped to a SINGLE
+ * user — user_id is always fixed, the other filters remain free.
  */
 export function UserPostsPanel({ userId }: { userId: string }) {
   const [filters, setFilters] = useState<AdminPostFilters>({

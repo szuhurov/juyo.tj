@@ -1,12 +1,12 @@
 /**
- * Компоненти тугма (Button).
- * Ин компонент барои сохтани тугмаҳои гуногун бо услубҳои гуногун истифода мешавад.
+ * Button component.
+ * This component is used to build various buttons with different styles.
  */
-import * as React from "react" // Аз React мегирем
-import { Slot } from "@radix-ui/react-slot" // Барои ҷобаҷогузорӣ
-import { cva, type VariantProps } from "class-variance-authority" // Барои намудҳои тугма
+import * as React from "react" // Imported from React
+import { Slot } from "@radix-ui/react-slot" // For composition/slotting
+import { cva, type VariantProps } from "class-variance-authority" // For button variants
 
-import { cn } from "@/lib/utils" // Ин барои класси CSS
+import { cn } from "@/lib/utils" // This is for CSS classes
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:border-ring border border-transparent disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",

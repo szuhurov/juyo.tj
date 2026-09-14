@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * Воситаи МУВАҚҚАТӢ (танҳо як бор лозим) — admin метавонад аз номи ягон
- * корбари дигар эълон илова кунад, БЕ гузаштан аз санҷиши AI (масалан
- * вақте ки OpenAI/Claude дастрас нест, ё корбар худаш аз Telegram ба admin
- * менависад). Ба ҷои санҷиши AI — мозаикаи ДАСТИИ худи admin (бо муш
- * кашидан) барои пинҳон кардани маълумоти ҳассос дар аксҳо. Дар sidebar
- * пайванд надорад — танҳо бо URL-и мустақим дастрас аст.
+ * TEMPORARY tool (needed only once) — admin can add a post on behalf of
+ * any other user, WITHOUT going through AI moderation (for example when
+ * OpenAI/Claude is unavailable, or the user writes directly to the admin
+ * via Telegram). Instead of AI moderation — the admin's own MANUAL
+ * blurring (by dragging with the mouse) to hide sensitive information in
+ * photos. Not linked in the sidebar — accessible only via a direct URL.
  */
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -65,8 +65,8 @@ function PostAsUserContent() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Бозсозии preview-и аксҳо ҳар дафъае, ки images иваз мешавад (аз
-  // интихоби нав ё аз натиҷаи мозаика) — object URL-ҳои кӯҳна озод мешаванд.
+  // Rebuild the photo previews every time images changes (from a new
+  // selection or from the blur result) — the old object URLs are revoked.
   useEffect(() => {
     const urls = images.map((f) => URL.createObjectURL(f));
     setPreviewUrls(urls);
@@ -162,7 +162,7 @@ function PostAsUserContent() {
         </span>
       </div>
 
-      {/* Интихоби корбар */}
+      {/* User selection */}
       <div className="space-y-2">
         <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">
           КОРБАР
@@ -215,19 +215,19 @@ function PostAsUserContent() {
         )}
       </div>
 
-      {/* Унвон */}
+      {/* Title */}
       <div className="space-y-1.5">
         <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">УНВОН</Label>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} className="rounded-xl h-11 min-[1084px]:h-12" />
       </div>
 
-      {/* Тавсиф */}
+      {/* Description */}
       <div className="space-y-1.5">
         <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">ТАВСИФ</Label>
         <Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="rounded-xl min-h-24" />
       </div>
 
-      {/* Категория */}
+      {/* Category */}
       <div className="space-y-2">
         <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">КАТЕГОРИЯ</Label>
         <div className="grid grid-cols-4 gap-1.5">
@@ -248,7 +248,7 @@ function PostAsUserContent() {
         </div>
       </div>
 
-      {/* Навъ */}
+      {/* Type */}
       <div className="flex gap-2">
         {(["lost", "found"] as const).map((tp) => (
           <button
@@ -265,7 +265,7 @@ function PostAsUserContent() {
         ))}
       </div>
 
-      {/* Телефон / мукофот */}
+      {/* Phone / reward */}
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">ТЕЛЕФОН</Label>
@@ -277,7 +277,7 @@ function PostAsUserContent() {
         </div>
       </div>
 
-      {/* Аксҳо */}
+      {/* Photos */}
       <div className="space-y-2">
         <Label className="text-[10px] font-bold tracking-widest text-zinc-400 ml-1">АКСҲО</Label>
         <input type="file" accept="image/*" multiple onChange={handleFiles} className="text-xs" />

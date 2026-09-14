@@ -45,7 +45,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
     setIsSearching(true);
     setScanProgress(0);
 
-    // Аниматсияи прогресс
+    // Progress animation
     const interval = setInterval(() => {
       setScanProgress(prev => (prev < 95 ? prev + Math.random() * 5 : prev));
     }, 300);
@@ -53,10 +53,10 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
     try {
       const results = await ItemService.visualSearch(file);
 
-      // Натиҷаро фавран нишон медиҳем (бе таъхири сунъӣ)
+      // Show the result immediately (no artificial delay)
       setScanProgress(100);
 
-      // Интизории кӯтоҳ танҳо барои анҷоми аниматсия
+      // Short wait just to let the animation finish
       await new Promise(resolve => setTimeout(resolve, 400));
 
       onResults(results);
@@ -77,10 +77,10 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
     }
   };
 
-  // Ҳамин ки directFile омад, ҷустуҷӯро оғоз мекунем. `handleSearch` дар
-  // deps илова намешавад — он ба `t`/`onResults`/`onClose`-и волидайн такя
-  // мекунад, ки мемоизатсия нашудаанд (аз рӯи reference дар ҳар render нав
-  // мешаванд), пас иловаи он боиси такрори ҷустуҷӯ дар ҳар render мешуд.
+  // As soon as directFile arrives, start the search. `handleSearch` is not
+  // added to the deps — it relies on the parent's `t`/`onResults`/`onClose`,
+  // which are not memoized (they get a new reference on every render), so
+  // adding it would cause the search to repeat on every render.
   useEffect(() => {
     if (directFile && isOpen) {
       setPreviewUrl(URL.createObjectURL(directFile));
@@ -92,7 +92,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSearching && onClose()}>
       <DialogPortal>
-        {/* Фони паси модал - муътадил ва шаффоф */}
+        {/* Background behind the modal - subtle and transparent */}
         <DialogOverlay className="bg-black/40 backdrop-blur-sm" />
         <DialogPrimitive.Content
           className={cn(
@@ -100,14 +100,14 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
             "border-none bg-transparent shadow-none p-0 overflow-visible"
           )}
         >
-          {/* Барои Accessibility (Radix UI) */}
+          {/* For Accessibility (Radix UI) */}
           <DialogHeader className="sr-only">
             <DialogTitle>Visual Search AI Scanning</DialogTitle>
             <DialogDescription>Scanning your image to find matches</DialogDescription>
           </DialogHeader>
 
           <div className="relative group px-4 sm:px-0">
-            {/* Дурахши мулоим дар атрофи контейнер (Glassy Glow) */}
+            {/* Soft glow around the container (Glassy Glow) */}
             <div className="absolute -inset-0.5 bg-emerald-500/20 rounded-[32px] blur-sm opacity-50"></div>
 
             <div className={cn(
@@ -118,7 +118,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
             )}>
               {(isSearching || scanProgress === 100) ? (
                 <div className="flex flex-col items-center">
-                  {/* Қисмати визуализатсияи AI */}
+                  {/* AI visualization section */}
                   <div className="relative w-full aspect-square overflow-hidden">
                     {previewUrl && (
                       <>
@@ -141,7 +141,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
                       </>
                     )}
 
-                    {/* Сканери лазерӣ */}
+                    {/* Laser scanner */}
                     {scanProgress < 100 && (
                       <div className="absolute inset-0 z-10">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast"></div>
@@ -149,7 +149,7 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
                       </div>
                     )}
 
-                    {/* Нуқтаҳои AI (Neural Grid) */}
+                    {/* AI dots (Neural Grid) */}
                     <div
                       className={cn(
                         "absolute inset-0 transition-opacity duration-700 animate-grid-scan",

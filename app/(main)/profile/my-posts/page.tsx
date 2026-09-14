@@ -1,20 +1,20 @@
 /**
- * Ин саҳифаи эълонҳои шахсии корбар ҳаст (My Posts).
- * Дар ин ҷо танҳо ҳамон эълонҳое нишон дода мешаванд, ки худи корбар сохтааст.
- * Аз ин ҷо метавон эълонҳоро бинад ё онҳоро нест (удалить) кунад.
+ * This is the user's personal listings page (My Posts).
+ * Only the listings the user has created themselves are shown here.
+ * From here you can view listings or delete them.
  */
 
 "use client";
 
-import { useEffect, useState, useCallback, type CSSProperties } from "react"; // Барои кор бо стейт ва эффектҳо
-import { useAuth } from "@clerk/nextjs"; // Барои гирифтани маълумоти корбар
-import { Item, ItemService } from "@/lib/services/item-service"; // Барои кор бо эълонҳо
-import { ItemCard } from "@/components/item-card"; // Компоненти корти эълон
-import { useLanguage } from "@/lib/language-context"; // Барои тарҷумаи забон
-import { Button } from "@/components/ui/button"; // Компоненти тугма
-import { PackageSearch, Trash2 } from "lucide-react"; // Иконкаҳо
-import Link from "next/link"; // Барои гузариш байни саҳифаҳо
-import { toast } from "sonner"; // Барои хабарҳои кӯтоҳ
+import { useEffect, useState, useCallback, type CSSProperties } from "react"; // For working with state and effects
+import { useAuth } from "@clerk/nextjs"; // For getting user data
+import { Item, ItemService } from "@/lib/services/item-service"; // For working with listings
+import { ItemCard } from "@/components/item-card"; // Listing card component
+import { useLanguage } from "@/lib/language-context"; // For language translation
+import { Button } from "@/components/ui/button"; // Button component
+import { PackageSearch, Trash2 } from "lucide-react"; // Icons
+import Link from "next/link"; // For navigating between pages
+import { toast } from "sonner"; // For short messages
 import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import {
@@ -23,23 +23,23 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"; // Барои тирезаҳои огоҳӣ
+} from "@/components/ui/dialog"; // For alert dialogs
 
 export default function MyPostsPage() {
-  // Хукҳо барои аутентификатсия ва тарҷумаи забон
+  // Hooks for authentication and language translation
   const { userId } = useAuth();
   const { t } = useLanguage();
-  
-  // Стейтҳо барои нигоҳ доштани рӯйхати эълонҳо ва ҳолати боргузорӣ (Loading)
+
+  // States for holding the listings list and the loading state
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // Стейтҳо барои идоракунии несткунии эълон
+
+  // States for managing listing deletion
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
 
   /**
-   * Функсия барои гирифтани эълонҳои шахсӣ аз база
+   * Function for fetching personal listings from the database
    */
   const loadMyItems = useCallback(async () => {
     if (!userId) return;
@@ -53,11 +53,11 @@ export default function MyPostsPage() {
     }
   }, [userId]);
 
-  // Вақте саҳифа кушода мешавад, эълонҳои корбарро аз база мехонем
+  // When the page opens, we load the user's listings from the database
   useEffect(() => {
     if (userId) loadMyItems();
 
-    // Агар дар ягон ҷо эълонҳо нав шаванд, рӯйхатро нав мекунем
+    // If listings get updated anywhere, we refresh the list
     const handleUpdate = () => {
       if (userId) loadMyItems();
     };
@@ -67,10 +67,10 @@ export default function MyPostsPage() {
     };
   }, [userId, loadMyItems]);
 
-  // Санҷиши AI дар сервер async аст (trigger_image_moderation, чанд сония
-  // мегирад) — то он тамом шавад, эълон "pending" мемонад. Бе ин polling,
-  // корбар "Дар ҳоли санҷиш"-ро то reload-и дастӣ мебинад, ҳатто агар
-  // сервер аллакай онро тасдиқ карда бошад.
+  // The AI check on the server is async (trigger_image_moderation, takes a
+  // few seconds) — until it finishes, the listing stays "pending". Without
+  // this polling, the user would see "Under review" until a manual reload,
+  // even if the server had already approved it.
   useEffect(() => {
     if (!items.some((item) => item.moderation_status === "pending")) return;
     const interval = setInterval(loadMyItems, 3000);
@@ -78,7 +78,7 @@ export default function MyPostsPage() {
   }, [items, loadMyItems]);
 
   /**
-   * Функсия барои нест кардани эълон (Delete)
+   * Function for deleting a listing (Delete)
    */
   const handleDelete = async () => {
     if (!itemToDelete) return;
@@ -87,7 +87,7 @@ export default function MyPostsPage() {
       const res = await fetch(`/api/items/${itemToDelete}/delete`, { method: 'POST' });
       if (!res.ok) throw new Error();
 
-      // Рӯйхати эълонҳоро дар экран нав мекунем (Optimistic UI)
+      // Refresh the listings on screen (Optimistic UI)
       setItems(prev => prev.filter(item => item.id !== itemToDelete));
       toast.success(t('success'));
     } catch {
@@ -100,23 +100,23 @@ export default function MyPostsPage() {
 
   return (
     <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 py-8">
-      {/* Сарлавҳаи саҳифа */}
+      {/* Page header */}
       <div className="flex items-center gap-4 mb-8 px-2 sm:px-0">
         <h1 className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-bold tracking-tight">{t('myPosts')}</h1>
       </div>
 
       {loading ? (
-        /* Намоиши скелетон ҳангоми боргузории маълумот */
+        /* Show skeleton while data is loading */
         <div className={ITEM_GRID_CLASS}>
           {[...Array(4)].map((_, i) => <ItemCardSkeleton key={i} variant="profile" />)}
         </div>
       ) : items.length > 0 ? (
-        /* Рендеринги рӯйхати эълонҳои ман */
+        /* Rendering my listings list */
         <div className={ITEM_GRID_CLASS} style={{ contentVisibility: 'auto' } as CSSProperties}>
           {items.map((item) => (
             <div key={item.id} className="relative group">
               <ItemCard item={item} />
-              {/* Тугмаи нест кардан дар болои корт */}
+              {/* Delete button on top of the card */}
               <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex gap-2">
                 <Button
                   variant="destructive"
@@ -135,7 +135,7 @@ export default function MyPostsPage() {
           ))}
         </div>
       ) : (
-        /* Агар ягон эълон набошад */
+        /* If there are no listings */
         <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
           <PackageSearch className="w-16 h-16 min-[1084px]:w-20 min-[1084px]:h-20 min-[1920px]:w-24 min-[1920px]:h-24 text-zinc-300 mx-auto mb-4" />
           <h2 className="text-xl min-[1084px]:text-2xl min-[1920px]:text-[28px] font-bold mb-2">{t('noItemsFound')}</h2>
@@ -145,7 +145,7 @@ export default function MyPostsPage() {
         </div>
       )}
 
-      {/* Тирезаи тасдиқ барои нест кардани эълон (Confirm Dialog) */}
+      {/* Confirmation dialog for deleting a listing (Confirm Dialog) */}
       <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
         <DialogContent className="rounded-2xl max-w-sm">
           <DialogHeader>

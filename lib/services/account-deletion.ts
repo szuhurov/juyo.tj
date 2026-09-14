@@ -16,10 +16,10 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
 const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url)";
 
 /**
- * Пурра нест кардани ҳисоб (Clerk + Supabase + storage), бо snapshot дар
- * архив пеш аз нест кардан — истифода мешавад ҳам аз худи корбар
- * (/api/account/delete), ҳам аз admin (баъд аз тасдиқи дархости
- * /delete-account). Логикаи ягона, то ду ҷо аз ҳам дур нашаванд.
+ * Fully deletes an account (Clerk + Supabase + storage), with a snapshot
+ * saved to the archive before deletion — used both by the user themself
+ * (/api/account/delete) and by admin (after approving a /delete-account
+ * request). A single piece of logic, so the two don't drift apart.
  */
 export async function deleteUserAccount(userId: string): Promise<{ ok: true } | { ok: false; reason: string }> {
   const { data: profile, error } = await supabaseAdmin.from("profiles").select("*").eq("id", userId).maybeSingle();

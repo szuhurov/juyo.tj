@@ -1,16 +1,16 @@
 /**
- * ЯКДАФЪАИНА — ДАР КОМПЮТЕРИ ХУДАТОН ИҶРО КУНЕД (на аз агент/CI).
+ * ONE-OFF — RUN ON YOUR OWN COMPUTER (not from an agent/CI).
  *
- * Ин скрипт бо GramJS ба ҳисоби воқеии Telegram-и шумо (бо рақами
- * телефон + рамзи SMS, эҳтимол 2FA) login мекунад ва як "session string"
- * мебарорад — ин рамз баъд ҳамчун TELEGRAM_SESSION дар .env.local
- * захира мешавад, то listener.ts/scheduler.ts дигар ба login-и
- * интерактивӣ ниёз надошта бошанд.
+ * This script uses GramJS to log in to your real Telegram account (with
+ * your phone number + SMS code, possibly 2FA) and produces a "session
+ * string" — this string is then stored as TELEGRAM_SESSION in
+ * .env.local, so that listener.ts/scheduler.ts no longer need an
+ * interactive login.
  *
- * Пеш аз иҷро: TELEGRAM_API_ID ва TELEGRAM_API_HASH-ро аз
- * https://my.telegram.org/apps дар .env.local гузоред (ниг. README.md).
+ * Before running: set TELEGRAM_API_ID and TELEGRAM_API_HASH from
+ * https://my.telegram.org/apps in .env.local (see README.md).
  *
- * Истифода: npx tsx --env-file=.env.local scripts/telegram-import/login.ts
+ * Usage: npx tsx --env-file=.env.local scripts/telegram-import/login.ts
  */
 import { TelegramClient } from "telegram";
 import { StringSession } from "telegram/sessions";

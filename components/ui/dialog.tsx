@@ -1,6 +1,6 @@
 /**
- * Компонентҳо барои тирезаҳои модалӣ (Dialog).
- * Бо истифода аз Radix UI барои интерфейс сохта шудааст.
+ * Components for modal dialogs (Dialog).
+ * Built on Radix UI for the interface.
  */
 "use client"
 

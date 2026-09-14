@@ -5,12 +5,13 @@ import { getErrorMessage } from "@/lib/error-utils";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Дархости нест кардани маълумот — талаботи Google Play Data Safety
- * (аз дек 2023): корбар бояд тавонад ин корро тавассути веб дархост кунад,
- * бе воридшавӣ/насб кардани барнома (масалан агар парол гум шуда бошад).
- * Ин route ҳамеша ба admin мефиристад (/admin/deletion-requests), на воситаи
- * коркарди худкор — то суиистифода (нест кардани ҳисоби дигарон бо email-и
- * онҳо) пешгирӣ шавад, admin шахсиятро тасдиқ мекунад пеш аз коркард.
+ * Data deletion request — a Google Play Data Safety requirement (since
+ * Dec 2023): the user must be able to request this via the web, without
+ * signing in / installing the app (for example, if they've lost their
+ * password). This route always sends the request to the admin
+ * (/admin/deletion-requests), not an automatic processing tool — to
+ * prevent abuse (deleting someone else's account using their email), the
+ * admin verifies identity before processing.
  */
 export async function POST(req: NextRequest) {
   try {

@@ -1,9 +1,9 @@
 /**
- * Раванди тӯлонӣ (long-running) — runImport-ро аз рӯи cron ба таври
- * даврӣ иҷро мекунад. Пешфарз ҳар 30 дақиқа (TELEGRAM_CRON_SCHEDULE).
+ * Long-running process — runs runImport periodically on a cron schedule.
+ * Defaults to every 30 minutes (TELEGRAM_CRON_SCHEDULE).
  *
- * Пеш аз ин, TELEGRAM_SESSION бояд аллакай дар .env.local бошад
- * (ниг. login.ts — ЯКДАФЪАИНА дар компютери худ иҷро кунед).
+ * Before this, TELEGRAM_SESSION must already be present in .env.local
+ * (see login.ts — run it ONCE on your own computer).
  */
 import cron from "node-cron";
 import { config } from "./config";

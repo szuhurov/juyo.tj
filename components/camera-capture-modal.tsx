@@ -24,8 +24,8 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
   };
 
   useEffect(() => {
-    // Бозсозии state ҳангоми пӯшидани модал (isOpen → false) — синхронизатсия
-    // бо prop-и берунӣ, на "state, ки аз рендер ҳисоб мешавад".
+    // Reset state when the modal closes (isOpen → false) — this is syncing
+    // with an external prop, not "state derived from render".
     if (!isOpen) {
       stopStream();
       setIsReady(false);
@@ -60,9 +60,9 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
       cancelled = true;
       stopStream();
     };
-    // `t` аз useLanguage дар ҳар render objект/функсияи нав аст (мемоизатсия
-    // нашудааст) — иловаи он ба deps камераро дар ҳар render аз нав оғоз
-    // мекард. Танҳо бояд ҳангоми кушода/пӯшида шудани модал иҷро шавад.
+    // `t` from useLanguage is a new object/function on every render (it's
+    // not memoized) — adding it to the deps would restart the camera on
+    // every render. This should only run when the modal opens/closes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 

@@ -16,11 +16,12 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
 }
 
 /**
- * Иваз кардани як item_image (масалан баъд аз мозаика кардани дастии
- * admin) — акси нав ба ин ҷо (бо service role) боркунида мешавад, ҷадвали
- * item_images навсозӣ мешавад, ва акси КӮҲНА аз storage пок карда мешавад.
- * Ҳама бо service role иҷро мешавад (на клиенти худи admin), зеро
- * delete-и storage танҳо ба соҳиби аслии файл иҷозат медиҳад, на ба admin.
+ * Replaces a single item_image (for example after the admin manually
+ * blurs it) — the new photo is uploaded here (with the service role), the
+ * item_images table is updated, and the OLD photo is removed from
+ * storage. Everything is done with the service role (not the admin's own
+ * client), because storage deletion is only permitted for the file's
+ * actual owner, not the admin.
  */
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId } = await auth();

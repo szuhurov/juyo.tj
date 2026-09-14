@@ -4,23 +4,24 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
- * Пас аз он ки клиент почтаи навро бо рамз тасдиқ кард (attemptVerification —
- * ин қисм ҳамчунон дар клиент мемонад, ба reverification ниёз надорад), боқии
- * марҳилаҳо (асосӣ кардани почтаи нав, канда партофтани пайвасти беруна ва
- * нест кардани почтаи куҳна) аз ин ҷо — Backend API бо secret key — иҷро
- * мешаванд. Ин reverification (парол/телефон) талаб намекунад, пас
- * ҳисобҳои бе parol (масалан танҳо бо Google) низ бе "Cannot verify your
- * account" кор мекунанд.
+ * After the client verifies the new email with a code (attemptVerification —
+ * this part still happens on the client and doesn't require reverification),
+ * the remaining steps (making the new email primary, unlinking the external
+ * account, and deleting the old email) are carried out from here — a backend
+ * API with the secret key. This doesn't require reverification
+ * (password/phone), so accounts without a password (for example,
+ * Google-only accounts) also work without hitting "Cannot verify your
+ * account".
  */
 
 /**
- * Backend SDK-и Clerk дар ExternalAccount.id ба ҷои ID-и воқеии ҳисоби
- * беруна (eac_...) ID-и identification (idn_...)-ро бармегардонад — хатои
- * маълуми худи SDK (github.com/clerk/javascript/issues/7936). Аз ин сабаб
- * deleteUserExternalAccount бо он ID ҳамеша 404 медод, пайваст воқеан
- * канда намешуд ва баъд нест кардани почтаи куҳна низ ноком мешуд (зеро
- * он то ҳол ба ҳисоби беруна пайваст буд). Барои гирифтани eac_... воқеӣ,
- * маълумоти хомро мустақим аз REST API мехонем.
+ * The Clerk backend SDK returns the identification ID (idn_...) in
+ * ExternalAccount.id instead of the actual external account ID (eac_...) —
+ * a known bug in the SDK itself (github.com/clerk/javascript/issues/7936).
+ * Because of this, deleteUserExternalAccount with that ID always returned
+ * 404, the link was never actually removed, and afterward deleting the old
+ * email also failed (since it was still linked to the external account). To
+ * get the real eac_..., we read the raw data directly from the REST API.
  */
 async function getRawExternalAccounts(
   userId: string,
