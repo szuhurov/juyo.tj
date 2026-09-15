@@ -265,8 +265,15 @@ export default function EditItemPage({
       });
 
       if (error || (data && data.is_safe === false)) {
+        // See supabase/functions/ai-brain — a technical failure (`technical_error`)
+        // must not read as "your content was rejected".
+        const isTechnical = !error && data?.technical_error === true;
         setModerationStatus("failed");
-        setModerationError(data?.reason || error?.message || t("error"));
+        setModerationError(
+          isTechnical
+            ? t("ai_steps.technical_error") || t("error")
+            : data?.reason || error?.message || t("error"),
+        );
         return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[], redactedTitle: currentTitle, redactedDescription: currentDesc };
       }
 

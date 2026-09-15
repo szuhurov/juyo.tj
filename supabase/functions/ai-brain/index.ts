@@ -319,8 +319,22 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
               typeof r?.width === "number" && typeof r?.height === "number",
             )
             .map((r: any) => {
-              const x = Math.max(0, Math.min(1, r.x));
-              const y = Math.max(0, Math.min(1, r.y));
+              // BUG FOUND (user report): the mosaic sometimes landed ABOVE the
+              // actual sensitive text, not on top of it — gpt-4o's bounding-box
+              // coordinates are an estimate, not pixel-exact object detection.
+              // Rather than trust the raw box, it's padded outward on every side
+              // (15% of its own size + a small fixed margin) so a slightly-off
+              // estimate in any direction still fully covers the real text.
+              const rawX = Math.max(0, Math.min(1, r.x));
+              const rawY = Math.max(0, Math.min(1, r.y));
+              const rawW = Math.max(0, Math.min(1 - rawX, r.width));
+              const rawH = Math.max(0, Math.min(1 - rawY, r.height));
+              const padX = rawW * 0.15 + 0.015;
+              const padY = rawH * 0.15 + 0.02;
+              const x = Math.max(0, rawX - padX);
+              const y = Math.max(0, rawY - padY);
+              const width = Math.min(1 - x, rawW + padX * 2);
+              const height = Math.min(1 - y, rawH + padY * 2);
               return {
                 label: typeof r.label === "string" ? r.label : "sensitive",
                 // Previously there was no image_index — the first image's regions
@@ -331,8 +345,8 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
                   : 0,
                 x,
                 y,
-                width: Math.max(0, Math.min(1 - x, r.width)),
-                height: Math.max(0, Math.min(1 - y, r.height)),
+                width,
+                height,
               };
             })
         : [];
@@ -375,6 +389,16 @@ Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or
 
   } catch (error: any) {
     console.error("AI Brain Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message, is_safe: false }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // BUG FOUND: a TECHNICAL failure here (OpenAI rate-limit/timeout, malformed
+    // JSON from the model, etc.) used to come back as `is_safe: false` with no
+    // `reason` — indistinguishable from a genuine content rejection. The
+    // client then fell back to a generic "your content didn't pass" message,
+    // so a legitimate post got rejected just because the AI call itself broke.
+    // `technical_error: true` lets the client show a "try again" message
+    // instead of accusing the user's content.
+    return new Response(
+      JSON.stringify({ error: error.message, is_safe: false, technical_error: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   }
 });

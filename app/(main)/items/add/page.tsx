@@ -383,12 +383,22 @@ function AddItemForm() {
           : null;
 
         if (checkError || (checkData && checkData.is_safe === false)) {
+          // BUG FOUND: a technical failure inside ai-brain (OpenAI rate-limit,
+          // malformed model JSON, etc.) used to look identical to a genuine
+          // content rejection — the user saw "your content violates the
+          // rules" for something that had nothing to do with their content.
+          // `technical_error` (see supabase/functions/ai-brain) tells them
+          // to just retry instead.
+          const isTechnical = !checkError && checkData?.technical_error === true;
           setModerationStatus("failed");
           setModerationError(
-            checkData?.reason ||
-              checkError?.message ||
-              t("ai_steps.text_moderation_failed") ||
-              "Эълони шумо ба қоидаҳо мувофиқат намекунад.",
+            isTechnical
+              ? t("ai_steps.technical_error") ||
+                  "Санҷиши AI муваққатан кор накард. Лутфан аз нав кӯшиш кунед."
+              : checkData?.reason ||
+                  checkError?.message ||
+                  t("ai_steps.text_moderation_failed") ||
+                  "Эълони шумо ба қоидаҳо мувофиқат намекунад.",
           );
           setModerationViolationSource(checkData?.violation_source ?? null);
           setLoading(false);

@@ -507,6 +507,7 @@ export const translations: Record<string, TranslationDict> = {
       checking_custom_text: "AI матни нави шуморо месанҷад...",
       text_passed: "Матн қабул шуд!",
       text_moderation_failed: "Матни шумо аз санҷиш нагузашт.",
+      technical_error: "Санҷиши AI муваққатан кор накард. Лутфан аз нав кӯшиш кунед.",
       publishing: "Эълон нашр карда шуда истодааст...",
     },
     // AI Moderation Codes
@@ -1260,6 +1261,7 @@ export const translations: Record<string, TranslationDict> = {
       checking_custom_text: "AI проверяет ваш новый текст...",
       text_passed: "Текст принят!",
       text_moderation_failed: "Ваш текст не прошел проверку.",
+      technical_error: "Проверка AI временно не работает. Пожалуйста, попробуйте снова.",
       publishing: "Публикация объявления...",
     },
 
