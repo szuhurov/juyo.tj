@@ -1,32 +1,26 @@
 "use client";
 
 /**
- * The header (top bar) is only shown on the home page — user request:
- * other pages (profile, listing, notifications, etc.) don't need the
- * repeated Header search/navigation, each page has its own navigation.
+ * The header (top bar) used to be shown ONLY on the home page — other pages
+ * relied on their own local navigation instead (e.g. profile's own sidebar).
+ * Now that the profile page's sidebar is gone (its tabs moved into the
+ * Header's own nav — see components/header.tsx), a page with no Header has
+ * NO navigation at all. So the Header now renders everywhere (user request).
  *
- * `<main>` is also managed here: the top padding-top was only needed for
- * the Header's space — on other pages, without the Header, keeping that
- * padding left a pointless empty gap (user request: "move things that
- * were below it up, since there's nothing above them anymore").
+ * `<main>` is also managed here: the top padding-top matches the Header's
+ * height, and now applies on every page since the Header always renders.
  */
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Header } from "@/components/header";
 import { useLanguage } from "@/lib/language-context";
-import { cn } from "@/lib/utils";
 
 export function HomeOnlyHeader() {
-  const pathname = usePathname();
-  if (pathname !== "/") return null;
   return <Header />;
 }
 
 export function MainContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
   return (
-    <main className={cn("flex-1 pb-20 md:pb-0", isHome && "pt-12 sm:pt-16")}>
+    <main className="flex-1 pb-20 md:pb-0 pt-12 sm:pt-16">
       {children}
     </main>
   );

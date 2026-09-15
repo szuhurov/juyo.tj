@@ -7,27 +7,23 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useAuth, useUser, useClerk } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
 import {
-  Search,
   Home,
   User,
-  X,
-  LogOut,
   QrCode,
   PlusCircle,
   Settings,
-  Camera,
-  Image as ImageIcon,
+  LayoutGrid,
+  Bookmark,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -36,43 +32,20 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { useHomeState } from "@/lib/home-context";
-import type { Item } from "@/lib/services/item-service";
 import { NotificationBell } from "@/components/notification-bell";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import { cn } from "@/lib/utils";
-
-// These two components (camera modal, visual search) live in Header, which
-// is rendered on ALL pages — but most visits never open them.
-// next/dynamic splits their JS out of every page's main bundle (into a
-// separate chunk), so the app's overall first-load JS stays smaller.
-const VisualSearchModal = dynamic(() =>
-  import("./visual-search-modal").then((m) => m.VisualSearchModal),
-);
-const CameraCaptureModal = dynamic(() =>
-  import("./camera-capture-modal").then((m) => m.CameraCaptureModal),
-);
 
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const onQrTab = pathname === "/profile" && searchParams.get("tab") === "qr";
 
   const { userId } = useAuth();
   const { user } = useUser();
-  const { signOut } = useClerk();
 
   // For the "verified" badge next to the user's own name — public_profiles
   // is visible to everyone, so no token is needed.
@@ -90,43 +63,20 @@ export function Header() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // The visual search icon is only shown when AI is enabled — without it
-  // no embedding is generated and image search returns no results.
-  const { data: appSettings } = useQuery({
-    queryKey: ["app-settings-ai-enabled"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("app_settings")
-        .select("ai_moderation_enabled")
-        .eq("id", true)
-        .maybeSingle();
-      return data;
-    },
-    staleTime: 60 * 1000,
-  });
-  const aiEnabled = appSettings?.ai_moderation_enabled ?? false;
-
   const { t } = useLanguage();
-  const { setVisualSearchResults, setIsSearchTyping, triggerGoHome } =
-    useHomeState();
+  const { triggerGoHome } = useHomeState();
 
-  const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
   const [mounted, setMounted] = useState(false);
-  const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
-  const [directFile, setDirectFile] = useState<File | null>(null);
-  const [showPhotoChoice, setShowPhotoChoice] = useState(false);
-  const [showCameraCapture, setShowCameraCapture] = useState(false);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Nav links — the middle "search" slot that used to live here moved to
+  // the home page's filter bar (user request); these 4 profile tabs now
+  // fill that space as top-level buttons instead of being tucked inside a
+  // sidebar-only tab list on the profile page itself (see app/(main)/profile/page.tsx).
   const navLinks = [
-    { href: "/", value: "home", label: t("home"), icon: Home },
-    {
-      href: "/profile?tab=qr",
-      value: "qr",
-      label: t("qrMyCode"),
-      icon: QrCode,
-    },
-    { href: "/profile", value: "profile", label: t("profile"), icon: User },
+    { href: "/", value: "home", tab: null, label: t("home"), icon: Home },
+    { href: "/profile?tab=posts", value: "posts", tab: "posts", label: t("myPosts"), icon: LayoutGrid },
+    { href: "/profile?tab=qr", value: "qr", tab: "qr", label: t("qrMyCode"), icon: QrCode },
+    { href: "/profile?tab=saved", value: "saved", tab: "saved", label: t("savedItems"), icon: Bookmark },
   ];
 
   // Prevents a Hydration Mismatch — syncing "client is ready" the only
@@ -136,105 +86,6 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  const handlePhotoPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setDirectFile(file);
-      setIsVisualSearchOpen(true);
-    }
-    e.target.value = "";
-  };
-
-  const handleCameraCapture = (file: File) => {
-    setDirectFile(file);
-    setIsVisualSearchOpen(true);
-  };
-
-  const handleVisualSearchResults = (items: Item[]) => {
-    setVisualSearchResults(items);
-    setDirectFile(null);
-    // Results only render on the home feed — jump there if triggered elsewhere.
-    if (pathname !== "/") {
-      triggerGoHome();
-      router.push("/", { scroll: false });
-    }
-  };
-
-  // Keep latest pathname/searchParams in refs so the typing-driven effect below
-  // can read current route info without re-firing merely because the route changed
-  // (that re-firing was the bug: leftover search text hijacked every navigation,
-  // bouncing the user back to"/?q=..."the moment they clicked into an item).
-  const pathnameRef = useRef(pathname);
-  const searchParamsRef = useRef(searchParams);
-  useEffect(() => {
-    pathnameRef.current = pathname;
-    searchParamsRef.current = searchParams;
-  }, [pathname, searchParams]);
-
-  // Sync the box FROM the URL whenever we land on home — fixes the search box
-  // showing stale text after browser back/forward or after navigating home
-  // via a link/route that doesn't go through this input.
-  useEffect(() => {
-    // Syncing FROM the URL (a system outside React) — this is exactly what an effect is for.
-    if (pathname === "/") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSearchValue(searchParams.get("q") || "");
-    }
-  }, [pathname, searchParams]);
-
-  // Fires only when the user actually types (searchValue changes) — not on
-  // unrelated route changes — so it can never hijack navigation.
-  useEffect(() => {
-    const currentPathname = pathnameRef.current;
-    const currentSearchParams = searchParamsRef.current;
-
-    // Off the home feed, typing has nothing local to debounce against yet —
-    // jump to home immediately so the query below can take over there.
-    if (currentPathname !== "/") {
-      if (!searchValue) return;
-      triggerGoHome();
-      router.push(`/?q=${encodeURIComponent(searchValue)}`, { scroll: false });
-      return;
-    }
-
-    if (searchValue === (currentSearchParams.get("q") || "")) {
-      setIsSearchTyping(false);
-      return;
-    }
-
-    setIsSearchTyping(true);
-
-    const delayDebounceFn = setTimeout(() => {
-      const params = new URLSearchParams(currentSearchParams);
-      if (searchValue) {
-        params.set("q", searchValue);
-      } else {
-        params.delete("q");
-      }
-
-      const newUrl = `/?${params.toString()}`;
-      if (window.location.search !== `?${params.toString()}`) {
-        router.push(newUrl, { scroll: false });
-      }
-
-      setTimeout(() => setIsSearchTyping(false), 50);
-    }, 150);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchValue, router, setIsSearchTyping, triggerGoHome]);
-
-  /**
-   * On the QR tab the top bar is NOT shown at all.
-   *
-   * That page has nothing to do with search — there the user configures
-   * their own sticker. User request: both search and the notification bell
-   * should be removed so the level selector stays at the top of the page.
-   *
-   * All hooks are placed ABOVE this line — an early return before them
-   * would break the order of hooks.
-   */
-  if (onQrTab) return null;
-
   return (
     <TooltipProvider>
       <header
@@ -242,12 +93,10 @@ export function Header() {
         className="fixed top-0 left-0 right-0 z-50 w-full bg-canvas"
       >
         <div className="w-full max-w-7xl mx-auto flex h-12 sm:h-16 items-center px-2.5 sm:px-4 gap-2 sm:gap-4">
-          {/* Left section: Logo and Navigation.
-              `hidden sm:flex`: on mobile its content is empty (the logo text
-              is `hidden sm:inline`, navigation is desktop-only), but as a
-              flex element it still picked up a `gap` (8px) — that's why the
-              search field sat at 18px, while the card gutter is 10px. */}
-          <div className="hidden sm:flex items-center gap-2 sm:gap-6 flex-initial sm:flex-1">
+          {/* Left section: Logo only — nav moved to its own centered slot
+              below (user request) now that the search box that used to sit
+              there is gone. */}
+          <div className="hidden sm:flex items-center flex-initial sm:flex-1">
             <Link
               href="/"
               aria-label="JUYO"
@@ -265,9 +114,12 @@ export function Header() {
                 JUYO
               </span>
             </Link>
+          </div>
 
-            {/* Main navigation for Desktop */}
-            <nav className="hidden lg:flex items-center space-x-1 bg-zinc-100/50 dark:bg-zinc-800/50 p-1 rounded-lg border border-zinc-200/50 dark:border-zinc-800/50">
+          {/* Middle section: Main navigation, centered — this used to be the
+              search bar's slot; search moved to the home page's filter bar. */}
+          <div className="flex-[2] sm:flex-[1.5] max-w-xl flex items-center justify-center">
+            <nav className="hidden lg:flex items-center space-x-1 bg-white dark:bg-zinc-800/50 p-1 rounded-lg">
               {/* `mounted` used to be used here too, to prevent a hydration
                   mismatch (based on the localStorage/cookie locale), but
                   that caused "icons appearing late" — a user complaint.
@@ -277,16 +129,11 @@ export function Header() {
                   real risk of a mismatch is very low — not worth forcing a
                   delay on every user. */}
               {navLinks.map((link) => {
-                  const isQrTab = searchParams.get("tab") === "qr";
-                  let isActive = false;
-
-                  if (link.value === "qr") {
-                    isActive = pathname === "/profile" && isQrTab;
-                  } else if (link.value === "profile") {
-                    isActive = pathname === "/profile" && !isQrTab;
-                  } else {
-                    isActive = pathname === link.href;
-                  }
+                  const currentTab = searchParams.get("tab") || "posts";
+                  const isActive =
+                    link.tab === null
+                      ? pathname === link.href
+                      : pathname === "/profile" && currentTab === link.tab;
 
                   // Function for manual handling
                   const handleNavClick = () => {
@@ -315,7 +162,7 @@ export function Header() {
                       variant={isActive ? "secondary" : "ghost"}
                       size="sm"
                       onClick={handleNavClick}
-                      className={`gap-2 rounded-md font-bold text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
+                      className={`gap-2 rounded-lg font-bold text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
                         isActive
                           ? "bg-white text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                           : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 border-transparent focus:outline-none"
@@ -327,38 +174,6 @@ export function Header() {
                   );
                 })}
             </nav>
-          </div>
-
-          {/* Middle section: Search bar (Centered) */}
-          <div className="flex-[2] sm:flex-[1.5] max-w-xl relative block">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 min-[1084px]:h-4 min-[1084px]:w-4 text-zinc-400" />
-            <Input
-              placeholder={t("search")}
-              className="pl-9 pr-10 h-9 sm:h-10 min-[1084px]:h-11 min-[1503px]:h-12 rounded-md bg-white dark:bg-zinc-800 border-none shadow-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-emerald-300 dark:focus-visible:border-emerald-800 transition-all text-[11px] min-[1084px]:text-xs min-[1503px]:text-sm w-full"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-            <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
-              {searchValue && (
-                <button
-                  onClick={() => setSearchValue("")}
-                  aria-label={t("clearFilter") || "Тоза кардан"}
-                  className="p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-              <button
-                onClick={() => setShowPhotoChoice(true)}
-                className={cn(
-                  "p-1.5 text-zinc-400 hover:text-zinc-600 transition-colors",
-                  !aiEnabled && "hidden",
-                )}
-                title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
-              >
-                <Camera className="h-5 w-5" />
-              </button>
-            </div>
           </div>
 
           {/* Right section: Authentication. Language switching now happens from
@@ -373,14 +188,14 @@ export function Header() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border-none rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100"
+                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border-none rounded-lg bg-white dark:bg-zinc-800 hover:bg-zinc-100"
                     asChild
                   >
                     <Link href="/sign-in">{t("login")}</Link>
                   </Button>
                   <Button
                     size="sm"
-                    className="rounded-md font-bold text-[13px] bg-emerald-500 text-white hover:bg-emerald-600 h-10 px-4"
+                    className="rounded-lg font-bold text-[13px] bg-emerald-500 text-white hover:bg-emerald-600 h-10 px-4"
                     asChild
                   >
                     <Link href="/sign-up">{t("signup")}</Link>
@@ -428,7 +243,7 @@ export function Header() {
                       className="w-64 rounded-2xl p-2 shadow-xl border-zinc-200/50 dark:border-zinc-800/50"
                       sideOffset={8}
                     >
-                      <div className="flex items-center gap-3 p-3 mb-1">
+                      <div className="flex items-center gap-3 p-3">
                         <Avatar className="h-10 w-10 rounded-full border border-zinc-100 dark:border-zinc-800">
                           <AvatarImage src={user?.imageUrl} />
                           <AvatarFallback className="rounded-full font-bold text-xs bg-zinc-100 dark:bg-zinc-700">
@@ -446,7 +261,6 @@ export function Header() {
                           </p>
                         </div>
                       </div>
-                      <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-700 mx-2" />
                       <div className="p-1 space-y-1">
                         <DropdownMenuItem
                           onClick={() => router.push("/profile")}
@@ -466,16 +280,6 @@ export function Header() {
                             {t("settings")}
                           </span>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-zinc-100 dark:bg-zinc-700 mx-2" />
-                        <DropdownMenuItem
-                          onClick={() => signOut(() => router.push("/"))}
-                          className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-red-50 dark:focus:bg-red-950/30 transition-colors group"
-                        >
-                          <LogOut className="mr-3 h-4 w-4 text-red-500" />
-                          <span className="text-xs font-bold text-red-600">
-                            {t("signOut")}
-                          </span>
-                        </DropdownMenuItem>
                       </div>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -487,7 +291,7 @@ export function Header() {
             {!userId ? (
               <Button
                 size="sm"
-                className="sm:hidden rounded-md font-bold text-[10px] h-9 bg-emerald-500 text-white px-3 capitalize"
+                className="sm:hidden rounded-lg font-bold text-[10px] h-9 bg-emerald-500 text-white px-3 capitalize"
                 asChild
               >
                 <Link href="/sign-up">{t("signup")}</Link>
@@ -496,76 +300,6 @@ export function Header() {
           </div>
         </div>
       </header>
-
-      <VisualSearchModal
-        isOpen={isVisualSearchOpen}
-        onClose={() => {
-          setIsVisualSearchOpen(false);
-          setDirectFile(null);
-        }}
-        onResults={handleVisualSearchResults}
-        directFile={directFile}
-      />
-
-      {mounted && (
-        <>
-          <input
-            type="file"
-            className="hidden"
-            accept="image/*"
-            ref={galleryInputRef}
-            onChange={handlePhotoPicked}
-          />
-
-          <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
-            <DialogContent className="max-w-[320px] rounded-[1.5rem] p-5 pt-11 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
-              <DialogHeader className="mb-2">
-                <DialogTitle className="text-lg font-bold tracking-tight text-center text-emerald-600">
-                  {t("choose_photo_method")}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
-                  onClick={() => {
-                    setShowPhotoChoice(false);
-                    setShowCameraCapture(true);
-                  }}
-                >
-                  <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all">
-                    <Camera className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-bold tracking-wide text-zinc-500">
-                    {t("camera")}
-                  </span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex flex-col gap-2 h-24 rounded-2xl bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
-                  onClick={() => {
-                    setShowPhotoChoice(false);
-                    galleryInputRef.current?.click();
-                  }}
-                >
-                  <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all">
-                    <ImageIcon className="w-5 h-5" />
-                  </div>
-                  <span className="text-[11px] font-bold tracking-wide text-zinc-500">
-                    {t("gallery")}
-                  </span>
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <CameraCaptureModal
-            isOpen={showCameraCapture}
-            onClose={() => setShowCameraCapture(false)}
-            onCapture={handleCameraCapture}
-          />
-        </>
-      )}
     </TooltipProvider>
   );
 }

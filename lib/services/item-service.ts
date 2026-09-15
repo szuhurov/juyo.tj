@@ -48,6 +48,9 @@ export const CATEGORIES = [
   { id: "6", name: "Other", icon: "📦" },
   { id: "7", name: "LicensePlate", icon: "🚗" },
   { id: "8", name: "Wallet", icon: "👛" },
+  { id: "9", name: "Cards", icon: "💳" },
+  { id: "10", name: "Phone", icon: "📱" },
+  { id: "11", name: "Bag", icon: "🎒" },
 ];
 
 export const ItemService = {

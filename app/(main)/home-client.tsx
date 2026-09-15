@@ -15,9 +15,10 @@ import { HomeFiltersSkeleton } from "@/components/home-filters-skeleton";
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useItems } from "@/lib/hooks/use-items";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
+import dynamic from "next/dynamic";
 import {
   X,
   CalendarDays,
@@ -28,9 +29,50 @@ import {
   Building2,
   HelpCircle,
   Dumbbell,
+  Search,
+  Camera,
+  Image as ImageIcon,
 } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DateRangeCalendar } from "@/components/date-range-calendar";
+import { supabase } from "@/lib/supabase";
+
+// Same next/dynamic split header.tsx used to use — this code only runs when
+// a visual search is actually opened, so it stays out of the home page's
+// main bundle.
+const VisualSearchModal = dynamic(() =>
+  import("@/components/visual-search-modal").then((m) => m.VisualSearchModal),
+);
+const CameraCaptureModal = dynamic(() =>
+  import("@/components/camera-capture-modal").then((m) => m.CameraCaptureModal),
+);
+
+// Category filter card art — user-supplied illustrations in public/categories/,
+// each already a full-bleed pastel image (not a transparent icon), so no extra
+// background wrapper is needed, only object-cover.
+const CATEGORY_IMAGES: Record<string, string> = {
+  Electronics: "/categories/electronics.webp",
+  Documents: "/categories/documents.webp",
+  Keys: "/categories/keys.webp",
+  Clothing: "/categories/clothing.webp",
+  Pets: "/categories/pets.webp",
+  Other: "/categories/other.webp",
+  LicensePlate: "/categories/license-plate.webp",
+  Wallet: "/categories/wallet.webp",
+  Cards: "/categories/cards.webp",
+  Phone: "/categories/phone.webp",
+  Bag: "/categories/bag.webp",
+};
+
+const ALL_CATEGORY_IMAGE = "/categories/all.webp";
 
 // Quick action buttons — location_type filter (replacing the old dedicated
 // "Taxi" button, which only filtered by one fixed user — see migration
@@ -54,12 +96,40 @@ const QUICK_ACTIONS = [
   { value: "none", icon: HelpCircle },
 ] as const;
 
+// Icon-only color per action (user request) — title/desc text and the
+// background stay uniform, only the icon varies so each card is easy to
+// tell apart at a glance.
+const QUICK_ACTION_ICON_COLOR: Record<string, string> = {
+  all: "text-zinc-500 dark:text-zinc-400",
+  taxi: "text-emerald-400 dark:text-emerald-300",
+  hotel_restaurant: "text-violet-500 dark:text-violet-400",
+  airport: "text-sky-500 dark:text-sky-400",
+  public_place: "text-teal-500 dark:text-teal-400",
+  gym: "text-rose-500 dark:text-rose-400",
+  none: "text-slate-500 dark:text-slate-400",
+};
+
 // SORTED copy for the home filter (not CATEGORIES itself) — "Other"
 // stays at the end, but the original order of CATEGORIES (used for the
-// category step of the items/add wizard) remains untouched. The exact same
-// pattern is used on mobile (juyoapp/app/(tabs)/index.tsx — CAT_FILTER_ITEMS).
-const CATEGORY_FILTER_ITEMS = [...CATEGORIES].sort((a, b) =>
-  a.name === "Other" ? 1 : b.name === "Other" ? -1 : 0,
+// category step of the items/add wizard) remains untouched. Previously this
+// just pinned "Other" last (a pattern mobile also used); the home filter now
+// has its own explicit order (user request) — mobile (juyoapp/app/(tabs)/index.tsx
+// — CAT_FILTER_ITEMS) no longer matches this ordering and would need updating too.
+const CATEGORY_FILTER_ORDER = [
+  "Wallet",
+  "Keys",
+  "Documents",
+  "Bag",
+  "Clothing",
+  "Cards",
+  "Pets",
+  "Electronics",
+  "LicensePlate",
+  "Phone",
+  "Other",
+];
+const CATEGORY_FILTER_ITEMS = [...CATEGORIES].sort(
+  (a, b) => CATEGORY_FILTER_ORDER.indexOf(a.name) - CATEGORY_FILTER_ORDER.indexOf(b.name),
 );
 
 function HomeContent({ initialItems }: { initialItems?: Item[] }) {
@@ -74,6 +144,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     isSearchTyping,
     goHomeSignal,
     setVisualSearchResults,
+    setIsSearchTyping,
   } = useHomeState();
 
   // Filters are kept in the URL, not in useState.
@@ -86,6 +157,89 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // list becomes a shareable link.
   const router = useRouter();
   const pathname = usePathname();
+
+  // Search bar — moved here from Header (user request): the header's
+  // middle slot is freed up for the profile nav links, and the box only
+  // ever needs to be visible on this page anyway. Unlike the old header
+  // version, this component only ever renders on "/", so the "jump to
+  // home first" branch that used to be needed there is gone.
+  const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
+  const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
+  const [directFile, setDirectFile] = useState<File | null>(null);
+  const [showPhotoChoice, setShowPhotoChoice] = useState(false);
+  const [showCameraCapture, setShowCameraCapture] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
+  // The visual search icon is only shown when AI is enabled — without it
+  // no embedding is generated and image search returns no results.
+  const { data: appSettings } = useQuery({
+    queryKey: ["app-settings-ai-enabled"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("app_settings")
+        .select("ai_moderation_enabled")
+        .eq("id", true)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60 * 1000,
+  });
+  const aiEnabled = appSettings?.ai_moderation_enabled ?? false;
+
+  // Sync the box FROM the URL — fixes the search box showing stale text
+  // after browser back/forward.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSearchValue(searchParams.get("q") || "");
+  }, [searchParams]);
+
+  // Fires only when the user actually types (searchValue changes) — not on
+  // unrelated URL changes from the other filters.
+  useEffect(() => {
+    if (searchValue === (searchParams.get("q") || "")) {
+      setIsSearchTyping(false);
+      return;
+    }
+
+    setIsSearchTyping(true);
+
+    const delayDebounceFn = setTimeout(() => {
+      const params = new URLSearchParams(searchParams);
+      if (searchValue) {
+        params.set("q", searchValue);
+      } else {
+        params.delete("q");
+      }
+
+      const newUrl = `${pathname}?${params.toString()}`;
+      if (window.location.search !== `?${params.toString()}`) {
+        router.push(newUrl, { scroll: false });
+      }
+
+      setTimeout(() => setIsSearchTyping(false), 50);
+    }, 150);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchValue, searchParams, pathname, router, setIsSearchTyping]);
+
+  const handlePhotoPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setDirectFile(file);
+      setIsVisualSearchOpen(true);
+    }
+    e.target.value = "";
+  };
+
+  const handleCameraCapture = (file: File) => {
+    setDirectFile(file);
+    setIsVisualSearchOpen(true);
+  };
+
+  const handleVisualSearchResults = (items: Item[]) => {
+    setVisualSearchResults(items);
+    setDirectFile(null);
+  };
 
   const category = searchParams.get("cat") || "All";
   // Default — "All" (user request): an empty `type` means "All"
@@ -325,67 +479,19 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               This number no longer depends on the hand-picked HOME_CONTENT_PT — the
               content padding now measures this bar's ACTUAL height live (filterBarHeight). */}
           <div className="w-full pt-0.5 pb-1.5">
-          <div
-            className={cn(
-              "flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-2.5 -my-2.5",
-              visualSearchResults && "w-full justify-end",
-            )}
-          >
-              {visualSearchResults ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setVisualSearchResults(null)}
-                  className="rounded-full h-8 text-[10px] font-bold tracking-widest border-none bg-white text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400"
-                >
-                  <X className="h-3.5 w-3.5 mr-2" />
-                  {t("clearResults")}
-                </Button>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setCategory("All")}
-                    className={cn(
-                      "shrink-0 px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer whitespace-nowrap",
-                      category === "All"
-                        ? "bg-emerald-500 text-white"
-                        : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-                    )}
-                  >
-                    {t("all")}
-                  </button>
-                  {CATEGORY_FILTER_ITEMS.map((cat) => {
-                    const active = category === cat.name;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setCategory(cat.name)}
-                        className={cn(
-                          "shrink-0 px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center gap-1.5 cursor-pointer whitespace-nowrap",
-                          active
-                            ? "bg-emerald-500 text-white"
-                            : "bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300",
-                        )}
-                      >
-                        {t(`categories.${cat.id}`)}
-                      </button>
-                    );
-                  })}
-                </>
-              )}
-          </div>
-
-          {/* Type selector: Lost or Found — a separate row, no swipe (few buttons) */}
+          {/* Type selector: Lost or Found — a separate row, no swipe (few buttons).
+              Moved ABOVE the category row (user request) — text-only pills, no
+              icons, less rounded than before (rounded-lg, not rounded-full). */}
           {!visualSearchResults && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
                 {/* The color follows the same convention as the cards: found is green, lost is red.
                     When inactive the color is on the TEXT, when active it's on the
                     BACKGROUND — otherwise red text would end up on a green background. */}
                 {(
                   [
-                    { value: null, label: t("all"), on: "bg-emerald-500 text-white", off: "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400" },
-                    { value: "found", label: t("filterFound"), on: "bg-emerald-500 text-white", off: "bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400" },
-                    { value: "lost", label: t("filterLost"), on: "bg-rose-500 text-white", off: "bg-white dark:bg-zinc-800 text-rose-700 dark:text-rose-400" },
+                    { value: null, label: t("all"), on: "bg-emerald-500 text-white", off: "bg-transparent text-emerald-700 dark:text-emerald-400" },
+                    { value: "found", label: t("filterFound"), on: "bg-emerald-500 text-white", off: "bg-transparent text-emerald-700 dark:text-emerald-400" },
+                    { value: "lost", label: t("filterLost"), on: "bg-rose-500 text-white", off: "bg-transparent text-rose-700 dark:text-rose-400" },
                   ] as const
                 ).map((opt) => (
                   <button
@@ -393,13 +499,47 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={() => setItemType(opt.value)}
                     aria-pressed={itemType === opt.value}
                     className={cn(
-                      "px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-full font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide cursor-pointer",
+                      "px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-lg font-bold text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center cursor-pointer transition-colors",
                       itemType === opt.value ? opt.on : opt.off,
                     )}
                   >
                     {opt.label}
                   </button>
                 ))}
+
+                {/* Search — moved here from Header (user request): level with the
+                    type filter pills, right after Lost/Found. flex-1 fills the
+                    remaining space, pushing the date button to the right edge. */}
+                <div className="relative flex-1 min-w-[120px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
+                  <Input
+                    placeholder={t("search")}
+                    className="pl-8 pr-9 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-lg bg-white dark:bg-zinc-800 border border-emerald-500 dark:border-emerald-400 shadow-none focus-visible:ring-0 focus-visible:border-2 transition-all text-[11px] min-[1084px]:text-xs w-full"
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                  />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                    {searchValue && (
+                      <button
+                        onClick={() => setSearchValue("")}
+                        aria-label={t("clearFilter") || "Тоза кардан"}
+                        className="p-1 text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowPhotoChoice(true)}
+                      className={cn(
+                        "p-1 text-zinc-400 hover:text-zinc-600 transition-colors cursor-pointer",
+                        !aiEnabled && "hidden",
+                      )}
+                      title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
+                    >
+                      <Camera className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
 
                 {/* Date range filter (From/To) — pushed to the right edge of the row (ml-auto) */}
                 <div className="relative ml-auto mr-2" ref={datePickerRef}>
@@ -408,7 +548,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={openDatePicker}
                     aria-label={t("filterByDate")}
                     className={cn(
-                      "h-7 w-7 md:h-9 md:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-full cursor-pointer",
+                      "h-7 w-7 md:h-9 md:w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-lg cursor-pointer transition-colors",
                       dateFrom || dateTo
                         ? "bg-emerald-500 text-white"
                         : "bg-white dark:bg-zinc-800 text-emerald-500 dark:text-emerald-400",
@@ -459,6 +599,84 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 </div>
             </div>
           )}
+          <div
+            className={cn(
+              "flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-2.5 -my-2.5 mt-1.5",
+              visualSearchResults && "w-full justify-end",
+            )}
+          >
+              {visualSearchResults ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setVisualSearchResults(null)}
+                  className="rounded-lg h-8 text-[10px] font-bold tracking-widest border-none bg-white text-emerald-700 dark:bg-zinc-800 dark:text-emerald-400"
+                >
+                  <X className="h-3.5 w-3.5 mr-2" />
+                  {t("clearResults")}
+                </Button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setCategory("All")}
+                    className="shrink-0 w-20 md:w-24 min-[1503px]:w-28 cursor-pointer"
+                  >
+                    <span
+                      className={cn(
+                        "relative flex items-end justify-center w-full aspect-square rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none",
+                        category === "All" && "ring-2 ring-emerald-500",
+                      )}
+                    >
+                      <Image
+                        src={ALL_CATEGORY_IMAGE}
+                        alt=""
+                        fill
+                        sizes="112px"
+                        className="object-cover"
+                      />
+                      <span
+                        className={cn(
+                          "relative z-10 w-full pb-0.5 text-center text-[9.5px] min-[1503px]:text-[10px] font-bold tracking-wide whitespace-nowrap bg-gradient-to-t from-black/55 via-black/20 to-transparent pt-4 text-white",
+                        )}
+                      >
+                        {t("all")}
+                      </span>
+                    </span>
+                  </button>
+                  {CATEGORY_FILTER_ITEMS.map((cat) => {
+                    const active = category === cat.name;
+                    const image = CATEGORY_IMAGES[cat.name];
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setCategory(cat.name)}
+                        className="shrink-0 w-20 md:w-24 min-[1503px]:w-28 cursor-pointer"
+                      >
+                        <span
+                          className={cn(
+                            "relative flex items-end justify-center w-full aspect-square rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none",
+                            active && "ring-2 ring-emerald-500",
+                          )}
+                        >
+                          {image && (
+                            <Image
+                              src={image}
+                              alt=""
+                              fill
+                              sizes="112px"
+                              className="object-cover"
+                            />
+                          )}
+                          <span className="relative z-10 w-full pb-0.5 text-center text-[9.5px] min-[1503px]:text-[10px] font-bold tracking-wide whitespace-nowrap bg-gradient-to-t from-black/55 via-black/20 to-transparent pt-4 text-white">
+                            {t(`categories.${cat.id}`)}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+          </div>
           </div>
 
         </div>
@@ -499,8 +717,8 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       value === "all" ? setLocationType(null) : toggleLocationType(value)
                     }
                     className={cn(
-                      "shrink-0 snap-start w-[37%] min-[480px]:w-36 min-[1503px]:w-40 min-[1920px]:w-[168px] flex items-center justify-between gap-1.5 px-2.5 py-2.5 min-[1503px]:py-3 rounded-xl text-left cursor-pointer",
-                      active ? "bg-emerald-500" : "bg-white dark:bg-zinc-800",
+                      "shrink-0 snap-start w-[42%] min-[480px]:w-36 min-[1084px]:w-44 min-[1503px]:w-48 min-[1920px]:w-56 flex items-center justify-between gap-1.5 px-2.5 py-2.5 min-[1503px]:py-3.5 rounded-lg text-left cursor-pointer transition-colors",
+                      active ? "bg-emerald-500" : "bg-transparent",
                     )}
                   >
                     <div className="flex flex-col gap-0.5 min-w-0">
@@ -523,8 +741,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     </div>
                     <Icon
                       className={cn(
-                        "w-8 h-8 min-[1503px]:w-9 min-[1503px]:h-9 min-[1920px]:w-10 min-[1920px]:h-10 shrink-0",
-                        active ? "text-white" : "text-emerald-500 dark:text-emerald-400",
+                        value === "taxi"
+                          ? "w-9 h-9 min-[1503px]:w-9 min-[1503px]:h-9 min-[1920px]:w-10 min-[1920px]:h-10 shrink-0"
+                          : "w-8 h-8 min-[1503px]:w-9 min-[1503px]:h-9 min-[1920px]:w-10 min-[1920px]:h-10 shrink-0",
+                        active ? "text-white" : QUICK_ACTION_ICON_COLOR[value],
                       )}
                     />
                   </button>
@@ -602,6 +822,73 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           </div>
         )}
       </div>
+
+      {/* Visual search — moved here from Header along with the text search box. */}
+      <VisualSearchModal
+        isOpen={isVisualSearchOpen}
+        onClose={() => {
+          setIsVisualSearchOpen(false);
+          setDirectFile(null);
+        }}
+        onResults={handleVisualSearchResults}
+        directFile={directFile}
+      />
+
+      <input
+        type="file"
+        className="hidden"
+        accept="image/*"
+        ref={galleryInputRef}
+        onChange={handlePhotoPicked}
+      />
+
+      <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
+        <DialogContent className="max-w-[320px] rounded-[1.5rem] p-5 pt-11 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
+          <DialogHeader className="mb-2">
+            <DialogTitle className="text-lg font-bold tracking-tight text-center text-emerald-600">
+              {t("choose_photo_method")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              className="flex flex-col gap-2 h-24 rounded-lg bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+              onClick={() => {
+                setShowPhotoChoice(false);
+                setShowCameraCapture(true);
+              }}
+            >
+              <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center text-white transition-all">
+                <Camera className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold tracking-wide text-zinc-500">
+                {t("camera")}
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              className="flex flex-col gap-2 h-24 rounded-lg bg-white border border-zinc-200 dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
+              onClick={() => {
+                setShowPhotoChoice(false);
+                galleryInputRef.current?.click();
+              }}
+            >
+              <div className="w-10 h-10 rounded-lg bg-orange-500 flex items-center justify-center text-white transition-all">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+              <span className="text-[11px] font-bold tracking-wide text-zinc-500">
+                {t("gallery")}
+              </span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <CameraCaptureModal
+        isOpen={showCameraCapture}
+        onClose={() => setShowCameraCapture(false)}
+        onCapture={handleCameraCapture}
+      />
     </div>
   );
 }

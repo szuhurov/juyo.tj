@@ -29,12 +29,12 @@ export function ItemFeedCard({ item }: { item: Item }) {
     <Link
       href={`/items/${item.id}`}
       prefetch
-      className="group flex flex-col gap-0 rounded-lg bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+      className="group flex flex-col gap-0 rounded-lg bg-white dark:bg-zinc-800 overflow-hidden"
     >
       {/* Image is rounded on all four sides — the type indicator moved
           from here to the bottom button, so the mask's inner corner and
           `-mb-px` are no longer needed. */}
-      <div className="relative aspect-[4/3] rounded-lg bg-zinc-100 dark:bg-zinc-700">
+      <div className="relative aspect-[16/10] rounded-lg bg-zinc-100 dark:bg-zinc-700">
         {/* Placeholder is ALWAYS underneath, with the image rendering on
             top of it. Before this it was only shown when the image was
             missing/failed, so during LOADING its spot was an empty gray box. */}
@@ -58,9 +58,8 @@ export function ItemFeedCard({ item }: { item: Item }) {
 
       {/* User request: the card's bottom section (under the image) should
           shrink by ~10-15%, but title/date should stay untouched — so only
-          padding/margin was reduced, not text size. The image was also
-          left untouched: `aspect-[4/3]` is unchanged. */}
-      <div className="px-3 pt-1 pb-1 flex flex-col flex-1">
+          padding/margin was reduced, not text size. */}
+      <div className="pr-3 pt-1 pb-1 flex flex-col flex-1">
         <div className="flex items-center justify-between gap-2">
           <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
             {item.title || item.category}
@@ -85,14 +84,11 @@ export function ItemFeedCard({ item }: { item: Item }) {
         {/* Below the description — item type and arrow as ONE button.
             It's a `span`, not a `button`: the whole card is already an
             `<a>`, and a button nested inside a link produces invalid HTML. */}
-        {/* The button is rounded on all four sides, 4px wider than its
-            content (`-mx-1`), with the same background as the app.
-            User request: the button's corners should be LESS rounded
-            than the card's own corners (rounded-md, not rounded-lg), with
-            a small gap from the description (`mt-0.5`) and from the
-            card's edge (`mb-0.5`). The shadow is around the arrow, not
-            on the button itself. */}
-        <span className="-mx-1 mt-0.5 mb-0.5 flex items-center justify-between gap-2 rounded-md bg-canvas p-0.5 pl-2.5">
+        {/* User request: no background/pill here anymore — it was
+            pushing the type text further in than title/description
+            above it. Now it's a plain row, flush with the same left/right
+            edges as the rest of the card content (no -mx-1/padding/bg). */}
+        <span className="mt-0.5 mb-0.5 flex items-center justify-between gap-2">
           {/* Type color — saturated, not muted: "Lost" and "Found" must be
               distinguishable at a glance. 700 shades pass WCAG AA contrast
               against the `--canvas` background (500/600 don't).

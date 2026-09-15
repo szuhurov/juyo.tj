@@ -57,7 +57,6 @@ import {
   Pointer,
   Check,
   Smartphone,
-  Home,
   type LucideIcon,
 } from "lucide-react";
 // Various icons for the interface
@@ -2026,85 +2025,11 @@ function ProfileContent() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-12 px-0 sm:px-0">
-          {/* Sidebar Menu */}
-          <div className="hidden lg:block lg:col-span-1">
-            <div className="sticky top-9 h-fit z-20 space-y-6">
-              <div className="flex flex-col gap-3">
-                {/* Back-to-home button — user request: on the first row of
-                    the menu, not only via the bottom navbar. */}
-                <Link
-                  href="/"
-                  className="flex items-center justify-between p-3 min-[1084px]:p-3.5 min-[1503px]:p-4 rounded-xl transition-all group shadow-sm border bg-white border-zinc-100 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-800 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 min-[1084px]:p-2.5 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 transition-colors">
-                      <Home className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 min-[1920px]:w-[22px] min-[1920px]:h-[22px]" />
-                    </div>
-                    <span className="font-bold text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-wider">
-                      {t("home")}
-                    </span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 text-zinc-300 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-                {menuItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleTabChange(item.id)}
-                    className={cn(
-                      "flex items-center justify-between p-3 min-[1084px]:p-3.5 min-[1503px]:p-4 rounded-xl transition-all group shadow-sm border",
-                      activeTab === item.id
-                        ? "bg-emerald-500 border-emerald-500 text-white scale-[1.02] shadow-md"
-                        : "bg-white border-zinc-100 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-800 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700",
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "p-2 min-[1084px]:p-2.5 rounded-lg transition-colors",
-                          activeTab === item.id
-                            ? "bg-white/20 text-white"
-                            : cn(item.bg, item.color),
-                        )}
-                      >
-                        <item.icon className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 min-[1920px]:w-[22px] min-[1920px]:h-[22px]" />
-                      </div>
-                      <span className="font-bold text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-wider">
-                        {item.title}
-                      </span>
-                    </div>
-                    <ChevronRight
-                      className={cn(
-                        "w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5 transition-transform",
-                        activeTab === item.id
-                          ? "translate-x-1"
-                          : "text-zinc-300 group-hover:translate-x-0.5",
-                      )}
-                    />
-                  </button>
-                ))}
-              </div>
-
-              {/* Sign out button (Log out) */}
-              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-900">
-                <SignOutButton>
-                  <Button
-                    variant="ghost"
-                    className="w-full h-11 min-[1084px]:h-12 min-[1503px]:h-[52px] rounded-xl font-bold text-[10px] min-[1084px]:text-[11px] min-[1503px]:text-xs min-[1920px]:text-[13px] tracking-widest text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/20 transition-all gap-2 justify-start px-4"
-                  >
-                    <LogOut className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1503px]:w-5 min-[1503px]:h-5" />
-                    {t("signOut")}
-                  </Button>
-                </SignOutButton>
-              </div>
-            </div>
-          </div>
-
-          {/* Main tab content */}
-          <div className="lg:col-span-3">
-            <div className="min-h-[60vh]">{renderContent()}</div>
-          </div>
-        </div>
+        {/* Sidebar menu removed (user request) — My posts / Settings / QR /
+            Saved are now separate top-level nav buttons in the header
+            (components/header.tsx), not tabs tucked behind a sidebar here.
+            Sign out lives in the header's avatar dropdown. */}
+        <div className="min-h-[60vh]">{renderContent()}</div>
       </div>
 
       {/* Mandatory phone number and safety modal when setting up the QR */}
