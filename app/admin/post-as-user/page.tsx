@@ -3,7 +3,7 @@
 /**
  * TEMPORARY tool (needed only once) — admin can add a post on behalf of
  * any other user, WITHOUT going through AI moderation (for example when
- * OpenAI/Claude is unavailable, or the user writes directly to the admin
+ * OpenAI is unavailable, or the user writes directly to the admin
  * via Telegram). Instead of AI moderation — the admin's own MANUAL
  * blurring (by dragging with the mouse) to hide sensitive information in
  * photos. Not linked in the sidebar — accessible only via a direct URL.

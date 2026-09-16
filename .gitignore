@@ -42,14 +42,3 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
-
-# claude code — rules/skills/agents ARE committed, only these stay local
-/.claude/settings.local.json
-/.claude/claims/
-/.claude/scheduled_tasks.lock
-
-# skills оварда аз вендор (npx skills add clerk/skills) — мазмун дар .agents/,
-# дар .claude/skills/ танҳо symlink. Symlink ҳангоми clone дар Windows мешиканад
-# ва инҳо бо як фармон барқарор мешаванд, барои ҳамин commit намекунем.
-/.agents/
-/.claude/skills/clerk*

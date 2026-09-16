@@ -237,8 +237,6 @@ juyo.tj/
 │
 └── Documentation:
     ├── README.md              # README фикрии аслӣ
-    ├── CLAUDE.md              # Фикри таҳліл ва reverse engineering
-    ├── AGENTS.md              # Agent 
     ├── clerk_integration.md   # Дастури Clerk ↔ Supabase
     ├── migration_plan.md      # Нақшаи миграция ва deployment
     ├── architecture_report.md # Ҳиссаи архитектура
