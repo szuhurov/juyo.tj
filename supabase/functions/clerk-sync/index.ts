@@ -1,18 +1,18 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import { Webhook } from "https://esm.sh/svix@1.21.0"
 
-// Эти переменные автоматически подтягиваются из настроек Supabase (Secrets)
+// These variables are automatically pulled from Supabase's settings (Secrets)
 const CLERK_WEBHOOK_SECRET = Deno.env.get('CLERK_WEBHOOK_SECRET')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 Deno.serve(async (req) => {
-  // Проверка конфигурации
+  // Configuration check
   if (!CLERK_WEBHOOK_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return new Response("Configuration missing", { status: 500 })
   }
 
-  // 1. Извлекаем Svix заголовки для проверки безопасности
+  // 1. Extract the Svix headers for security verification
   const svix_id = req.headers.get("svix-id")
   const svix_timestamp = req.headers.get("svix-timestamp")
   const svix_signature = req.headers.get("svix-signature")
@@ -21,11 +21,11 @@ Deno.serve(async (req) => {
     return new Response("Missing svix headers", { status: 400 })
   }
 
-  // 2. Читаем тело запроса
+  // 2. Read the request body
   const payload = await req.json()
   const body = JSON.stringify(payload)
 
-  // 3. Проверяем подпись (Signature Verification)
+  // 3. Verify the signature (Signature Verification)
   const wh = new Webhook(CLERK_WEBHOOK_SECRET)
   let evt: any
 
@@ -40,14 +40,14 @@ Deno.serve(async (req) => {
     return new Response("Invalid signature", { status: 400 })
   }
 
-  // 4. Подключаемся к Supabase с Service Role (чтобы обойти RLS)
+  // 4. Connect to Supabase with the Service Role (to bypass RLS)
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
   const { type, data } = evt
 
   console.log(`Processing Clerk event: ${type}`)
 
   try {
-    // 5. Обработка событий создания и обновления пользователя
+    // 5. Handle user creation and update events
     if (type === "user.created" || type === "user.updated") {
       const { id, first_name, last_name, image_url, phone_numbers, email_addresses, primary_email_address_id, primary_phone_number_id } = data
 

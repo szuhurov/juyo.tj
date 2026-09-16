@@ -62,7 +62,7 @@ export function parseDetailPage(html: string): ListingDetail {
       if (ogImage && !ogImage.includes("/static/images/")) images.add(ogImage);
     }
 
-    const dateText = $(".date-meta").first().text().trim(); // "Опубликовано: 11.07.2026 09:37"
+    const dateText = $(".date-meta").first().text().trim(); // e.g. "Опубликовано: 11.07.2026 09:37" (site's own Russian label, "Published: ...")
     const dateMatch = dateText.match(/(\d{2})\.(\d{2})\.(\d{4})\s+(\d{2}):(\d{2})/);
     const publishedAt = dateMatch
       ? new Date(`${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}T${dateMatch[4]}:${dateMatch[5]}:00+05:00`).toISOString()
