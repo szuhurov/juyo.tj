@@ -1197,6 +1197,35 @@ function ProfileContent() {
           // within itself via `max-h-[50dvh]` (see its comment below), so
           // this extra space is no longer needed.
           <div className="space-y-8 pb-4">
+            {/* QR status — like native (see app/(tabs)/qr.tsx's qrTitleRow),
+                a compact title+toggle row at the very top of the tab on
+                mobile. The desktop copy lives further down, at the top of
+                the right (settings) column instead — see its comment there. */}
+            <div className="md:hidden flex items-center gap-2 px-2">
+              <QrCode className="w-[18px] h-[18px] text-zinc-900 dark:text-white shrink-0" />
+              <span className="flex-1 font-bold text-sm text-zinc-900 dark:text-white">
+                {t("qrMyCode")}
+              </span>
+              {!isQrLocked && (
+                <button
+                  type="button"
+                  onClick={handleToggleQrActive}
+                  aria-label={t("qrStatus")}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                    qrToggleOn ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      qrToggleOn ? "translate-x-5" : "translate-x-0",
+                    )}
+                  />
+                </button>
+              )}
+            </div>
+
             {/* Tier selector — above everything, so the user understands
                 right away which mode is active.
                 Hidden (SHOW_TIER_SELECTOR): see its explanation above. */}
@@ -1345,6 +1374,46 @@ function ProfileContent() {
                 {/* Right column: settings, and below it (md+ only) the same
                     download/wallpaper buttons — user request. */}
                 <div className="flex flex-col gap-5">
+                {/* QR status — desktop copy of the mobile row above (see its
+                    comment), placed on the right side (top of this column)
+                    per user request. Shown regardless of tier — unlike the
+                    settings panel below, this has nothing to do with the
+                    sticker's design. */}
+                {!isQrLocked && (
+                  <div className="hidden md:flex items-center justify-between gap-3 px-4 py-3.5 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <QrCode className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                          {t("qrStatus")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowWhyQRModal(true)}
+                          className="text-[11px] font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                        >
+                          {t("qrSecurityStatusWhy") || "Барои чӣ QR-код лозим аст?"}
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleToggleQrActive}
+                      aria-label={t("qrStatus")}
+                      className={cn(
+                        "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
+                        qrToggleOn ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                          qrToggleOn ? "translate-x-5" : "translate-x-0",
+                        )}
+                      />
+                    </button>
+                  </div>
+                )}
                 {/* All settings only exist in "Custom" and "Pro".
                     In "Basic" the column stays intentionally empty. */}
                 {!isBasicTier && (
@@ -1469,7 +1538,7 @@ function ProfileContent() {
               </h3>
             </div>
 
-            <div className="max-w-2xl px-2 space-y-6">
+            <div className="max-w-2xl px-2 space-y-6 md:mx-auto">
               {/* Profile card — avatar, name, email */}
               <div className="bg-white dark:bg-zinc-800 rounded-2xl p-4 flex items-center gap-4">
                 <div className="relative shrink-0">
