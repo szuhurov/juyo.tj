@@ -6,7 +6,12 @@
 "use client";
 
 import { useState, useRef, Suspense, useEffect, useLayoutEffect, useMemo, useCallback } from "react";
-import { CATEGORIES, type Item } from "@/lib/services/item-service";
+import {
+  CATEGORIES,
+  CATEGORY_IMAGES,
+  ALL_CATEGORY_IMAGE,
+  type Item,
+} from "@/lib/services/item-service";
 import { ItemFeedCard } from "@/components/item-feed-card";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
@@ -54,25 +59,6 @@ const VisualSearchModal = dynamic(() =>
 const CameraCaptureModal = dynamic(() =>
   import("@/components/camera-capture-modal").then((m) => m.CameraCaptureModal),
 );
-
-// Category filter card art — user-supplied illustrations in public/categories/,
-// each already a full-bleed pastel image (not a transparent icon), so no extra
-// background wrapper is needed, only object-cover.
-const CATEGORY_IMAGES: Record<string, string> = {
-  Electronics: "/categories/electronics.webp",
-  Documents: "/categories/documents.webp",
-  Keys: "/categories/keys.webp",
-  Clothing: "/categories/clothing.webp",
-  Pets: "/categories/pets.webp",
-  Other: "/categories/other.webp",
-  LicensePlate: "/categories/license-plate.webp",
-  Wallet: "/categories/wallet.webp",
-  Cards: "/categories/cards.webp",
-  Phone: "/categories/phone.webp",
-  Bag: "/categories/bag.webp",
-};
-
-const ALL_CATEGORY_IMAGE = "/categories/all.webp";
 
 // Quick action buttons — location_type filter (replacing the old dedicated
 // "Taxi" button, which only filtered by one fixed user — see migration

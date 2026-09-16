@@ -4,7 +4,12 @@
  */ "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Item, ItemService, UNSPECIFIED_REWARD } from "@/lib/services/item-service";
+import {
+  CATEGORY_IMAGES,
+  Item,
+  ItemService,
+  UNSPECIFIED_REWARD,
+} from "@/lib/services/item-service";
 import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -314,6 +319,15 @@ export default function ItemDetailsClient({
                 {images.length === 0 && !loading && (
                   <div className="h-full w-full shrink-0 relative">
                     <ImagePlaceholder />
+                    {item && CATEGORY_IMAGES[item.category] && (
+                      <Image
+                        src={CATEGORY_IMAGES[item.category]}
+                        alt={item.category}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover"
+                      />
+                    )}
                   </div>
                 )}
                 {images.map((img, index) => (

@@ -10,7 +10,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Item, ItemService } from "@/lib/services/item-service";
+import { CATEGORY_IMAGES, Item, ItemService } from "@/lib/services/item-service";
 import {
   ArrowRight,
   Pencil,
@@ -104,6 +104,9 @@ export function ItemCard({
     item.moderation_status === "approved";
   const exactDate = format(new Date(item.date), "dd.MM.yyyy");
   const thumb = item.images?.[0]?.image_url;
+  // "I don't have a photo" listings have no item_images row — fall back to
+  // the category illustration (see ItemFeedCard).
+  const categoryFallback = CATEGORY_IMAGES[item.category];
 
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -158,6 +161,16 @@ export function ItemCard({
                 item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
               )}
               onError={() => setImgFailed(true)}
+            />
+          )}
+          {(!thumb || imgFailed) && categoryFallback && (
+            <Image
+              src={categoryFallback}
+              alt={item.category}
+              fill
+              sizes="(max-width: 640px) 50vw, 25vw"
+              quality={75}
+              className="object-cover rounded-xl"
             />
           )}
 

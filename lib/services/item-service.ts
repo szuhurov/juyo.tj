@@ -53,6 +53,26 @@ export const CATEGORIES = [
   { id: "11", name: "Bag", icon: "🎒" },
 ];
 
+// Category filter card art — user-supplied illustrations in public/categories/,
+// each already a full-bleed pastel image (not a transparent icon). Shared
+// between the home category filter and image-less item cards (used as a
+// placeholder there, since those listings have no real photo).
+export const CATEGORY_IMAGES: Record<string, string> = {
+  Electronics: "/categories/electronics.webp",
+  Documents: "/categories/documents.webp",
+  Keys: "/categories/keys.webp",
+  Clothing: "/categories/clothing.webp",
+  Pets: "/categories/pets.webp",
+  Other: "/categories/other.webp",
+  LicensePlate: "/categories/license-plate.webp",
+  Wallet: "/categories/wallet.webp",
+  Cards: "/categories/cards.webp",
+  Phone: "/categories/phone.webp",
+  Bag: "/categories/bag.webp",
+};
+
+export const ALL_CATEGORY_IMAGE = "/categories/all.webp";
+
 export const ItemService = {
   /**
    * Fetches the list of items using filters and pagination.

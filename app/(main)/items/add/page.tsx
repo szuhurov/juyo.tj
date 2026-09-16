@@ -114,6 +114,10 @@ function AddItemForm() {
 
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
+  // "Ман сурат надорам" — lets the user skip photos entirely. A category
+  // icon stands in for the image on the feed card, and search falls back
+  // to title/description only (no visual-search vector to build).
+  const [noPhoto, setNoPhoto] = useState(false);
 
   // Privacy protection editor — not a separate AI call, it uses the same
   // result from the already-run final_check (is_document + privacy_regions).
@@ -229,6 +233,7 @@ function AddItemForm() {
     setImages(newImages);
     const newPreviews = files.map((file) => URL.createObjectURL(file));
     setPreviews((prev) => [...prev, ...newPreviews]);
+    setNoPhoto(false);
 
     // Reset AI state when images change
     setModerationStatus("idle");
@@ -260,7 +265,7 @@ function AddItemForm() {
   // Validate steps before moving forward
   const nextStep = () => {
     if (step === 1) {
-      if (images.length === 0) {
+      if (images.length === 0 && !noPhoto) {
         toast.error(t("pickImage"));
         return;
       }
@@ -349,7 +354,7 @@ function AddItemForm() {
 
     setStep(3);
 
-    if (aiModerationEnabled) {
+    if (aiModerationEnabled && images.length > 0) {
       // 1. SINGLE SAFETY CHECK — image (final) + text (final) together, once,
       // right here, before publishing. This is the only AI moderation point
       // in the entire add-listing flow (mode=suggest in step 3 never
@@ -455,11 +460,15 @@ function AddItemForm() {
         return;
       }
     } else {
-      // AI moderation has been turned off from the admin dashboard (e.g. the
-      // OpenAI token ran out) — without a check, the listing is published
-      // with a "pending" status: it's only visible in the user's own profile
-      // (the search_items RPC filters it that way), so the admin can review
-      // it manually.
+      // Two cases land here: (a) AI moderation turned off from the admin
+      // dashboard (e.g. the OpenAI token ran out), or (b) no photo was
+      // attached — ai-brain requires at least one image ("No images
+      // provided"), so the synchronous check can't run for this listing.
+      // Either way, the listing publishes with "pending": it's only visible
+      // in the user's own profile (the search_items RPC filters it that
+      // way) until the async `image-moderation` trigger (which does a
+      // text-only OpenAI check when an item has no images — see
+      // supabase/functions/image-moderation) sets the final status.
       finalModerationStatus = "pending";
       // NOTE: moderation_result is visible to the user on the listing page
       // (see item-details-client.tsx). So no reason is written here — the
@@ -748,6 +757,28 @@ function AddItemForm() {
                   </div>
                 ))}
               </div>
+
+              {images.length === 0 && (
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNoPhoto((prev) => !prev)}
+                    className={cn(
+                      "text-xs min-[1084px]:text-sm font-bold tracking-wide px-4 py-2 rounded-xl transition-all",
+                      noPhoto
+                        ? "bg-emerald-500 text-white"
+                        : "text-zinc-500 dark:text-zinc-400 hover:text-emerald-600",
+                    )}
+                  >
+                    {t("noPhotoBtn")}
+                  </button>
+                  {noPhoto && (
+                    <p className="text-[11px] min-[1084px]:text-xs text-zinc-400 text-center max-w-xs px-4">
+                      {t("noPhotoNote")}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Hidden Inputs */}
               <input

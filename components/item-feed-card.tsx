@@ -10,7 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { format } from "date-fns";
-import { type Item } from "@/lib/services/item-service";
+import { CATEGORY_IMAGES, type Item } from "@/lib/services/item-service";
 import { useLanguage } from "@/lib/language-context";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { useState } from "react";
@@ -19,6 +19,9 @@ import { cn } from "@/lib/utils";
 export function ItemFeedCard({ item }: { item: Item }) {
   const { t } = useLanguage();
   const thumb = item.images?.[0]?.image_url;
+  // "I don't have a photo" listings (items/add) have no item_images row at
+  // all — the category illustration stands in so the card isn't blank.
+  const categoryFallback = CATEGORY_IMAGES[item.category];
   const exactDate = format(new Date(item.date), "dd.MM.yyyy");
   // Checking just `thumb` isn't enough: the URL may exist but the image
   // may still fail to load (404, deleted file). onError catches this
@@ -47,6 +50,15 @@ export function ItemFeedCard({ item }: { item: Item }) {
             sizes="(max-width: 640px) 50vw, 25vw"
             className="object-cover rounded-lg"
             onError={() => setImgFailed(true)}
+          />
+        )}
+        {(!thumb || imgFailed) && categoryFallback && (
+          <Image
+            src={categoryFallback}
+            alt={item.category}
+            fill
+            sizes="(max-width: 640px) 50vw, 25vw"
+            className="object-cover rounded-lg"
           />
         )}
         {item.similarity_score !== undefined && (

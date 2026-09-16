@@ -51,8 +51,8 @@ const makeMockClient = (result?: { data: any; error: any }) => {
 // CATEGORIES
 // ─────────────────────────────────────────────
 describe('CATEGORIES', () => {
-  it('has exactly 8 categories', () => {
-    expect(CATEGORIES).toHaveLength(8);
+  it('has exactly 11 categories', () => {
+    expect(CATEGORIES).toHaveLength(11);
   });
 
   it('every category has id, name, and icon', () => {

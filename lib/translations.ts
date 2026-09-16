@@ -450,6 +450,9 @@ export const translations: Record<string, TranslationDict> = {
     choose_photo_method: "Усули иловакуниро интихоб кунед",
     cameraPermissionDenied:
       "Дастрасӣ ба камера дода нашуд. Лутфан иҷозати камераро дар танзимот фаъол кунед.",
+    noPhotoBtn: "Ман сурат надорам",
+    noPhotoNote:
+      "Бе сурат, ашёи шумо танҳо тавассути ном ва тавсиф ҷустуҷӯ мешавад — ҷустуҷӯи аксӣ барои он кор намекунад.",
 
     terms: {
       title: "Тасдиқи шартҳо",
@@ -1202,6 +1205,9 @@ export const translations: Record<string, TranslationDict> = {
     choose_photo_method: "Выберите способ добавления",
     cameraPermissionDenied:
       "Доступ к камере не предоставлен. Включите разрешение камеры в настройках.",
+    noPhotoBtn: "У меня нет фото",
+    noPhotoNote:
+      "Без фото ваше объявление будет искаться только по названию и описанию — визуальный поиск для него работать не будет.",
 
     terms: {
       title: "Подтверждение условий",
@@ -1950,6 +1956,9 @@ export const translations: Record<string, TranslationDict> = {
     imagePermissionError: "Permission required to add photos.",
     maxImagesReached: "Maximum 5 photos allowed.",
     contactInfo: "Contact Information",
+    noPhotoBtn: "I don't have a photo",
+    noPhotoNote:
+      "Without a photo, your listing will only be found by its title and description — visual search won't work for it.",
 
     terms: {
       title: "Terms Confirmation",
