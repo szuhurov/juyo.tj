@@ -5,8 +5,16 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+// SECURITY GAP FOUND (audit): this was 'Access-Control-Allow-Origin': '*'.
+// Neither real caller today is a browser making a cross-origin request —
+// Web calls this through its own Next.js proxy (app/api/items/moderate,
+// server-to-server, no CORS involved at all) and Mobile is a native app
+// (CORS is a browser-only mechanism, irrelevant to it). So narrowing this
+// changes nothing for either legitimate caller; it only closes the door on
+// a browser page on another origin calling this function directly.
+const ALLOWED_ORIGIN = 'https://juyo.tj';
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 

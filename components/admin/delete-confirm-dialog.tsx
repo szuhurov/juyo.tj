@@ -28,9 +28,9 @@ export function DeleteConfirmDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-md">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold tracking-tight">{title}</DialogTitle>
+          <DialogTitle className="text-lg tracking-tight">{title}</DialogTitle>
           <DialogDescription className="text-sm font-medium pt-1">{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-2">

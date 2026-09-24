@@ -32,7 +32,7 @@ export default function MainLoading() {
           {[...Array(QUICK_ACTION_COUNT)].map((_, i) => (
             <Skeleton
               key={i}
-              className="shrink-0 w-[37%] min-[480px]:w-36 min-[1503px]:w-40 min-[1920px]:w-[168px] h-[52px] min-[1503px]:h-14 min-[1920px]:h-[60px] rounded-xl"
+              className="shrink-0 w-[37%] min-[480px]:w-36 min-[1503px]:w-40 min-[1920px]:w-[168px] h-[52px] min-[1503px]:h-14 min-[1920px]:h-[60px] rounded-md"
             />
           ))}
         </div>

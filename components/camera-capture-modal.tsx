@@ -96,7 +96,7 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
           {error ? (
             <div className="flex flex-col items-center gap-4 p-8 text-center">
               <Camera className="w-10 h-10 text-red-400" />
-              <p className="text-sm font-bold text-white/80">{error}</p>
+              <p className="text-sm font-semibold text-white/80">{error}</p>
             </div>
           ) : (
             <>

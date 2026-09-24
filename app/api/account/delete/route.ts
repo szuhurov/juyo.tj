@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { deleteUserAccount } from "@/lib/services/account-deletion";
+import { deleteUserAccount, OrganizationOwnershipBlockedError } from "@/lib/services/account-deletion";
 import { getErrorMessage } from "@/lib/error-utils";
 
 /**
@@ -22,6 +22,9 @@ export async function POST() {
     await deleteUserAccount(userId);
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof OrganizationOwnershipBlockedError) {
+      return NextResponse.json({ error: err.message, organizations: err.organizationNames }, { status: 409 });
+    }
     console.error("POST /api/account/delete:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

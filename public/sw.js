@@ -1,8 +1,11 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v13";
+const CACHE_NAME = "juyo-v14";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
+  "/fonts/Nunito-Regular.ttf",
+  "/fonts/Nunito-SemiBold.ttf",
+  "/fonts/Nunito-Bold.ttf",
   "/icon-192.png",
   "/icon-512.png",
   "/badge-96.png",
@@ -21,7 +24,7 @@ const OFFLINE_FALLBACK = `<!DOCTYPE html>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;background:#fff}
-body{font-family:sans-serif;background:#fff;color:#09090b;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}
+body{font-family:'Nunito',sans-serif;background:#fff;color:#09090b;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}
 h1{font-size:20px;margin-bottom:12px;color:#09090b}
 p{color:#71717a;font-size:14px;margin-bottom:24px}
 button{background:#09090b;color:#fff;border:none;padding:13px 32px;border-radius:10px;font-size:15px;cursor:pointer;font-weight:600}

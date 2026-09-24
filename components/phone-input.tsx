@@ -39,17 +39,17 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     return (
       <div
         className={cn(
-          "flex items-center gap-2 h-12 rounded-xl bg-zinc-50 dark:bg-zinc-800 px-3 has-[input:focus]:ring-2 has-[input:focus]:ring-emerald-500 transition-all",
+          "flex items-center gap-2 h-12 rounded-md bg-slate-50 dark:bg-zinc-800 px-3 has-[input:focus]:ring-2 has-[input:focus]:ring-emerald-500 transition-all",
           containerClassName,
         )}
       >
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
-          className="flex items-center gap-1.5 shrink-0 h-full pr-2.5 border-r border-zinc-200 dark:border-zinc-700"
+          className="flex items-center gap-1.5 shrink-0 h-full pr-2.5 border-r border-slate-200 dark:border-zinc-700"
         >
           <span className="text-base leading-none">{flagEmoji(country.iso2)}</span>
-          <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300">
+          <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
             +{country.dialCode}
           </span>
         </button>
@@ -58,7 +58,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
           type="tel"
           inputMode="numeric"
           className={cn(
-            "flex-1 min-w-0 bg-transparent border-none outline-none font-bold text-lg tracking-wider text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 placeholder:font-normal placeholder:text-base",
+            "flex-1 min-w-0 bg-transparent border-none outline-none font-semibold text-lg tracking-wider text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 placeholder:font-normal placeholder:text-base",
             className,
           )}
           maxLength={maxLength ?? country.nsnLength}

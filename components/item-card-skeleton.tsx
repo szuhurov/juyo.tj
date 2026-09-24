@@ -5,20 +5,20 @@
  * (layout shift) when the data arrives, which is exactly what the
  * skeleton is supposed to prevent.
  *
- * NEVER WHITE. The container used to be `bg-zinc-100` (#f4f4f5), which
+ * NEVER WHITE. The container used to be `bg-slate-100` (#f4f4f5), which
  * looked practically white against the canvas background. Now the whole
  * card is one gray shade: the base is lighter, the blocks are darker —
  * so it looks like a "ghost" of a card, not an empty white card.
  *
- * `variant`: feed → home page (rounded-lg, px-3),
- *            profile → ItemCard in profile (rounded-xl, px-3.5).
+ * `variant`: feed → home page (rounded-md, px-3),
+ *            profile → ItemCard in profile (rounded-md, px-3.5).
  */
 import { cn } from "@/lib/utils";
 
 /** Inner blocks are one shade darker than the card's base surface —
  *  otherwise they'd blend into one color and the card's shape would be
  *  unreadable. */
-const BLOCK = "animate-pulse bg-zinc-300/80 dark:bg-zinc-700";
+const BLOCK = "animate-pulse bg-slate-300/80 dark:bg-zinc-700";
 
 export function ItemCardSkeleton({
   variant = "feed",
@@ -26,12 +26,12 @@ export function ItemCardSkeleton({
   variant?: "feed" | "profile";
 }) {
   const feed = variant === "feed";
-  const radius = feed ? "rounded-lg" : "rounded-xl";
+  const radius = feed ? "rounded-md" : "rounded-md";
 
   return (
     <div
       className={cn(
-        "flex flex-col gap-0 overflow-hidden bg-zinc-200/70 dark:bg-zinc-800",
+        "flex flex-col gap-0 overflow-hidden bg-slate-200/70 dark:bg-zinc-800",
         radius,
       )}
     >

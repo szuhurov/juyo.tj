@@ -49,6 +49,7 @@ import {
   MousePointerClick,
   Globe,
   UserCog,
+  Crown,
   Grid2x2,
   Scan,
   Droplet,
@@ -104,7 +105,7 @@ const QRCard = dynamic(
     // further down in this file) — the whole page, already past the
     // correct skeleton, would get swapped for the spinner once more.
     loading: () => (
-      <Skeleton className="aspect-square w-[210px] h-[210px] rounded-2xl" />
+      <Skeleton className="aspect-square w-[210px] h-[210px] rounded-md" />
     ),
   },
 );
@@ -119,6 +120,7 @@ import {
 } from "@/lib/hooks/use-items"; // Dedicated hooks for fetching items from the database
 import { useQueryClient } from "@tanstack/react-query"; // For managing the data cache
 import { VerifiedBadge } from "@/components/verified-badge";
+import { UserAnalyticsCard } from "@/components/profile/user-analytics-card";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
 
 // Clerk normally sends errors as { errors: [{ code, longMessage, message }] }
@@ -163,8 +165,8 @@ function QrFieldLabel({
 }) {
   return (
     <div className="flex items-center gap-1.5 ml-1">
-      <Icon className="w-4 h-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
-      <Label className="text-[12px] font-bold text-zinc-500 dark:text-zinc-400">
+      <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-zinc-500" />
+      <Label className="text-[12px] text-slate-500 dark:text-zinc-400">
         {children}
       </Label>
     </div>
@@ -643,28 +645,28 @@ function ProfileContent() {
       id: "posts",
       title: t("myPosts"),
       icon: LayoutGrid,
-      color: "text-zinc-500",
+      color: "text-slate-500",
       bg: "",
     },
     {
       id: "info",
       title: t("settings"),
       icon: Settings,
-      color: "text-zinc-500",
+      color: "text-slate-500",
       bg: "",
     },
     {
       id: "qr",
       title: t("qrMyCode"),
       icon: QrCode,
-      color: "text-zinc-500",
+      color: "text-slate-500",
       bg: "",
     },
     {
       id: "saved",
       title: t("savedItems"),
       icon: Bookmark,
-      color: "text-zinc-500",
+      color: "text-slate-500",
       bg: "",
     },
   ];
@@ -899,11 +901,11 @@ function ProfileContent() {
                 setActivePicker({ kind, index: 0 });
               }}
               aria-label={stops[0]}
-              className="w-full h-12 rounded-xl flex items-center gap-2.5 px-3.5 mb-2.5 color-trigger transition-transform active:scale-[0.98]"
+              className="w-full h-12 rounded-md flex items-center gap-2.5 px-3.5 mb-2.5 color-trigger transition-transform active:scale-[0.98]"
               style={{ backgroundColor: stops[0] }}
             >
               <Pointer className="size-[18px] shrink-0" style={{ color: readableTextOn(stops[0]) }} strokeWidth={2.25} />
-              <span className="text-[13px] font-bold tracking-wide uppercase truncate" style={{ color: readableTextOn(stops[0]) }}>
+              <span className="text-[13px] font-medium tracking-wide uppercase truncate" style={{ color: readableTextOn(stops[0]) }}>
                 {stops[0].toUpperCase()}
               </span>
             </button>
@@ -924,7 +926,7 @@ function ProfileContent() {
                   className={cn(
                     "relative size-[22px] shrink-0 rounded-full transition-transform color-trigger shadow-sm",
                     isPickerOpenHere && activePicker?.index === i && "scale-110",
-                    isNearWhite(col) && "border border-zinc-200 dark:border-zinc-700",
+                    isNearWhite(col) && "border border-slate-200 dark:border-zinc-700",
                   )}
                   style={{ backgroundColor: col }}
                 >
@@ -945,16 +947,16 @@ function ProfileContent() {
                   setActivePicker({ kind, index: 1 });
                 }}
                 aria-label={t("qrGradientAddColor")}
-                className="flex items-center justify-center size-[22px] shrink-0 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                className="flex items-center justify-center size-[22px] shrink-0 rounded-full border border-hairline dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
               >
-                <span className="text-[13px] font-bold leading-none -mt-px">+</span>
+                <span className="text-[13px] font-medium leading-none -mt-px">+</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setStops((prev) => prev.slice(0, 1))}
                 aria-label={t("qrGradientRemoveColor")}
-                className="flex items-center justify-center size-[22px] shrink-0 rounded-full bg-zinc-50 dark:bg-zinc-700 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                className="flex items-center justify-center size-[22px] shrink-0 rounded-full bg-slate-50 dark:bg-zinc-700 text-slate-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
               >
                 <X className="size-3" />
               </button>
@@ -973,7 +975,7 @@ function ProfileContent() {
           )}
 
           {isPickerOpenHere && (
-            <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 sm:top-auto z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-2xl shadow-2xl border-t sm:border border-zinc-100 dark:border-zinc-800 color-picker-container overflow-hidden">
+            <div className="fixed inset-x-0 bottom-[56px] sm:bottom-auto sm:absolute sm:inset-0 sm:top-auto z-40 sm:z-[60] p-0 bg-white dark:bg-zinc-950 sm:rounded-md shadow-2xl border-t sm:border border-slate-100 dark:border-zinc-800 color-picker-container overflow-hidden">
               <div className="flex justify-center p-4">
                 <HexColorPicker
                   color={stops[activePicker!.index] ?? stops[0]}
@@ -989,7 +991,7 @@ function ProfileContent() {
               </div>
               <div className="p-4 pt-0 pb-8 sm:pb-4">
                 <Button
-                  className="w-full h-11 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+                  className="w-full h-11 rounded-md tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
                   onClick={() => setActivePicker(null)}
                 >
                   {t("done")}
@@ -1108,6 +1110,7 @@ function ProfileContent() {
       case "posts":
         return (
           <div className="space-y-6">
+            <UserAnalyticsCard />
             {/* List of personal listings */}
             <div>
               {postsLoading ? (
@@ -1131,9 +1134,9 @@ function ProfileContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-800/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                <div className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-md border-2 border-dashed border-slate-200 dark:border-zinc-800">
                   <PackageSearch className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 text-xs min-[1084px]:text-sm tracking-widest">
+                  <h4 className="font-medium text-slate-400 text-xs min-[1084px]:text-sm tracking-widest">
                     {t("noItemsFound")}
                   </h4>
                 </div>
@@ -1160,9 +1163,9 @@ function ProfileContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-800/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                <div className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-md border-2 border-dashed border-slate-200 dark:border-zinc-800">
                   <PackageSearch className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 text-xs min-[1084px]:text-sm tracking-widest">
+                  <h4 className="font-medium text-slate-400 text-xs min-[1084px]:text-sm tracking-widest">
                     {t("noItemsFound")}
                   </h4>
                 </div>
@@ -1180,11 +1183,11 @@ function ProfileContent() {
           return (
             <div className="space-y-8 pb-32">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
-                <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-[2rem]" />
+                <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-md" />
                 <div className="space-y-5">
-                  <Skeleton className="h-10 w-40 rounded-lg" />
-                  <Skeleton className="h-24 w-full rounded-2xl" />
-                  <Skeleton className="h-24 w-full rounded-2xl" />
+                  <Skeleton className="h-10 w-40 rounded-md" />
+                  <Skeleton className="h-24 w-full rounded-md" />
+                  <Skeleton className="h-24 w-full rounded-md" />
                 </div>
               </div>
             </div>
@@ -1203,7 +1206,7 @@ function ProfileContent() {
                 the right (settings) column instead — see its comment there. */}
             <div className="md:hidden flex items-center gap-2 px-2">
               <QrCode className="w-[18px] h-[18px] text-zinc-900 dark:text-white shrink-0" />
-              <span className="flex-1 font-bold text-sm text-zinc-900 dark:text-white">
+              <span className="flex-1 font-semibold text-sm text-zinc-900 dark:text-white">
                 {t("qrMyCode")}
               </span>
               {!isQrLocked && (
@@ -1213,7 +1216,7 @@ function ProfileContent() {
                   aria-label={t("qrStatus")}
                   className={cn(
                     "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                    qrToggleOn ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                    qrToggleOn ? "bg-emerald-500" : "bg-slate-300 dark:bg-zinc-700",
                   )}
                 >
                   <span
@@ -1241,7 +1244,7 @@ function ProfileContent() {
                       aria-selected={active}
                       onClick={() => setQrTier(id)}
                       className={cn(
-                        "flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-colors",
+                        "flex flex-col items-center justify-center gap-1.5 py-3 rounded-md transition-colors",
                         active
                           ? "bg-emerald-500 text-white"
                           // Text and icon are BLACK, not gray — matching Telegram's button style.
@@ -1249,7 +1252,7 @@ function ProfileContent() {
                       )}
                     >
                       <TierIcon className="w-5 h-5" />
-                      <span className="text-[11px] font-bold">{t(labelKey)}</span>
+                      <span className="text-[11px] font-medium">{t(labelKey)}</span>
                     </button>
                   );
                 })}
@@ -1285,7 +1288,7 @@ function ProfileContent() {
                       SQUARE, and `w-full` (no max-w limit) — user request:
                       "the square should be full width". The max-w-[280px]
                       limit (for "no scroll") was reverted. */}
-                  <div className="relative group bg-white dark:bg-zinc-800 rounded-3xl p-3 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 w-full aspect-square overflow-hidden shadow-none transition-all duration-300">
+                  <div className="relative group bg-white dark:bg-zinc-800 rounded-md p-3 flex items-center justify-center border border-hairline dark:border-zinc-700 w-full aspect-square overflow-hidden shadow-none transition-all duration-300">
                     <div className="scale-95 md:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
                       <QRCard
                         id={user?.id || ""}
@@ -1336,7 +1339,7 @@ function ProfileContent() {
                   <div className="md:hidden mt-5 w-full px-1">
                     <Button
                       onClick={() => toast.info(t("qrComingSoon"))}
-                      className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                      className="w-full h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
                     >
                       {t("qrBuy")}
                     </Button>
@@ -1346,7 +1349,7 @@ function ProfileContent() {
                     <Button
                       onClick={handleDownloadQR}
                       disabled={isDownloading}
-                      className="flex-1 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      className="flex-1 h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
                     >
                       {isDownloading ? (
                         <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
@@ -1362,7 +1365,7 @@ function ProfileContent() {
                     <Button
                       onClick={() => setShowWallpaperInfoModal(true)}
                       variant="outline"
-                      className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      className="flex-1 h-11 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
                     >
                       <Smartphone className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
                       {t("qrWallpaperBtn")}
@@ -1380,9 +1383,9 @@ function ProfileContent() {
                     settings panel below, this has nothing to do with the
                     sticker's design. */}
                 {!isQrLocked && (
-                  <div className="hidden md:flex items-center justify-between gap-3 px-4 py-3.5 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                  <div className="hidden md:flex items-center justify-between gap-3 px-4 py-3.5 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <QrCode className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                      <QrCode className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                           {t("qrStatus")}
@@ -1390,7 +1393,7 @@ function ProfileContent() {
                         <button
                           type="button"
                           onClick={() => setShowWhyQRModal(true)}
-                          className="text-[11px] font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                          className="text-[11px] font-medium text-slate-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
                         >
                           {t("qrSecurityStatusWhy") || "Барои чӣ QR-код лозим аст?"}
                         </button>
@@ -1402,7 +1405,7 @@ function ProfileContent() {
                       aria-label={t("qrStatus")}
                       className={cn(
                         "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                        qrToggleOn ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                        qrToggleOn ? "bg-emerald-500" : "bg-slate-300 dark:bg-zinc-700",
                       )}
                     >
                       <span
@@ -1425,7 +1428,7 @@ function ProfileContent() {
                 // the page must NOT scroll at all, and the panel needs to
                 // sit closer to the buttons above. For that reason we
                 // deliberately reduced native's padding.
-                <div className="space-y-1.5 px-3 pt-4 pb-6 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                <div className="space-y-1.5 px-3 pt-4 pb-6 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
                   {/* Text gradient and background gradient in ONE row —
                       they come FIRST (native's order: gradient → dot shape
                       → corners, not the other way around). */}
@@ -1489,7 +1492,7 @@ function ProfileContent() {
                   <div className="hidden md:block w-full px-1">
                     <Button
                       onClick={() => toast.info(t("qrComingSoon"))}
-                      className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                      className="w-full h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
                     >
                       {t("qrBuy")}
                     </Button>
@@ -1499,7 +1502,7 @@ function ProfileContent() {
                     <Button
                       onClick={handleDownloadQR}
                       disabled={isDownloading}
-                      className="flex-1 h-11 rounded-lg bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      className="flex-1 h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
                     >
                       {isDownloading ? (
                         <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
@@ -1511,7 +1514,7 @@ function ProfileContent() {
                     <Button
                       onClick={() => setShowWallpaperInfoModal(true)}
                       variant="outline"
-                      className="flex-1 h-11 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-bold text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      className="flex-1 h-11 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
                     >
                       <Smartphone className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
                       {t("qrWallpaperBtn")}
@@ -1533,18 +1536,18 @@ function ProfileContent() {
                 (`px-2 sm:px-4`) ACROSS breakpoints, otherwise the block runs
                 off the screen and a horizontal scroll appears. */}
             <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-4">
-              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
+              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight">
                 {t("settings")}
               </h3>
             </div>
 
             <div className="max-w-2xl px-2 space-y-6 md:mx-auto">
               {/* Profile card — avatar, name, email */}
-              <div className="bg-white dark:bg-zinc-800 rounded-2xl p-4 flex items-center gap-4">
+              <div className="flex items-center gap-4">
                 <div className="relative shrink-0">
-                  <Avatar className="w-14 h-14 rounded-full overflow-hidden">
+                  <Avatar className="w-20 h-20 rounded-full overflow-hidden">
                     <AvatarImage src={user?.imageUrl} />
-                    <AvatarFallback className="bg-zinc-900 text-white text-xl font-bold">
+                    <AvatarFallback className="bg-zinc-900 text-white text-xl font-semibold">
                       {user?.firstName?.charAt(0)}
                     </AvatarFallback>
                   </Avatar>
@@ -1572,10 +1575,10 @@ function ProfileContent() {
                   </label>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-base text-zinc-900 dark:text-zinc-100 truncate">
+                  <p className="font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-100 truncate">
                     {user?.firstName} {user?.lastName}
                   </p>
-                  <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
+                  <p className="text-xs font-medium text-slate-500 dark:text-zinc-400 truncate">
                     {user?.primaryEmailAddress?.emailAddress}
                   </p>
                 </div>
@@ -1583,30 +1586,30 @@ function ProfileContent() {
 
               {/* "Account" group */}
               <div className="space-y-2">
-                <p className="text-[11px] font-bold tracking-wider text-zinc-400 px-4">
+                <p className="text-[11px] font-medium tracking-wider text-slate-400">
                   {t("account")}
                 </p>
-                <div className="bg-white dark:bg-zinc-800 rounded-2xl divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
+                <div className="divide-y divide-slate-100 dark:divide-zinc-800">
                   {/* Personal info — an expandable row */}
                   <button
                     type="button"
                     onClick={() => setOpenSetting(openSetting === "profile" ? null : "profile")}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
                   >
-                    <User className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <User className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                     <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                       {t("personalInfo")}
                     </span>
                     <ChevronRight
                       className={cn(
-                        "w-4 h-4 text-zinc-400 shrink-0 transition-transform",
+                        "w-4 h-4 text-slate-400 shrink-0 transition-transform",
                         openSetting === "profile" && "rotate-90",
                       )}
                     />
                   </button>
 
                   {openSetting === "profile" && (
-                  <div className="px-4 py-4">
+                  <div className="py-2">
                   {/* Profile data edit form */}
                   <form
                     key={profile?.id || "new"}
@@ -1672,30 +1675,30 @@ function ProfileContent() {
                   >
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                           {t("firstName")}
                         </Label>
                         <Input
                           name="firstName"
                           defaultValue={user?.firstName || ""}
-                          className="h-10 rounded-xl bg-white dark:bg-zinc-950 font-bold"
+                          className="h-10 rounded-md bg-white dark:bg-zinc-950"
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                           {t("lastName")}
                         </Label>
                         <Input
                           name="lastName"
                           defaultValue={user?.lastName || ""}
-                          className="h-10 rounded-xl bg-white dark:bg-zinc-950 font-bold"
+                          className="h-10 rounded-md bg-white dark:bg-zinc-950"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                           {t("phoneLabel")}
                         </Label>
                         <PhoneInput
@@ -1708,7 +1711,7 @@ function ProfileContent() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                        <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                           {t("phoneSecondaryLabel")}
                         </Label>
                         <PhoneInput
@@ -1724,7 +1727,7 @@ function ProfileContent() {
 
                     {/* Social networks. An empty field = the link gets removed. */}
                     <div className="space-y-1.5">
-                      <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                      <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.socialBtn")}
                       </Label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1741,7 +1744,7 @@ function ProfileContent() {
                                   download modal. */}
                               <span
                                 aria-hidden
-                                className="absolute left-9 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 pointer-events-none"
+                                className="absolute left-9 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400 pointer-events-none"
                               >
                                 {prefix}
                               </span>
@@ -1749,7 +1752,7 @@ function ProfileContent() {
                                 name={key}
                                 placeholder={label}
                                 value={infoSocial[key]}
-                                className="h-10 pl-[3.25rem] rounded-xl bg-white dark:bg-zinc-950 font-bold text-xs"
+                                className="h-10 pl-[3.25rem] rounded-md bg-white dark:bg-zinc-950 text-xs"
                                 autoComplete="off"
                                 autoCapitalize="none"
                                 spellCheck={false}
@@ -1762,7 +1765,7 @@ function ProfileContent() {
                           );
                         })}
                       </div>
-                      <p className="text-[9px] font-bold text-zinc-400 px-1 leading-snug">
+                      <p className="text-[9px] font-medium text-slate-400 px-1 leading-snug">
                         {t("qrSecondaryModal.socialHint")}
                       </p>
                     </div>
@@ -1771,7 +1774,7 @@ function ProfileContent() {
                       type="submit"
                       size="sm"
                       disabled={infoSubmitting}
-                      className="rounded-lg bg-emerald-500 text-white font-bold text-[9px] tracking-widest px-6 w-full sm:w-auto"
+                      className="rounded-md bg-emerald-500 text-white text-[9px] tracking-widest px-6 w-full sm:w-auto"
                     >
                       {infoSubmitting ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -1787,43 +1790,43 @@ function ProfileContent() {
                   <button
                     type="button"
                     onClick={() => setShowEmailChangeModal(true)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
                   >
-                    <Mail className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <Mail className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                     <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                       {t("email")}
                     </span>
-                    <span className="max-w-[45%] truncate text-xs font-medium text-zinc-400">
+                    <span className="max-w-[45%] truncate text-xs font-medium text-slate-400">
                       {user?.primaryEmailAddress?.emailAddress}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                   </button>
 
                   {/* Password */}
                   <button
                     type="button"
                     onClick={() => setShowChangePasswordModal(true)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
                   >
-                    <KeyRound className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <KeyRound className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                     <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                       {t("changePassword")}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                   </button>
                 </div>
               </div>
 
               {/* "Preferences" group */}
               <div className="space-y-2">
-                <p className="text-[11px] font-bold tracking-wider text-zinc-400 px-4">
+                <p className="text-[11px] font-medium tracking-wider text-slate-400">
                   {t("preferences")}
                 </p>
-                <div className="bg-white dark:bg-zinc-800 rounded-2xl divide-y divide-zinc-100 dark:divide-zinc-800 overflow-hidden">
+                <div className="divide-y divide-slate-100 dark:divide-zinc-800">
                   {/* Language — the current value on the right side, like the iOS pattern */}
-                  <div className="px-4 py-3.5">
+                  <div className="py-3.5">
                     <div className="flex items-center gap-3">
-                      <Globe className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                      <Globe className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                       <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                         {t("language") || "Забон"}
                       </span>
@@ -1835,10 +1838,10 @@ function ProfileContent() {
                           type="button"
                           onClick={() => setLocale(lang.code)}
                           className={cn(
-                            "flex-1 h-9 rounded-xl font-bold text-[11px] tracking-wide transition-all cursor-pointer",
+                            "flex-1 h-9 rounded-md font-medium text-[11px] tracking-wide transition-all cursor-pointer",
                             locale === lang.code
                               ? "bg-emerald-500 text-white"
-                              : "bg-canvas dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400",
+                              : "bg-canvas dark:bg-zinc-700 text-slate-500 dark:text-zinc-400",
                           )}
                         >
                           {lang.label}
@@ -1851,9 +1854,9 @@ function ProfileContent() {
                       `mounted` is needed because before hydration the
                       actual theme is unknown, and without it the wrong
                       button would appear active. */}
-                  <div className="px-4 py-3.5">
+                  <div className="py-3.5">
                     <div className="flex items-center gap-3">
-                      <Palette className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                      <Palette className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                       <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                         {t("theme")}
                       </span>
@@ -1865,10 +1868,10 @@ function ProfileContent() {
                           type="button"
                           onClick={() => setTheme(opt.value)}
                           className={cn(
-                            "flex-1 h-9 rounded-xl font-bold text-[11px] tracking-wide transition-all cursor-pointer",
+                            "flex-1 h-9 rounded-md font-medium text-[11px] tracking-wide transition-all cursor-pointer",
                             themeMounted && theme === opt.value
                               ? "bg-emerald-500 text-white"
-                              : "bg-canvas dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400",
+                              : "bg-canvas dark:bg-zinc-700 text-slate-500 dark:text-zinc-400",
                           )}
                         >
                           {t(opt.labelKey)}
@@ -1880,9 +1883,9 @@ function ProfileContent() {
                   {/* QR status — moved here from the QR tab (like native):
                       it has nothing to do with the sticker's design,
                       regardless of what color it's drawn in. */}
-                  <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+                  <div className="py-3.5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <QrCode className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                      <QrCode className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                           {t("qrStatus")}
@@ -1890,7 +1893,7 @@ function ProfileContent() {
                         <button
                           type="button"
                           onClick={() => setShowWhyQRModal(true)}
-                          className="text-[11px] font-medium text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
+                          className="text-[11px] font-medium text-slate-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
                         >
                           {t("qrSecurityStatusWhy") || "Барои чӣ QR-код лозим аст?"}
                         </button>
@@ -1901,7 +1904,7 @@ function ProfileContent() {
                       onClick={handleToggleQrActive}
                       className={cn(
                         "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                        qrToggleOn ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700",
+                        qrToggleOn ? "bg-emerald-500" : "bg-slate-300 dark:bg-zinc-700",
                       )}
                     >
                       <span
@@ -1920,31 +1923,31 @@ function ProfileContent() {
                   request: GRAY color (not red) — "Sign out" is now the
                   reddest one. */}
               <div className="space-y-2">
-                <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden">
+                <div className="space-y-2">
                   <button
                     type="button"
                     onClick={() => setShowDeleteAccountModal(true)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
                   >
-                    <Trash2 className="w-[18px] h-[18px] text-zinc-500 shrink-0" />
+                    <Trash2 className="w-[18px] h-[18px] text-slate-500 shrink-0" />
                     <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
                       {t("deleteAccount")}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400 shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                   </button>
                 </div>
-                <p className="text-[11px] font-medium text-zinc-400 px-4 leading-relaxed">
+                <p className="text-[11px] font-medium text-slate-400 leading-relaxed">
                   {t("deleteAccountDesc")}
                 </p>
               </div>
 
               {/* Sign out — user request: BELOW "Delete account", and
                   REDDER in color than it. */}
-              <div className="bg-white dark:bg-zinc-800 rounded-2xl overflow-hidden">
+              <div className="space-y-2">
                 <SignOutButton>
                   <button
                     type="button"
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left cursor-pointer"
+                    className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
                   >
                     <LogOut className="w-[18px] h-[18px] text-red-700 shrink-0" />
                     <span className="flex-1 text-sm font-medium text-red-700">
@@ -1963,7 +1966,7 @@ function ProfileContent() {
           <div className="space-y-6">
             {/* Saved tab header */}
             <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-6">
-              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-bold tracking-tight">
+              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight">
                 {t("savedItems")}
               </h3>
             </div>
@@ -1983,15 +1986,15 @@ function ProfileContent() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-800/50 rounded-3xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+                <div className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-md border-2 border-dashed border-slate-200 dark:border-zinc-800">
                   <Bookmark className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-bold text-zinc-400 text-xs min-[1084px]:text-sm tracking-widest">
+                  <h4 className="font-medium text-slate-400 text-xs min-[1084px]:text-sm tracking-widest">
                     {t("savedItemsEmpty")}
                   </h4>
                   <Button
                     asChild
                     size="sm"
-                    className="mt-6 rounded-md font-bold text-[10px] min-[1084px]:text-[11px] tracking-wider"
+                    className="mt-6 rounded-md text-[10px] min-[1084px]:text-[11px] tracking-wider"
                   >
                     <Link href="/">{t("home")}</Link>
                   </Button>
@@ -2011,24 +2014,24 @@ function ProfileContent() {
       <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 py-0 sm:py-8 min-h-[90vh]">
         {/* Mobile Profile Header (Instagram Style) */}
         {activeTab === "posts" && (
-          <div className="block lg:hidden rounded-3xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 px-4 pt-6 pb-6 mt-4 mb-4">
+          <div className="block lg:hidden rounded-md bg-white dark:bg-zinc-950 p-0 overflow-hidden mt-4 mb-4">
             <div className="flex items-center gap-6 mb-6">
-              <Avatar className="w-20 h-20 md:w-24 md:h-24 border-2 border-zinc-100 dark:border-zinc-800 p-0.5">
+              <Avatar className="w-20 h-20 md:w-24 md:h-24 border-2 border-slate-100 dark:border-zinc-800 p-0.5">
                 <AvatarImage
                   src={user?.imageUrl}
                   className="rounded-full object-cover"
                 />
-                <AvatarFallback className="bg-zinc-100 dark:bg-zinc-700 text-xl md:text-2xl font-bold">
+                <AvatarFallback className="bg-slate-100 dark:bg-zinc-700 text-xl md:text-2xl font-semibold">
                   {user?.firstName?.charAt(0)}
                 </AvatarFallback>
               </Avatar>
 
               <div className="flex-1 flex flex-col gap-1">
-                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none flex items-center gap-1.5">
+                <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none flex items-center gap-1.5">
                   {user?.firstName} {user?.lastName}
                   {profile?.is_verified && <VerifiedBadge />}
                 </h2>
-                <p className="text-xs md:text-sm font-bold text-zinc-500 truncate max-w-[200px] md:max-w-[260px]">
+                <p className="text-xs md:text-sm font-medium text-slate-500 truncate max-w-[200px] md:max-w-[260px]">
                   {user?.primaryEmailAddress?.emailAddress}
                 </p>
               </div>
@@ -2037,27 +2040,27 @@ function ProfileContent() {
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => handleTabChange("info")}
-                className="flex-1 h-9 md:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] md:text-[11px] tracking-wider shadow-none"
+                className="flex-1 h-9 md:h-10 rounded-md bg-white hover:bg-zinc-50 border border-hairline dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 font-medium text-[10px] md:text-[11px] tracking-wider shadow-none"
               >
-                <Pencil className="w-3.5 h-3.5 md:w-4 md:h-4 mr-2 text-zinc-500" />
+                <Pencil className="w-3.5 h-3.5 md:w-4 md:h-4 mr-2 text-slate-500" />
                 {t("edit") || "Edit"}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex-1 h-9 md:h-10 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 font-bold text-[10px] md:text-[11px] tracking-wider shadow-none gap-2">
-                    <MenuIcon className="w-4 h-4 md:w-[18px] md:h-[18px] text-zinc-500" />
+                  <Button className="flex-1 h-9 md:h-10 rounded-md bg-white hover:bg-zinc-50 border border-hairline dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 text-[10px] md:text-[11px] tracking-wider shadow-none gap-2">
+                    <MenuIcon className="w-4 h-4 md:w-[18px] md:h-[18px] text-slate-500" />
                     {t("settings") || "Settings"}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-56 md:w-60 rounded-xl shadow-xl p-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+                  className="w-56 md:w-60 rounded-md shadow-xl p-2 border-hairline dark:border-zinc-700 bg-white dark:bg-zinc-800"
                 >
                   {menuItems.map((item) => (
                     <DropdownMenuItem
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-md cursor-pointer font-medium text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                     >
                       <div
                         className={cn("p-1.5 rounded-md", item.bg, item.color)}
@@ -2067,12 +2070,21 @@ function ProfileContent() {
                       {item.title}
                     </DropdownMenuItem>
                   ))}
+                  <DropdownMenuItem
+                    onClick={() => router.push("/vip")}
+                    className="flex items-center gap-3 py-2.5 px-3 rounded-md cursor-pointer font-medium text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                  >
+                    <div className="p-1.5 text-amber-500">
+                      <Crown className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    </div>
+                    {t("vipPageTitle")}
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-lg cursor-pointer font-bold text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
+                      className="flex items-center gap-3 py-2.5 px-3 rounded-md cursor-pointer font-medium text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
                     >
-                      <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
+                      <div className="p-1.5 text-slate-500 dark:text-zinc-400">
                         <UserCog className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </div>
                       {t("adminPanel")}
@@ -2080,8 +2092,8 @@ function ProfileContent() {
                   )}
                   <DropdownMenuItem className="p-0">
                     <SignOutButton>
-                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-lg text-zinc-700 dark:text-zinc-300 font-bold text-[11px] tracking-wider">
-                        <div className="p-1.5 text-zinc-500 dark:text-zinc-400">
+                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-md text-zinc-700 dark:text-zinc-300 font-medium text-[11px] tracking-wider">
+                        <div className="p-1.5 text-slate-500 dark:text-zinc-400">
                           <LogOut className="w-3.5 h-3.5" />
                         </div>
                         {t("signOut")}
@@ -2106,17 +2118,17 @@ function ProfileContent() {
         open={showSecondaryPhoneModal}
         onOpenChange={setShowSecondaryPhoneModal}
       >
-        <DialogContent className="sm:max-w-md rounded-3xl p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-md rounded-md p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
           <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-1">
-              <ShieldCheck className="w-8 h-8 text-zinc-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-1">
+              <ShieldCheck className="w-8 h-8 text-slate-500" />
             </div>
 
             <DialogHeader className="space-y-2">
-              <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+              <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400">
                 {t("qrSecondaryModal.title")}
               </DialogTitle>
-              <DialogDescription className="text-zinc-500 font-bold text-[11px] leading-relaxed">
+              <DialogDescription className="text-slate-500 text-[11px] leading-relaxed">
                 {t("qrSecondaryModal.desc")}
               </DialogDescription>
             </DialogHeader>
@@ -2130,7 +2142,7 @@ function ProfileContent() {
                 {/* Primary number (if missing) */}
                 {(!profile?.phone || profile.phone.trim() === "") && (
                   <div className="space-y-1.5">
-                    <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                    <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                       {t("phoneLabel")}
                     </Label>
                     <PhoneInput
@@ -2145,7 +2157,7 @@ function ProfileContent() {
                 {!profile?.secondary_phone && (
                   <>
                     <div className="space-y-1.5">
-                      <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                      <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                         {t("qrSecondaryModal.label")}
                       </Label>
                       <PhoneInput
@@ -2154,7 +2166,7 @@ function ProfileContent() {
                         className="text-emerald-600 dark:text-emerald-400"
                         required
                       />
-                      <p className="text-[8px] font-bold text-zinc-400 px-1 leading-tight tracking-wider">
+                      <p className="text-[8px] font-medium text-slate-400 px-1 leading-tight tracking-wider">
                         {t("phoneSecondaryDescription") ||
                           "Дар ҳолати гум шудани телефони шумо, ёбанда ба ин рақам занг мезанад."}
                       </p>
@@ -2166,7 +2178,7 @@ function ProfileContent() {
                 {/* Social networks — OPTIONAL.
                     Stays collapsed, so it doesn't lengthen the required form. */}
                 <div className="space-y-1.5">
-                  <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                  <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                     {t("qrSecondaryModal.socialBtn")}
                   </Label>
                   <button
@@ -2174,7 +2186,7 @@ function ProfileContent() {
                     onClick={() => setShowSocial((v) => !v)}
                     aria-expanded={showSocial}
                     aria-label={t("qrSecondaryModal.socialBtn")}
-                    className="w-full flex items-center justify-between gap-2 py-3 px-4 rounded-xl bg-zinc-100 dark:bg-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+                    className="w-full flex items-center justify-between gap-2 py-3 px-4 rounded-md bg-slate-100 dark:bg-zinc-700/60 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
                   >
                     {/* Icons only, in their own brand colors: the eye
                         recognizes them faster than text. */}
@@ -2185,7 +2197,7 @@ function ProfileContent() {
                     </span>
                     <ChevronRight
                       className={cn(
-                        "w-4 h-4 text-zinc-400 transition-transform duration-300",
+                        "w-4 h-4 text-slate-400 transition-transform duration-300",
                         showSocial && "rotate-90",
                       )}
                     />
@@ -2206,7 +2218,7 @@ function ProfileContent() {
                           four first and only then sees the hint. */}
                       {/* Green, not gray: this hint needs to be READ —
                           gray got lost among the fields. */}
-                      <p className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 px-1 pb-1 leading-snug">
+                      <p className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 px-1 pb-1 leading-snug">
                         {t("qrSecondaryModal.socialPickHint")}
                       </p>
                       {SOCIALS.map(({ key, Icon, label }) => {
@@ -2215,7 +2227,7 @@ function ProfileContent() {
                           <div key={key} className="relative">
                             <Icon
                               size={16}
-                              className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none"
+                              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
                             />
                             {/* The prefix symbol isn't included in the
                                 value — display only. Its space is always
@@ -2223,7 +2235,7 @@ function ProfileContent() {
                                 doesn't jump when it appears. */}
                             <span
                               aria-hidden
-                              className="absolute left-10 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400 pointer-events-none"
+                              className="absolute left-10 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400 pointer-events-none"
                             >
                               {prefix}
                             </span>
@@ -2243,7 +2255,7 @@ function ProfileContent() {
                               autoCapitalize="none"
                               autoCorrect="off"
                               spellCheck={false}
-                              className="h-12 pl-[3.75rem] pr-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 font-bold text-sm border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
+                              className="h-12 pl-[3.75rem] pr-4 rounded-md bg-slate-50 dark:bg-zinc-800 font-semibold text-sm border-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all outline-none"
                             />
                           </div>
                         );
@@ -2261,18 +2273,18 @@ function ProfileContent() {
                       onCheckedChange={(checked) =>
                         setAcceptedTerms(checked === true)
                       }
-                      className="mt-1 border-2 border-zinc-200 dark:border-zinc-800 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 rounded-md transition-all duration-300"
+                      className="mt-1 border-2 border-slate-200 dark:border-zinc-800 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 rounded-md transition-all duration-300"
                     />
                     <div className="grid gap-1.5 leading-none">
                       <Label
                         htmlFor="terms-profile"
-                        className="text-[10px] font-bold text-zinc-600 dark:text-zinc-400 leading-relaxed cursor-pointer select-none"
+                        className="text-[10px] text-slate-600 dark:text-zinc-400 leading-relaxed cursor-pointer select-none"
                       >
                         {t("terms.checkbox")}
                       </Label>
                       <button
                         type="button"
-                        className="text-[9px] font-bold tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
+                        className="text-[9px] font-medium tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors text-left"
                         onClick={() => setShowTermsDetails(true)}
                       >
                         {t("terms.link")}
@@ -2288,7 +2300,7 @@ function ProfileContent() {
             <Button
               type="submit"
               form="secondary-phone-form"
-              className="w-full h-14 rounded-2xl font-bold tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all disabled:opacity-50 border-none"
+              className="w-full h-14 rounded-md tracking-[0.2em] text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all disabled:opacity-50 border-none"
               disabled={
                 secondaryLoading ||
                 (profile?.accepted_terms !== true && !acceptedTerms)
@@ -2303,7 +2315,7 @@ function ProfileContent() {
             <Button
               variant="ghost"
               onClick={() => setShowSecondaryPhoneModal(false)}
-              className="w-full mt-2 text-[9px] font-bold tracking-widest text-zinc-400"
+              className="w-full mt-2 text-[9px] font-medium tracking-widest text-slate-400"
             >
               {t("cancel")}
             </Button>
@@ -2313,20 +2325,20 @@ function ProfileContent() {
 
       {/* Terms Details Dialog */}
       <Dialog open={showTermsDetails} onOpenChange={setShowTermsDetails}>
-        <DialogContent className="w-[96%] sm:max-w-[400px] rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
+        <DialogContent className="w-[96%] sm:max-w-[400px] rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[110]">
           <DialogHeader className="space-y-3">
-            <DialogTitle className="text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+            <DialogTitle className="text-lg tracking-tight text-emerald-600 dark:text-emerald-400">
               {t("terms.link")}
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+            <p className="text-slate-600 dark:text-zinc-400 font-semibold text-sm leading-relaxed">
               {t("terms.content")}
             </p>
           </div>
           <Button
             onClick={() => setShowTermsDetails(false)}
-            className="w-full h-12 rounded-xl font-bold tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+            className="w-full h-12 rounded-md font-medium tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
           >
             {t("ok")}
           </Button>
@@ -2334,15 +2346,15 @@ function ProfileContent() {
       </Dialog>
       {/* Wallpaper — a phone-only feature, on web we just explain it. */}
       <Dialog open={showWallpaperInfoModal} onOpenChange={setShowWallpaperInfoModal}>
-        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+        <DialogContent className="w-[96%] sm:max-w-md rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-3xl flex items-center justify-center mx-auto mb-2 border border-zinc-100 dark:border-zinc-800">
-              <Smartphone className="w-8 h-8 text-zinc-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-2 border border-slate-100 dark:border-zinc-800">
+              <Smartphone className="w-8 h-8 text-slate-500" />
             </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("qrWallpaperWebTitle")}
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-medium text-sm leading-relaxed">
+            <DialogDescription className="text-slate-500 dark:text-zinc-400 font-medium text-sm leading-relaxed">
               {/* User request: "JUYO" (a Latin name within Cyrillic text)
                   should be smaller than the rest of the sentence — so it
                   doesn't stand out. */}
@@ -2362,7 +2374,7 @@ function ProfileContent() {
           </DialogHeader>
           <Button
             onClick={() => setShowWallpaperInfoModal(false)}
-            className="w-full h-12 rounded-xl font-bold tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+            className="w-full h-12 rounded-md font-medium tracking-widest text-[10px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
           >
             {t("ok")}
           </Button>
@@ -2370,34 +2382,34 @@ function ProfileContent() {
       </Dialog>
       {/* Why QR Modal */}
       <Dialog open={showWhyQRModal} onOpenChange={setShowWhyQRModal}>
-        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+        <DialogContent className="w-[96%] sm:max-w-md rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <QrCode className="w-8 h-8 text-zinc-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-2">
+              <QrCode className="w-8 h-8 text-slate-500" />
             </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("qrWhyGuideTitle") || "Чӣ тавр QR-код ба шумо кӯмак мекунад?"}
             </DialogTitle>
             <DialogDescription asChild>
-              <div className="text-zinc-600 dark:text-zinc-400 font-bold text-sm leading-relaxed space-y-4 text-left mt-4">
+              <div className="text-slate-600 dark:text-zinc-400 font-semibold text-sm leading-relaxed space-y-4 text-left mt-4">
                 <p className="text-center mb-6">
                   {t("qrWhyGuideDesc") ||
                     "Ин стикери махсусест, ки ашёҳои шуморо муҳофизат мекунад. Тарзи кораш хеле оддӣ аст:"}
                 </p>
 
-                <div className="space-y-5 mt-4 bg-zinc-50 dark:bg-zinc-800/50 p-5 rounded-3xl border border-zinc-100 dark:border-zinc-800">
+                <div className="space-y-5 mt-4 bg-slate-50 dark:bg-zinc-800/50 p-5 rounded-md border border-slate-100 dark:border-zinc-800">
                   {/* Step 1 */}
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-bold text-zinc-900 dark:text-white text-xs">
+                    <div className="w-8 h-8 rounded-md bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 shadow-sm border border-slate-100 dark:border-zinc-700">
+                      <span className="font-medium text-zinc-900 dark:text-white text-xs">
                         1
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-bold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <h5 className="font-semibold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep1Title") || "Дизайн ва скачат кунед"}
                       </h5>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">
                         {t("qrWhyStep1Desc") ||
                           "Аввал QR-кодро бо услуби худ дизайн кунед, сипас онро скачат карда, чоп кунед ва ба ашёҳоятон часпонед."}
                       </p>
@@ -2406,16 +2418,16 @@ function ProfileContent() {
 
                   {/* Step 2 */}
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-bold text-zinc-900 dark:text-white text-xs">
+                    <div className="w-8 h-8 rounded-md bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 shadow-sm border border-slate-100 dark:border-zinc-700">
+                      <span className="font-medium text-zinc-900 dark:text-white text-xs">
                         2
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-bold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <h5 className="font-semibold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep2Title") || "Ёбанда скан мекунад"}
                       </h5>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">
                         {t("qrWhyStep2Desc") ||
                           "Ашё гум шавад, шахси ёфтагӣ танҳо камераи телефонашро ба QR-код наздик мекунад."}
                       </p>
@@ -2424,16 +2436,16 @@ function ProfileContent() {
 
                   {/* Step 3 */}
                   <div className="flex gap-4">
-                    <div className="w-8 h-8 rounded-2xl bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 shadow-sm border border-zinc-100 dark:border-zinc-700">
-                      <span className="font-bold text-zinc-900 dark:text-white text-xs">
+                    <div className="w-8 h-8 rounded-md bg-white dark:bg-zinc-700 flex items-center justify-center shrink-0 shadow-sm border border-slate-100 dark:border-zinc-700">
+                      <span className="font-medium text-zinc-900 dark:text-white text-xs">
                         3
                       </span>
                     </div>
                     <div className="space-y-1 mt-1">
-                      <h5 className="font-bold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
+                      <h5 className="font-semibold text-[11px] tracking-wider text-emerald-600 dark:text-emerald-400">
                         {t("qrWhyStep3Title") || "Алоқаи фаврӣ ва бехатар"}
                       </h5>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug">
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-snug">
                         {t("qrWhyStep3Desc") ||
                           "Саҳифаи шумо кушода мешавад ва ёбанда бевосита ба шумо занг мезанад. Рақамҳои эҳтиётӣ низ дастрас мешаванд."}
                       </p>
@@ -2446,7 +2458,7 @@ function ProfileContent() {
           <div className="mt-8 flex flex-col gap-2">
             <Button
               onClick={() => setShowWhyQRModal(false)}
-              className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+              className="w-full h-12 rounded-md font-medium tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
             >
               {t("ok") || "Фаҳмо"}
             </Button>
@@ -2473,55 +2485,55 @@ function ProfileContent() {
 
       {/* Change Password Modal */}
       <Dialog open={showChangePasswordModal} onOpenChange={setShowChangePasswordModal}>
-        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+        <DialogContent className="w-[96%] sm:max-w-md rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <KeyRound className="w-8 h-8 text-zinc-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-2">
+              <KeyRound className="w-8 h-8 text-slate-500" />
             </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("changePassword")}
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+            <DialogDescription className="text-slate-500 dark:text-zinc-400 text-sm leading-relaxed">
               {t("changePasswordDesc")}
             </DialogDescription>
           </DialogHeader>
 
           {/* Visual example — the sign-in page pointing at "Forgot your password?" */}
-          <div className="mt-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/40 p-4 space-y-2.5">
+          <div className="mt-6 rounded-md border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-800/40 p-4 space-y-2.5">
             <div className="text-center space-y-0.5 mb-2">
-              <p className="font-bold text-[11px] text-zinc-900 dark:text-white">
+              <p className="font-medium text-[11px] text-zinc-900 dark:text-white">
                 {t("clerk.signInTitle")}
               </p>
-              <p className="text-[8px] font-bold text-zinc-400">
+              <p className="text-[8px] font-medium text-slate-400">
                 {t("clerk.signInSubtitle")}
               </p>
             </div>
-            <div className="h-7 rounded-lg bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-700" />
+            <div className="h-7 rounded-md bg-white dark:bg-zinc-700 border border-hairline dark:border-zinc-700" />
             <div className="flex items-center gap-2 py-0.5">
-              <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
-              <span className="text-[8px] font-bold text-zinc-300">{t("clerk.dividerText")}</span>
-              <div className="flex-1 h-px bg-zinc-200 dark:bg-zinc-700" />
+              <div className="flex-1 h-px bg-slate-200 dark:bg-zinc-700" />
+              <span className="text-[8px] font-medium text-zinc-300">{t("clerk.dividerText")}</span>
+              <div className="flex-1 h-px bg-slate-200 dark:bg-zinc-700" />
             </div>
             <div className="space-y-1">
-              <span className="text-[8px] font-bold text-zinc-400 ml-1">{t("clerk.emailLabel")}</span>
-              <div className="h-7 rounded-lg bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-700" />
+              <span className="text-[8px] font-medium text-slate-400 ml-1">{t("clerk.emailLabel")}</span>
+              <div className="h-7 rounded-md bg-white dark:bg-zinc-700 border border-hairline dark:border-zinc-700" />
             </div>
             <div className="space-y-1">
               <div className="flex items-center justify-between ml-1">
-                <span className="text-[8px] font-bold text-zinc-400">{t("clerk.signInPasswordLabel")}</span>
-                <span className="relative text-[8px] font-bold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded-md ring-2 ring-emerald-400">
+                <span className="text-[8px] font-medium text-slate-400">{t("clerk.signInPasswordLabel")}</span>
+                <span className="relative text-[8px] font-medium text-emerald-600 dark:text-emerald-400 bg-white dark:bg-zinc-800 px-2 py-0.5 rounded-md ring-2 ring-emerald-400">
                   {t("clerk.forgotPasswordLabel")}
                   <MousePointerClick className="w-3.5 h-3.5 absolute -bottom-3.5 -right-2.5 text-emerald-500 rotate-[-8deg]" />
                 </span>
               </div>
-              <div className="h-7 rounded-lg bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-700" />
+              <div className="h-7 rounded-md bg-white dark:bg-zinc-700 border border-hairline dark:border-zinc-700" />
             </div>
-            <div className="h-8 rounded-lg bg-zinc-900 dark:bg-white mt-1" />
+            <div className="h-8 rounded-md bg-zinc-900 dark:bg-white mt-1" />
           </div>
 
           <div className="mt-8">
             <SignOutButton>
-              <Button className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 transition-all gap-2">
+              <Button className="w-full h-12 rounded-md tracking-widest text-[11px] bg-red-500 text-white hover:bg-red-600 transition-all gap-2">
                 <LogOut className="w-4 h-4" />
                 {t("signOutToChangePassword")}
               </Button>
@@ -2530,7 +2542,7 @@ function ProfileContent() {
           <Button
             variant="ghost"
             onClick={() => setShowChangePasswordModal(false)}
-            className="w-full h-11 rounded-xl font-bold tracking-widest text-[10px] text-zinc-500 mt-2"
+            className="w-full h-11 rounded-md font-medium tracking-widest text-[10px] text-slate-500 mt-2"
           >
             {t("cancel")}
           </Button>
@@ -2550,15 +2562,15 @@ function ProfileContent() {
           (open ? setShowEmailChangeModal(true) : resetEmailModal())
         }
       >
-        <DialogContent className="w-[96%] sm:max-w-md rounded-3xl p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
+        <DialogContent className="w-[96%] sm:max-w-md rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-3xl flex items-center justify-center mx-auto mb-2">
-              <Mail className="w-8 h-8 text-zinc-500" />
+            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-2">
+              <Mail className="w-8 h-8 text-slate-500" />
             </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
+            <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
               {t("changeEmail")}
             </DialogTitle>
-            <DialogDescription className="text-zinc-500 dark:text-zinc-400 font-bold text-sm leading-relaxed">
+            <DialogDescription className="text-slate-500 dark:text-zinc-400 text-sm leading-relaxed">
               {emailStep === "input"
                 ? t("changeEmailDesc")
                 : t("changeEmailVerifyDesc")}
@@ -2568,7 +2580,7 @@ function ProfileContent() {
           {emailStep === "input" ? (
             <div className="mt-6 space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                   {t("newEmail")}
                 </Label>
                 <Input
@@ -2576,14 +2588,14 @@ function ProfileContent() {
                   value={newEmailInput}
                   onChange={(e) => setNewEmailInput(e.target.value)}
                   placeholder="example@mail.com"
-                  className="h-11 rounded-xl font-bold text-sm"
+                  className="h-11 rounded-md font-semibold text-sm"
                   required
                 />
               </div>
               <Button
                 onClick={handleStartEmailChange}
                 disabled={emailSubmitting || !newEmailInput}
-                className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+                className="w-full h-12 rounded-md tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
               >
                 {emailSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -2595,7 +2607,7 @@ function ProfileContent() {
           ) : (
             <div className="mt-6 space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-[9px] font-bold text-zinc-400 tracking-widest ml-1">
+                <Label className="text-[9px] text-slate-400 tracking-widest ml-1">
                   {t("verificationCode")}
                 </Label>
                 <Input
@@ -2605,18 +2617,18 @@ function ProfileContent() {
                     setEmailCodeInput(e.target.value.replace(/[^0-9]/g, ""))
                   }
                   placeholder="000000"
-                  className="h-11 rounded-xl font-bold text-sm text-center tracking-[0.3em]"
+                  className="h-11 rounded-md font-semibold text-sm text-center tracking-[0.3em]"
                   maxLength={6}
                   required
                 />
               </div>
-              <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-2xl border border-amber-100 dark:border-amber-900/40 font-bold text-xs leading-relaxed flex items-start gap-2">
+              <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 px-4 py-3 rounded-md border border-amber-100 dark:border-amber-900/40 font-medium text-xs leading-relaxed flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{t("checkSpamFolderHint")}</span>
               </div>
               <div className="text-center">
                 {resendCooldown > 0 ? (
-                  <span className="text-[11px] font-bold text-zinc-400">
+                  <span className="text-[11px] font-medium text-slate-400">
                     {t("resendCodeIn", { seconds: resendCooldown })}
                   </span>
                 ) : (
@@ -2624,7 +2636,7 @@ function ProfileContent() {
                     type="button"
                     onClick={handleResendCode}
                     disabled={resendSubmitting}
-                    className="text-[11px] font-bold text-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
+                    className="text-[11px] font-medium text-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5"
                   >
                     {resendSubmitting && <Loader2 className="w-3 h-3 animate-spin" />}
                     {t("resendCodeAction")}
@@ -2634,7 +2646,7 @@ function ProfileContent() {
               <Button
                 onClick={handleVerifyEmailChange}
                 disabled={emailSubmitting || emailCodeInput.length < 6}
-                className="w-full h-12 rounded-xl font-bold tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+                className="w-full h-12 rounded-md font-medium tracking-widest text-[11px] bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
               >
                 {emailSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -2648,7 +2660,7 @@ function ProfileContent() {
             variant="ghost"
             disabled={emailSubmitting}
             onClick={resetEmailModal}
-            className="w-full h-11 rounded-xl font-bold tracking-widest text-[10px] text-zinc-500 mt-2"
+            className="w-full h-11 rounded-md tracking-widest text-[10px] text-slate-500 mt-2"
           >
             {t("cancel")}
           </Button>
@@ -2668,11 +2680,11 @@ export default function ProfilePage() {
       fallback={
         <div className="space-y-8 pb-32 px-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
-            <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-[2rem]" />
+            <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-md" />
             <div className="space-y-5">
-              <Skeleton className="h-10 w-40 rounded-lg" />
-              <Skeleton className="h-24 w-full rounded-2xl" />
-              <Skeleton className="h-24 w-full rounded-2xl" />
+              <Skeleton className="h-10 w-40 rounded-md" />
+              <Skeleton className="h-24 w-full rounded-md" />
+              <Skeleton className="h-24 w-full rounded-md" />
             </div>
           </div>
         </div>

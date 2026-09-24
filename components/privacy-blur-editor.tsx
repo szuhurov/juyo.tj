@@ -732,22 +732,22 @@ export function PrivacyBlurEditor({
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-2xl rounded-[2rem] p-0 overflow-hidden border-none shadow-2xl gap-0 flex flex-col max-h-[90dvh]"
+        className="sm:max-w-2xl rounded-md p-0 overflow-hidden border-none shadow-2xl gap-0 flex flex-col max-h-[90dvh]"
       >
         <DialogHeader className="p-6 pb-4 space-y-2 shrink-0">
           <div className="flex items-start gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <DialogTitle className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400">
                   {t("privacyReviewTitle")}
                 </DialogTitle>
                 {slots.length > 1 && (
-                  <span className="shrink-0 text-[10px] font-bold tracking-widest text-zinc-400 bg-zinc-100 dark:bg-zinc-700 rounded-full px-2 py-0.5">
+                  <span className="shrink-0 text-[10px] font-medium tracking-widest text-slate-400 bg-slate-100 dark:bg-zinc-700 rounded-full px-2 py-0.5">
                     {currentIndex + 1}/{slots.length}
                   </span>
                 )}
               </div>
-              <p className="text-sm font-bold text-zinc-400 mt-0.5">
+              <p className="text-sm font-semibold text-slate-400 mt-0.5">
                 {t("privacyReviewDesc")}
               </p>
             </div>
@@ -765,7 +765,7 @@ export function PrivacyBlurEditor({
         <div className="px-6 flex-1 min-h-0 flex flex-col overflow-y-auto">
           <div
             ref={wrapRef}
-            className="relative w-full select-none rounded-2xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 touch-none flex items-center justify-center flex-1 min-h-[200px]"
+            className="relative w-full select-none rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 touch-none flex items-center justify-center flex-1 min-h-[200px]"
             style={{
               cursor: "crosshair",
             }}
@@ -775,7 +775,7 @@ export function PrivacyBlurEditor({
             onPointerCancel={handleWrapPointerUp}
           >
             {!ready ? (
-              <div className="w-full aspect-square animate-pulse bg-zinc-200 dark:bg-zinc-700" />
+              <div className="w-full aspect-square animate-pulse bg-slate-200 dark:bg-zinc-700" />
             ) : (
               <div
                 style={{
@@ -905,7 +905,7 @@ export function PrivacyBlurEditor({
                   onClick={() => goToIndex(i)}
                   className={cn(
                     "h-1.5 rounded-full transition-all touch-manipulation",
-                    i === currentIndex ? "w-5 bg-emerald-500" : "w-1.5 bg-zinc-300 dark:bg-zinc-700",
+                    i === currentIndex ? "w-5 bg-emerald-500" : "w-1.5 bg-slate-300 dark:bg-zinc-700",
                   )}
                 />
               ))}
@@ -919,7 +919,7 @@ export function PrivacyBlurEditor({
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-xl touch-manipulation"
+                className="h-9 w-9 rounded-md touch-manipulation"
                 onClick={undo}
                 disabled={historyIndex <= 0}
               >
@@ -929,7 +929,7 @@ export function PrivacyBlurEditor({
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-xl touch-manipulation"
+                className="h-9 w-9 rounded-md touch-manipulation"
                 onClick={redo}
                 disabled={historyIndex >= history.length - 1}
               >
@@ -944,7 +944,7 @@ export function PrivacyBlurEditor({
             type="button"
             onClick={handleFooterButton}
             disabled={!ready}
-            className="w-full h-12 rounded-xl font-bold tracking-widest text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
+            className="w-full h-12 rounded-md tracking-widest text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
           >
             {isLastSlot ? t("privacyConfirmBtn") : t("next")}
           </Button>

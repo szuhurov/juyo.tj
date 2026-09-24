@@ -20,7 +20,7 @@ export default async function AdminLayout({
     // dark black). Before this, the panel had a hardcoded `bg-zinc-100` and
     // stayed blindingly white in dark mode.
     <div className="min-h-screen md:h-screen bg-white dark:bg-zinc-900 md:bg-canvas md:p-4">
-      <div className="flex flex-col md:flex-row min-h-screen md:h-full bg-white dark:bg-zinc-900 md:rounded-[28px] md:border md:border-zinc-200 md:dark:border-zinc-800 md:overflow-hidden">
+      <div className="flex flex-col md:flex-row min-h-screen md:h-full bg-white dark:bg-zinc-900 md:rounded-md md:border md:border-zinc-200 md:dark:border-zinc-800 md:overflow-hidden">
         <AdminSidebar />
         <AdminSearchProvider>
           <div className="flex-1 min-w-0 flex flex-col md:overflow-hidden">

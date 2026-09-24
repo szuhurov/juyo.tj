@@ -272,7 +272,7 @@ export const QRCard: React.FC<QRCardProps> = ({
           "relative flex items-center justify-center p-[18px] size-[246px] transition-all duration-300 overflow-hidden",
           radiusMap[borderRadius],
           shadowMap[shadow],
-          hasBorder && "border-2 border-zinc-100 dark:border-zinc-800",
+          hasBorder && "border-2 border-slate-100 dark:border-zinc-800",
         )}
         style={{ background: cardBackground }}
       >
@@ -290,7 +290,7 @@ export const QRCard: React.FC<QRCardProps> = ({
               }}
             >
               <span
-                className="text-[20px] font-[900] tracking-[0.1em] block leading-none"
+                className="text-[20px] font-bold tracking-[0.1em] block leading-none"
                 style={{ color: accentPaint.color, transform: "translate(0.2mm, 0.2mm)" }}
               >
                 JUYO

@@ -27,11 +27,11 @@ export default function EditProfilePage() {
           appearance={{
             elements: {
               rootBox: "w-full",
-              card: "shadow-none border border-zinc-100 dark:border-zinc-800 rounded-2xl w-full",
+              card: "shadow-none border border-hairline dark:border-zinc-700 rounded-md w-full",
               navbar: "hidden md:flex",
-              headerTitle: "text-xl font-bold tracking-tight",
-              headerSubtitle: "text-zinc-500 text-sm",
-              profileSectionTitleText: "font-bold text-xs tracking-wider text-zinc-400"
+              headerTitle: "text-xl font-semibold tracking-tight",
+              headerSubtitle: "text-slate-500 text-sm",
+              profileSectionTitleText: "font-medium text-xs tracking-wider text-slate-400"
             }
           }}
         />

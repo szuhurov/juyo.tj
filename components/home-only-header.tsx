@@ -34,8 +34,8 @@ export function MainContent({ children }: { children: React.ReactNode }) {
 export function SiteFooter() {
   const { t } = useLanguage();
   return (
-    <footer data-nosnippet className="border-t py-8 bg-zinc-50 dark:bg-zinc-950 mt-12 mb-20 md:mb-0 hidden md:block">
-      <div className="w-full px-4 text-center text-zinc-500 text-sm">
+    <footer data-nosnippet className="border-t py-8 bg-slate-50 dark:bg-zinc-950 mt-12 mb-20 md:mb-0 hidden md:block">
+      <div className="w-full px-4 text-center text-slate-500 text-sm">
         <p>© 2026 juyo - All rights reserved.</p>
         <div className="mt-2">
           <Link href="/privacy" className="hover:underline">{t("privacyPolicy")}</Link>

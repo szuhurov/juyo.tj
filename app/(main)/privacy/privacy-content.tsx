@@ -157,9 +157,9 @@ export function PrivacyContent() {
   const currentContent = content[locale as keyof typeof content] || content.en;
 
   return (
-    <div className="max-w-3xl mx-auto my-6 px-4 sm:px-8 py-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+    <div className="max-w-3xl mx-auto my-6 px-4 sm:px-8 py-10 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
       <h1 className="text-3xl font-bold mb-4">{currentContent.title}</h1>
-      <p className="text-sm text-zinc-500 mb-8">{currentContent.lastUpdated}</p>
+      <p className="text-sm text-slate-500 mb-8">{currentContent.lastUpdated}</p>
 
       <p className="mb-8 text-lg text-zinc-700 dark:text-zinc-300">
         {currentContent.intro}
@@ -171,14 +171,14 @@ export function PrivacyContent() {
           // section heading and the `#anchor` link would land on empty space.
           <div key={section.id} id={section.id} className="scroll-mt-24">
             <h2 className="text-xl font-semibold mb-3">{section.title}</h2>
-            <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
               {section.text}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="mt-12 pt-8 border-t text-sm text-zinc-500">
+      <div className="mt-12 pt-8 border-t border-hairline dark:border-zinc-700 text-sm text-slate-500">
         <p>Email: s.zuhurov@outlook.com</p>
       </div>
     </div>

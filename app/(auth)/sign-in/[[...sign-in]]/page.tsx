@@ -24,7 +24,7 @@ export default function Page() {
 
   return (
     // Container for centering the sign-in form
-    <main className="min-h-screen flex flex-col items-center bg-zinc-50 dark:bg-zinc-950 p-4 pt-6 sm:pt-12">
+    <main className="min-h-screen flex flex-col items-center bg-slate-50 dark:bg-zinc-950 p-4 pt-6 sm:pt-12">
 
       {/* Top header: Back button and Language switcher */}
       <div className="w-full max-w-[480px] relative flex items-center justify-center mb-10 sm:mb-14">
@@ -47,10 +47,10 @@ export default function Page() {
               onClick={() => {
                 setLocale(lang.code as Locale);
               }}
-              className={`font-bold rounded-lg px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
+              className={`font-medium rounded-md px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
                 locale === lang.code
                   ? "bg-emerald-500 text-white"
-                  : "bg-white dark:bg-zinc-900 text-zinc-600 hover:text-zinc-900 border-zinc-200 dark:border-zinc-800"
+                  : "bg-white dark:bg-zinc-900 text-slate-600 hover:text-zinc-900 border-hairline dark:border-zinc-800"
               }`}
             >
               {lang.label}
@@ -74,10 +74,12 @@ export default function Page() {
               // (Clerk's default) — matched to the same radius as the rest of the
               // Repeated user request: even less — now matching EXACTLY
               // the radius of the language selection buttons above
-              // (rounded-lg, 8px), not --radius-control (14px).
-              formFieldInput: "rounded-lg",
-              formButtonPrimary: "rounded-lg",
-              socialButtonsBlockButton: "rounded-lg",
+              // (rounded-md, 10px) — now also what --radius-control resolves
+              // to site-wide, but kept as the literal class here since Clerk's
+              // `appearance` prop doesn't read CSS custom properties.
+              formFieldInput: "rounded-md",
+              formButtonPrimary: "rounded-md",
+              socialButtonsBlockButton: "rounded-md",
             }
           }}
         />

@@ -54,7 +54,7 @@ export function UserFilterBar({
               onChange({ ...filters, status: tab.value, page: 0 });
             }}
             className={cn(
-              "text-sm font-bold pb-1 border-b-2 transition-colors",
+              "text-sm font-semibold pb-1 border-b-2 transition-colors",
               !archiveView && activeStatus === tab.value
                 ? "text-zinc-900 dark:text-white border-blue-600"
                 : "text-zinc-400 border-transparent hover:text-zinc-600",
@@ -67,7 +67,7 @@ export function UserFilterBar({
           type="button"
           onClick={() => onArchiveViewChange(true)}
           className={cn(
-            "text-sm font-bold pb-1 border-b-2 transition-colors",
+            "text-sm font-semibold pb-1 border-b-2 transition-colors",
             archiveView
               ? "text-zinc-900 dark:text-white border-blue-600"
               : "text-zinc-400 border-transparent hover:text-zinc-600",
@@ -85,7 +85,7 @@ export function UserFilterBar({
               type="button"
               onClick={() => toggleQuickFilter(f.key)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-bold border transition-colors",
+                "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
                 isQuickFilterActive(f.key)
                   ? "bg-blue-50 dark:bg-blue-500/10 border-blue-100 text-blue-600 dark:text-blue-400"
                   : "bg-white dark:bg-zinc-800 border-zinc-100 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800",

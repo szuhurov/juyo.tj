@@ -18,12 +18,12 @@ export function ImagePlaceholder({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "absolute inset-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-700",
+        "absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-zinc-700",
         className,
       )}
       aria-hidden
     >
-      <ImageIcon className="w-10 h-10 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-400 dark:text-zinc-600" />
+      <ImageIcon className="w-10 h-10 min-[1084px]:w-14 min-[1084px]:h-14 text-slate-400 dark:text-zinc-600" />
     </div>
   );
 }

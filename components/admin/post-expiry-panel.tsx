@@ -63,14 +63,14 @@ export function PostExpiryPanel() {
   if (isLoading) return null;
 
   return (
-    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
+    <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+        <div className="w-10 h-10 rounded-md flex items-center justify-center shrink-0 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
           <CalendarClock className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Мӯҳлати эълонҳо</h3>
-          <p className="text-[11px] font-bold text-zinc-400">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Мӯҳлати эълонҳо</h3>
+          <p className="text-[11px] font-medium text-zinc-400">
             72 соат пеш аз мӯҳлат огоҳинома меравад · ҳар рӯз 02:00, худкор
           </p>
         </div>
@@ -78,7 +78,7 @@ export function PostExpiryPanel() {
 
       <div className="flex items-end gap-2">
         <label className="flex-1 min-w-0">
-          <span className="block text-[11px] font-bold text-zinc-500 dark:text-zinc-400 mb-1.5">
+          <span className="block text-[11px] font-medium text-zinc-500 dark:text-zinc-400 mb-1.5">
             Мӯҳлат (рӯз)
           </span>
           <input
@@ -87,20 +87,20 @@ export function PostExpiryPanel() {
             max={3650}
             value={days}
             onChange={(e) => setDays(e.target.value)}
-            className="w-full h-11 rounded-xl px-3.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-sm font-bold text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
+            className="w-full h-11 rounded-md px-3.5 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-sm font-semibold text-zinc-700 dark:text-zinc-200 focus:outline-none focus:ring-2 focus:ring-blue-500/25"
           />
         </label>
         <button
           type="button"
           onClick={save}
           disabled={invalid || !changed || isPending}
-          className="h-11 px-5 shrink-0 rounded-xl bg-blue-600 text-white text-xs font-bold disabled:opacity-40 transition-opacity"
+          className="h-11 px-5 shrink-0 rounded-md bg-blue-600 text-white text-xs font-medium disabled:opacity-40 transition-opacity"
         >
           Нигоҳ дор
         </button>
       </div>
       {invalid && (
-        <p className="text-[11px] font-bold text-red-600 dark:text-red-400">
+        <p className="text-[11px] font-medium text-red-600 dark:text-red-400">
           Байни 7 ва 3650 рӯз бошад
         </p>
       )}
@@ -115,9 +115,9 @@ export function PostExpiryPanel() {
           insert. If it's greater than 0, the trigger isn't working and those
           posts will never be deleted. */}
       {(stats?.withoutExpiry ?? 0) > 0 && (
-        <div className="flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 p-3">
+        <div className="flex items-start gap-2 rounded-md bg-red-50 dark:bg-red-900/20 p-3">
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600 dark:text-red-400" />
-          <p className="text-[11px] font-bold text-red-700 dark:text-red-400 leading-relaxed">
+          <p className="text-[11px] font-medium text-red-700 dark:text-red-400 leading-relaxed">
             {stats?.withoutExpiry} эълон бе мӯҳлат аст — trigger кор намекунад ва онҳо ҳаргиз нест
             намешаванд.
           </p>
@@ -145,10 +145,10 @@ function Stat({
   } as const;
 
   return (
-    <div className="rounded-xl bg-zinc-50 dark:bg-zinc-900 p-3">
+    <div className="rounded-md bg-zinc-50 dark:bg-zinc-900 p-3">
       <Icon className={`w-4 h-4 mb-1.5 ${tones[tone]}`} />
-      <p className="text-lg font-bold text-zinc-900 dark:text-white leading-none">{value}</p>
-      <p className="text-[10px] font-bold text-zinc-400 mt-1 truncate">{label}</p>
+      <p className="text-lg font-semibold text-zinc-900 dark:text-white leading-none">{value}</p>
+      <p className="text-[10px] font-medium text-zinc-400 mt-1 truncate">{label}</p>
     </div>
   );
 }

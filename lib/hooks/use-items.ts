@@ -15,6 +15,7 @@ export interface ItemFilters {
   dateFrom?: string;
   dateTo?: string;
   locationType?: string;
+  city?: string;
   page?: number;
   pageSize?: number;
 }
@@ -27,6 +28,7 @@ export const ITEM_KEYS = {
   detail: (id: string) => [...ITEM_KEYS.details(), id] as const,
   user: () => [...ITEM_KEYS.all, "user"] as const,
   userItems: (userId: string) => [...ITEM_KEYS.user(), userId] as const,
+  vip: () => [...ITEM_KEYS.all, "vip"] as const,
   saved: () => [...ITEM_KEYS.all, "saved"] as const,
   savedItems: (userId: string) => [...ITEM_KEYS.saved(), userId] as const,
 };
@@ -44,8 +46,12 @@ const MAX_PAGES = 10; // Maximum number of pages kept in memory (200 items)
 export function useItems(filters?: ItemFilters, initialItems?: Item[]) {
   return useInfiniteQuery({
     queryKey: ITEM_KEYS.list(filters || {}),
-    queryFn: ({ pageParam = 0 }) =>
-      ItemService.getItems({ ...filters, page: pageParam, pageSize: PAGE_SIZE }),
+    queryFn: ({ pageParam = 0, signal }) =>
+      ItemService.getItems(
+        { ...filters, page: pageParam, pageSize: PAGE_SIZE },
+        undefined,
+        { signal },
+      ),
     getNextPageParam: (lastPage, allPages) => {
       if (allPages.length >= MAX_PAGES) return undefined;
       return lastPage.length === PAGE_SIZE ? allPages.length : undefined;
@@ -56,6 +62,17 @@ export function useItems(filters?: ItemFilters, initialItems?: Item[]) {
     ...(initialItems
       ? { initialData: { pages: [initialItems], pageParams: [0] } }
       : {}),
+  });
+}
+
+// VIP/VVIP strip data. A failure must never break the page: callers just get
+// no data and render no strip (no retries piling up, no error UI).
+export function useVipItems() {
+  return useQuery({
+    queryKey: ITEM_KEYS.vip(),
+    queryFn: ({ signal }) => ItemService.getVipItems(20, undefined, { signal }),
+    staleTime: 1000 * 30,
+    retry: 1,
   });
 }
 

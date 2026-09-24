@@ -1,0 +1,21 @@
+-- MIGRATION TREE RECONCILIATION (Phase 2): `item_images.thumbnail_url`
+-- already exists on the LIVE database (confirmed by direct introspection:
+-- `text`, nullable) and is already read by this tree's own
+-- `20260914000000_search_items_location_none.sql` and
+-- `20260919000000_items_city.sql` — but no migration in THIS
+-- (authoritative) tree ever created it. The only place this column's
+-- origin was recorded was `app/supabase/migrations/20260909211414_item_images_thumbnail_url.sql`,
+-- which is not CLI-linked to the project (no config.toml there) and was
+-- evidently applied by some other means.
+--
+-- This migration only documents reality in the authoritative tree — `add
+-- column if not exists` is a no-op against the live database, which
+-- already has this column. It matters for anyone who ever provisions a
+-- FRESH database from this tree alone (staging, disaster recovery): without
+-- this file, that fresh database would be missing a column two existing
+-- migrations already depend on.
+--
+-- Rollback: `alter table public.item_images drop column if exists thumbnail_url;`
+-- — safe only on a fresh/staging database; NEVER run against the live
+-- database, since real rows already have thumbnail URLs stored in it.
+alter table public.item_images add column if not exists thumbnail_url text;

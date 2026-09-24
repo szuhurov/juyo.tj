@@ -212,7 +212,7 @@ export default function ScanPage() {
       {isInitializing && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-canvas gap-4 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-          <p className="text-[10px] font-bold tracking-widest text-zinc-400">{t('loading')}</p>
+          <p className="text-[10px] font-medium tracking-widest text-slate-400">{t('loading')}</p>
         </div>
       )}
 
@@ -222,13 +222,13 @@ export default function ScanPage() {
           <div className="w-20 h-20 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center">
             <Camera className="w-10 h-10 text-red-400" />
           </div>
-          <p className="text-sm font-bold text-zinc-600 leading-relaxed max-w-xs">
+          <p className="text-sm font-semibold text-slate-600 leading-relaxed max-w-xs">
             {errorMsg}
           </p>
           {!isBlocked && (
             <Button
               onClick={handlePermissionClick}
-              className="bg-emerald-500 text-white font-bold text-[10px] tracking-widest px-12 h-14 rounded-2xl transition-all border-none"
+              className="bg-emerald-500 text-white text-[10px] tracking-widest px-12 h-14 rounded-md transition-all border-none"
             >
               {t('permissionGrant') || 'Иҷозат додан'}
             </Button>
@@ -257,22 +257,22 @@ export default function ScanPage() {
         <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-20 pt-12 z-20 bg-gradient-to-t from-black/70 to-transparent">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/50 border border-white/10 text-white/70">
             <Info className="w-4 h-4 text-emerald-400" />
-            <span className="text-[10px] font-bold tracking-wider">{t('scannerInstruction')}</span>
+            <span className="text-[10px] font-medium tracking-wider">{t('scannerInstruction')}</span>
           </div>
         </div>
       )}
 
       <Dialog open={showUnknownQr} onOpenChange={setShowUnknownQr}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 border-none shadow-2xl bg-white dark:bg-zinc-800 outline-none">
+        <DialogContent className="sm:max-w-md rounded-md p-6 border-none shadow-2xl bg-white dark:bg-zinc-800 outline-none">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
           <DialogHeader className="space-y-3 text-center">
-            <div className="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-1">
+            <div className="w-14 h-14 bg-red-50 rounded-md flex items-center justify-center mx-auto mb-1">
               <QrCode className="w-7 h-7 text-red-500" />
             </div>
-            <DialogTitle className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 leading-snug">
+            <DialogTitle className="text-lg tracking-tight text-zinc-900 dark:text-zinc-100 leading-snug">
               {t('unknownQrTitle')}
             </DialogTitle>
-            <DialogDescription className="text-zinc-600 font-bold text-sm leading-relaxed">
+            <DialogDescription className="text-slate-600 text-sm leading-relaxed">
               {t('unknownQrDesc')}
             </DialogDescription>
           </DialogHeader>
@@ -287,7 +287,7 @@ export default function ScanPage() {
                   setError(err instanceof Error ? err.message : "error");
                 }
               }}
-              className="w-full h-14 rounded-2xl bg-emerald-500 text-white font-bold tracking-widest text-xs hover:bg-emerald-600 transition-all"
+              className="w-full h-14 rounded-md bg-emerald-500 text-white font-medium tracking-widest text-xs hover:bg-emerald-600 transition-all"
             >
               {t('confirm') || 'OK'}
             </Button>

@@ -109,24 +109,24 @@ export function DeleteAccountContent() {
   if (submitted) {
     return (
       <div className="max-w-lg mx-auto px-2.5 sm:px-4 py-20 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-white dark:bg-zinc-800 flex items-center justify-center mx-auto mb-5">
+        <div className="w-14 h-14 rounded-md bg-white dark:bg-zinc-800 flex items-center justify-center mx-auto mb-5">
           <CheckCircle2 className="w-7 h-7 text-emerald-600" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight mb-3">{c.successTitle}</h1>
-        <p className="text-zinc-500 font-medium leading-relaxed">{c.successDesc}</p>
+        <p className="text-slate-500 font-medium leading-relaxed">{c.successDesc}</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-lg mx-auto my-6 px-4 sm:px-8 py-10 rounded-3xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+    <div className="max-w-lg mx-auto my-6 px-4 sm:px-8 py-10 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
       <h1 className="text-3xl font-bold mb-4">{c.title}</h1>
-      <p className="mb-8 text-zinc-600 dark:text-zinc-400 leading-relaxed">{c.intro}</p>
+      <p className="mb-8 text-slate-600 dark:text-zinc-400 leading-relaxed">{c.intro}</p>
 
-      <div className="mb-8 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900 flex gap-3">
+      <div className="mb-8 p-4 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900 flex gap-3">
         <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
-          <p className="font-bold text-sm text-amber-800 dark:text-amber-400 mb-2">{c.whatTitle}</p>
+          <p className="font-semibold text-sm text-amber-800 dark:text-amber-400 mb-2">{c.whatTitle}</p>
           <ul className="text-sm text-amber-700 dark:text-amber-500 space-y-1 list-disc list-inside">
             {c.what.map((item, i) => <li key={i}>{item}</li>)}
           </ul>
@@ -135,7 +135,7 @@ export function DeleteAccountContent() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-bold mb-2">{c.emailLabel}</label>
+          <label className="block text-sm font-medium mb-2">{c.emailLabel}</label>
           <Input
             type="email"
             required
@@ -145,7 +145,7 @@ export function DeleteAccountContent() {
           />
         </div>
         <div>
-          <label className="block text-sm font-bold mb-2">{c.noteLabel}</label>
+          <label className="block text-sm font-medium mb-2">{c.noteLabel}</label>
           <Textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -153,7 +153,7 @@ export function DeleteAccountContent() {
             rows={3}
           />
         </div>
-        <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl font-bold">
+        <Button type="submit" disabled={submitting} className="w-full h-12 rounded-md">
           {submitting ? c.submitting : c.submit}
         </Button>
       </form>

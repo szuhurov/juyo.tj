@@ -114,7 +114,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
           </h1>
           <Button
             asChild
-            className="rounded-2xl font-bold tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-base h-14 min-[1084px]:h-[60px] min-[1920px]:h-16 px-10 min-[1084px]:px-11 min-[1920px]:px-12 bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+            className="rounded-md tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-base h-14 min-[1084px]:h-[60px] min-[1920px]:h-16 px-10 min-[1084px]:px-11 min-[1920px]:px-12 bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
           >
             <Link href="/">{t("home")}</Link>
           </Button>
@@ -162,7 +162,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     <div className="h-dvh w-full overflow-hidden flex flex-col p-5 sm:p-8">
       {/* Language selector */}
       <div className="flex items-center justify-center mb-4 sm:mb-6">
-        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1 border border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1 border border-hairline dark:border-zinc-800">
           {[
             { id: "tg", label: "Тоҷикӣ" },
             { id: "ru", label: "Русский" },
@@ -172,7 +172,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
               key={lang.id}
               href={`/qr/${id}?lang=${lang.id}`}
               className={cn(
-                "px-3.5 py-1.5 rounded-full text-xs min-[1084px]:text-sm font-bold tracking-wide transition-all duration-300",
+                "px-3.5 py-1.5 rounded-full text-xs min-[1084px]:text-sm font-medium tracking-wide transition-all duration-300",
                 locale === lang.id
                   ? "bg-emerald-500 text-white scale-105"
                   : "bg-transparent text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800",
@@ -186,7 +186,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
 
       {/* Avatar (large, centered) + name below it */}
       <div className="flex flex-col items-center text-center shrink-0">
-        <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 shadow-lg relative">
+        <div className="w-24 h-24 rounded-full overflow-hidden bg-slate-100 dark:bg-zinc-800 border-4 border-white dark:border-zinc-900 shadow-lg relative">
           {profile.avatar_url ? (
             <Image
               src={profile.avatar_url}
@@ -196,7 +196,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
               alt="Avatar"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-zinc-300">
+            <div className="w-full h-full flex items-center justify-center text-2xl font-semibold text-zinc-300">
               {profile.first_name?.charAt(0)}
             </div>
           )}
@@ -205,7 +205,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
           {profile.first_name} {profile.last_name}
           {profile.is_verified && <VerifiedBadge className="w-5 h-5 shrink-0" />}
         </h1>
-        <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-1">
+        <p className="text-sm text-slate-400 dark:text-zinc-500 mt-1">
           {t("foundUserShort").replace("%{name}", profile.first_name)}
         </p>
       </div>
@@ -217,18 +217,18 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         {profile.phone ? (
           <a
             href={`tel:${phoneIntl}`}
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
           >
             <span className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[#25D366] shrink-0">
               <Phone className="w-4 h-4 text-white" />
             </span>
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-normal truncate">{t("contactOwner")}</p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{phoneShown}</p>
+              <p className="text-sm font-medium truncate">{t("contactOwner")}</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 truncate">{phoneShown}</p>
             </div>
           </a>
         ) : (
-          <div className="flex items-center justify-center min-h-14 px-3.5 py-2 rounded-xl bg-amber-50 text-amber-600 font-normal text-sm">
+          <div className="flex items-center justify-center min-h-14 px-3.5 py-2 rounded-md bg-amber-50 text-amber-600 font-normal text-sm">
             {t("noPhoneWarning")}
           </div>
         )}
@@ -236,14 +236,14 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         {profile.secondary_phone && (
           <a
             href={`tel:${secondaryPhoneIntl}`}
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
           >
             <span className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[#25D366] shrink-0">
               <Phone className="w-4 h-4 text-white" />
             </span>
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-normal truncate">{t("contactSecondary")}</p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{secondaryPhoneShown}</p>
+              <p className="text-sm font-medium truncate">{t("contactSecondary")}</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 truncate">{secondaryPhoneShown}</p>
             </div>
           </a>
         )}
@@ -254,12 +254,12 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
             href={href}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-xl bg-white dark:bg-zinc-900 transition-transform active:scale-[0.98]"
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-zinc-900 transition-transform active:scale-[0.98]"
           >
             <Icon size={34} />
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-normal text-zinc-900 dark:text-white truncate">{label}</p>
-              <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{display}</p>
+              <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">{label}</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 truncate">{display}</p>
             </div>
           </a>
         ))}

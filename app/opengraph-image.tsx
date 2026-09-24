@@ -1,11 +1,15 @@
 import { ImageResponse } from 'next/og';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+// Nunito, like the rest of the site (font files are in app/fonts).
+const loadFont = (file: string) => readFile(join(process.cwd(), 'app', 'fonts', file));
 
-export const runtime = 'edge';
 export const alt = 'JUYO — Lost & Found Tajikistan';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default function OGImage() {
+export default async function OGImage() {
+  const [bold, semiBold] = await Promise.all([loadFont('Nunito-Bold.ttf'), loadFont('Nunito-SemiBold.ttf')]);
   return new ImageResponse(
     (
       <div
@@ -18,14 +22,14 @@ export default function OGImage() {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 32,
-          fontFamily: 'sans-serif',
+          fontFamily: 'Nunito',
         }}
       >
         {/* Logo text */}
         <div
           style={{
             fontSize: 120,
-            fontWeight: 900,
+            fontWeight: 700,
             color: '#ffffff',
             letterSpacing: '-6px',
             lineHeight: 1,
@@ -61,7 +65,7 @@ export default function OGImage() {
           style={{
             fontSize: 22,
             color: '#52525b',
-            fontWeight: 500,
+            fontWeight: 600,
             letterSpacing: '1px',
           }}
         >
@@ -69,6 +73,12 @@ export default function OGImage() {
         </div>
       </div>
     ),
-    { ...size }
+    {
+      ...size,
+      fonts: [
+        { name: 'Nunito', data: bold, weight: 700, style: 'normal' },
+        { name: 'Nunito', data: semiBold, weight: 600, style: 'normal' },
+      ],
+    }
   );
 }

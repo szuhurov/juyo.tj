@@ -272,14 +272,14 @@ export default function ItemDetailsClient({
       return (
         <div className="mx-auto max-w-6xl md:pt-8 px-2.5 py-4 md:px-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
-            <Skeleton className="w-full aspect-square rounded-[32px]" />
+            <Skeleton className="w-full aspect-square rounded-md" />
             <div className="space-y-6 pt-10 md:pt-0">
               <Skeleton className="h-12 w-3/4" />
               <Skeleton className="h-6 w-1/2" />
               <Skeleton className="h-24 w-full" />
               <div className="flex gap-4">
-                <Skeleton className="h-12 w-12 rounded-xl" />
-                <Skeleton className="h-12 w-12 rounded-xl" />
+                <Skeleton className="h-12 w-12 rounded-md" />
+                <Skeleton className="h-12 w-12 rounded-md" />
               </div>
             </div>
           </div>
@@ -299,7 +299,7 @@ export default function ItemDetailsClient({
       <div className="min-h-screen bg-canvas mx-auto max-w-6xl md:pt-8 md:px-4 -mb-20 pb-20 md:mb-0 md:pb-0">
         <div className="flex flex-col md:grid md:grid-cols-2 gap-0 md:gap-12 md:items-start relative">
           <div className="sticky top-0 md:top-8 z-0 w-full h-[100vw] md:h-auto md:aspect-square flex items-start justify-center md:self-start">
-            <div className="relative w-full h-full md:rounded-[32px] overflow-hidden border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950 group shimmer-bg">
+            <div className="relative w-full h-full md:rounded-md overflow-hidden border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-950 group shimmer-bg">
               <div
                 ref={scrollContainerRef}
                 className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
@@ -399,7 +399,7 @@ export default function ItemDetailsClient({
 
               {images.length > 1 && (
                 <div className="absolute top-4 right-4 bg-black/20 backdrop-blur-md px-3 py-1 rounded-full z-20 pointer-events-none">
-                  <p className="text-[10px] font-semibold text-white tracking-widest">
+                  <p className="text-[10px] font-medium text-white tracking-widest">
                     {currentImageIndex + 1} / {images.length}
                   </p>
                 </div>
@@ -416,7 +416,7 @@ export default function ItemDetailsClient({
                 </button>
                 <Badge
                   className={cn(
-                    "font-semibold rounded-md px-3 py-1 border-none bg-white dark:bg-zinc-800",
+                    "rounded-md px-3 py-1 border-none bg-white dark:bg-zinc-800",
                     item?.type === "lost"
                       ? "text-red-600 dark:text-red-400"
                       : "text-emerald-600 dark:text-emerald-400",
@@ -432,17 +432,17 @@ export default function ItemDetailsClient({
             {/* Drag handle — like an iOS/mobile app's bottom sheet,
                 indicating that this panel can be dragged up and down. */}
             <div className="md:hidden flex justify-center -mt-6 mb-4">
-              <div className="w-10 h-1.5 rounded-full bg-zinc-300 dark:bg-zinc-700" />
+              <div className="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
             </div>
             {/* Divider line between the listing owner and the item info — it
                 separates these two content sections from each other. */}
-            <div className="flex justify-between items-center mb-4 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-zinc-200">
+                  <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-slate-200">
                     <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
-                    <AvatarFallback className="bg-zinc-50 dark:bg-zinc-800">
-                      <User className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 text-zinc-400" />
+                    <AvatarFallback className="bg-slate-50 dark:bg-zinc-800">
+                      <User className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 text-slate-400" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
@@ -479,7 +479,7 @@ export default function ItemDetailsClient({
               </h1>
               <Badge
                 className={cn(
-                  "shrink-0 font-semibold rounded-md px-3 py-1 text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  "shrink-0 rounded-md px-3 py-1 text-sm bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700",
                   item?.type === "lost"
                     ? "text-red-600 dark:text-red-400"
                     : "text-emerald-600 dark:text-emerald-400",
@@ -495,26 +495,26 @@ export default function ItemDetailsClient({
                   {t("description")}
                 </h2>
                 {item?.type === "lost" && item.reward && (
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-emerald-700 dark:text-emerald-400 text-sm min-[1503px]:text-base font-semibold">
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-emerald-700 dark:text-emerald-400 text-sm min-[1503px]:text-base font-semibold">
                     {item.reward === UNSPECIFIED_REWARD
                       ? t("reward_unspecified_viewer")
                       : `${t("reward_gives_viewer")} ${item.reward} TJS`}
                   </span>
                 )}
               </div>
-              <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base min-[1084px]:text-lg min-[1503px]:text-xl whitespace-pre-wrap font-medium">
+              <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base min-[1084px]:text-lg min-[1503px]:text-xl whitespace-pre-wrap">
                 {item?.description}
               </p>
             </div>
 
-            <div className="flex flex-row items-center gap-2 mb-10">
+            <div className="flex flex-row items-center gap-2 mb-2">
               {isLoaded && isOwner && (
                 <>
                   <Button
                     variant="secondary"
                     size="icon"
                     aria-label={t("edit")}
-                    className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800"
+                    className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md bg-white dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-hairline dark:border-zinc-700"
                     asChild
                   >
                     <Link href={`/items/${id}/edit`}>
@@ -525,7 +525,7 @@ export default function ItemDetailsClient({
                     variant="secondary"
                     size="icon"
                     aria-label={t("delete")}
-                    className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50"
+                    className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md bg-white dark:bg-zinc-800 text-red-600 border border-hairline dark:border-zinc-700"
                     onClick={() => setShowDeleteConfirm(true)}
                     disabled={isActionLoading}
                   >
@@ -537,7 +537,7 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={t("share")}
-                className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
+                className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md bg-white dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-hairline dark:border-zinc-700"
                 onClick={handleShare}
               >
                 <Share2 className="w-5 h-5 md:w-7 md:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
@@ -546,7 +546,7 @@ export default function ItemDetailsClient({
                 variant="secondary"
                 size="icon"
                 aria-label={isSaved ? t("removedFromSaved") : t("addedToSaved")}
-                className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-lg bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 transition-all"
+                className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md bg-white dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-hairline dark:border-zinc-700 transition-all"
                 onClick={toggleSave}
                 disabled={isToggling}
               >
@@ -560,15 +560,15 @@ export default function ItemDetailsClient({
             </div>
 
             {item?.handoff_type === "nearby" && (
-              <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 p-4 space-y-3">
+              <div className="rounded-md bg-emerald-50 dark:bg-emerald-950/30 p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <Store className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400">
+                  <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
                     {t("handoffCardTitle")}
                   </span>
                 </div>
                 {item.handoff_photo_url && (
-                  <div className="relative w-full h-40 rounded-xl overflow-hidden bg-white dark:bg-zinc-800">
+                  <div className="relative w-full h-40 rounded-md overflow-hidden bg-white dark:bg-zinc-800">
                     <Image
                       src={item.handoff_photo_url}
                       alt={t("handoffCardTitle")}
@@ -583,8 +583,9 @@ export default function ItemDetailsClient({
             <div className="mt-auto flex flex-col gap-3">
               {isLoaded && isOwner ? (
                 <Button
+                  variant="brand"
                   size="lg"
-                  className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white"
+                  className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-md"
                   onClick={() => setShowResolvedConfirm(true)}
                   disabled={isActionLoading}
                 >
@@ -594,8 +595,9 @@ export default function ItemDetailsClient({
               ) : item?.phone_number ? (
                 <div className="flex gap-3">
                   <Button
+                    variant="brand"
                     size="lg"
-                    className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-2xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white px-2"
+                    className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md px-2"
                     asChild
                   >
                     <a href={`tel:${item.phone_number}`}>
@@ -607,7 +609,7 @@ export default function ItemDetailsClient({
                     <Button
                       size="lg"
                       variant="secondary"
-                      className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-2xl font-bold bg-white dark:bg-zinc-800 text-[#229ED9] border border-zinc-200 dark:border-zinc-700 px-2"
+                      className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md bg-white dark:bg-zinc-800 text-[#229ED9] border border-hairline dark:border-zinc-700 px-2"
                       asChild
                     >
                       <a
@@ -624,7 +626,7 @@ export default function ItemDetailsClient({
                     <Button
                       size="lg"
                       variant="secondary"
-                      className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-2xl font-bold bg-white dark:bg-zinc-800 text-[#25D366] border border-zinc-200 dark:border-zinc-700 px-2"
+                      className="flex-1 min-w-0 h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md bg-white dark:bg-zinc-800 text-[#25D366] border border-hairline dark:border-zinc-700 px-2"
                       asChild
                     >
                       <a
@@ -639,7 +641,7 @@ export default function ItemDetailsClient({
                   )}
                 </div>
               ) : (
-                <div className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-2xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center gap-2 text-zinc-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
+                <div className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-md bg-slate-100 dark:bg-zinc-800 flex items-center justify-center gap-2 text-slate-400 font-semibold text-sm min-[1503px]:text-base text-center px-4">
                   <Phone className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0" /> {t("phoneNotAvailable")}
                 </div>
               )}
@@ -648,9 +650,9 @@ export default function ItemDetailsClient({
         </div>
 
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-          <DialogContent className="rounded-3xl border-none shadow-2xl">
+          <DialogContent className="rounded-md border-none shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-red-600 font-bold">
+              <DialogTitle className="text-red-600">
                 {t("deleteConfirm")}
               </DialogTitle>
             </DialogHeader>
@@ -679,9 +681,9 @@ export default function ItemDetailsClient({
           open={showResolvedConfirm}
           onOpenChange={setShowResolvedConfirm}
         >
-          <DialogContent className="rounded-3xl border-none shadow-2xl">
+          <DialogContent className="rounded-md border-none shadow-2xl">
             <DialogHeader>
-              <DialogTitle className="text-emerald-600 font-bold">
+              <DialogTitle className="text-emerald-600">
                 {t("resolved")}?
               </DialogTitle>
             </DialogHeader>
@@ -697,7 +699,7 @@ export default function ItemDetailsClient({
                 {t("cancel")}
               </Button>
               <Button
-                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                variant="brand"
                 onClick={handleResolved}
                 disabled={isActionLoading}
               >
@@ -710,12 +712,12 @@ export default function ItemDetailsClient({
           </DialogContent>
         </Dialog>
         <Dialog open={showBlockedInfo} onOpenChange={setShowBlockedInfo}>
-          <DialogContent className="sm:max-w-md rounded-2xl p-6 gap-5 border-none shadow-2xl">
+          <DialogContent className="sm:max-w-md rounded-md p-6 gap-5 border-none shadow-2xl">
             <DialogHeader className="space-y-2.5">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
+              <div className="w-11 h-11 rounded-md flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
                 <ShieldAlert className="w-5 h-5" />
               </div>
-              <DialogTitle className="text-lg font-bold tracking-tight text-red-600 leading-snug">
+              <DialogTitle className="text-lg tracking-tight text-red-600 leading-snug">
                 {item?.moderation_result?.startsWith("mod_offensive_text")
                   ? t("textBlockedTitle")
                   : t("imageBlockedTitle")}
@@ -727,7 +729,7 @@ export default function ItemDetailsClient({
                     : t("imageBlockedDesc")}
                 </p>
                 {item?.moderation_result && (
-                  <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium text-xs italic">
+                  <div className="p-4 rounded-md bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium text-xs italic">
                     {item.moderation_result.includes(":") ? (
                       <p>
                         {t(item.moderation_result.split(":")[0])}:{" "}
@@ -745,7 +747,7 @@ export default function ItemDetailsClient({
             <DialogFooter className="pt-2">
               <Button
                 type="button"
-                className="w-full h-12 rounded-xl font-semibold tracking-widest text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white"
+                className="w-full h-12 rounded-md tracking-widest text-[10px] bg-emerald-500 hover:bg-emerald-600 text-white"
                 onClick={() => setShowBlockedInfo(false)}
               >
                 {t("ok")}

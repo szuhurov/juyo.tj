@@ -30,10 +30,10 @@ export function UserEditForm({ profile }: { profile: AdminUserDetail["profile"] 
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 space-y-4">
-      <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Маълумоти профил</h3>
+    <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 space-y-4">
+      <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Маълумоти профил</h3>
 
-      <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 p-3 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+      <div className="flex items-start gap-2 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-100 p-3 text-[11px] font-medium text-amber-700 dark:text-amber-400">
         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
         Ном, телефон ва почта аз Clerk синхрон мешаванд — агар корбар профили худро дар барнома нав кунад, тағйироти шумо метавонанд рӯй пӯшонда шаванд.
       </div>
@@ -69,7 +69,7 @@ export function UserEditForm({ profile }: { profile: AdminUserDetail["profile"] 
           checked={form.is_verified}
           onCheckedChange={(checked) => setForm({ ...form, is_verified: checked === true })}
         />
-        <span className="text-sm font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
+        <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
           Ҳисоби тасдиқшуда <VerifiedBadge />
         </span>
       </label>

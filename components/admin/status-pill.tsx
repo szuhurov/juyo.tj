@@ -54,7 +54,7 @@ export function StatusPill({
   if (variant === "dot") {
     const [dotColor, textColor] = (DOT_STYLES[status] ?? "bg-zinc-400 text-zinc-500 dark:text-zinc-400").split(" ");
     return (
-      <span className={cn("inline-flex items-center gap-1.5 text-xs font-bold whitespace-nowrap", textColor)}>
+      <span className={cn("inline-flex items-center gap-1.5 text-xs font-medium whitespace-nowrap", textColor)}>
         <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", dotColor)} />
         {label ?? STATUS_LABELS[status] ?? status}
       </span>
@@ -64,7 +64,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        "inline-flex w-fit items-center justify-self-start rounded-full border px-2.5 py-0.5 text-[11px] font-bold whitespace-nowrap",
+        "inline-flex w-fit items-center justify-self-start rounded-full border px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap",
         STATUS_STYLES[status] ?? "bg-zinc-50 dark:bg-zinc-800/60 text-zinc-500 dark:text-zinc-400 border-zinc-100 dark:border-zinc-800",
       )}
     >

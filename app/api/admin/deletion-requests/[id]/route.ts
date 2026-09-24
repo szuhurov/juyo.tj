@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { deleteUserAccount } from "@/lib/services/account-deletion";
+import { deleteUserAccount, OrganizationOwnershipBlockedError } from "@/lib/services/account-deletion";
 import { getErrorMessage } from "@/lib/error-utils";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -46,6 +46,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     return NextResponse.json({ ok: true });
   } catch (err) {
+    if (err instanceof OrganizationOwnershipBlockedError) {
+      return NextResponse.json({ error: err.message, organizations: err.organizationNames }, { status: 409 });
+    }
     console.error("PATCH /api/admin/deletion-requests/[id]:", getErrorMessage(err));
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

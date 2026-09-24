@@ -33,13 +33,13 @@ export function ClerkLocalizationProvider({ children }: { children: React.ReactN
           // User request: corners should match the inputs (14px), neither
           // fully pill-shaped (rounded-full) nor the outer card overly rounded.
           formButtonPrimary:
-            "!rounded-xl !normal-case !font-bold !shadow-none hover:!bg-emerald-600",
-          socialButtonsBlockButton: "!rounded-xl !border-zinc-200 dark:!border-zinc-700",
-          formFieldInput: "!rounded-xl !border-zinc-200 dark:!border-zinc-700",
+            "!rounded-md !normal-case !font-medium !shadow-none hover:!bg-emerald-600",
+          socialButtonsBlockButton: "!rounded-md !border-zinc-200 dark:!border-zinc-700",
+          formFieldInput: "!rounded-md !border-zinc-200 dark:!border-zinc-700",
           footerActionLink: "!text-emerald-600 hover:!text-emerald-700",
           identityPreviewEditButton: "!text-emerald-600",
-          card: "!rounded-xl",
-          cardBox: "!rounded-xl",
+          card: "!rounded-md",
+          cardBox: "!rounded-md",
         },
       }}
     >

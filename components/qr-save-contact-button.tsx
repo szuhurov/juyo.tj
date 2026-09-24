@@ -80,7 +80,7 @@ export function QrSaveContactButton({
       <button
         onClick={handleSave}
         disabled={saving}
-        className="flex items-center justify-center gap-3 w-full min-h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-normal transition-transform active:scale-[0.98] disabled:opacity-60 shrink-0"
+        className="flex items-center justify-center gap-3 w-full min-h-12 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-transform active:scale-[0.98] disabled:opacity-60 shrink-0"
       >
         {saving ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -104,7 +104,7 @@ export function QrSaveContactButton({
             flexDirection: "column",
             gap: 8,
             background: "#f1f5f9",
-            fontFamily: "system-ui, -apple-system, sans-serif",
+            fontFamily: "var(--font-nunito), Nunito, sans-serif",
           }}
         >
           <div

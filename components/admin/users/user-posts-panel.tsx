@@ -26,7 +26,7 @@ export function UserPostsPanel({ userId }: { userId: string }) {
   const { data, isLoading, isError, error } = useAdminPosts(filters);
 
   return (
-    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
+    <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
       <PostFilterBar
         filters={filters}
         onChange={setFilters}
@@ -37,7 +37,7 @@ export function UserPostsPanel({ userId }: { userId: string }) {
       {archiveView ? (
         <DeletedPostsArchive userId={userId} />
       ) : isError ? (
-        <p className="py-16 text-center text-sm font-bold text-rose-500 dark:text-rose-400">
+        <p className="py-16 text-center text-sm font-semibold text-rose-500 dark:text-rose-400">
           Хатогӣ ҳангоми боркунӣ: {error instanceof Error ? error.message : "номаълум"}
         </p>
       ) : isLoading || !data ? (

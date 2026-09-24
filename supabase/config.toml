@@ -10,6 +10,15 @@ entrypoint = "./functions/clerk-sync/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/clerk-sync/*.html" ]
 
+# SECURITY GAP FOUND (audit): `ai-brain` had no explicit `verify_jwt` here,
+# so it relied on the project default. Declaring it explicitly matches the
+# pattern the other two functions already use, and this repo's own rule
+# (docs/engineering/07-backend-rules.md) that every function should declare
+# it rather than rely on a default that's easy to misconfigure later.
+[functions.ai-brain]
+enabled = true
+verify_jwt = true
+
 [functions.image-moderation]
 enabled = true
 verify_jwt = true
@@ -20,3 +29,11 @@ entrypoint = "./functions/image-moderation/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/image-moderation/*.html" ]
+
+# Server-to-server only (called from trigger_notify_ai_match with the
+# service-role key as bearer token, same shape as notify-category-post) —
+# declared explicitly per docs/engineering/07-backend-rules.md rather than
+# left on the project default.
+[functions.notify-ai-match]
+enabled = true
+verify_jwt = true

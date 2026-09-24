@@ -145,6 +145,39 @@ describe('ItemService.getItems', () => {
     );
   });
 
+  it('passes city as p_city, or null when unset', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems({ city: 'khujand' }, mock);
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_city: 'khujand' }),
+    );
+
+    const mockUnset = makeMockClient();
+    await ItemService.getItems({}, mockUnset);
+    expect(mockUnset.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({ p_city: null }),
+    );
+  });
+
+  it('combines city with category/type/date without dropping either', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems(
+      { city: 'bokhtar', category: 'Electronics', type: 'found', dateFrom: '2026-01-01' },
+      mock,
+    );
+    expect(mock.rpc).toHaveBeenCalledWith(
+      'search_items',
+      expect.objectContaining({
+        p_city: 'bokhtar',
+        p_category: 'Electronics',
+        p_type: 'found',
+        p_date_from: '2026-01-01',
+      }),
+    );
+  });
+
   it('trims whitespace from search query', async () => {
     const mock = makeMockClient();
     await ItemService.getItems({ search: '  телефон  ' }, mock);
@@ -209,6 +242,135 @@ describe('ItemService.getItems', () => {
     const mock = makeMockClient();
     mock.rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') });
     await expect(ItemService.getItems({}, mock)).rejects.toThrow('DB error');
+  });
+
+  it('backslash-escapes % _ \\ in the search text (the RPC expects this)', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems({ search: '50%_a\\b' }, mock);
+    const call = (mock.rpc as any).mock.calls[0][1];
+    expect(call.p_search).toBe('50\\%\\_a\\\\b');
+  });
+
+  it('trims before slicing to 200 chars, and slices before escaping', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems({ search: `  ${'a'.repeat(199)}%  ` }, mock);
+    const call = (mock.rpc as any).mock.calls[0][1];
+    expect(call.p_search).toBe(`${'a'.repeat(199)}\\%`);
+  });
+
+  it('treats a whitespace-only search as no search (p_search null)', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems({ search: '   ' }, mock);
+    expect((mock.rpc as any).mock.calls[0][1].p_search).toBeNull();
+  });
+
+  it('maps every filter to its RPC parameter in one call', async () => {
+    const mock = makeMockClient();
+    await ItemService.getItems(
+      {
+        search: 'калид',
+        category: 'Keys',
+        type: 'found',
+        user_id: 'u1',
+        dateFrom: '2026-01-01',
+        dateTo: '2026-01-31',
+        locationType: 'airport',
+        city: 'dushanbe',
+        page: 3,
+        pageSize: 20,
+      },
+      mock,
+    );
+    expect(mock.rpc).toHaveBeenCalledWith('search_items', {
+      p_search: 'калид',
+      p_category: 'Keys',
+      p_type: 'found',
+      p_user_id: 'u1',
+      p_limit: 20,
+      p_offset: 60,
+      p_date_from: '2026-01-01',
+      p_date_to: '2026-01-31',
+      p_location_type: 'airport',
+      p_city: 'dushanbe',
+    });
+  });
+
+  it('forwards the abort signal to the RPC builder when provided', async () => {
+    const mock = makeMockClient();
+    const result = { data: [{ id: 'x' }], error: null };
+    const builder = {
+      abortSignal: vi.fn().mockResolvedValue(result),
+    };
+    mock.rpc = vi.fn().mockReturnValue(builder);
+    const controller = new AbortController();
+
+    const items = await ItemService.getItems({ search: 'a' }, mock, {
+      signal: controller.signal,
+    });
+
+    expect(builder.abortSignal).toHaveBeenCalledWith(controller.signal);
+    expect(items).toEqual([{ id: 'x' }]);
+  });
+
+  it('does not touch abortSignal when no signal is given', async () => {
+    const mock = makeMockClient();
+    const builder = Object.assign(Promise.resolve({ data: [], error: null }), {
+      abortSignal: vi.fn(),
+    });
+    mock.rpc = vi.fn().mockReturnValue(builder);
+
+    await ItemService.getItems({}, mock);
+
+    expect(builder.abortSignal).not.toHaveBeenCalled();
+  });
+
+  it('throws the error returned by an aborted request (React Query swallows it after cancel)', async () => {
+    const mock = makeMockClient();
+    const abortErr = Object.assign(new Error('AbortError'), { name: 'AbortError' });
+    mock.rpc = vi.fn().mockReturnValue({
+      abortSignal: vi.fn().mockResolvedValue({ data: null, error: abortErr }),
+    });
+    await expect(
+      ItemService.getItems({}, mock, { signal: new AbortController().signal }),
+    ).rejects.toBe(abortErr);
+  });
+});
+
+describe('ItemService.getVipItems', () => {
+  it('calls get_vip_items with p_limit (default 20)', async () => {
+    const mock = makeMockClient();
+    mock.rpc = vi.fn().mockResolvedValue({ data: [{ id: 'v1' }], error: null });
+    const items = await ItemService.getVipItems(undefined, mock);
+    expect(mock.rpc).toHaveBeenCalledWith('get_vip_items', { p_limit: 20 });
+    expect(items).toEqual([{ id: 'v1' }]);
+
+    await ItemService.getVipItems(5, mock);
+    expect(mock.rpc).toHaveBeenLastCalledWith('get_vip_items', { p_limit: 5 });
+  });
+
+  it('forwards the abort signal only when provided', async () => {
+    const mock = makeMockClient();
+    const builder = { abortSignal: vi.fn().mockResolvedValue({ data: [], error: null }) };
+    mock.rpc = vi.fn().mockReturnValue(builder);
+    const controller = new AbortController();
+    await ItemService.getVipItems(20, mock, { signal: controller.signal });
+    expect(builder.abortSignal).toHaveBeenCalledWith(controller.signal);
+
+    const plain = Object.assign(Promise.resolve({ data: [], error: null }), {
+      abortSignal: vi.fn(),
+    });
+    mock.rpc = vi.fn().mockReturnValue(plain);
+    await ItemService.getVipItems(20, mock);
+    expect(plain.abortSignal).not.toHaveBeenCalled();
+  });
+
+  it('returns [] for null data and throws on RPC error', async () => {
+    const mock = makeMockClient();
+    mock.rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    await expect(ItemService.getVipItems(20, mock)).resolves.toEqual([]);
+
+    mock.rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('DB error') });
+    await expect(ItemService.getVipItems(20, mock)).rejects.toThrow('DB error');
   });
 });
 

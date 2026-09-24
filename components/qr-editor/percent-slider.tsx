@@ -31,7 +31,7 @@ export function PercentSlider({
     <div className="pt-1 px-1">
       <div className="relative">
         <div
-          className="absolute -top-5 -translate-x-1/2 text-[9px] font-bold text-white bg-zinc-900 dark:bg-zinc-700 rounded px-1.5 py-0.5 pointer-events-none"
+          className="absolute -top-5 -translate-x-1/2 text-[9px] font-medium text-white bg-zinc-900 dark:bg-zinc-700 rounded px-1.5 py-0.5 pointer-events-none"
           style={{ left: `${pct}%` }}
         >
           {pct}%
@@ -43,7 +43,7 @@ export function PercentSlider({
           value={pct}
           onChange={(e) => onChange(Number(e.target.value))}
           className={cn(
-            "w-full h-1.5 rounded-full appearance-none cursor-pointer bg-zinc-100 dark:bg-zinc-800 accent-emerald-500",
+            "w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-100 dark:bg-zinc-800 accent-emerald-500",
           )}
         />
       </div>
@@ -67,9 +67,9 @@ export function GradientBiasToggle({
       type="button"
       onClick={onRotate}
       aria-label="rotate"
-      className="ml-auto flex items-center justify-center size-[30px] rounded-full border bg-zinc-50 dark:bg-zinc-800 border-zinc-100 dark:border-zinc-700 transition-colors"
+      className="ml-auto flex items-center justify-center size-[30px] rounded-full border bg-slate-50 dark:bg-zinc-800 border-slate-100 dark:border-zinc-700 transition-colors"
     >
-      <RotateCw className="size-3.5 text-zinc-600 dark:text-zinc-300" />
+      <RotateCw className="size-3.5 text-slate-600 dark:text-zinc-300" />
     </button>
   );
 }

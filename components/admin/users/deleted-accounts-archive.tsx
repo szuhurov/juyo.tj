@@ -21,7 +21,7 @@ export function DeletedAccountsArchive() {
   const { data: archiveData, isLoading: archiveLoading } = useDeletedAccountsArchive();
 
   if (trashLoading || archiveLoading) {
-    return <p className="py-16 text-center text-sm font-bold text-zinc-400">Боркунӣ...</p>;
+    return <p className="py-16 text-center text-sm font-semibold text-zinc-400">Боркунӣ...</p>;
   }
 
   const trashRows: CombinedRow[] = (trashData?.users ?? []).map((u) => ({
@@ -48,20 +48,20 @@ export function DeletedAccountsArchive() {
   const rows = [...trashRows, ...purgedRows].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   if (rows.length === 0) {
-    return <p className="py-16 text-center text-sm font-bold text-zinc-400">Ягон корбари нестшуда нест</p>;
+    return <p className="py-16 text-center text-sm font-semibold text-zinc-400">Ягон корбари нестшуда нест</p>;
   }
 
   return (
-    <div className="rounded-xl border border-zinc-100 dark:border-zinc-800 overflow-hidden">
+    <div className="rounded-md border border-zinc-100 dark:border-zinc-800 overflow-hidden">
       <div className="divide-y divide-zinc-50 p-1.5 space-y-1">
         {rows.map((row) => (
           <div
             key={row.key}
             onClick={() => router.push(row.href)}
-            className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg cursor-pointer hover:bg-blue-600 transition-all"
+            className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-md cursor-pointer hover:bg-blue-600 transition-all"
           >
             <div className="min-w-0">
-              <p className="font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-white text-sm truncate">{row.name}</p>
+              <p className="font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-white text-sm truncate">{row.name}</p>
               <p className="text-[11px] font-medium text-zinc-400 group-hover:text-blue-100 truncate">{row.subtitle}</p>
             </div>
             <div className="flex items-center gap-3 shrink-0">

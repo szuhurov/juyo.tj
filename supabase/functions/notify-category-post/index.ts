@@ -11,6 +11,24 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Tajikistan runs a single zone, UTC+5, no DST — so this doesn't need a
+// timezone library, just a fixed offset. category_post is an algorithmic
+// "you might be interested" notice, not anything time-sensitive, so it's
+// the one kind allowed to wait until morning rather than waking someone up.
+const QUIET_HOURS_START = 22; // 22:00 local
+const QUIET_HOURS_END = 8; // 08:00 local
+function isQuietHoursNow(): boolean {
+  const localHour = (new Date().getUTCHours() + 5) % 24;
+  return localHour >= QUIET_HOURS_START || localHour < QUIET_HOURS_END;
+}
+
+// A reasonable per-user cap on how many category_post pushes go out in a
+// rolling 24h window — protects against push fatigue on days with many
+// approvals in a category, without ever touching the in-app notification
+// list itself (get_my_category_notifications has no such cap — the item
+// still shows up there either way, only the PUSH is skipped).
+const DAILY_PUSH_CAP = 5;
+
 // Web push (VAPID/aes128gcm) relies on Node's crypto.createECDH, which is
 // not implemented in Deno's node:crypto polyfill ("Not implemented:
 // crypto.ECDH") — so the actual encryption and sending happens not here,
@@ -63,27 +81,47 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    // Opposite type: a "lost" listing reaches owners of "found" listings and
-    // vice versa — not everyone who has a listing in that category.
-    const oppositeType = item.type === "lost" ? "found" : "lost";
+    // Same rule as the in-app list (category_post_relevant in the DB):
+    // live opposite-type listings in this category whose city/date/title
+    // make it plausibly theirs — not every owner in the category.
+    const { data: peers, error: peersError } = await supabase.rpc("get_category_post_recipients", {
+      p_item_id: item.id,
+    });
+    if (peersError) throw peersError;
 
-    const { data: peers } = await supabase
-      .from("items")
-      .select("user_id")
-      .eq("category", item.category)
-      .eq("type", oppositeType)
-      .eq("moderation_status", "approved")
-      .or("status.is.null,status.neq.deleted")
-      .neq("user_id", item.user_id);
-
-    const recipientIds = [...new Set((peers ?? []).map((p) => p.user_id).filter(Boolean))];
+    let recipientIds = [...new Set(((peers ?? []) as string[]).filter(Boolean))];
     if (recipientIds.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
 
+    // Quiet hours — skip the push entirely (the in-app list is unaffected,
+    // computed independently by get_my_category_notifications).
+    if (isQuietHoursNow()) {
+      return new Response(JSON.stringify({ sent: 0, skipped: "quiet_hours" }), { status: 200 });
+    }
+
+    // Daily cap — drop recipients who already got DAILY_PUSH_CAP or more
+    // category_post pushes in the last 24h, before even looking up their
+    // tokens.
+    const { data: recentSends } = await supabase
+      .from("push_notification_log")
+      .select("user_id")
+      .eq("kind", "category_post")
+      .in("user_id", recipientIds)
+      .gt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+
+    const sendCounts = new Map<string, number>();
+    for (const row of recentSends ?? []) {
+      sendCounts.set(row.user_id, (sendCounts.get(row.user_id) ?? 0) + 1);
+    }
+    recipientIds = recipientIds.filter((id) => (sendCounts.get(id) ?? 0) < DAILY_PUSH_CAP);
+    if (recipientIds.length === 0) {
+      return new Response(JSON.stringify({ sent: 0, skipped: "daily_cap" }), { status: 200 });
+    }
+
     const { data: tokens } = await supabase
       .from("push_tokens")
-      .select("platform, token")
+      .select("platform, token, user_id")
       .in("user_id", recipientIds);
 
     if (!tokens || tokens.length === 0) {
@@ -99,7 +137,7 @@ Deno.serve(async (req) => {
     const staleTokenIds: string[] = [];
 
     await Promise.all(
-      tokens.map(async (row: { platform: string; token: string }) => {
+      tokens.map(async (row: { platform: string; token: string; user_id: string }) => {
         try {
           if (row.platform === "expo") {
             const res = await fetch("https://exp.host/--/api/v2/push/send", {
@@ -130,6 +168,16 @@ Deno.serve(async (req) => {
 
     if (staleTokenIds.length > 0) {
       await supabase.from("push_tokens").delete().in("token", staleTokenIds);
+    }
+
+    // Log one row per RECIPIENT (not per device/token) — the cap above is
+    // per-user, not per-device, so a user with both a phone and a browser
+    // subscribed still only counts once per notification event.
+    const loggedUserIds = [...new Set(tokens.map((t) => t.user_id))];
+    if (loggedUserIds.length > 0) {
+      await supabase
+        .from("push_notification_log")
+        .insert(loggedUserIds.map((user_id) => ({ user_id, kind: "category_post" })));
     }
 
     return new Response(JSON.stringify({ sent }), {

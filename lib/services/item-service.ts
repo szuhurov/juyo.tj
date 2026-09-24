@@ -8,7 +8,10 @@ export const UNSPECIFIED_REWARD = "unspecified";
 // Data structure for an Item (Interface)
 export interface Item {
   id: string;
-  user_id: string;
+  /** null for an organization-owned item (Phase 7) — the organization is
+   *  never treated as a personal "owner"; see organization_id/branch_id/
+   *  created_by_staff_id below instead. */
+  user_id: string | null;
   title: string;
   description: string;
   category: string;
@@ -28,7 +31,26 @@ export interface Item {
   moderation_result?: string;
   images?: { image_url: string }[];
   similarity_score?: number;
-  location_type?: "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym" | null;
+  location_type?:
+    | "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym"
+    | "university" | "mall" | "office" | "event" | "tourism" | "bank"
+    | null;
+  city?: string;
+  /** The poster's live VIP/VVIP tier at query time (Phase 6) — 'none' when
+   *  not subscribed or the subscription has expired. Only returned by
+   *  search_items (the feed); getItemDetails doesn't select it since the
+   *  item detail page doesn't currently show a badge. */
+  vip_tier?: "none" | "vip" | "vvip";
+  /** Phase 7 — optional organization association. "Organization Approved"
+   *  means only "this organization confirms the post relates to them," not
+   *  ownership verification. */
+  organization_id?: string | null;
+  branch_id?: string | null;
+  organization_review_status?: "none" | "pending" | "approved" | "rejected";
+  organization_reviewed_at?: string | null;
+  /** Audit/creator reference only for an organization-owned item — never
+   *  the owner. */
+  created_by_staff_id?: string | null;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -73,6 +95,25 @@ export const CATEGORY_IMAGES: Record<string, string> = {
 
 export const ALL_CATEGORY_IMAGE = "/categories/all.webp";
 
+// Transparent-background icons used ONLY by the home category filter cards.
+// They can't replace CATEGORY_IMAGES: those double as the "no photo"
+// fallback on item cards, where a transparent image would show the gray
+// placeholder icon underneath. Categories missing here fall back to
+// CATEGORY_IMAGES.
+export const CATEGORY_FILTER_IMAGES: Record<string, string> = {
+  Documents: "/categories/filter/documents.webp",
+  Pets: "/categories/filter/pets.webp",
+  Wallet: "/categories/filter/wallet.webp",
+  Cards: "/categories/filter/cards.webp",
+  Bag: "/categories/filter/bag.webp",
+  Other: "/categories/filter/other.webp",
+  Electronics: "/categories/filter/electronics.webp",
+  Keys: "/categories/filter/keys.webp",
+  Clothing: "/categories/filter/clothing.webp",
+  LicensePlate: "/categories/filter/license-plate.webp",
+};
+export const ALL_CATEGORY_FILTER_IMAGE = "/categories/filter/all.webp";
+
 export const ItemService = {
   /**
    * Fetches the list of items using filters and pagination.
@@ -88,10 +129,12 @@ export const ItemService = {
       dateFrom?: string;
       dateTo?: string;
       locationType?: string;
+      city?: string;
       page?: number;
       pageSize?: number;
     } = {},
     supabaseClient?: SupabaseClient,
+    options: { signal?: AbortSignal } = {},
   ) {
     const {
       search,
@@ -101,6 +144,7 @@ export const ItemService = {
       dateFrom,
       dateTo,
       locationType,
+      city,
       page = 0,
       pageSize = 20,
     } = filters;
@@ -111,11 +155,12 @@ export const ItemService = {
       ? search.trim().slice(0, 200).replace(/[%_\\]/g, "\\$&")
       : undefined;
 
-    // search_items — a PostgreSQL RPC that, when searching, sorts results
-    // first by relevance (exact title match > starts with it >
-    // contains it > description only), then by date —
-    // not just by date as before (see supabase/migrations/20260714000000_search_items_rpc.sql).
-    const { data, error } = await client.rpc("search_items", {
+    // search_items — a PostgreSQL RPC. When searching it is typo-tolerant,
+    // folds Latin/Cyrillic (Tajik/Russian/English), expands synonyms, matches
+    // prefixes while typing, and ranks by relevance tier, then date. It expects
+    // `% _ \` backslash-escaped (above) and caps p_search at 200 chars / p_limit
+    // at 200 (see supabase/migrations/20260930000005_search_v2_tajik_fold.sql).
+    const query = client.rpc("search_items", {
       p_search: s || null,
       p_category: category && category !== "All" ? category : null,
       p_type: type || null,
@@ -125,9 +170,33 @@ export const ItemService = {
       p_date_from: dateFrom || null,
       p_date_to: dateTo || null,
       p_location_type: locationType || null,
+      p_city: city || null,
     });
+    // A superseded request is cancelled so it doesn't keep costing the DB.
+    const { data, error } = await (options.signal
+      ? query.abortSignal(options.signal)
+      : query);
     if (error) throw error;
     return data as Item[];
+  },
+
+  /**
+   * Listings of users with an ACTIVE VIP/VVIP subscription (VVIP first, then
+   * newest) — same row shape as search_items. Once a subscription ends the RPC
+   * stops returning the user, so the listings go back to the ordinary feed.
+   */
+  async getVipItems(
+    limit = 20,
+    supabaseClient?: SupabaseClient,
+    options: { signal?: AbortSignal } = {},
+  ) {
+    const client = supabaseClient || supabase;
+    const query = client.rpc("get_vip_items", { p_limit: limit });
+    const { data, error } = await (options.signal
+      ? query.abortSignal(options.signal)
+      : query);
+    if (error) throw error;
+    return (data ?? []) as Item[];
   },
 
   async visualSearch(imageFile: File) {
@@ -173,7 +242,8 @@ export const ItemService = {
       "is_resolved, is_guest, views, moderation_status, moderation_result, " +
       "expires_at, created_at, updated_at, status, deleted_at, location_type, " +
       "expiry_notified_at, contact_telegram, contact_whatsapp, " +
-      "handoff_type, handoff_photo_url";
+      "handoff_type, handoff_photo_url, city, " +
+      "organization_id, branch_id, organization_review_status, organization_reviewed_at, created_by_staff_id";
 
     // Query 1: the item (without phone_number/handoff_phone) + images. A
     // deleted listing (status = 'deleted') should read as "not found" even

@@ -26,7 +26,7 @@ export function ClaimantAvatar({
     return (
       <div
         className={cn(
-          "relative rounded-full overflow-hidden shrink-0 border border-zinc-100 dark:border-zinc-800",
+          "relative rounded-full overflow-hidden shrink-0 border border-slate-100 dark:border-zinc-800",
           className,
         )}
       >
@@ -45,7 +45,7 @@ export function ClaimantAvatar({
   return (
     <div
       className={cn(
-        "rounded-full bg-zinc-100 dark:bg-zinc-700 flex items-center justify-center font-bold text-zinc-400 shrink-0",
+        "rounded-full bg-slate-100 dark:bg-zinc-700 flex items-center justify-center font-semibold text-slate-400 shrink-0",
         className,
       )}
     >

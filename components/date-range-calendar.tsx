@@ -27,6 +27,8 @@ import {
   isSameMonth,
   isWithinInterval,
   isBefore,
+  isAfter,
+  startOfDay,
   parseISO,
   isValid,
 } from "date-fns";
@@ -74,7 +76,12 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
 
   // Which point the next day-click will set — see `handleDayClick`.
   // The same logic is repeated here so "From"/"To" highlight correctly.
-  const target: "from" | "to" = !fromDate || (fromDate && toDate) ? "from" : "to";
+  // "To" is filled with today right after the first click, so whether the user
+  // has actually chosen it is tracked separately: the next click after that
+  // starts a fresh selection.
+  const [toPicked, setToPicked] = useState(Boolean(fromDate && toDate));
+  const isComplete = toPicked && Boolean(fromDate && toDate);
+  const target: "from" | "to" = !fromDate || isComplete ? "from" : "to";
 
   const [viewMonth, setViewMonth] = useState(() =>
     startOfMonth(fromDate ?? new Date()),
@@ -85,35 +92,42 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
     end: endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 1 }),
   });
 
+  const today = startOfDay(new Date());
+  const todayStr = format(today, "yyyy-MM-dd");
+
   const handleDayClick = (day: Date) => {
-    // Neither a start nor an end point exists yet — or both are already
-    // selected: start a new selection.
-    if (!fromDate || (fromDate && toDate)) {
-      onChange({ from: format(day, "yyyy-MM-dd"), to: undefined });
+    // Days that haven't happened yet can't hold listings — never selectable.
+    if (isAfter(day, today)) return;
+    const dayStr = format(day, "yyyy-MM-dd");
+    // First pick (or a new round after "To" was chosen): it becomes "From",
+    // and "To" defaults to today.
+    if (!fromDate || isComplete) {
+      setToPicked(false);
+      onChange({ from: dayStr, to: todayStr });
       return;
     }
-    // If the clicked day is before "From", treat it as the new start.
+    // Before "From": move the start, keep the end.
     if (isBefore(day, fromDate)) {
-      onChange({ from: format(day, "yyyy-MM-dd"), to: undefined });
+      onChange({ from: dayStr, to: to || todayStr });
       return;
     }
-    onChange({ from, to: format(day, "yyyy-MM-dd") });
+    // Otherwise choose "To" (already limited to today at the latest).
+    setToPicked(true);
+    onChange({ from, to: dayStr });
   };
 
   const dateFormatHint = DATE_FORMAT_HINT[locale] ?? DATE_FORMAT_HINT.en;
-  // Both are already selected — no hint needed anymore (user request).
-  const isComplete = Boolean(fromDate && toDate);
 
   return (
     <div className="select-none">
       <div className="flex items-center justify-between mb-2 px-0.5">
         <div>
-          <span className="block text-[10px] font-bold tracking-wider uppercase text-zinc-400">
+          <span className="block text-[10px] font-medium tracking-wider uppercase text-slate-400">
             {t("dateFrom")}
           </span>
           <span
             className={cn(
-              "text-xs font-bold",
+              "text-xs font-medium",
               from
                 ? !isComplete && target === "from"
                   ? "text-emerald-600 dark:text-emerald-400"
@@ -134,12 +148,12 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
         )}
 
         <div className="text-right">
-          <span className="block text-[10px] font-bold tracking-wider uppercase text-zinc-400">
+          <span className="block text-[10px] font-medium tracking-wider uppercase text-slate-400">
             {t("dateTo")}
           </span>
           <span
             className={cn(
-              "text-xs font-bold",
+              "text-xs font-medium",
               to
                 ? !isComplete && target === "to"
                   ? "text-emerald-600 dark:text-emerald-400"
@@ -157,18 +171,19 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
           type="button"
           onClick={() => setViewMonth((m) => subMonths(m, 1))}
           aria-label="Previous month"
-          className="h-7 w-7 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer"
+          className="h-7 w-7 flex items-center justify-center rounded-md text-slate-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-200">
+        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-200">
           {months[viewMonth.getMonth()]} {viewMonth.getFullYear()}
         </span>
         <button
           type="button"
           onClick={() => setViewMonth((m) => addMonths(m, 1))}
+          disabled={!isBefore(viewMonth, startOfMonth(today))}
           aria-label="Next month"
-          className="h-7 w-7 flex items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer"
+          className="h-7 w-7 flex items-center justify-center rounded-md text-slate-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
@@ -176,7 +191,7 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
 
       <div className="grid grid-cols-7 mb-1">
         {weekdays.map((d) => (
-          <span key={d} className="text-center text-[10px] font-bold text-zinc-400">
+          <span key={d} className="text-center text-[10px] font-medium text-slate-400">
             {d}
           </span>
         ))}
@@ -187,6 +202,8 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
           const inMonth = isSameMonth(day, viewMonth);
           const isFrom = fromDate ? isSameDay(day, fromDate) : false;
           const isTo = toDate ? isSameDay(day, toDate) : false;
+          const isToday = isSameDay(day, today);
+          const isFuture = isAfter(day, today);
           const inRange =
             fromDate && toDate && !isFrom && !isTo
               ? isWithinInterval(day, { start: fromDate, end: toDate })
@@ -197,14 +214,16 @@ export function DateRangeCalendar({ from, to, onChange }: DateRangeCalendarProps
               type="button"
               key={day.toISOString()}
               onClick={() => handleDayClick(day)}
-              disabled={!inMonth}
+              disabled={!inMonth || isFuture}
               className={cn(
-                "h-8 text-xs font-semibold rounded-lg cursor-pointer transition-colors",
+                "h-8 text-xs font-medium rounded-md cursor-pointer transition-colors",
                 !inMonth && "text-transparent cursor-default pointer-events-none",
-                inMonth && !isFrom && !isTo && !inRange &&
+                inMonth && isFuture && "text-zinc-300 dark:text-zinc-600 cursor-not-allowed",
+                inMonth && !isFuture && !isFrom && !isTo && !inRange &&
                   "text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700",
                 inRange && "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-none",
                 (isFrom || isTo) && "bg-emerald-500 text-white",
+                isToday && !isFrom && !isTo && !inRange && "bg-zinc-200 dark:bg-zinc-700",
               )}
             >
               {inMonth ? day.getDate() : ""}

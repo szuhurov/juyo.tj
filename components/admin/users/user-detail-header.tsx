@@ -74,7 +74,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 flex flex-wrap items-center justify-between gap-4">
+    <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-4">
         <button
           type="button"
@@ -84,7 +84,7 @@ export function UserDetailHeader({ profile }: { profile: AdminUserDetail["profil
         >
           <Avatar className="w-14 h-14 border border-zinc-100 dark:border-zinc-800">
             <AvatarImage src={profile.avatar_url ?? undefined} alt={name} />
-            <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-bold text-lg">
+            <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-semibold text-lg">
               {name.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>

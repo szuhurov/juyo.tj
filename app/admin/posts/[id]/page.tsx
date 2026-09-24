@@ -13,14 +13,14 @@ export default function AdminPostDetailPage({ params }: { params: Promise<{ id: 
   if (isLoading || !data) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-48 rounded-2xl" />
-        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-48 rounded-md" />
+        <Skeleton className="h-64 rounded-md" />
       </div>
     );
   }
 
   if (error) {
-    return <p className="text-sm font-bold text-red-600 dark:text-red-400">Эълон ёфт нашуд</p>;
+    return <p className="text-sm font-semibold text-red-600 dark:text-red-400">Эълон ёфт нашуд</p>;
   }
 
   return (

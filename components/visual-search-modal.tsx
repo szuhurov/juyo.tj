@@ -108,10 +108,10 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
 
           <div className="relative group px-4 sm:px-0">
             {/* Soft glow around the container (Glassy Glow) */}
-            <div className="absolute -inset-0.5 bg-emerald-500/20 rounded-[32px] blur-sm opacity-50"></div>
+            <div className="absolute -inset-0.5 bg-emerald-500/20 rounded-md blur-sm opacity-50"></div>
 
             <div className={cn(
-              "relative rounded-[30px] overflow-hidden border border-white/10 shadow-2xl transition-all duration-700",
+              "relative rounded-md overflow-hidden border border-white/10 shadow-2xl transition-all duration-700",
               (isSearching || scanProgress === 100)
                 ? (scanProgress === 100 ? "bg-emerald-950/60 backdrop-blur-xl" : "bg-emerald-950/70 backdrop-blur-xl")
                 : "bg-emerald-950/95"
@@ -163,9 +163,9 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
 
                     {/* Timer & Counter Overlay */}
                     {scanProgress < 100 && (
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl flex items-center gap-3">
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-md flex items-center gap-3">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-bold text-white tracking-widest whitespace-nowrap">
+                        <span className="text-[10px] font-medium text-white tracking-widest whitespace-nowrap">
                           {t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}
                         </span>
                       </div>

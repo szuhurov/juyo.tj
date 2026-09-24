@@ -61,7 +61,7 @@ export default function AdminPostsPage() {
         </StatCardGrid>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
+      <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
         <PostFilterBar
           filters={filters}
           onChange={setFilters}
@@ -74,7 +74,7 @@ export default function AdminPostsPage() {
         {archiveView ? (
           <DeletedPostsArchive />
         ) : isError ? (
-          <p className="py-16 text-center text-sm font-bold text-rose-500 dark:text-rose-400">
+          <p className="py-16 text-center text-sm font-semibold text-rose-500 dark:text-rose-400">
             Хатогӣ ҳангоми боркунӣ: {error instanceof Error ? error.message : "номаълум"}
           </p>
         ) : isLoading || !data ? (

@@ -121,7 +121,7 @@ export default function MyPostsPage() {
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="h-8 w-8 min-[1084px]:h-9 min-[1084px]:w-9 min-[1920px]:h-10 min-[1920px]:w-10 rounded-lg shadow-lg bg-red-600/90 backdrop-blur-sm border-none"
+                  className="h-8 w-8 min-[1084px]:h-9 min-[1084px]:w-9 min-[1920px]:h-10 min-[1920px]:w-10 rounded-md shadow-lg bg-red-600/90 backdrop-blur-sm border-none"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -136,10 +136,10 @@ export default function MyPostsPage() {
         </div>
       ) : (
         /* If there are no listings */
-        <div className="text-center py-20 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800">
+        <div className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-md border-2 border-dashed border-slate-200 dark:border-zinc-800">
           <PackageSearch className="w-16 h-16 min-[1084px]:w-20 min-[1084px]:h-20 min-[1920px]:w-24 min-[1920px]:h-24 text-zinc-300 mx-auto mb-4" />
-          <h2 className="text-xl min-[1084px]:text-2xl min-[1920px]:text-[28px] font-bold mb-2">{t('noItemsFound')}</h2>
-          <Button asChild className="rounded-md font-bold text-xs min-[1084px]:text-sm min-[1920px]:text-base min-[1084px]:h-10 min-[1920px]:h-11 min-[1084px]:px-5 min-[1920px]:px-6">
+          <h2 className="text-xl min-[1084px]:text-2xl min-[1920px]:text-[28px] font-semibold mb-2">{t('noItemsFound')}</h2>
+          <Button asChild variant="brand" className="rounded-md text-xs min-[1084px]:text-sm min-[1920px]:text-base min-[1084px]:h-10 min-[1920px]:h-11 min-[1084px]:px-5 min-[1920px]:px-6">
             <Link href="/items/add">{t('addItemTitle')}</Link>
           </Button>
         </div>
@@ -147,14 +147,14 @@ export default function MyPostsPage() {
 
       {/* Confirmation dialog for deleting a listing (Confirm Dialog) */}
       <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
-        <DialogContent className="rounded-2xl max-w-sm">
+        <DialogContent className="rounded-md max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold tracking-tight text-red-600">{t('deleteConfirmTitle')}</DialogTitle>
+            <DialogTitle className="text-xl tracking-tight text-red-600">{t('deleteConfirmTitle')}</DialogTitle>
             <DialogDescription className="font-medium pt-2">{t('deletePostConfirm')}</DialogDescription>
             </DialogHeader>
             <div className="flex gap-3 mt-4">
-            <Button variant="outline" className="flex-1 rounded-xl font-bold text-xs h-12" onClick={() => setItemToDelete(null)}>{t('cancel')}</Button>
-            <Button variant="destructive" className="flex-1 rounded-xl font-bold text-xs h-12 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete} disabled={isActionLoading}>{t('delete')}</Button>
+            <Button variant="outline" className="flex-1 rounded-md text-xs h-12" onClick={() => setItemToDelete(null)}>{t('cancel')}</Button>
+            <Button variant="destructive" className="flex-1 rounded-md text-xs h-12 bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete} disabled={isActionLoading}>{t('delete')}</Button>
             </div>
         </DialogContent>
       </Dialog>

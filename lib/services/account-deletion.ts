@@ -16,12 +16,43 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
 const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url)";
 
 /**
+ * Thrown when the account being deleted is the active owner of one or more
+ * organizations (pending/active/suspended — archived orgs don't block,
+ * since ownership of a dead org is harmless). Callers must catch this
+ * specifically and surface a clear, actionable message — never let it fall
+ * into a generic 500, and never silently proceed with deletion (that would
+ * orphan the organization, which Phase 7A explicitly forbids).
+ */
+export class OrganizationOwnershipBlockedError extends Error {
+  constructor(public organizationNames: string[]) {
+    super(
+      `Cannot delete account: still the active owner of ${organizationNames.length} organization(s) (${organizationNames.join(", ")}). Transfer ownership first.`,
+    );
+    this.name = "OrganizationOwnershipBlockedError";
+  }
+}
+
+/**
  * Fully deletes an account (Clerk + Supabase + storage), with a snapshot
  * saved to the archive before deletion — used both by the user themself
  * (/api/account/delete) and by admin (after approving a /delete-account
  * request). A single piece of logic, so the two don't drift apart.
  */
 export async function deleteUserAccount(userId: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  // Phase 7A — an organization must never be silently orphaned by its
+  // owner deleting their personal account. Checked FIRST, before any
+  // Clerk/Supabase mutation begins, so a blocked deletion has zero side
+  // effects.
+  const { data: ownedOrgs, error: ownedOrgsError } = await supabaseAdmin
+    .from("organizations")
+    .select("name")
+    .eq("owner_user_id", userId)
+    .in("status", ["pending", "active", "suspended"]);
+  if (ownedOrgsError) throw ownedOrgsError;
+  if (ownedOrgs && ownedOrgs.length > 0) {
+    throw new OrganizationOwnershipBlockedError(ownedOrgs.map((o) => o.name));
+  }
+
   const { data: profile, error } = await supabaseAdmin.from("profiles").select("*").eq("id", userId).maybeSingle();
   if (error) throw error;
   if (!profile) return { ok: true };

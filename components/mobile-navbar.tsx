@@ -70,13 +70,16 @@ export function MobileNavbar() {
     router.prefetch(href === "/profile" ? "/profile?tab=posts" : href);
   };
 
+  // The scan page is a full-screen camera with its own back button — no navbar there.
+  if (pathname === "/scan" || pathname?.startsWith("/scan/")) return null;
+
   return (
     // The bar is anchored to the bottom edge (Alif style): full width, no
     // rounding, just a separator line on top. The safe-area is applied to
     // the bar ITSELF, so the content doesn't touch the home indicator on iPhone.
     <nav
       data-nosnippet
-      className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden bg-white dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-800"
+      className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden bg-white dark:bg-zinc-800 border-t border-hairline dark:border-zinc-800"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div>
@@ -106,8 +109,8 @@ export function MobileNavbar() {
                   className="flex items-center justify-center"
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center",
-                    isActive ? "bg-emerald-500 text-white" : "text-zinc-400 dark:text-zinc-500"
+                    "w-10 h-10 rounded-md flex items-center justify-center",
+                    isActive ? "bg-emerald-500 text-white" : "text-slate-400 dark:text-zinc-500"
                   )}>
                     <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                   </div>
@@ -126,14 +129,14 @@ export function MobileNavbar() {
                   className="flex items-center justify-center"
                 >
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    "w-10 h-10 rounded-md flex items-center justify-center",
                     isActive ? "bg-emerald-500" : ""
                   )}>
                     <Avatar className="h-7 w-7">
                       <AvatarImage src={user?.imageUrl} />
                       <AvatarFallback className={cn(
                         "text-[10px]",
-                        isActive ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-700"
+                        isActive ? "bg-emerald-600 text-white" : "bg-slate-100 dark:bg-zinc-700"
                       )}>
                         {user?.firstName?.charAt(0) || <User className="h-4 w-4" />}
                       </AvatarFallback>
@@ -153,10 +156,10 @@ export function MobileNavbar() {
                 className="flex items-center justify-center"
               >
                 <div className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center",
+                  "w-10 h-10 rounded-md flex items-center justify-center",
                   isActive
                     ? "bg-emerald-500 text-white"
-                    : "text-zinc-400 dark:text-zinc-500"
+                    : "text-slate-400 dark:text-zinc-500"
                 )}>
                   <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                 </div>

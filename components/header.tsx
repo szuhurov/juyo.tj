@@ -110,7 +110,7 @@ export function Header() {
                 }
               }}
             >
-              <span className="hidden sm:inline text-2xl font-bold tracking-[-0.1em] text-zinc-900 dark:text-zinc-100">
+              <span className="hidden sm:inline text-2xl font-semibold tracking-[-0.1em] text-zinc-900 dark:text-zinc-100">
                 JUYO
               </span>
             </Link>
@@ -119,7 +119,7 @@ export function Header() {
           {/* Middle section: Main navigation, centered — this used to be the
               search bar's slot; search moved to the home page's filter bar. */}
           <div className="flex-[2] sm:flex-[1.5] max-w-xl flex items-center justify-center">
-            <nav className="hidden lg:flex items-center space-x-1 bg-white dark:bg-zinc-800/50 p-1 rounded-lg">
+            <nav className="hidden lg:flex items-center space-x-1 bg-white dark:bg-zinc-800/50 p-1 rounded-md border border-hairline">
               {/* `mounted` used to be used here too, to prevent a hydration
                   mismatch (based on the localStorage/cookie locale), but
                   that caused "icons appearing late" — a user complaint.
@@ -162,10 +162,10 @@ export function Header() {
                       variant={isActive ? "secondary" : "ghost"}
                       size="sm"
                       onClick={handleNavClick}
-                      className={`gap-2 rounded-lg font-bold text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
+                      className={`gap-2 rounded-md text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
                         isActive
                           ? "bg-white text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                          : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 border-transparent focus:outline-none"
+                          : "text-slate-500 hover:text-zinc-900 dark:hover:text-zinc-100 border-transparent focus:outline-none"
                       }`}
                     >
                       <link.icon className="h-4 w-4 min-[1503px]:h-[18px] min-[1503px]:w-[18px]" />
@@ -188,14 +188,14 @@ export function Header() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="font-bold text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border-none rounded-lg bg-white dark:bg-zinc-800 hover:bg-zinc-100"
+                    className="text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border border-hairline rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100"
                     asChild
                   >
                     <Link href="/sign-in">{t("login")}</Link>
                   </Button>
                   <Button
                     size="sm"
-                    className="rounded-lg font-bold text-[13px] bg-emerald-500 text-white hover:bg-emerald-600 h-10 px-4"
+                    className="rounded-md text-[13px] bg-emerald-500 text-white hover:bg-emerald-600 h-10 px-4"
                     asChild
                   >
                     <Link href="/sign-up">{t("signup")}</Link>
@@ -207,7 +207,7 @@ export function Header() {
                     <TooltipTrigger asChild>
                       <Button
                         size="sm"
-                        className="rounded-lg font-bold text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4"
+                        className="rounded-md text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4"
                         asChild
                       >
                         <Link href="/items/add">
@@ -231,7 +231,7 @@ export function Header() {
                             src={user?.imageUrl}
                             alt={user?.fullName || ""}
                           />
-                          <AvatarFallback className="rounded-full font-bold text-xs bg-primary/10 text-primary">
+                          <AvatarFallback className="rounded-full font-semibold text-xs bg-primary/10 text-primary">
                             {user?.firstName?.charAt(0)}
                             {user?.lastName?.charAt(0)}
                           </AvatarFallback>
@@ -240,23 +240,23 @@ export function Header() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
                       align="end"
-                      className="w-64 rounded-2xl p-2 shadow-xl border-zinc-200/50 dark:border-zinc-800/50"
+                      className="w-64 rounded-md p-2 shadow-xl border-slate-200/50 dark:border-zinc-800/50"
                       sideOffset={8}
                     >
                       <div className="flex items-center gap-3 p-3">
-                        <Avatar className="h-10 w-10 rounded-full border border-zinc-100 dark:border-zinc-800">
+                        <Avatar className="h-10 w-10 rounded-full border border-slate-100 dark:border-zinc-800">
                           <AvatarImage src={user?.imageUrl} />
-                          <AvatarFallback className="rounded-full font-bold text-xs bg-zinc-100 dark:bg-zinc-700">
+                          <AvatarFallback className="rounded-full font-semibold text-xs bg-slate-100 dark:bg-zinc-700">
                             {user?.firstName?.charAt(0)}
                             {user?.lastName?.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex flex-col space-y-0.5 overflow-hidden">
-                          <p className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
+                          <p className="text-sm font-semibold truncate text-zinc-900 dark:text-zinc-100 flex items-center gap-1">
                             <span className="truncate">{user?.fullName}</span>
                             {ownProfile?.is_verified && <VerifiedBadge />}
                           </p>
-                          <p className="text-[10px] text-zinc-500 truncate font-medium">
+                          <p className="text-[10px] text-slate-500 truncate font-medium">
                             {user?.primaryEmailAddress?.emailAddress}
                           </p>
                         </div>
@@ -264,19 +264,19 @@ export function Header() {
                       <div className="p-1 space-y-1">
                         <DropdownMenuItem
                           onClick={() => router.push("/profile")}
-                          className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                          className="rounded-md cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
                         >
-                          <User className="mr-3 h-4 w-4 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
-                          <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
+                          <User className="mr-3 h-4 w-4 text-slate-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
+                          <span className="text-xs font-medium text-slate-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
                             {t("myPosts")}
                           </span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => router.push("/profile?tab=info")}
-                          className="rounded-xl cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
+                          className="rounded-md cursor-pointer py-2.5 px-3 focus:bg-zinc-100 dark:focus:bg-zinc-800 transition-colors group"
                         >
-                          <Settings className="mr-3 h-4 w-4 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
-                          <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
+                          <Settings className="mr-3 h-4 w-4 text-slate-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100" />
+                          <span className="text-xs font-medium text-slate-600 group-hover:text-zinc-900 dark:text-zinc-400 dark:group-hover:text-zinc-100">
                             {t("settings")}
                           </span>
                         </DropdownMenuItem>
@@ -291,7 +291,7 @@ export function Header() {
             {!userId ? (
               <Button
                 size="sm"
-                className="sm:hidden rounded-lg font-bold text-[10px] h-9 bg-emerald-500 text-white px-3 capitalize"
+                className="sm:hidden rounded-md text-[10px] h-9 bg-emerald-500 text-white px-3 capitalize"
                 asChild
               >
                 <Link href="/sign-up">{t("signup")}</Link>

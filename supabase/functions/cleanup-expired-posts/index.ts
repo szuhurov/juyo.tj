@@ -151,8 +151,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      // item_images is removed via CASCADE
-      const { error: deleteError } = await supabase.from("items").delete().eq("id", itemId);
+      // item_images is removed via CASCADE. expire_item (Phase 9A,
+      // 20260930000002_analytics_foundation.sql) replaces a raw delete —
+      // it records an 'expired' item_lifecycle_events row in the same
+      // statement's trigger firing, so expiry history is never lost the
+      // way a plain `.delete()` here would lose it.
+      const { error: deleteError } = await supabase.rpc("expire_item", { p_item_id: itemId });
       if (deleteError) console.error(`delete error for ${itemId}:`, deleteError.message);
       else deleted++;
     }

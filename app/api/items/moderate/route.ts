@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getErrorMessage } from "@/lib/error-utils";
 
@@ -20,11 +21,27 @@ import { getErrorMessage } from "@/lib/error-utils";
  * third-party JWT), and here (on the server) it forwards to ai-brain using
  * `supabaseAdmin` (the service-role key, which never has this class of
  * problem).
+ *
+ * SECURITY GAP FOUND (audit): this route itself had no auth check — since
+ * it's same-origin and uses the service-role key, ANYONE who found this
+ * URL could POST photos here and trigger a paid OpenAI call, with no
+ * rate limiting on top (this path is not in middleware.ts's contact-route
+ * limiter). `auth()` here is plain server-side Clerk (no token forwarded
+ * anywhere, so it can't reintroduce the Clerk↔Supabase JWT bugs above) —
+ * the only page that calls this route (`items/add/page.tsx`) is itself a
+ * protected route in middleware.ts, so every legitimate caller already has
+ * a session; this just makes the API route enforce what the UI already
+ * assumes.
  */
 export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await request.formData();
 
     const { data, error } = await supabaseAdmin.functions.invoke("ai-brain", {

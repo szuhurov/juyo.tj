@@ -13,6 +13,20 @@ const REQUIRED_KEYS = [
   'publishSuccess', 'deleteConfirm',
   'atLeastOneImage', 'enterTitleDesc',
   'noItemsFound',
+  // Phase 7 — organization-owned FOUND post creation (absolute final gap closure)
+  'orgFoundCreateTitle', 'orgFoundNotAuthorized', 'orgFoundBadgeExplainer',
+  'orgFoundBranchRequired', 'orgFoundBranchLocked', 'orgFoundCreateSubmit',
+  'orgFoundCreateSuccess', 'orgFoundCreateError', 'orgFoundTitleDescRequired',
+  'orgFoundAiChecking', 'orgFoundAiRetry', 'orgFoundPhotosLabel',
+  'orgFoundCategoryLabel', 'orgFoundTitleLabel', 'orgFoundDescLabel',
+  // Phase 9 — analytics & reporting
+  'orgAnalyticsTitle', 'orgAnalyticsAllBranches', 'orgAnalyticsTotalPosts',
+  'orgAnalyticsAssociatedPosts', 'orgAnalyticsActiveItems', 'orgAnalyticsResolvedItems',
+  'orgAnalyticsExpiredItems', 'orgAnalyticsAiMatches', 'orgAnalyticsPendingReviews',
+  'orgAnalyticsActivityTrend', 'orgAnalyticsByCategory', 'orgAnalyticsByCity',
+  'orgAnalyticsByBranch', 'orgAnalyticsUpgradeTitle', 'orgAnalyticsUpgradeDesc',
+  'orgAnalyticsAdvancedUpsell', 'userAnalyticsTotalPosts', 'userAnalyticsActive',
+  'userAnalyticsResolved', 'userAnalyticsMatches',
 ];
 
 describe('translations completeness', () => {

@@ -56,9 +56,9 @@ export function SendNotificationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl">
+      <DialogContent className="sm:max-w-md rounded-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg font-bold tracking-tight">
+          <DialogTitle className="flex items-center gap-2 text-lg tracking-tight">
             <BellRing className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             Фиристодани хабарнома
           </DialogTitle>

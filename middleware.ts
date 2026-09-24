@@ -31,6 +31,18 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 30;
 const rateLimitHits = new Map<string, { count: number; resetAt: number }>();
 
+/**
+ * SECURITY GAP FOUND (audit): `/api/account/request-deletion` is public and
+ * unauthenticated by design (Google Play Data Safety requires it to work
+ * without sign-in), and `/api/items/moderate` triggers a paid OpenAI call —
+ * neither was covered by the contact-route limiter below. Same in-memory
+ * mechanism, a separate (tighter) bucket, since these are action endpoints,
+ * not page loads.
+ */
+const LIMITED_ACTION_WINDOW_MS = 60_000;
+const LIMITED_ACTION_MAX = 10;
+const limitedActionHits = new Map<string, { count: number; resetAt: number }>();
+
 function isRateLimited(request: Request, path: string): boolean {
   const isContactRoute =
     path.startsWith("/qr/") ||
@@ -61,10 +73,37 @@ function isRateLimited(request: Request, path: string): boolean {
   return hit.count > RATE_LIMIT_MAX;
 }
 
+// Exported for tests/middleware.test.ts — same reasoning as the rest of this
+// file: in-memory only, not distributed, but a real obstacle either way.
+export function isLimitedActionRateLimited(request: Request, path: string): boolean {
+  const isLimitedAction =
+    path === "/api/account/request-deletion" || path === "/api/items/moderate";
+  if (!isLimitedAction) return false;
+
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  const key = `${ip}:${path}`;
+  const now = Date.now();
+
+  if (limitedActionHits.size > 5000) {
+    for (const [k, v] of limitedActionHits) if (now > v.resetAt) limitedActionHits.delete(k);
+  }
+
+  const hit = limitedActionHits.get(key);
+  if (!hit || now > hit.resetAt) {
+    limitedActionHits.set(key, { count: 1, resetAt: now + LIMITED_ACTION_WINDOW_MS });
+    return false;
+  }
+  hit.count += 1;
+  return hit.count > LIMITED_ACTION_MAX;
+}
+
 export default clerkMiddleware(async (auth, request) => {
   const path = new URL(request.url).pathname;
 
-  if (isRateLimited(request, path)) {
+  if (isRateLimited(request, path) || isLimitedActionRateLimited(request, path)) {
     return new NextResponse("Too Many Requests", { status: 429 });
   }
 

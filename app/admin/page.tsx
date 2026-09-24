@@ -16,11 +16,11 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 // into the main admin bundle.
 const DashboardLineChart = dynamic(
   () => import("@/components/admin/dashboard-line-chart").then((m) => m.DashboardLineChart),
-  { loading: () => <Skeleton className="h-64 rounded-2xl" /> },
+  { loading: () => <Skeleton className="h-64 rounded-md" /> },
 );
 const DashboardCategoryChart = dynamic(
   () => import("@/components/admin/dashboard-category-chart").then((m) => m.DashboardCategoryChart),
-  { loading: () => <Skeleton className="h-64 rounded-2xl" /> },
+  { loading: () => <Skeleton className="h-64 rounded-md" /> },
 );
 
 const PERIOD_LABELS: Record<StatsPeriod, string> = {
@@ -47,10 +47,10 @@ export default function AdminDashboardPage() {
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-2xl" />
+            <Skeleton key={i} className="h-28 rounded-md" />
           ))}
         </div>
-        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-md" />
       </div>
     );
   }
@@ -70,7 +70,7 @@ export default function AdminDashboardPage() {
           </p>
         </div>
         <Select value={period} onValueChange={(v) => setPeriod(v as StatsPeriod)}>
-          <SelectTrigger className="w-40 h-10 rounded-full border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 font-bold text-zinc-700 dark:text-zinc-300">
+          <SelectTrigger className="w-40 h-10 rounded-full border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 font-medium text-zinc-700 dark:text-zinc-300">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -103,17 +103,17 @@ export default function AdminDashboardPage() {
         <StatCard icon={BellRing} label="Push фаъол" value={stats.totalPushEnabledUsers} accent="sky" />
       </div>
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4">
+      <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4">
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Афзоиши корбарон</h3>
-          <span className="text-[11px] font-bold text-zinc-400">{PERIOD_LABELS[period]}</span>
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Афзоиши корбарон</h3>
+          <span className="text-[11px] font-medium text-zinc-400">{PERIOD_LABELS[period]}</span>
         </div>
         <DashboardLineChart data={stats.signupsByDay} granularity={stats.signupsGranularity} />
       </div>
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4">
+      <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">Эълонҳо аз рӯи категория</h3>
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-white">Эълонҳо аз рӯи категория</h3>
         </div>
         <DashboardCategoryChart data={stats.itemsByCategory} />
       </div>

@@ -141,14 +141,14 @@ export function ItemCard({
       <Link
         href={`/items/${item.id}`}
         prefetch
-        className="group flex flex-col gap-0 rounded-xl bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+        className="group flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
       >
         {/* Image is rounded on all four sides — the type indicator moved
             to the bottom button, so a mask and `-mb-px` are no longer needed. */}
-        <div className="relative aspect-[4/3] rounded-xl bg-zinc-100 dark:bg-zinc-700">
+        <div className="relative aspect-[4/3] rounded-md bg-slate-100 dark:bg-zinc-700">
           {/* Placeholder is ALWAYS underneath — see ItemFeedCard: without
               this, its spot stays empty while the image is loading. */}
-          <ImagePlaceholder className="rounded-xl" />
+          <ImagePlaceholder className="rounded-md" />
           {thumb && !imgFailed && (
             <Image
               src={thumb}
@@ -157,7 +157,7 @@ export function ItemCard({
               sizes="(max-width: 640px) 50vw, 25vw"
               quality={75}
               className={cn(
-                "object-cover rounded-xl",
+                "object-cover rounded-md",
                 item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
               )}
               onError={() => setImgFailed(true)}
@@ -170,12 +170,12 @@ export function ItemCard({
               fill
               sizes="(max-width: 640px) 50vw, 25vw"
               quality={75}
-              className="object-cover rounded-xl"
+              className="object-cover rounded-md"
             />
           )}
 
           {item.similarity_score !== undefined && (
-            <span className="absolute top-2 left-2 mt-8 inline-flex items-center rounded-full px-2.5 py-1 text-[9px] font-bold bg-emerald-600 text-white">
+            <span className="absolute top-2 left-2 mt-8 inline-flex items-center rounded-full px-2.5 py-1 text-[9px] font-medium bg-emerald-600 text-white">
               {Math.round(item.similarity_score * 100)}% {t("matchForYourImage")}
             </span>
           )}
@@ -186,7 +186,7 @@ export function ItemCard({
                 type="button"
                 onClick={handleEdit}
                 aria-label={t("edit")}
-                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
               >
                 <Pencil className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
               </button>
@@ -194,7 +194,7 @@ export function ItemCard({
                 type="button"
                 onClick={handleDelete}
                 aria-label={t("delete")}
-                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
               </button>
@@ -229,7 +229,7 @@ export function ItemCard({
                     }
                   />
                 </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-lg tabular-nums">
+                <span className="absolute inset-0 flex items-center justify-center text-white font-semibold text-lg tabular-nums">
                   {countdown}
                 </span>
               </div>
@@ -238,11 +238,11 @@ export function ItemCard({
 
           {approvedFlash && (
             <div className="absolute inset-0 z-30 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-2">
-              <div className="bg-white/95 dark:bg-zinc-800/95 px-3 py-2.5 rounded-xl flex flex-col items-center text-center gap-1.5">
+              <div className="bg-white/95 dark:bg-zinc-800/95 px-3 py-2.5 rounded-md flex flex-col items-center text-center gap-1.5">
                 <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                 </div>
-                <span className="text-[10px] font-bold text-emerald-600 leading-tight block">
+                <span className="text-[10px] font-medium text-emerald-600 leading-tight block">
                   {t("postApproved")}
                 </span>
               </div>
@@ -258,11 +258,11 @@ export function ItemCard({
                 toast.info(t("imageModeration.pending"));
               }}
             >
-              <div className="bg-white/95 dark:bg-zinc-800/95 px-3 py-2.5 rounded-xl flex flex-col items-center text-center gap-1.5">
+              <div className="bg-white/95 dark:bg-zinc-800/95 px-3 py-2.5 rounded-md flex flex-col items-center text-center gap-1.5">
                 <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center animate-pulse">
                   <Clock className="w-4 h-4 text-amber-500" />
                 </div>
-                <span className="text-[10px] font-bold text-amber-600 leading-tight block">
+                <span className="text-[10px] font-medium text-amber-600 leading-tight block">
                   {t("imageModeration.pending")}
                 </span>
               </div>
@@ -271,11 +271,11 @@ export function ItemCard({
 
           {isOwner && item.moderation_status === "rejected" && (
             <div className="absolute inset-0 bg-black/70 flex items-center justify-center p-2 z-10 cursor-pointer backdrop-blur-[4px]">
-              <div className="bg-white dark:bg-zinc-800 px-3 py-2.5 rounded-xl flex flex-col items-center text-center gap-1.5">
+              <div className="bg-white dark:bg-zinc-800 px-3 py-2.5 rounded-md flex flex-col items-center text-center gap-1.5">
                 <div className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
                   <ShieldAlert className="w-4 h-4 text-red-600" />
                 </div>
-                <span className="text-[10px] font-bold text-red-600 leading-tight block">
+                <span className="text-[10px] font-medium text-red-600 leading-tight block">
                   {t("imageModeration.rejected")}
                 </span>
               </div>
@@ -285,7 +285,7 @@ export function ItemCard({
 
         <div className="px-3.5 pt-1.5 pb-2 flex flex-col flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="min-w-0 flex-1 truncate font-bold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
+            <h3 className="min-w-0 flex-1 truncate font-semibold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
               {item.title || item.category}
             </h3>
             <span className="shrink-0 text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 dark:text-zinc-500">
@@ -309,7 +309,7 @@ export function ItemCard({
                 "Found" are distinguishable and readable at a glance. */}
             <span
               className={cn(
-                "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-bold",
+                "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-medium",
                 item.type === "lost"
                   ? "text-rose-700 dark:text-rose-400"
                   : "text-emerald-700 dark:text-emerald-400",
@@ -329,14 +329,14 @@ export function ItemCard({
         onOpenChange={(open) => !isActionLoading && setShowDeleteConfirm(open)}
       >
         <DialogContent
-          className="sm:max-w-md rounded-xl p-6 gap-5 border-none shadow-2xl"
+          className="sm:max-w-md rounded-[var(--radius-card)] p-6 gap-5 border-none shadow-[var(--shadow-3)]"
           onClick={(e) => e.stopPropagation()}
         >
           <DialogHeader className="space-y-2.5">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
+            <div className="w-11 h-11 rounded-md flex items-center justify-center mb-1 bg-red-50 dark:bg-red-900/20 text-red-600">
               <Trash2 className="w-5 h-5" />
             </div>
-            <DialogTitle className="text-lg font-bold tracking-tight leading-snug">
+            <DialogTitle className="text-lg tracking-tight leading-snug">
               {t("deleteConfirmTitle") || t("delete")}
             </DialogTitle>
             <DialogDescription className="text-zinc-500 font-medium text-[13px] leading-relaxed">
@@ -347,7 +347,7 @@ export function ItemCard({
             <Button
               type="button"
               variant="destructive"
-              className="flex-1 h-12 rounded-xl font-bold tracking-widest text-[10px] text-white"
+              className="flex-1 h-12 rounded-[var(--radius-control)] tracking-widest text-[10px] text-white"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -360,7 +360,7 @@ export function ItemCard({
             <Button
               type="button"
               variant="outline"
-              className="flex-1 h-12 rounded-xl font-bold tracking-widest text-[10px] border-zinc-200"
+              className="flex-1 h-12 rounded-[var(--radius-control)] tracking-widest text-[10px] border-slate-200"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

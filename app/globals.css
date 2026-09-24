@@ -31,6 +31,9 @@ html {
      (app/layout.tsx, next/font/google) инҷо мустақим васл шуд, то
      font-sans (body-и layout) ниҳоят Nunito-ро истифода барад. */
   --color-canvas: var(--canvas);
+  --color-hairline: var(--hairline);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
   --color-card: var(--card);
@@ -60,11 +63,14 @@ html {
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Ҳадди дизайни сатҳи iOS (HIG): scale-и собити radius/shadow/motion,
-     то ба ҷои арзишҳои тасодуфӣ дар ҳар компонент, ҳама ҷо аз ҳамин
-     токенҳо истифода шавад. */
-  --radius-control: 0.875rem; /* 14px — тугма, input, pill-набуда */
-  --radius-card: 1.25rem; /* 20px — card, sheet/dialog content */
+  /* Site-wide radius normalization: control/card surfaces (button, input,
+     dialog, card, sheet, tooltip) now match the same rounded-md (10px)
+     standard already used by filters/images/search-input, instead of a
+     separate larger scale — see design-consistency sweep. Kept as named
+     tokens (not deleted) since ~10 files still reference
+     rounded-[var(--radius-control|card)]; only the value changed. */
+  --radius-control: var(--radius-md); /* 10px — тугма, input, pill-набуда */
+  --radius-card: var(--radius-md); /* 10px — card, sheet/dialog content */
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.03);
   /* Соя-и корт: бетараф (slate), на тобиши сабз — тобиши рангаи пешина
      дар заминаи хокистарии нав (bg-slate-100) "ифлос" ба назар мерасид. */
@@ -125,16 +131,40 @@ html {
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
+  /* Base radius for the whole scale (--radius-sm/md/lg/xl in the @theme
+     block above, calc()'d from this). rounded-md (8px→10px) is the
+     site-wide standard — filters/images/search-input, buttons, inputs,
+     dialogs, cards all derive from it, mirrors the mobile app's matching
+     bump. */
+  --radius: 0.75rem;
 
   /* Заминаи асосии сайт (canvas). Аз сафед ба қадри кофӣ фарқ мекунад,
      то корт/филтр/navbar-и СAФЕД бе соя ва бе border ҳам аниқ ҷудо шаванд
      — маҳз ҳамин ягона воситаи ҷудокунӣ боқӣ мондааст. Дар ин ҷо танзим
      кун, на дар компонентҳо: `bg-canvas` дар ҳама ҷо ба ҳамин ишора мекунад. */
   --canvas: #ffffff;
+
+  /* Very light separator (#E4E4E7) for white surfaces that touch other white surfaces
+     (light mode). Use as `border-hairline`; it is drawn 0.5px thin (see the rule below).
+     Dark mode: no separator (dark surfaces already differ). */
+  --hairline: #e4e4e7;
+
+  /* JUYO brand colour (lime). Kept separate from --primary: --primary already
+     carries the app's established "success/primary" green (emerald,
+     hardcoded across ~45 screen files) and flips to a near-white tone in
+     dark mode for button-contrast reasons — reusing it for the brand lime
+     would break both. --brand is for deliberate primary-action/brand
+     moments (see components/ui/button.tsx `brand` variant), not a blanket
+     replacement of --primary. */
+  --brand: #e0ff4f;
+  /* Fixed dark text for on-brand (lime) surfaces. Not redefined in .dark —
+     #E0FF4F is light in both themes, so its foreground text must stay dark
+     in both themes too (unlike --primary-foreground, which flips). */
+  --brand-foreground: oklch(0.145 0 0);
 }
 
 .dark {
+  --hairline: transparent;
   /* Сиёҳи тоза (мисли Alif): заминаи саҳифа сиёҳ, кортҳо zinc-900
      (#18181b) — фарқи онҳо ҳамон нақшеро мебозад, ки дар реҷаи равшан
      canvas ↔ сафед мебозад. */
@@ -233,3 +263,9 @@ html {
   );
 }
 
+
+/* `border-hairline` is a 0.5px line in light mode (the width utility next to it, e.g. `border`,
+   only switches the border on). Dark mode keeps the widths it already had. */
+html:not(.dark) .border-hairline {
+  border-width: 0.5px !important;
+}

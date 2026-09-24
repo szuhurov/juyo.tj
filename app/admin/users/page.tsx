@@ -72,14 +72,14 @@ export default function AdminUsersPage() {
         </StatCardGrid>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 overflow-hidden">
+      <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 overflow-hidden">
         <div className="sticky top-0 z-10 bg-white dark:bg-zinc-800 p-4 pb-4 space-y-4 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <p className="text-sm font-medium text-zinc-400">
               {archiveView ? "Корбарони нестшуда — trash ва пурра нестшуда" : data ? `${data.total} корбар` : "Боркунӣ..."}
             </p>
             {!archiveView && (
-              <Button onClick={() => setNotifyOpen(true)} className="gap-2 rounded-2xl bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 text-blue-600 dark:text-blue-400 border border-blue-100 h-10 px-4 shadow-none">
+              <Button onClick={() => setNotifyOpen(true)} className="gap-2 rounded-md bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 text-blue-600 dark:text-blue-400 border border-blue-100 h-10 px-4 shadow-none">
                 <BellRing className="w-4 h-4" />
                 Хабарнома ба ҳама
               </Button>
@@ -99,7 +99,7 @@ export default function AdminUsersPage() {
         {archiveView ? (
           <DeletedAccountsArchive />
         ) : isError ? (
-          <p className="py-16 text-center text-sm font-bold text-rose-500 dark:text-rose-400">
+          <p className="py-16 text-center text-sm font-semibold text-rose-500 dark:text-rose-400">
             Хатогӣ ҳангоми боркунӣ: {error instanceof Error ? error.message : "номаълум"}
           </p>
         ) : isLoading || !data ? (
@@ -117,7 +117,7 @@ export default function AdminUsersPage() {
                   variant="outline"
                   onClick={loadMore}
                   disabled={isFetching}
-                  className="gap-2 rounded-full border-zinc-100 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 font-bold"
+                  className="gap-2 rounded-full border-zinc-100 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300"
                 >
                   {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
                   Бештар нишон диҳед ({data.total - data.users.length} боқӣ)

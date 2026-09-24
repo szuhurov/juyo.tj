@@ -7,7 +7,7 @@ const COLORS = ["#2563eb", "#60a5fa", "#f59e0b", "#10b981", "#f43f5e", "#a78bfa"
 export function DashboardCategoryChart({ data }: { data: { category: string; count: number }[] }) {
   if (data.length === 0) {
     return (
-      <div className="h-[170px] flex items-center justify-center text-xs font-bold text-zinc-400">
+      <div className="h-[170px] flex items-center justify-center text-xs font-medium text-zinc-400">
         Ҳанӯз эълон нест
       </div>
     );
@@ -24,7 +24,7 @@ export function DashboardCategoryChart({ data }: { data: { category: string; cou
             <div key={entry.category} className="flex items-center gap-2 text-xs">
               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
               <span className="text-zinc-500 dark:text-zinc-400 font-medium truncate flex-1">{entry.category}</span>
-              <span className="text-zinc-400 font-bold">{pct}%</span>
+              <span className="text-zinc-400 font-semibold">{pct}%</span>
             </div>
           );
         })}

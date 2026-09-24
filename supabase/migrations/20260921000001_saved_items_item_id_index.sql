@@ -1,0 +1,18 @@
+-- MIGRATION TREE RECONCILIATION (Phase 2): `saved_items.item_id` has no
+-- index — confirmed by direct introspection of the live database
+-- (pg_indexes for saved_items shows only the primary key and an index on
+-- user_id, nothing on item_id). Without it, `ON DELETE CASCADE` from
+-- `items` into `saved_items` has to scan the whole table on every item
+-- deletion.
+--
+-- This exact fix was already written once, in
+-- `app/supabase/migrations/20260902120000_saved_items_item_id_index.sql`,
+-- but — same as the thumbnail_url column above — that tree is not
+-- CLI-linked to the project, and introspection confirms this index was
+-- never actually created live. Porting it into the authoritative tree so
+-- it's real once applied, and so a fresh database built from this tree
+-- alone has it.
+--
+-- Purely additive: creating an index adds nothing destructive; rollback is
+-- `drop index if exists public.idx_saved_items_item_id;`.
+create index if not exists idx_saved_items_item_id on public.saved_items using btree (item_id);

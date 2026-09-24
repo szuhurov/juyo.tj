@@ -11,16 +11,40 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { format } from "date-fns";
+import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/language-context";
 import { useNotifications, type NotificationItem } from "@/lib/hooks/use-notifications";
 import { ClaimantAvatar } from "@/components/claimant-avatar";
-import { Bell, BellRing, ChevronDown, ArrowRight, Trash2, CheckCheck, CheckSquare, X, CheckCircle2 } from "lucide-react";
+import { Bell, BellRing, ChevronDown, ArrowRight, Trash2, CheckCheck, CheckSquare, X, CheckCircle2, Bot, Crown, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useWebPush } from "@/lib/hooks/use-web-push";
+
+type SectionHeader = { key: string; header: string };
+
+// Time-limited expiry notices stay pinned on top ("Important"); everything
+// else is one chronological feed split into Today / Yesterday / Earlier.
+function buildSections(items: NotificationItem[], t: (key: string) => string): (NotificationItem | SectionHeader)[] {
+  const pinned = items.filter((i) => i.kind === "expiry_confirm");
+  const rest = items
+    .filter((i) => i.kind !== "expiry_confirm")
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const out: (NotificationItem | SectionHeader)[] = [];
+  if (pinned.length > 0) out.push({ key: "h-important", header: t("notifSectionImportant") }, ...pinned);
+  let last: string | null = null;
+  for (const item of rest) {
+    const d = new Date(item.createdAt);
+    const bucket = isToday(d) ? "Today" : isYesterday(d) ? "Yesterday" : "Earlier";
+    if (bucket !== last) {
+      out.push({ key: "h-" + bucket, header: t("notifSection" + bucket) });
+      last = bucket;
+    }
+    out.push(item);
+  }
+  return out;
+}
 
 function NotificationRow({
   item,
@@ -44,6 +68,9 @@ function NotificationRow({
   t: (key: string) => string;
 }) {
   const isExpiry = item.kind === "expiry_confirm";
+  const isAiMatch = item.kind === "ai_match";
+  const isVipStatus = item.kind === "vip_status";
+  const isOrgReview = item.kind === "org_review_pending" || item.kind === "org_review_result";
   // The current time is captured in an effect, not during render: calling
   // `Date.now()` during render is an impure function, and the server's time
   // won't match the browser's time, causing a hydration mismatch. `null`
@@ -77,38 +104,47 @@ function NotificationRow({
           the trash button in the expanded row, and group selection. */}
       <div
         className={cn(
-          "relative z-10 rounded-2xl border overflow-hidden",
-          selected && "ring-2 ring-emerald-500",
-          // The expiry notice gets a warning color — it has a time limit
-          // and the listing gets deleted without a response, so it
-          // shouldn't be confused with regular notifications.
-          isExpiry
-            ? "bg-amber-50 dark:bg-amber-950/20 border-amber-300 dark:border-amber-900/60"
-            : unread
-              ? "bg-white dark:bg-zinc-800 border-emerald-200 dark:border-emerald-900/50"
-              : "bg-white dark:bg-zinc-800 border-zinc-100 dark:border-zinc-800",
+          // User request: no card container — the avatar sits on the page
+          // gutter like every other row. The opaque canvas background stays so
+          // the swipe-revealed trash button behind the row is hidden at rest.
+          "relative z-10 bg-canvas",
+          selected && "rounded-md ring-2 ring-emerald-500",
         )}
       >
         <button
         type="button"
         onClick={handleClick}
-        className="w-full flex items-center gap-3 p-4 text-left"
+        className="w-full flex items-center gap-3 py-3 text-left"
       >
         <div className="relative shrink-0">
-          <ClaimantAvatar url={item.posterAvatar ?? null} name={item.posterName ?? null} className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 text-sm min-[1084px]:text-base" />
+          {isAiMatch ? (
+            <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-full bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
+              <Bot className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-violet-500" />
+            </div>
+          ) : isVipStatus ? (
+            <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+              <Crown className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-amber-500" />
+            </div>
+          ) : isOrgReview ? (
+            <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-full bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center">
+              <Building2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-sky-500" />
+            </div>
+          ) : (
+            <ClaimantAvatar url={item.posterAvatar ?? null} name={item.posterName ?? null} className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 text-sm min-[1084px]:text-base" />
+          )}
           {selected && (
             <CheckCircle2 className="absolute -bottom-1 -right-1 w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-emerald-500 bg-white dark:bg-zinc-800 rounded-full" />
           )}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="min-w-0 flex-1 truncate text-sm min-[1084px]:text-base font-bold text-zinc-800 dark:text-zinc-200">
+            <p className="min-w-0 flex-1 truncate text-sm min-[1084px]:text-base font-semibold text-zinc-800 dark:text-zinc-200">
               {item.itemTitle}
             </p>
             {item.itemType && (
               <span
                 className={cn(
-                  "shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-bold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700",
+                  "shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[9px] min-[1084px]:text-[10px] min-[1920px]:text-[11px] font-medium bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700",
                   item.itemType === "lost"
                     ? "text-red-600 dark:text-red-400"
                     : "text-emerald-600 dark:text-emerald-400",
@@ -119,11 +155,28 @@ function NotificationRow({
             )}
           </div>
           {isExpiry ? (
-            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-bold mt-1 text-amber-700 dark:text-amber-500">
+            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-medium mt-1 text-amber-700 dark:text-amber-500">
               {hoursLeft === null ? " " : t("expiryNotice").replace("%{hours}", String(hoursLeft))}
             </p>
+          ) : isAiMatch ? (
+            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-semibold mt-1 text-violet-600 dark:text-violet-400">
+              {t("aiMatchScoreLabel").replace("%{score}", String(item.matchScore ?? 0))}
+            </p>
+          ) : isVipStatus ? (
+            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-semibold mt-1 text-amber-600 dark:text-amber-400">
+              {t(item.vipEventType === "expired" ? "vipExpiredNotice" : "vipActivatedNotice").replace("%{tier}", item.itemTitle)}
+            </p>
+          ) : isOrgReview ? (
+            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-semibold mt-1 text-sky-600 dark:text-sky-400">
+              {item.kind === "org_review_pending"
+                ? t("orgReviewPendingNotice").replace("%{organization}", item.organizationName ?? "")
+                : t(item.organizationReviewStatus === "approved" ? "orgReviewApprovedNotice" : "orgReviewRejectedNotice").replace(
+                    "%{organization}",
+                    item.organizationName ?? "",
+                  )}
+            </p>
           ) : (
-            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs text-zinc-400 dark:text-zinc-500 font-bold mt-1">
+            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs text-slate-400 dark:text-zinc-500 font-medium mt-1">
               {format(new Date(item.createdAt), "dd.MM.yyyy HH:mm")}
             </p>
           )}
@@ -131,15 +184,15 @@ function NotificationRow({
         {unread && <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />}
         <ChevronDown
           className={cn(
-            "w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5 text-zinc-400 shrink-0 transition-transform",
+            "w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5 text-slate-400 shrink-0 transition-transform",
             expanded && "rotate-180",
           )}
         />
       </button>
       {expanded && (
-        <div className="px-4 pb-4 border-t border-zinc-100 dark:border-zinc-800 pt-3.5">
+        <div className="pb-4 pt-1">
           {item.itemImageUrl && (
-            <div className="relative w-full h-40 min-[1084px]:h-48 min-[1920px]:h-56 rounded-xl overflow-hidden mb-3">
+            <div className="relative w-full h-40 min-[1084px]:h-48 min-[1920px]:h-56 rounded-md overflow-hidden mb-3">
               <Image
                 src={item.itemImageUrl}
                 alt=""
@@ -154,7 +207,7 @@ function NotificationRow({
                (which dismisses the notification), deletes the ACTUAL listing
                — so its red color and text need to convey that meaning. */
             <>
-              <p className="mb-3 text-xs min-[1084px]:text-sm font-medium text-zinc-600 dark:text-zinc-300 leading-relaxed">
+              <p className="mb-3 text-xs min-[1084px]:text-sm font-medium text-slate-600 dark:text-zinc-300 leading-relaxed">
                 {t("expiryQuestion")}
               </p>
               <div className="flex items-center gap-2">
@@ -165,7 +218,7 @@ function NotificationRow({
                     e.stopPropagation();
                     onExpiryRespond("keep");
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 rounded-xl bg-emerald-500 text-white font-bold text-xs min-[1084px]:text-sm disabled:opacity-60 transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 rounded-md bg-emerald-500 text-white font-medium text-xs min-[1084px]:text-sm disabled:opacity-60 transition-all"
                 >
                   <CheckCircle2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
                   {t("expiryKeep")}
@@ -177,7 +230,7 @@ function NotificationRow({
                     e.stopPropagation();
                     onExpiryRespond("delete");
                   }}
-                  className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100/50 dark:border-red-900/20 font-bold text-xs min-[1084px]:text-sm disabled:opacity-60 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 rounded-md bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 border border-red-100/50 dark:border-red-900/20 font-medium text-xs min-[1084px]:text-sm disabled:opacity-60 transition-colors"
                 >
                   <Trash2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
                   {t("expiryDelete")}
@@ -187,10 +240,24 @@ function NotificationRow({
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                href={`/items/${item.itemId}`}
-                className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-xl bg-emerald-500 text-white font-bold text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
+                href={
+                  isAiMatch
+                    ? "/matches"
+                    : isVipStatus
+                      ? "/vip"
+                      : item.kind === "org_review_pending"
+                        ? `/org/${item.organizationId}/review`
+                        : `/items/${item.itemId}`
+                }
+                className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-md bg-emerald-500 text-white font-medium text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
               >
-                {item.itemTitle}
+                {isAiMatch
+                  ? t("aiMatchViewButton")
+                  : isVipStatus
+                    ? t("vipViewButton")
+                    : item.kind === "org_review_pending"
+                      ? t("orgReviewGoToQueue")
+                      : item.itemTitle}
                 <ArrowRight className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
               </Link>
               <button
@@ -199,7 +266,7 @@ function NotificationRow({
                   e.stopPropagation();
                   onDeleteClick();
                 }}
-                className="h-11 w-11 min-[1084px]:h-12 min-[1084px]:w-12 min-[1920px]:h-[52px] min-[1920px]:w-[52px] shrink-0 flex items-center justify-center rounded-xl bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+                className="h-11 w-11 min-[1084px]:h-12 min-[1084px]:w-12 min-[1920px]:h-[52px] min-[1920px]:w-[52px] shrink-0 flex items-center justify-center rounded-md bg-red-50 dark:bg-red-900/10 text-red-600 border border-red-100/50 dark:border-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
               >
                 <Trash2 className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" />
               </button>
@@ -260,9 +327,9 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-2.5 sm:px-4 py-6 sm:py-8">
-      <div className="sticky top-0 z-30 bg-canvas py-3 mb-4 flex items-center gap-1 border-b border-zinc-200 dark:border-zinc-800">
-        <Bell className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-zinc-500 dark:text-zinc-400 shrink-0" />
-        <h1 className="flex-1 text-base min-[1084px]:text-lg min-[1920px]:text-xl font-bold tracking-tight text-zinc-500 dark:text-zinc-400 ml-1">
+      <div className="sticky top-0 z-30 bg-canvas py-3 mb-4 flex items-center gap-1 border-b border-slate-200 dark:border-zinc-800">
+        <Bell className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-slate-500 dark:text-zinc-400 shrink-0" />
+        <h1 className="flex-1 text-base min-[1084px]:text-lg min-[1920px]:text-xl font-bold tracking-tight text-slate-500 dark:text-zinc-400 ml-1">
           {t("notifPageTitle")}
         </h1>
         {items.length > 0 && !selectMode && (
@@ -271,7 +338,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={markAllOpened}
               aria-label={t("notifMarkAllRead")}
-              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-md flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               <CheckCheck className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
             </button>
@@ -279,7 +346,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={() => setSelectMode(true)}
               aria-label={t("notifSelectAll")}
-              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-md flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               <CheckSquare className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
             </button>
@@ -291,7 +358,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={() => setSelectMode(false)}
               aria-label={t("notifCancelSelect")}
-              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-md flex items-center justify-center text-slate-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
               <X className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
             </button>
@@ -299,7 +366,7 @@ export default function NotificationsPage() {
               type="button"
               onClick={handleDeleteAll}
               aria-label={t("notifDeleteAll")}
-              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-lg flex items-center justify-center text-red-600 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20"
+              className="h-9 w-9 min-[1084px]:h-10 min-[1084px]:w-10 shrink-0 rounded-md flex items-center justify-center text-red-600 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20"
             >
               <Trash2 className="w-[18px] h-[18px] min-[1084px]:w-5 min-[1084px]:h-5" />
             </button>
@@ -308,9 +375,9 @@ export default function NotificationsPage() {
       </div>
 
       {status !== "unsupported" && (
-        <div className="flex items-center gap-3 rounded-2xl p-4 mb-5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-          <BellRing className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-zinc-500 dark:text-zinc-400 shrink-0" />
-          <span className="flex-1 text-sm min-[1084px]:text-base min-[1920px]:text-[17px] font-bold text-zinc-500 dark:text-zinc-400">
+        <div className="flex items-center gap-3 rounded-md p-4 mb-5 bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
+          <BellRing className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 text-slate-500 dark:text-zinc-400 shrink-0" />
+          <span className="flex-1 text-sm min-[1084px]:text-base min-[1920px]:text-[17px] font-semibold text-slate-500 dark:text-zinc-400">
             {t("verifyEnablePush")}
           </span>
           <Switch
@@ -326,14 +393,14 @@ export default function NotificationsPage() {
 
       {/* List */}
       {loading ? (
-        // Geometry matches NotificationRow: the same rounded-2xl, the same
+        // Geometry matches NotificationRow: the same rounded-md, the same
         // p-4, the same avatar and row sizes — so the list doesn't jump
         // when the data arrives.
         <div className="space-y-2">
           {[0, 1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="rounded-2xl bg-zinc-100 dark:bg-zinc-800 shadow-[0_1px_3px_rgba(15,23,42,0.06),0_6px_14px_-4px_rgba(15,23,42,0.10)] dark:shadow-none p-4 flex items-center gap-3"
+              className="py-3 flex items-center gap-3"
             >
               <Skeleton className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full shrink-0" />
               <div className="min-w-0 flex-1 space-y-2">
@@ -345,10 +412,15 @@ export default function NotificationsPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="py-20 text-center text-sm min-[1084px]:text-base font-medium text-zinc-400">{t("notifEmpty")}</div>
+        <div className="py-20 text-center text-sm min-[1084px]:text-base font-medium text-slate-400">{t("notifEmpty")}</div>
       ) : (
-        <div className="space-y-2">
-          {items.map((item) => (
+        <div className="space-y-1">
+          {buildSections(items, t).map((item) =>
+            "header" in item ? (
+              <p key={item.key} className="pt-3 text-xs min-[1084px]:text-[13px] font-semibold text-slate-400 dark:text-zinc-500">
+                {item.header}
+              </p>
+            ) : (
             <NotificationRow
               key={item.id}
               item={item}
@@ -361,7 +433,8 @@ export default function NotificationsPage() {
               responding={respondingId === item.id}
               t={t}
             />
-          ))}
+            ),
+          )}
         </div>
       )}
     </div>

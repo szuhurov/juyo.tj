@@ -45,7 +45,7 @@ export function PaginationBar({
 
         {getPageWindow(page, totalPages).map((p, i) =>
           p === "dots" ? (
-            <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-xs font-bold text-zinc-300">
+            <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-xs font-medium text-zinc-300">
               …
             </span>
           ) : (
@@ -54,7 +54,7 @@ export function PaginationBar({
               type="button"
               onClick={() => onPageChange(p)}
               className={cn(
-                "w-8 h-8 rounded-full text-xs font-bold transition-colors",
+                "w-8 h-8 rounded-full text-xs font-medium transition-colors",
                 p === page ? "bg-blue-600 text-white" : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800",
               )}
             >
