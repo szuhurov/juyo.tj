@@ -217,7 +217,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         {profile.phone ? (
           <a
             href={`tel:${phoneIntl}`}
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-transparent text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
           >
             <span className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[#25D366] shrink-0">
               <Phone className="w-4 h-4 text-white" />
@@ -236,7 +236,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
         {profile.secondary_phone && (
           <a
             href={`tel:${secondaryPhoneIntl}`}
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-transparent text-zinc-900 dark:text-zinc-100 transition-transform active:scale-[0.98]"
           >
             <span className="flex items-center justify-center w-[34px] h-[34px] rounded-full bg-[#25D366] shrink-0">
               <Phone className="w-4 h-4 text-white" />
@@ -254,7 +254,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
             href={href}
             target="_blank"
             rel="noopener noreferrer nofollow"
-            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-zinc-900 transition-transform active:scale-[0.98]"
+            className="flex items-center gap-3 min-h-14 px-3.5 py-2 rounded-md bg-white dark:bg-transparent transition-transform active:scale-[0.98]"
           >
             <Icon size={34} />
             <div className="min-w-0 flex-1 text-left">

@@ -32,7 +32,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
     <Link
       href={`/items/${item.id}`}
       prefetch
-      className="group flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 overflow-hidden"
+      className="group flex flex-col gap-0 rounded-md bg-white dark:bg-transparent overflow-hidden"
     >
       {/* Image is rounded on all four sides — the type indicator moved
           from here to the bottom button, so the mask's inner corner and

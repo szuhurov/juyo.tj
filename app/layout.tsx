@@ -129,7 +129,7 @@ export const viewport: Viewport = {
   // Values = --canvas for each theme.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f1f5f9" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: dark)", color: "#17212b" },
   ],
 };
 

@@ -165,29 +165,75 @@ html {
 
 .dark {
   --hairline: transparent;
-  /* Сиёҳи тоза (мисли Alif): заминаи саҳифа сиёҳ, кортҳо zinc-900
-     (#18181b) — фарқи онҳо ҳамон нақшеро мебозад, ки дар реҷаи равшан
-     canvas ↔ сафед мебозад. */
-  --canvas: #000000;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  /* User request: dark mode like Telegram's night theme — a deep blue-grey
+     page (#17212b) instead of pure black. The neutral scales (zinc / slate /
+     gray / neutral) are re-tinted to matching blue-grey steps IN DARK MODE
+     ONLY, so every existing dark:bg-zinc-800 / dark:text-zinc-400 / … class
+     follows without touching the components; light mode is unchanged. */
+  --canvas: #17212b;
+  --color-zinc-50: #f5f7fa;
+  --color-zinc-100: #e8edf2;
+  --color-zinc-200: #d5dde5;
+  --color-zinc-300: #b4c0cc;
+  --color-zinc-400: #8a9bb0;
+  --color-zinc-500: #6c7f93;
+  --color-zinc-600: #43546a;
+  --color-zinc-700: #2f3e4f;
+  --color-zinc-800: #232e3c;
+  --color-zinc-900: #1c2733;
+  --color-zinc-950: #131c26;
+  --color-slate-50: #f5f7fa;
+  --color-slate-100: #e8edf2;
+  --color-slate-200: #d5dde5;
+  --color-slate-300: #b4c0cc;
+  --color-slate-400: #8a9bb0;
+  --color-slate-500: #6c7f93;
+  --color-slate-600: #43546a;
+  --color-slate-700: #2f3e4f;
+  --color-slate-800: #232e3c;
+  --color-slate-900: #1c2733;
+  --color-slate-950: #131c26;
+  --color-gray-50: #f5f7fa;
+  --color-gray-100: #e8edf2;
+  --color-gray-200: #d5dde5;
+  --color-gray-300: #b4c0cc;
+  --color-gray-400: #8a9bb0;
+  --color-gray-500: #6c7f93;
+  --color-gray-600: #43546a;
+  --color-gray-700: #2f3e4f;
+  --color-gray-800: #232e3c;
+  --color-gray-900: #1c2733;
+  --color-gray-950: #131c26;
+  --color-neutral-50: #f5f7fa;
+  --color-neutral-100: #e8edf2;
+  --color-neutral-200: #d5dde5;
+  --color-neutral-300: #b4c0cc;
+  --color-neutral-400: #8a9bb0;
+  --color-neutral-500: #6c7f93;
+  --color-neutral-600: #43546a;
+  --color-neutral-700: #2f3e4f;
+  --color-neutral-800: #232e3c;
+  --color-neutral-900: #1c2733;
+  --color-neutral-950: #131c26;
+  --background: #17212b;
+  --foreground: #f5f7fa;
+  --card: #1c2733;
+  --card-foreground: #f5f7fa;
+  --popover: #1c2733;
+  --popover-foreground: #f5f7fa;
+  --primary: #f5f7fa;
+  --primary-foreground: #17212b;
+  --secondary: #232e3c;
+  --secondary-foreground: #f5f7fa;
+  --muted: #232e3c;
+  --muted-foreground: #8a9bb0;
+  --accent: #232e3c;
+  --accent-foreground: #f5f7fa;
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
+  --border: #2f3e4f;
+  --input: #2f3e4f;
+  --ring: #43546a;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);

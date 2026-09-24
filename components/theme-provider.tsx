@@ -10,7 +10,8 @@
  * `@custom-variant dark (&:is(.dark *))`, meaning Tailwind relies
  * specifically on the `.dark` class, not on `prefers-color-scheme`.
  *
- * `defaultTheme="system"` — user request: default to the device's system setting.
+ * `defaultTheme="light"` — user request: light by default; "system" and
+ * "dark" stay selectable in Settings.
  *
  * `disableTransitionOnChange` — without this, all of the site's
  * `transition-colors` fire at once when the theme changes and it flashes
@@ -22,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="light"
       enableSystem
       disableTransitionOnChange
       storageKey="juyo-theme"

@@ -740,7 +740,7 @@ function AddItemForm() {
             1 → 2 → 4 → 5 → 3. A simple numeric comparison step > i+1 was
             wrong — once step=3, steps 4 and 5 (which had already passed)
             were incorrectly shown as empty (gray). */}
-        <div className="w-full flex h-1.5 gap-1 bg-white dark:bg-zinc-800 overflow-hidden shrink-0">
+        <div className="w-full flex h-1.5 gap-1 bg-white dark:bg-transparent overflow-hidden shrink-0">
           {stepOrder.map((s, i) => (
             <div
               key={s}
@@ -1192,7 +1192,7 @@ function AddItemForm() {
 
               {/* Failed State UI (White Theme) */}
               {moderationStatus === "failed" && (
-                <div className="space-y-6 text-center max-w-md mx-auto p-6 bg-white dark:bg-zinc-800 rounded-md">
+                <div className="space-y-6 text-center max-w-md mx-auto p-6 bg-white dark:bg-transparent rounded-md">
                   <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
                     <ShieldAlert className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-red-500" />
                   </div>
@@ -1393,7 +1393,7 @@ function AddItemForm() {
 
 
                 <div className="flex items-center gap-3">
-                  <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-md bg-white dark:bg-zinc-800 px-4 py-3">
+                  <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-md bg-white dark:bg-transparent px-4 py-3">
                     <Checkbox
                       checked={contactTelegram}
                       className="w-5 h-5 rounded-md border-slate-200 dark:border-zinc-600 shrink-0"
@@ -1404,7 +1404,7 @@ function AddItemForm() {
                       {t("contactViaTelegram")}
                     </span>
                   </label>
-                  <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-md bg-white dark:bg-zinc-800 px-4 py-3">
+                  <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-md bg-white dark:bg-transparent px-4 py-3">
                     <Checkbox
                       checked={contactWhatsapp}
                       className="w-5 h-5 rounded-md border-slate-200 dark:border-zinc-600 shrink-0"
@@ -1421,7 +1421,7 @@ function AddItemForm() {
                     {/* Once an amount is typed the "gift" checkbox disappears;
                         it comes back when the field is emptied. */}
                     {!formData.reward && (
-                      <label className="flex items-center gap-3 cursor-pointer select-none rounded-md bg-white dark:bg-zinc-800 px-4 py-3">
+                      <label className="flex items-center gap-3 cursor-pointer select-none rounded-md bg-white dark:bg-transparent px-4 py-3">
                         <Checkbox
                           checked={rewardEnabled}
                           className="w-5 h-5 rounded-md border-slate-200 dark:border-zinc-600 shrink-0"

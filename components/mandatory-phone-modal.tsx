@@ -132,7 +132,7 @@ export function MandatoryPhoneModal() {
         </div>
 
         <div className="overflow-y-auto flex-1 px-8 pt-6 pb-4 space-y-4 text-center">
-          <div className="w-14 h-14 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-1">
+          <div className="w-14 h-14 bg-white dark:bg-transparent rounded-md flex items-center justify-center mx-auto mb-1">
             <Phone className="w-7 h-7 text-emerald-500" />
           </div>
           

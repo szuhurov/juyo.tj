@@ -2120,7 +2120,7 @@ function ProfileContent() {
       >
         <DialogContent className="sm:max-w-md rounded-md p-0 gap-0 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[100] max-h-[98vh] overflow-hidden flex flex-col">
           <div className="overflow-y-auto flex-1 px-8 pt-8 pb-4 space-y-6 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-1">
+            <div className="w-16 h-16 bg-white dark:bg-transparent rounded-md flex items-center justify-center mx-auto mb-1">
               <ShieldCheck className="w-8 h-8 text-slate-500" />
             </div>
 
@@ -2384,7 +2384,7 @@ function ProfileContent() {
       <Dialog open={showWhyQRModal} onOpenChange={setShowWhyQRModal}>
         <DialogContent className="w-[96%] sm:max-w-md rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-2">
+            <div className="w-16 h-16 bg-white dark:bg-transparent rounded-md flex items-center justify-center mx-auto mb-2">
               <QrCode className="w-8 h-8 text-slate-500" />
             </div>
             <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
@@ -2487,7 +2487,7 @@ function ProfileContent() {
       <Dialog open={showChangePasswordModal} onOpenChange={setShowChangePasswordModal}>
         <DialogContent className="w-[96%] sm:max-w-md rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-2">
+            <div className="w-16 h-16 bg-white dark:bg-transparent rounded-md flex items-center justify-center mx-auto mb-2">
               <KeyRound className="w-8 h-8 text-slate-500" />
             </div>
             <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">
@@ -2564,7 +2564,7 @@ function ProfileContent() {
       >
         <DialogContent className="w-[96%] sm:max-w-md rounded-md p-8 border-none shadow-2xl bg-white dark:bg-zinc-950 z-[120]">
           <DialogHeader className="space-y-4 text-center">
-            <div className="w-16 h-16 bg-white dark:bg-zinc-800 rounded-md flex items-center justify-center mx-auto mb-2">
+            <div className="w-16 h-16 bg-white dark:bg-transparent rounded-md flex items-center justify-center mx-auto mb-2">
               <Mail className="w-8 h-8 text-slate-500" />
             </div>
             <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400 leading-tight">

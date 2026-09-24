@@ -219,7 +219,7 @@ export default function ScanPage() {
       {/* Error */}
       {error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-canvas p-6 text-center gap-8 z-10">
-          <div className="w-20 h-20 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center">
+          <div className="w-20 h-20 bg-white dark:bg-transparent rounded-full flex items-center justify-center">
             <Camera className="w-10 h-10 text-red-400" />
           </div>
           <p className="text-sm font-semibold text-slate-600 leading-relaxed max-w-xs">
