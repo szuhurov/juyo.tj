@@ -1418,22 +1418,26 @@ function AddItemForm() {
                 </div>
                 {formData.type === "lost" && (
                   <div className="space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer select-none rounded-md bg-white dark:bg-zinc-800 px-4 py-3">
-                      <Checkbox
-                        checked={rewardEnabled}
-                        className="w-5 h-5 rounded-md border-slate-200 dark:border-zinc-600 shrink-0"
-                        onCheckedChange={(checked) => {
-                          const isChecked = checked === true;
-                          setRewardEnabled(isChecked);
-                          if (isChecked) {
-                            setFormData((prev) => ({ ...prev, reward: "" }));
-                          }
-                        }}
-                      />
-                      <span className="text-sm min-[1084px]:text-base font-semibold text-emerald-700 dark:text-emerald-400">
-                        {t("reward_gives")}
-                      </span>
-                    </label>
+                    {/* Once an amount is typed the "gift" checkbox disappears;
+                        it comes back when the field is emptied. */}
+                    {!formData.reward && (
+                      <label className="flex items-center gap-3 cursor-pointer select-none rounded-md bg-white dark:bg-zinc-800 px-4 py-3">
+                        <Checkbox
+                          checked={rewardEnabled}
+                          className="w-5 h-5 rounded-md border-slate-200 dark:border-zinc-600 shrink-0"
+                          onCheckedChange={(checked) => {
+                            const isChecked = checked === true;
+                            setRewardEnabled(isChecked);
+                            if (isChecked) {
+                              setFormData((prev) => ({ ...prev, reward: "" }));
+                            }
+                          }}
+                        />
+                        <span className="text-sm min-[1084px]:text-base font-semibold text-emerald-700 dark:text-emerald-400">
+                          {t("reward_gives")}
+                        </span>
+                      </label>
+                    )}
                     {!rewardEnabled && (
                       <div className="space-y-1.5">
                         <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
