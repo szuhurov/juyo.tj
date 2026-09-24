@@ -1538,6 +1538,8 @@ function AddItemForm() {
                   setFoundAskOpen(false);
                   if (opt.key === "known") {
                     setFormData((prev) => ({ ...prev, type: "found" }));
+                    // "Yes" is a full answer to step 2 — go straight to the next step.
+                    setStep(6);
                   } else {
                     setPoliceAdviceOpen(true);
                   }
