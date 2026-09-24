@@ -42,6 +42,7 @@ import {
   CheckCircle2,
   Camera,
   Image as ImageIcon,
+  ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 import { cn, stripDocumentNumbers } from "@/lib/utils";
@@ -120,17 +121,16 @@ function AddItemForm() {
   // City of the listing — no default, the user must choose it (step 6 blocks until then).
   const [city, setCity] = useState<string | null>(null);
 
-  // Only for formData.type === "found": whether the user keeps the item
-  // themselves, or hands it over to a nearby place (shop, store).
-  const [foundHandoff, setFoundHandoff] = useState<"self" | "nearby" | null>(null);
-  const [handoffPhoto, setHandoffPhoto] = useState<File | null>(null);
-  const [handoffPreview, setHandoffPreview] = useState<string | null>(null);
+  // Found listings: the finder always keeps the item (the old "hand it to a
+  // nearby shop" option was removed by product decision). Picking "found"
+  // first asks whether they can tell who the owner is; if not, they are
+  // advised to take it to the police instead of posting it.
+  const [foundAskOpen, setFoundAskOpen] = useState(false);
+  const [policeAdviceOpen, setPoliceAdviceOpen] = useState(false);
 
   // The actual navigation order of the steps — step 3 (AI check) comes
   // last, not third; step 6 ("where?") is placed after the details step.
-  // Step 7 (keep or hand over) is only added for "found".
-  const stepOrder =
-    formData.type === "found" ? [1, 2, 6, 4, 7, 5, 3] : [1, 2, 6, 4, 5, 3];
+  const stepOrder = [1, 2, 6, 4, 5, 3];
   const stepIndex = stepOrder.indexOf(step);
 
   const [images, setImages] = useState<File[]>([]);
@@ -310,12 +310,6 @@ function AddItemForm() {
     setModerationStatus("idle");
   };
 
-  // Only ONE photo for the handoff location — replaces the previous result with the new one.
-  const setHandoffFile = (file: File | null) => {
-    if (handoffPreview) URL.revokeObjectURL(handoffPreview);
-    setHandoffPhoto(file);
-    setHandoffPreview(file ? URL.createObjectURL(file) : null);
-  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     addNewFiles(Array.from(e.target.files || []));
@@ -356,19 +350,13 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(formData.type === "found" ? 7 : 5); // Details → keep/hand over (if found) → contact
+      setStep(5); // Details → contact
     } else if (step === 6) {
       if (!city || !locationAnswered) {
         toast.error(t("fillAllFields"));
         return;
       }
       setStep(4); // Location → details
-    } else if (step === 7) {
-      if (!foundHandoff) {
-        toast.error(t("fillAllFields"));
-        return;
-      }
-      setStep(5);
     } else if (step === 5) {
       if (!formData.phone.trim()) {
         toast.error(t("fillAllFields"));
@@ -391,10 +379,8 @@ function AddItemForm() {
       setModerationStatus("idle");
     } else if (step === 6) {
       setStep(2);
-    } else if (step === 7) {
-      setStep(4);
     } else if (step === 5) {
-      setStep(formData.type === "found" ? 7 : 4);
+      setStep(4);
     } else if (step > 1 && step !== 3) {
       setStep(step - 1);
       // Reset moderation if going back to edit photos or type
@@ -616,21 +602,6 @@ function AddItemForm() {
         imageUrls.push(publicUrl);
       }
 
-      const isNearbyHandoff = formData.type === "found" && foundHandoff === "nearby";
-      let handoffPhotoUrl: string | null = null;
-      if (isNearbyHandoff && handoffPhoto) {
-        const compressedHandoff = await compressImage(handoffPhoto);
-        const ext = compressedHandoff.name.split(".").pop();
-        const handoffFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-        const { error: handoffUploadError } = await supabase.storage
-          .from("items")
-          .upload(handoffFileName, compressedHandoff);
-        if (handoffUploadError) throw handoffUploadError;
-        const {
-          data: { publicUrl: handoffPublicUrl },
-        } = supabase.storage.from("items").getPublicUrl(handoffFileName);
-        handoffPhotoUrl = handoffPublicUrl;
-      }
 
       const itemData = {
         user_id: userId,
@@ -641,9 +612,9 @@ function AddItemForm() {
         phone_number: formData.phone,
         contact_telegram: contactTelegram,
         contact_whatsapp: contactWhatsapp,
-        handoff_type: formData.type === "found" ? foundHandoff : null,
-        handoff_phone: isNearbyHandoff ? formData.phone : null,
-        handoff_photo_url: handoffPhotoUrl,
+        handoff_type: formData.type === "found" ? "self" : null,
+        handoff_phone: null,
+        handoff_photo_url: null,
         reward:
           formData.type === "lost"
             ? rewardEnabled
@@ -923,12 +894,13 @@ function AddItemForm() {
               </div>
               <RadioGroup
                 value={formData.type || ""}
-                onValueChange={(val) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    type: val as "lost" | "found",
-                  }))
-                }
+                onValueChange={(val) => {
+                  if (val === "found" && formData.type !== "found") {
+                    setFoundAskOpen(true);
+                    return;
+                  }
+                  setFormData((prev) => ({ ...prev, type: val as "lost" | "found" }));
+                }}
                 className="grid grid-cols-1 gap-3"
               >
                 <div className="relative">
@@ -1138,53 +1110,6 @@ function AddItemForm() {
                   )}
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Step 7: Keep it or hand it over? — only for formData.type === "found" */}
-          {step === 7 && (
-            <div className="space-y-6 max-w-lg mx-auto w-full">
-              <div className="text-center space-y-1">
-                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {t("addHandoffStep.title")}
-                </h2>
-              </div>
-              <RadioGroup
-                value={foundHandoff || ""}
-                onValueChange={(val) => setFoundHandoff(val as "self" | "nearby")}
-                className="grid grid-cols-1 gap-3"
-              >
-                {(
-                  [
-                    { value: "self", emoji: "🤝" },
-                    { value: "nearby", emoji: "🏪" },
-                  ] as const
-                ).map((opt) => (
-                  <div key={opt.value} className="relative">
-                    <Label
-                      htmlFor={`handoff-${opt.value}`}
-                      className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
-                    >
-                      <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
-                        {opt.emoji}
-                      </div>
-                      <div className="flex-1">
-                        <span className="block font-semibold text-base min-[1084px]:text-lg leading-snug">
-                          {t(`addHandoffStep.${opt.value}`)}
-                        </span>
-                        <span className="text-slate-400 text-[13px] min-[1084px]:text-sm font-medium">
-                          {t(`addHandoffStep.${opt.value}Desc`)}
-                        </span>
-                      </div>
-                      <RadioGroupItem
-                        value={opt.value}
-                        id={`handoff-${opt.value}`}
-                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
-                      />
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
             </div>
           )}
 
@@ -1445,24 +1370,15 @@ function AddItemForm() {
             <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1 mb-4">
                 <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {formData.type === "found" && foundHandoff === "nearby"
-                    ? t("addHandoffStep.phoneStepTitle")
-                    : t("contactInfo") || "Contact Information"}
+                  {t("contactInfo") || "Contact Information"}
                 </h2>
               </div>
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
-                    {formData.type === "found" && foundHandoff === "nearby"
-                      ? t("addHandoffStep.phoneLabel")
-                      : t("phoneLabel")}
+                    {t("phoneLabel")}
                   </Label>
                   <PhoneInput
-                    placeholder={
-                      formData.type === "found" && foundHandoff === "nearby"
-                        ? t("addHandoffStep.phonePlaceholder")
-                        : undefined
-                    }
                     containerClassName="h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800"
                     className="text-base min-[1084px]:text-lg text-emerald-600 dark:text-emerald-400"
                     value={formData.phone}
@@ -1475,42 +1391,6 @@ function AddItemForm() {
                   />
                 </div>
 
-                {formData.type === "found" && foundHandoff === "nearby" && (
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
-                      {t("addHandoffStep.photoLabel")}
-                    </Label>
-                    {handoffPreview ? (
-                      <div className="relative w-28 h-28 rounded-md overflow-hidden group bg-white dark:bg-zinc-800">
-                        <Image
-                          src={handoffPreview}
-                          alt="Handoff preview"
-                          fill
-                          className="object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setHandoffFile(null)}
-                          className="absolute top-1.5 right-1.5 bg-white/90 dark:bg-black/90 text-red-500 p-1 rounded-md z-20"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="w-28 h-28 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 transition-all group">
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          onChange={(e) => setHandoffFile(e.target.files?.[0] || null)}
-                        />
-                        <div className="w-10 h-10 rounded-full bg-canvas dark:bg-zinc-700 flex items-center justify-center text-slate-400 dark:text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                          <Plus className="w-5 h-5" strokeWidth={3} />
-                        </div>
-                      </label>
-                    )}
-                  </div>
-                )}
 
                 <div className="flex items-center gap-3">
                   <label className="flex-1 flex items-center gap-2 cursor-pointer select-none rounded-md bg-white dark:bg-zinc-800 px-4 py-3">
@@ -1604,7 +1484,7 @@ function AddItemForm() {
                 {t("back")}
               </Button>
             )}
-            {(step === 1 || step === 2 || step === 6 || step === 4 || step === 7) && (
+            {(step === 1 || step === 2 || step === 6 || step === 4) && (
               <Button
                 size="lg"
                 onClick={nextStep}
@@ -1630,6 +1510,67 @@ function AddItemForm() {
           </div>
         </div>
       </Card>
+
+      {/* "Found": can the finder tell who the owner is? Two tappable
+          choice cards so it reads as a question, not an info popup. */}
+      <Dialog open={foundAskOpen} onOpenChange={setFoundAskOpen}>
+        <DialogContent className="max-w-[360px] rounded-md p-5 pt-8 border-none shadow-2xl gap-0">
+          <DialogHeader className="mb-4 space-y-1">
+            <DialogTitle className="text-lg font-bold tracking-tight text-center text-zinc-900 dark:text-zinc-100">
+              {t("foundAskTitle")}
+            </DialogTitle>
+            <p className="text-sm font-medium text-center text-slate-500">{t("foundAskHint")}</p>
+          </DialogHeader>
+          <div className="space-y-2.5">
+            {(
+              [
+                { key: "known", emoji: "🙋", label: "foundAskKnownOwner", hint: "foundAskKnownOwnerHint" },
+                { key: "unknown", emoji: "🤷", label: "foundAskUnknownOwner", hint: "foundAskUnknownOwnerHint" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => {
+                  setFoundAskOpen(false);
+                  if (opt.key === "known") {
+                    setFormData((prev) => ({ ...prev, type: "found" }));
+                  } else {
+                    setPoliceAdviceOpen(true);
+                  }
+                }}
+                className="w-full flex items-center gap-3 rounded-lg border-[1.5px] border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-3.5 py-3.5 text-left cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+              >
+                <span className="text-3xl shrink-0">{opt.emoji}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-[15px] font-bold text-zinc-900 dark:text-zinc-100">{t(opt.label)}</span>
+                  <span className="block text-xs font-medium text-slate-500 mt-0.5">{t(opt.hint)}</span>
+                </span>
+                <ChevronRight className="w-5 h-5 text-emerald-600 shrink-0" />
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={policeAdviceOpen} onOpenChange={setPoliceAdviceOpen}>
+        <DialogContent className="max-w-[360px] rounded-md p-5 pt-8 border-none shadow-2xl gap-0 text-center">
+          <div className="text-5xl mb-2">👮</div>
+          <DialogHeader className="mb-3">
+            <DialogTitle className="text-lg font-bold tracking-tight text-center text-zinc-900 dark:text-zinc-100">
+              {t("policeAdviceTitle")}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-500 leading-relaxed mb-5">{t("policeAdviceDesc")}</p>
+          <Button
+            type="button"
+            onClick={() => setPoliceAdviceOpen(false)}
+            className="w-full h-12 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+          >
+            {t("policeAdviceOk")}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       {/* Safety Advice Modal — after the blur step (if it's a document), before the actual publish */}
       <Dialog
