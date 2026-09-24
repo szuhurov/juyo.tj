@@ -20,6 +20,8 @@ import { Bell, BellRing, ChevronDown, ArrowRight, Trash2, CheckCheck, CheckSquar
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useWebPush } from "@/lib/hooks/use-web-push";
 
 type SectionHeader = { key: string; header: string };
@@ -302,11 +304,20 @@ export default function NotificationsPage() {
     }
   };
 
-  const handleDelete = async (item: NotificationItem) => {
+  // Deleting asks first, in the same centered dialog as deleting a listing.
+  const [deleteTarget, setDeleteTarget] = useState<NotificationItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = (item: NotificationItem) => setDeleteTarget(item);
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await dismissNotification(item);
+      await dismissNotification(deleteTarget);
+      setDeleteTarget(null);
     } catch {
       toast.error(t("error"));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -437,6 +448,23 @@ export default function NotificationsPage() {
           )}
         </div>
       )}
+
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}>
+        <DialogContent className="rounded-md border-none shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">{t("notifDeleteConfirmTitle")}</DialogTitle>
+            <DialogDescription>{t("notifDeleteConfirmDesc")}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-3">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
+              {t("cancel")}
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
+              {t("delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

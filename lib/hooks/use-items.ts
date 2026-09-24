@@ -70,7 +70,7 @@ export function useItems(filters?: ItemFilters, initialItems?: Item[]) {
 export function useVipItems() {
   return useQuery({
     queryKey: ITEM_KEYS.vip(),
-    queryFn: ({ signal }) => ItemService.getVipItems(20, undefined, { signal }),
+    queryFn: ({ signal }) => ItemService.getVipItems(50, undefined, { signal }),
     staleTime: 1000 * 30,
     retry: 1,
   });

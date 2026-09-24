@@ -1523,7 +1523,6 @@ function AddItemForm() {
             <DialogTitle className="text-lg font-bold tracking-tight text-center text-zinc-900 dark:text-zinc-100">
               {t("foundAskTitle")}
             </DialogTitle>
-            <p className="text-sm font-medium text-center text-slate-500">{t("foundAskHint")}</p>
           </DialogHeader>
           <div className="space-y-2.5">
             {(

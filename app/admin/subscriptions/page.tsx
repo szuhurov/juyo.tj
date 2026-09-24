@@ -106,7 +106,7 @@ export default function AdminSubscriptionsPage() {
         <div>
           <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
             <Crown className="w-5 h-5 text-amber-500" />
-            VIP/VVIP обунаҳо
+            TOP/VIP обунаҳо
           </h1>
           <p className="text-sm text-zinc-500 mt-1">{count} обуна</p>
         </div>

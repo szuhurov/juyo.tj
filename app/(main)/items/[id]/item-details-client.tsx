@@ -592,7 +592,25 @@ export default function ItemDetailsClient({
                   <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 mr-2" />{" "}
                   {t("resolved")}?
                 </Button>
-              ) : item?.phone_number ? (
+              ) : null}
+              {/* The owner never sees the contact buttons (they are for
+                  others), so show which messengers were enabled for them. */}
+              {isLoaded && isOwner && item && (item.contact_telegram || item.contact_whatsapp) && (
+                <div className="flex items-center flex-wrap gap-2 text-xs font-medium text-slate-500">
+                  <span>{t("ownerContactShown")}</span>
+                  {item.contact_telegram && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 px-2.5 py-1 text-[#229ED9]">
+                      <TelegramIcon size={14} /> Telegram
+                    </span>
+                  )}
+                  {item.contact_whatsapp && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 px-2.5 py-1 text-[#25D366]">
+                      <WhatsappIcon size={14} /> WhatsApp
+                    </span>
+                  )}
+                </div>
+              )}
+              {isLoaded && isOwner ? null : item?.phone_number ? (
                 <div className="flex gap-3">
                   <Button
                     variant="brand"

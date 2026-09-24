@@ -143,8 +143,12 @@ export const VipService = {
    *  activation happens only after an admin manually confirms payment (no
    *  payment provider is integrated this phase — see the migration's header
    *  comment). Returns the new subscription id. */
-  async createSubscription(planId: string, client?: SupabaseClient): Promise<string> {
-    const { data, error } = await (client || supabase).rpc("create_subscription", { p_plan_id: planId });
+  /** `itemId`: the listing the plan is for (TOP/VIP belong to one listing); omit for an account-wide plan. */
+  async createSubscription(planId: string, client?: SupabaseClient, itemId?: string): Promise<string> {
+    const { data, error } = await (client || supabase).rpc("create_subscription", {
+      p_plan_id: planId,
+      ...(itemId ? { p_item_id: itemId } : {}),
+    });
     if (error) throw error;
     return data as string;
   },

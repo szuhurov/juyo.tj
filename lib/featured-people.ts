@@ -13,25 +13,24 @@ export interface FeaturedItem {
   title: string;
   /** Shown on ONE line under the title. */
   description: string;
-  coverUrl: string;
+  coverUrl: string | null;
   /** Drives the card's VIP / VVIP tag; no tag is rendered for "none"/undefined. */
   vipTier?: "none" | "vip" | "vvip";
 }
 
-export const MAX_FEATURED_ITEMS = 20;
+export const MAX_FEATURED_ITEMS = 50;
 
 /**
  * Strip cards from the `get_vip_items` RPC result. The RPC order (VVIP first,
- * then newest) is preserved; only listings with a photo are shown in the
- * strip, the rest simply stay in the ordinary list.
+ * then newest) is preserved. Every paid listing is shown — one posted
+ * without a photo gets the card's plain placeholder instead of a cover.
  */
 export function toFeaturedItems(vipItems: Item[]): FeaturedItem[] {
   return vipItems
     .filter(
       (i) =>
         (i.vip_tier === "vip" || i.vip_tier === "vvip") &&
-        i.title &&
-        i.images?.[0]?.image_url,
+        i.title,
     )
     .slice(0, MAX_FEATURED_ITEMS)
     .map((i) => ({
@@ -39,7 +38,7 @@ export function toFeaturedItems(vipItems: Item[]): FeaturedItem[] {
       type: i.type,
       title: i.title,
       description: i.description ?? "",
-      coverUrl: i.images![0].image_url,
+      coverUrl: i.images?.[0]?.image_url || null,
       vipTier: i.vip_tier,
     }));
 }

@@ -19,7 +19,7 @@ describe("toFeaturedItems", () => {
     expect(toFeaturedItems([])).toEqual([]);
   });
 
-  it("keeps vip and vvip with a photo (lost and found), preserves order and carries the tier", () => {
+  it("keeps every vip and vvip (with or without a photo), preserves order and carries the tier", () => {
     const out = toFeaturedItems([
       make("1", { vip_tier: "vvip", type: "found" }),
       make("2", { vip_tier: "vvip" }),
@@ -29,13 +29,15 @@ describe("toFeaturedItems", () => {
     expect(out.map((i) => [i.id, i.vipTier, i.type])).toEqual([
       ["1", "vvip", "found"],
       ["2", "vvip", "lost"],
+      ["3", "vip", "lost"],
       ["4", "vip", "lost"],
     ]);
+    expect(out[2].coverUrl).toBeNull();
   });
 
-  it("caps the strip at 20", () => {
-    const many = Array.from({ length: 30 }, (_, i) => make(String(i), { vip_tier: "vip" }));
-    expect(toFeaturedItems(many)).toHaveLength(20);
+  it("shows up to 50 paid listings", () => {
+    const many = Array.from({ length: 60 }, (_, i) => make(String(i), { vip_tier: "vip" }));
+    expect(toFeaturedItems(many)).toHaveLength(50);
   });
 });
 
@@ -46,10 +48,10 @@ describe("excludeFeatured", () => {
     expect(excludeFeatured(items, featured).map((i) => i.id)).toEqual(["1", "3"]);
   });
 
-  it("keeps a VIP item without a photo in the list (it is not in the strip)", () => {
+  it("moves a VIP item without a photo into the strip too", () => {
     const vip = [make("1", { vip_tier: "vip", images: [] }), make("2", { vip_tier: "vip" })];
     const items = [make("1"), make("2"), make("3")];
-    expect(excludeFeatured(items, toFeaturedItems(vip)).map((i) => i.id)).toEqual(["1", "3"]);
+    expect(excludeFeatured(items, toFeaturedItems(vip)).map((i) => i.id)).toEqual(["3"]);
   });
 
   it("excludes nothing when there are no VIP items", () => {

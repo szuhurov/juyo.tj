@@ -35,7 +35,7 @@ export function FeaturedPersonCard({ item, single }: { item: FeaturedItem; singl
       )}
     >
       <ImagePlaceholder className="rounded-md" />
-      {!coverFailed && (
+      {!coverFailed && item.coverUrl && (
         <Image
           src={item.coverUrl}
           alt=""
