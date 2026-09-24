@@ -1524,8 +1524,8 @@ function AddItemForm() {
           <div className="space-y-2.5">
             {(
               [
-                { key: "known", emoji: "🙋", label: "foundAskKnownOwner", hint: "foundAskKnownOwnerHint" },
                 { key: "unknown", emoji: "🤷", label: "foundAskUnknownOwner", hint: "foundAskUnknownOwnerHint" },
+                { key: "known", emoji: "🙋", label: "foundAskKnownOwner", hint: "foundAskKnownOwnerHint" },
               ] as const
             ).map((opt) => (
               <button
