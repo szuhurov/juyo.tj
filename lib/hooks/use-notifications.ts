@@ -185,7 +185,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       id: `vip_status:${row.event_id}`,
       kind: "vip_status" as const,
       itemId: "",
-      itemTitle: row.tier.toUpperCase(),
+      itemTitle: (row.tier === 'vvip' ? 'VIP' : 'TOP'),
       itemImageUrl: null,
       createdAt: row.created_at,
       vipTier: row.tier,

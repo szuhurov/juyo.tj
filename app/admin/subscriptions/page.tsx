@@ -152,7 +152,7 @@ export default function AdminSubscriptionsPage() {
                 )}
               >
                 <Crown className="w-3 h-3" />
-                {sub.tier.toUpperCase()}
+                {(sub.tier === 'vvip' ? 'VIP' : 'TOP')}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200 truncate">

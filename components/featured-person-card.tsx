@@ -68,7 +68,7 @@ export function FeaturedPersonCard({ item, single }: { item: FeaturedItem; singl
                 item.vipTier === "vvip" ? "bg-amber-500 text-white" : "bg-yellow-400 text-zinc-900",
               )}
             >
-              {item.vipTier === "vvip" ? "VVIP" : "VIP"}
+              {item.vipTier === "vvip" ? "VIP" : "TOP"}
             </span>
           )}
         </div>

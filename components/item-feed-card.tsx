@@ -74,7 +74,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
             )}
           >
             <Crown className="w-2.5 h-2.5" />
-            {item.vip_tier === "vvip" ? "VVIP" : "VIP"}
+            {item.vip_tier === "vvip" ? "VIP" : "TOP"}
           </span>
         )}
       </div>

@@ -71,7 +71,7 @@ export default function VipPage() {
         .then((r) => r.ok)
         .catch(() => false);
       toast.success(
-        activated ? t("vipActivatedNotice").replace("%{tier}", plan.tier.toUpperCase()) : t("vipRequestSent"),
+        activated ? t("vipActivatedNotice").replace("%{tier}", (plan.tier === 'vvip' ? 'VIP' : 'TOP')) : t("vipRequestSent"),
       );
       load();
     } catch (err) {
@@ -121,7 +121,7 @@ export default function VipPage() {
               <Crown className="w-5 h-5 text-amber-500 shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-bold text-amber-700 dark:text-amber-400">
-                  {t("vipYouAre").replace("%{tier}", status.tier.toUpperCase())}
+                  {t("vipYouAre").replace("%{tier}", (status.tier === 'vvip' ? 'VIP' : 'TOP'))}
                 </p>
                 <p className="text-xs text-amber-600 dark:text-amber-500">
                   {t("vipExpiresOn").replace("%{date}", format(new Date(status.expiresAt), "dd.MM.yyyy"))}
@@ -135,7 +135,7 @@ export default function VipPage() {
               <Clock className="w-5 h-5 text-slate-400 shrink-0" />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                  {t("vipPendingLabel").replace("%{tier}", pending.tier.toUpperCase())}
+                  {t("vipPendingLabel").replace("%{tier}", (pending.tier === 'vvip' ? 'VIP' : 'TOP'))}
                 </p>
                 <p className="text-xs text-slate-500">{t("vipPendingDesc")}</p>
               </div>
@@ -212,7 +212,7 @@ function PlanGroup({
     >
       <div className="flex items-center gap-2">
         <Crown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-        <h2 className="text-base font-bold text-amber-600 dark:text-amber-400">{isVvip ? "VVIP" : "VIP"}</h2>
+        <h2 className="text-base font-bold text-amber-600 dark:text-amber-400">{isVvip ? "VIP" : "TOP"}</h2>
       </div>
       <ul className="space-y-1">
         {benefitKeys.map((key) => (

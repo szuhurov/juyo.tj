@@ -13,7 +13,7 @@ export const NAV_ITEMS = [
   { href: "/admin/posts", label: "Эълонҳо", icon: Package },
   { href: "/admin/matches", label: "Мутобиқатҳои AI", icon: Bot },
   { href: "/admin/analytics", label: "Аналитика", icon: BarChart3 },
-  { href: "/admin/subscriptions", label: "VIP/VVIP", icon: Crown },
+  { href: "/admin/subscriptions", label: "TOP/VIP", icon: Crown },
   { href: "/admin/deletion-requests", label: "Нест кардани ҳисоб", icon: UserX },
 ];
 
