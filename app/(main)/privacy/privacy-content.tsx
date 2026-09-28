@@ -51,8 +51,8 @@ const content = {
       },
       {
         id: "qr",
-        title: "8. QR-код: сатҳҳо ва нарх",
-        text: "QR-и «Оддӣ» ҳамеша БЕПУЛ аст — онро бе ҳеҷ маҳдудият боргирӣ мекунед. Сатҳҳои «Худсоз» ва «Pro» (ранг, шакл, матн ва градиенти худӣ) пулакӣ мешаванд; ба ҷои пардохт метавонед реклама бинед ва як бор боргирӣ кунед. Нархи дақиқ ҳангоми дастрас шудани пардохт дар ҳамин ҷо нишон дода мешавад. Рақами дуюм ва шабакаҳои иҷтимоӣ роҳи эҳтиётии тамосанд: агар телефони шумо гум шавад ё ҷавоб надиҳед, ёбанда аз он ҷо ба шумо мерасад — шабакаҳо ихтиёрианд. QR-и шумо танҳо ҳамон маълумотеро нишон медиҳад, ки худатон ворид кардаед, ва шумо метавонед онро дар ҳар лаҳза аз тумблери «Статуси QR-код» хомӯш кунед."
+        title: "8. QR-код",
+        text: "QR-и JUYO бепул аст — онро бе ҳеҷ маҳдудият боргирӣ мекунед. Рақами дуюм ва шабакаҳои иҷтимоӣ роҳи эҳтиётии тамосанд: агар телефони шумо гум шавад ё ҷавоб надиҳед, ёбанда аз он ҷо ба шумо мерасад — шабакаҳо ихтиёрианд. QR-и шумо танҳо ҳамон маълумотеро нишон медиҳад, ки худатон ворид кардаед, ва шумо метавонед онро дар ҳар лаҳза аз тумблери «Статуси QR-код» хомӯш кунед."
       }
     ]
   },
@@ -98,8 +98,8 @@ const content = {
       },
       {
         id: "qr",
-        title: "8. QR-код: уровни и цены",
-        text: "QR «Простой» всегда БЕСПЛАТНЫЙ — скачивайте без ограничений. Уровни «Свой» и «Pro» (свой цвет, форма, текст и градиент) станут платными; вместо оплаты можно посмотреть рекламу и скачать один раз. Точная цена будет показана здесь же, когда оплата станет доступна. Второй номер и социальные сети — запасной способ связи: если ваш телефон потерян или вы не отвечаете, нашедший свяжется с вами там; социальные сети необязательны. Ваш QR показывает только те данные, которые вы сами ввели, и вы можете отключить его в любой момент переключателем «Статус QR-кода»."
+        title: "8. QR-код",
+        text: "QR-код JUYO бесплатный — скачивайте без ограничений. Второй номер и социальные сети — запасной способ связи: если ваш телефон потерян или вы не отвечаете, нашедший свяжется с вами там; социальные сети необязательны. Ваш QR показывает только те данные, которые вы сами ввели, и вы можете отключить его в любой момент переключателем «Статус QR-кода»."
       }
     ]
   },
@@ -145,8 +145,8 @@ const content = {
       },
       {
         id: "qr",
-        title: "8. QR code: tiers and pricing",
-        text: "The Basic QR is always FREE — download it without limits. The Custom and Pro tiers (your own colour, shape, text and gradient) will be paid; instead of paying you can watch an ad and download once. The exact price will be shown here once payment is available. The second number and social networks are a backup route: if your phone is lost or you do not answer, the finder can still reach you there — social networks are optional. Your QR shows only the data you entered yourself, and you can switch it off at any time with the QR status toggle."
+        title: "8. QR code",
+        text: "The JUYO QR code is free — download it without limits. The second number and social networks are a backup route: if your phone is lost or you do not answer, the finder can still reach you there — social networks are optional. Your QR shows only the data you entered yourself, and you can switch it off at any time with the QR status toggle."
       }
     ]
   }
