@@ -775,7 +775,7 @@ export function PrivacyBlurEditor({
             onPointerCancel={handleWrapPointerUp}
           >
             {!ready ? (
-              <div className="w-full aspect-square animate-pulse bg-slate-200 dark:bg-zinc-700" />
+              <div className="w-full aspect-square juyo-skeleton" />
             ) : (
               <div
                 style={{

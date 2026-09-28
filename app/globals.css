@@ -268,6 +268,47 @@ html {
   }
 }
 
+/* Loading placeholder — the same look as the mobile app's <Skeleton>
+   (app/components/Skeleton.tsx): a flat zinc-100 block with a soft zinc-200
+   band sweeping left→right every 1.4s. Same colors in both themes as the
+   app's palette (lib/theme.ts). */
+@keyframes juyo-skeleton-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+
+.juyo-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: #f1f5f9;
+}
+
+.juyo-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 60%;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+  animation: juyo-skeleton-sweep 1.4s ease infinite;
+  will-change: transform;
+}
+
+.dark .juyo-skeleton {
+  background-color: #232e3c;
+}
+
+.dark .juyo-skeleton::after {
+  background: linear-gradient(90deg, transparent, #2f3e4f, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .juyo-skeleton::after {
+    animation: none;
+    display: none;
+  }
+}
+
 /* Сплейш-скрин аниматсияҳо */
 
 @keyframes shimmer {

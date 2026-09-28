@@ -360,7 +360,7 @@ export function ItemCard({
             <Button
               type="button"
               variant="outline"
-              className="flex-1 h-12 rounded-[var(--radius-control)] tracking-widest text-[10px] border-slate-200"
+              className="flex-1 h-12 rounded-[var(--radius-control)] tracking-widest text-[10px] border-slate-200 dark:border-zinc-700"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

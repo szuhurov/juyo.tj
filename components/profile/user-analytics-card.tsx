@@ -36,7 +36,14 @@ export function UserAnalyticsCard() {
   if (!isLoaded || !userId) return null;
 
   if (loading) {
-    return <Skeleton className="h-20 w-full rounded-md mb-4" />;
+    // Same grid/tiles as the loaded state: 4 tiles, p-3, value + label.
+    return (
+      <div className="grid grid-cols-4 gap-2 mb-4" aria-hidden>
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} className="h-[67px] rounded-md" />
+        ))}
+      </div>
+    );
   }
   if (!data || data.totalPosts === 0) return null;
 

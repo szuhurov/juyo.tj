@@ -30,6 +30,36 @@ const REASON_KEYS: Record<MatchReason, string> = {
   similar_date: "matchReasonDate",
 };
 
+/** Same card, rows and sizes as a loaded match card below (and the app's MatchCardSkeleton). */
+function MatchCardSkeleton() {
+  return (
+    <div aria-hidden className="rounded-md border border-hairline dark:border-zinc-700 bg-white dark:bg-zinc-800 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-6 w-24 rounded-full" />
+        <Skeleton className="h-7 w-7 rounded-full" />
+      </div>
+      <div className="flex items-center gap-3">
+        <Skeleton className="w-16 h-16 rounded-md shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="flex h-5 items-center gap-2">
+            <Skeleton className="h-3.5 w-3/5 rounded" />
+            <Skeleton className="h-4 w-11 rounded-full shrink-0" />
+          </div>
+          <div className="mt-0.5 flex h-4 items-center">
+            <Skeleton className="h-2.5 w-2/3 rounded" />
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {["w-16", "w-20", "w-14"].map((w) => (
+          <Skeleton key={w} className={`h-5 ${w} rounded-full`} />
+        ))}
+      </div>
+      <Skeleton className="h-10 w-full rounded-md" />
+    </div>
+  );
+}
+
 export default function MatchesPage() {
   const { t } = useLanguage();
   const { getToken, userId, isLoaded } = useAuth();
@@ -86,7 +116,7 @@ export default function MatchesPage() {
       {loading || !isLoaded ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-40 w-full rounded-md" />
+            <MatchCardSkeleton key={i} />
           ))}
         </div>
       ) : matches.length === 0 ? (

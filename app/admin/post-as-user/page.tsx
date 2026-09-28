@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/lib/image-utils";
 import { toast } from "sonner";
 import { Loader2, Search, X, ShieldCheck } from "lucide-react";
 
@@ -118,7 +119,10 @@ function PostAsUserContent() {
       form.append("type", type);
       form.append("phone_number", phone.trim());
       if (reward.trim()) form.append("reward", reward.trim());
-      images.forEach((f) => form.append("image", f));
+      // Re-encoding drops EXIF (incl. GPS) — without it the unblurred path
+      // uploads the original file to the public bucket as-is.
+      const compressed = await Promise.all(images.map((f) => compressImage(f)));
+      compressed.forEach((f) => form.append("image", f));
 
       const res = await fetch("/api/admin/post-as-user", { method: "POST", body: form });
       const data = await res.json();

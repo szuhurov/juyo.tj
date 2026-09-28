@@ -14,6 +14,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ItemDetailsSkeleton } from "@/components/item-details-skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Phone,
@@ -269,22 +270,7 @@ export default function ItemDetailsClient({
   if (!item) {
     // We show the skeleton if: auth isn't determined yet, or the query is still running
     if (!isLoaded || loading) {
-      return (
-        <div className="mx-auto max-w-6xl md:pt-8 px-2.5 py-4 md:px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-0 md:gap-12">
-            <Skeleton className="w-full aspect-square rounded-md" />
-            <div className="space-y-6 pt-10 md:pt-0">
-              <Skeleton className="h-12 w-3/4" />
-              <Skeleton className="h-6 w-1/2" />
-              <Skeleton className="h-24 w-full" />
-              <div className="flex gap-4">
-                <Skeleton className="h-12 w-12 rounded-md" />
-                <Skeleton className="h-12 w-12 rounded-md" />
-              </div>
-            </div>
-          </div>
-        </div>
-      );
+      return <ItemDetailsSkeleton />;
     }
     // Only show "not found" after auth is ready and the query has finished
     return (
@@ -347,7 +333,7 @@ export default function ItemDetailsClient({
                       aria-hidden="true"
                       fill
                       sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover scale-110 blur-2xl opacity-70"
+                      className="object-cover scale-110 blur-2xl"
                       priority={index === 0}
                       quality={20}
                     />
@@ -439,7 +425,7 @@ export default function ItemDetailsClient({
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
               {item?.profiles ? (
                 <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-slate-200">
+                  <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-slate-200 dark:border-zinc-700">
                     <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
                     <AvatarFallback className="bg-slate-50 dark:bg-zinc-800">
                       <User className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 text-slate-400" />
@@ -593,23 +579,6 @@ export default function ItemDetailsClient({
                   {t("resolved")}?
                 </Button>
               ) : null}
-              {/* The owner never sees the contact buttons (they are for
-                  others), so show which messengers were enabled for them. */}
-              {isLoaded && isOwner && item && (item.contact_telegram || item.contact_whatsapp) && (
-                <div className="flex items-center flex-wrap gap-2 text-xs font-medium text-slate-500">
-                  <span>{t("ownerContactShown")}</span>
-                  {item.contact_telegram && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 px-2.5 py-1 text-[#229ED9]">
-                      <TelegramIcon size={14} /> Telegram
-                    </span>
-                  )}
-                  {item.contact_whatsapp && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 px-2.5 py-1 text-[#25D366]">
-                      <WhatsappIcon size={14} /> WhatsApp
-                    </span>
-                  )}
-                </div>
-              )}
               {isLoaded && isOwner ? null : item?.phone_number ? (
                 <div className="flex gap-3">
                   <Button

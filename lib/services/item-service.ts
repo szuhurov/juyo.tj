@@ -8,9 +8,6 @@ export const UNSPECIFIED_REWARD = "unspecified";
 // Data structure for an Item (Interface)
 export interface Item {
   id: string;
-  /** null for an organization-owned item (Phase 7) — the organization is
-   *  never treated as a personal "owner"; see organization_id/branch_id/
-   *  created_by_staff_id below instead. */
   user_id: string | null;
   title: string;
   description: string;
@@ -33,7 +30,7 @@ export interface Item {
   similarity_score?: number;
   location_type?:
     | "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym"
-    | "university" | "mall" | "office" | "event" | "tourism" | "bank"
+    | "university" | "mall" | "office" | "tourism" | "bank"
     | null;
   city?: string;
   /** The poster's live VIP/VVIP tier at query time (Phase 6) — 'none' when
@@ -41,16 +38,6 @@ export interface Item {
    *  search_items (the feed); getItemDetails doesn't select it since the
    *  item detail page doesn't currently show a badge. */
   vip_tier?: "none" | "vip" | "vvip";
-  /** Phase 7 — optional organization association. "Organization Approved"
-   *  means only "this organization confirms the post relates to them," not
-   *  ownership verification. */
-  organization_id?: string | null;
-  branch_id?: string | null;
-  organization_review_status?: "none" | "pending" | "approved" | "rejected";
-  organization_reviewed_at?: string | null;
-  /** Audit/creator reference only for an organization-owned item — never
-   *  the owner. */
-  created_by_staff_id?: string | null;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -242,8 +229,7 @@ export const ItemService = {
       "is_resolved, is_guest, views, moderation_status, moderation_result, " +
       "expires_at, created_at, updated_at, status, deleted_at, location_type, " +
       "expiry_notified_at, contact_telegram, contact_whatsapp, " +
-      "handoff_type, handoff_photo_url, city, " +
-      "organization_id, branch_id, organization_review_status, organization_reviewed_at, created_by_staff_id";
+      "handoff_type, handoff_photo_url, city";
 
     // Query 1: the item (without phone_number/handoff_phone) + images. A
     // deleted listing (status = 'deleted') should read as "not found" even

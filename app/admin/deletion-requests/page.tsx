@@ -27,7 +27,7 @@ export default function AdminDeletionRequestsPage() {
       </div>
 
       <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4 space-y-4">
-        <div className="flex bg-zinc-100/60 p-0.5 rounded-md border border-zinc-200/50 w-fit">
+        <div className="flex bg-zinc-100/60 dark:bg-zinc-800/60 p-0.5 rounded-md border border-zinc-200/50 dark:border-zinc-700/50 w-fit">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.id}

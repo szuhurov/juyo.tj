@@ -16,9 +16,9 @@ import { toast } from "sonner";
 import { useLanguage } from "@/lib/language-context";
 import { useNotifications, type NotificationItem } from "@/lib/hooks/use-notifications";
 import { ClaimantAvatar } from "@/components/claimant-avatar";
-import { Bell, BellRing, ChevronDown, ArrowRight, Trash2, CheckCheck, CheckSquare, X, CheckCircle2, Bot, Crown, Building2 } from "lucide-react";
+import { Bell, BellRing, ChevronDown, ArrowRight, Trash2, CheckCheck, CheckSquare, X, CheckCircle2, Bot, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationRowsSkeleton } from "@/components/notifications-skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -72,7 +72,6 @@ function NotificationRow({
   const isExpiry = item.kind === "expiry_confirm";
   const isAiMatch = item.kind === "ai_match";
   const isVipStatus = item.kind === "vip_status";
-  const isOrgReview = item.kind === "org_review_pending" || item.kind === "org_review_result";
   // The current time is captured in an effect, not during render: calling
   // `Date.now()` during render is an impure function, and the server's time
   // won't match the browser's time, causing a hydration mismatch. `null`
@@ -127,10 +126,6 @@ function NotificationRow({
             <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
               <Crown className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-amber-500" />
             </div>
-          ) : isOrgReview ? (
-            <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 rounded-full bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center">
-              <Building2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 text-sky-500" />
-            </div>
           ) : (
             <ClaimantAvatar url={item.posterAvatar ?? null} name={item.posterName ?? null} className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-14 min-[1920px]:h-14 text-sm min-[1084px]:text-base" />
           )}
@@ -167,15 +162,6 @@ function NotificationRow({
           ) : isVipStatus ? (
             <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-semibold mt-1 text-amber-600 dark:text-amber-400">
               {t(item.vipEventType === "expired" ? "vipExpiredNotice" : "vipActivatedNotice").replace("%{tier}", item.itemTitle)}
-            </p>
-          ) : isOrgReview ? (
-            <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs font-semibold mt-1 text-sky-600 dark:text-sky-400">
-              {item.kind === "org_review_pending"
-                ? t("orgReviewPendingNotice").replace("%{organization}", item.organizationName ?? "")
-                : t(item.organizationReviewStatus === "approved" ? "orgReviewApprovedNotice" : "orgReviewRejectedNotice").replace(
-                    "%{organization}",
-                    item.organizationName ?? "",
-                  )}
             </p>
           ) : (
             <p className="text-[10px] min-[1084px]:text-[11px] min-[1920px]:text-xs text-slate-400 dark:text-zinc-500 font-medium mt-1">
@@ -247,9 +233,7 @@ function NotificationRow({
                     ? "/matches"
                     : isVipStatus
                       ? "/vip"
-                      : item.kind === "org_review_pending"
-                        ? `/org/${item.organizationId}/review`
-                        : `/items/${item.itemId}`
+                      : `/items/${item.itemId}`
                 }
                 className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-md bg-emerald-500 text-white font-medium text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
               >
@@ -257,9 +241,7 @@ function NotificationRow({
                   ? t("aiMatchViewButton")
                   : isVipStatus
                     ? t("vipViewButton")
-                    : item.kind === "org_review_pending"
-                      ? t("orgReviewGoToQueue")
-                      : item.itemTitle}
+                    : item.itemTitle}
                 <ArrowRight className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
               </Link>
               <button
@@ -404,24 +386,7 @@ export default function NotificationsPage() {
 
       {/* List */}
       {loading ? (
-        // Geometry matches NotificationRow: the same rounded-md, the same
-        // p-4, the same avatar and row sizes — so the list doesn't jump
-        // when the data arrives.
-        <div className="space-y-2">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="py-3 flex items-center gap-3"
-            >
-              <Skeleton className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full shrink-0" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <Skeleton className="h-3.5 min-[1084px]:h-4 w-3/5 rounded" />
-                <Skeleton className="h-2.5 min-[1084px]:h-3 w-24 rounded" />
-              </div>
-              <Skeleton className="w-4 h-4 rounded shrink-0" />
-            </div>
-          ))}
-        </div>
+        <NotificationRowsSkeleton />
       ) : items.length === 0 ? (
         <div className="py-20 text-center text-sm min-[1084px]:text-base font-medium text-slate-400">{t("notifEmpty")}</div>
       ) : (

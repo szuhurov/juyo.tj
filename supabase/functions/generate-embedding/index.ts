@@ -5,6 +5,9 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
+// How long after an edit a client may ask to rebuild existing vectors.
+const FORCE_WINDOW_MS = 15 * 60 * 1000
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -89,11 +92,33 @@ Deno.serve(async (req) => {
   try {
     // `force` — rebuilds an existing vector (backfill/reprocess).
     // Without it, only images without an embedding are processed.
-    const { item_id, text, force } = await req.json();
+    const { item_id, force } = await req.json();
 
     if (!item_id) throw new Error("Missing item_id");
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // SECURITY: the apps call this without caller auth. So the listing text
+    // always comes from the database (not from the request — otherwise anyone
+    // could poison another listing's search vector), and `force` (paid
+    // re-describe of every image) is honoured only for the service role
+    // (admin tools) or right after the listing was actually edited.
+    const { data: listing, error: listingError } = await supabase
+      .from('items')
+      .select('title, description, updated_at')
+      .eq('id', item_id)
+      .maybeSingle();
+    if (listingError) throw listingError;
+    if (!listing) {
+      return new Response(JSON.stringify({ success: false, message: "Listing not found" }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 404,
+      });
+    }
+    const isServiceRole = req.headers.get('Authorization') === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
+    const editedRecently = !!listing.updated_at &&
+      Date.now() - new Date(listing.updated_at).getTime() < FORCE_WINDOW_MS;
+    const allowForce = !!force && (isServiceRole || editedRecently);
 
     // ALL of the item's images, not just the first one.
     //
@@ -114,13 +139,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const listingText = String(text ?? "").trim();
+    const listingText = `${listing.title ?? ""} ${listing.description ?? ""}`.trim();
     let processed = 0;
     let skipped = 0;
     const errors: string[] = [];
 
     for (const image of images) {
-      if (image.embedding && !force) { skipped += 1; continue; }
+      if (image.embedding && !allowForce) { skipped += 1; continue; }
 
       try {
         const imageDescription = image.image_url

@@ -19,7 +19,28 @@ Deno.serve(async (req) => {
 
   try {
     const { record, lang } = await req.json();
-    const { id, title, description, moderation_status } = record;
+    let { title, description, moderation_status } = record ?? {};
+    const { id } = record ?? {};
+
+    // SECURITY: this function has no caller auth (the apps call it directly),
+    // and a rejection below writes to the listing. When an id is given, judge
+    // the listing's REAL stored text — never text supplied by the caller —
+    // so nobody can get someone else's listing rejected with fake text.
+    if (id) {
+      const { data: stored, error: storedError } = await supabase
+        .from("items")
+        .select("title, description, moderation_status")
+        .eq("id", id)
+        .maybeSingle();
+      if (storedError) throw storedError;
+      if (!stored) {
+        return new Response(JSON.stringify({ error: "Listing not found" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404,
+        });
+      }
+      ({ title, description, moderation_status } = stored);
+    }
 
     // Skip if already moderated (e.g. by AI Brain in the UI)
     if (moderation_status !== "pending") {
@@ -83,7 +104,7 @@ Deno.serve(async (req) => {
     const result = JSON.parse(aiData.choices[0].message.content);
 
     if (!result.is_safe) {
-      await supabase
+      if (id) await supabase
         .from("items")
         .update({
           moderation_status: "rejected",

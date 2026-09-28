@@ -25,10 +25,11 @@ import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 import { CITY_IDS, cityLabel } from "@/lib/cities";
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
-import { HomeFiltersSkeleton } from "@/components/home-filters-skeleton";
+import { HomeFiltersSkeleton, QuickActionsSkeleton } from "@/components/home-filters-skeleton";
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useItems, useVipItems } from "@/lib/hooks/use-items";
+import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
@@ -36,12 +37,18 @@ import dynamic from "next/dynamic";
 import {
   X,
   SlidersHorizontal,
-  Car,
   LayoutGrid,
+  Car,
   Plane,
-  Hotel,
   Building2,
+  Hotel,
   Dumbbell,
+  GraduationCap,
+  ShoppingBag,
+  Briefcase,
+  Luggage,
+  Landmark,
+  CircleHelp,
   Search,
   Camera,
   Image as ImageIcon,
@@ -139,18 +146,26 @@ function CategoryFilterCard({
 // correspond to a location_type value — it's the button that clears this filter, not a real filter.
 // BUG FOUND (user request: these filters differ from mobile):
 // previously this had made-up "gym"/"fintech_center" values that don't
-// exist at all in native. Now it's EXACTLY the same 6 that native
+// exist at all in native. Now it's EXACTLY the same list that native
 // has (see app/(tabs)/index.tsx) — "none" is special: not "no
 // filter" (that's "all"), but "specifically the listings that didn't
 // specify a location" (location_type IS NULL — the search_items RPC
 // understands this string specially, see p_location_type='none').
+// Icon + color per place — the same icons/colors native uses
+// (app/(tabs)/index.tsx QUICK_ACTIONS).
 const QUICK_ACTIONS = [
-  { value: "all", icon: LayoutGrid },
-  { value: "taxi", icon: Car },
-  { value: "airport", icon: Plane },
-  { value: "public_place", icon: Building2 },
-  { value: "hotel_restaurant", icon: Hotel },
-  { value: "gym", icon: Dumbbell },
+  { value: "all", icon: LayoutGrid, color: "text-zinc-500 dark:text-zinc-400" },
+  { value: "taxi", icon: Car, color: "text-emerald-500" },
+  { value: "airport", icon: Plane, color: "text-sky-500 dark:text-sky-400" },
+  { value: "public_place", icon: Building2, color: "text-teal-500 dark:text-teal-400" },
+  { value: "hotel_restaurant", icon: Hotel, color: "text-violet-500 dark:text-violet-400" },
+  { value: "gym", icon: Dumbbell, color: "text-rose-500" },
+  { value: "university", icon: GraduationCap, color: "text-blue-500" },
+  { value: "mall", icon: ShoppingBag, color: "text-amber-500" },
+  { value: "office", icon: Briefcase, color: "text-zinc-500 dark:text-zinc-400" },
+  { value: "tourism", icon: Luggage, color: "text-orange-500" },
+  { value: "bank", icon: Landmark, color: "text-indigo-500" },
+  { value: "none", icon: CircleHelp, color: "text-zinc-400" },
 ] as const;
 
 // SORTED copy for the home filter (not CATEGORIES itself) — "Other"
@@ -787,7 +802,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           <div className="mb-2.5">
             {/* `mr-[-Npx]`: the row must reach the ACTUAL right edge of the screen. */}
             <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5 mr-[-10px] sm:mr-[-16px] lg:mr-[-20px]">
-              {QUICK_ACTIONS.map(({ value, icon: Icon }) => {
+              {QUICK_ACTIONS.map(({ value, icon: Icon, color }) => {
                 const active = value === "all" ? locationType === null : locationType === value;
                 const title = t(`quickActions.${value}.title`);
                 return (
@@ -797,7 +812,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     aria-pressed={active}
                     aria-label={title}
                     className={cn(
-                      "shrink-0 snap-start w-max flex items-center justify-between gap-3 px-3 py-2.5 min-[1503px]:py-3.5 rounded-md text-left cursor-pointer transition-colors",
+                      "shrink-0 snap-start w-max flex items-center justify-between gap-3 px-3 py-1.5 min-[1503px]:py-2.5 rounded-md text-left cursor-pointer transition-colors",
                       active ? "bg-emerald-500 text-white" : "bg-[#f2f6fa] text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100",                    )}
                   >
                     <div className="flex flex-col gap-0.5">
@@ -809,9 +824,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       </span>
                     </div>
                     <Icon
+                      aria-hidden
                       className={cn(
-                        "w-8 h-8 min-[1503px]:w-9 min-[1503px]:h-9 min-[1920px]:w-10 min-[1920px]:h-10 shrink-0",
-                        active ? "text-white" : "text-slate-500 dark:text-zinc-400",
+                        "w-[22px] h-[22px] min-[1503px]:w-6 min-[1503px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 shrink-0",
+                        active ? "text-white" : color,
                       )}
                     />
                   </button>
@@ -822,7 +838,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         )}
 
         {/* VIP/VVIP strip (get_vip_items). Renders nothing when empty. */}
-        {showStrip && <FeaturedPeopleCarousel items={featuredItems} isLoading={false} />}
+        {showStrip && PAID_FEATURES_ENABLED && <FeaturedPeopleCarousel items={featuredItems} isLoading={false} />}
 
         {isLoading &&
         allItems.length === 0 &&
@@ -1006,6 +1022,7 @@ function HomeSkeleton() {
     <div className="pb-18 min-h-screen bg-canvas">
       <HomeFiltersSkeleton />
       <div className={cn("w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5", HOME_CONTENT_PT)}>
+        <QuickActionsSkeleton />
         <div className={HOME_GRID_CLASS}>
           {[...Array(8)].map((_, i) => (
             <ItemCardSkeleton key={i} />

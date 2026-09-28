@@ -1,6 +1,6 @@
 /**
  * Phase 9F — CSV export. Flattens an analytics summary jsonb object (from
- * get_my_analytics_summary / get_organization_analytics_summary /
+ * get_my_analytics_summary /
  * admin_get_platform_analytics) into metric/value rows. Deliberately
  * generic — the same flattener backs every export, so there is never a
  * second, differently-scoped query written just for CSV.

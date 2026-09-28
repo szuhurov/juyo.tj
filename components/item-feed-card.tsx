@@ -15,6 +15,7 @@ import { useLanguage } from "@/lib/language-context";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 
 export function ItemFeedCard({ item }: { item: Item }) {
   const { t } = useLanguage();
@@ -66,7 +67,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
             {Math.round(item.similarity_score * 100)}% {t("matchForYourImage")}
           </span>
         )}
-        {(item.vip_tier === "vip" || item.vip_tier === "vvip") && (
+        {PAID_FEATURES_ENABLED && (item.vip_tier === "vip" || item.vip_tier === "vvip") && (
           <span
             className={cn(
               "absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold text-white shadow-sm",

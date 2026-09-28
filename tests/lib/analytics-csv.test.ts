@@ -27,14 +27,14 @@ describe('flattenAnalyticsForCsv', () => {
   });
 
   it('skips null/undefined fields rather than emitting an empty row', () => {
-    const rows = flattenAnalyticsForCsv({ totalPosts: 10, itemsByBranch: null });
+    const rows = flattenAnalyticsForCsv({ totalPosts: 10, itemsByCity: null });
     expect(rows).toEqual([{ metric: 'totalPosts', value: '10' }]);
   });
 
   it('never leaks a nested pii-shaped field name silently — the caller controls what goes in', () => {
     // This test documents the contract: the flattener has no allowlist/denylist
     // of its own — it is the RPC's job to never include sensitive fields in
-    // the jsonb it returns (see get_organization_analytics_summary, which
+    // the jsonb it returns (see admin_get_platform_analytics, which
     // only ever returns counts/aggregates, never phone/email/name).
     const rows = flattenAnalyticsForCsv({ totalPosts: 3 });
     expect(rows.some((r) => /phone|email|name/i.test(r.metric))).toBe(false);

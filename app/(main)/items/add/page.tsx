@@ -16,11 +16,6 @@ import {
 } from "@/lib/supabase";
 import { compressImage } from "@/lib/image-utils";
 import { CITY_IDS, cityLabel } from "@/lib/cities";
-import {
-  OrganizationItemService,
-  type CompatibleOrganization,
-  type OrganizationBranchOption,
-} from "@/lib/services/organization-item-service";
 import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import type { PrivacyRegion } from "@/components/privacy-blur-editor";
 import { useWebPush } from "@/lib/hooks/use-web-push";
@@ -101,18 +96,9 @@ function AddItemForm() {
     locationType:
       null as
         | "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym"
-        | "university" | "mall" | "office" | "event" | "tourism" | "bank"
+        | "university" | "mall" | "office" | "tourism" | "bank"
         | null,
   });
-  // Phase 7 — optional organization association. Attaching one sends the
-  // post for organization review (server-authoritative; see
-  // supabase/migrations/20260929000000_organization_item_routing.sql) —
-  // it never changes personal ownership of the post.
-  const [compatibleOrgs, setCompatibleOrgs] = useState<CompatibleOrganization[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
-  const [orgBranches, setOrgBranches] = useState<OrganizationBranchOption[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
-  const [loadingOrgs, setLoadingOrgs] = useState(false);
   // Step 6 ("where?") requires a selection to proceed — but "Other" is also
   // a valid choice (locationType still stays null). This flag is only needed
   // to distinguish "hasn't chosen yet" from "chose Other", so the
@@ -182,56 +168,6 @@ function AddItemForm() {
         if (data) setAiModerationEnabled(data.ai_moderation_enabled);
       });
   }, []);
-
-  // Phase 7 — refetch compatible organizations whenever the place type or
-  // city changes; drop the current selection if it's no longer in the
-  // (re)fetched list rather than silently keeping a stale org attached.
-  useEffect(() => {
-    if (!formData.locationType) {
-      setCompatibleOrgs([]);
-      setSelectedOrgId(null);
-      return;
-    }
-    let cancelled = false;
-    setLoadingOrgs(true);
-    OrganizationItemService.getCompatibleOrganizations(formData.locationType, city ?? undefined, anonSupabase)
-      .then((orgs) => {
-        if (cancelled) return;
-        setCompatibleOrgs(orgs);
-        setSelectedOrgId((prev) => (prev && orgs.some((o) => o.id === prev) ? prev : null));
-      })
-      .catch(() => {
-        if (!cancelled) setCompatibleOrgs([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingOrgs(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [formData.locationType, city]);
-
-  // Refetch branches when the selected organization changes.
-  useEffect(() => {
-    if (!selectedOrgId) {
-      setOrgBranches([]);
-      setSelectedBranchId(null);
-      return;
-    }
-    let cancelled = false;
-    OrganizationItemService.getOrganizationBranchesForPicker(selectedOrgId, city ?? undefined, anonSupabase)
-      .then((branches) => {
-        if (cancelled) return;
-        setOrgBranches(branches);
-        setSelectedBranchId(branches.length === 1 ? branches[0].id : null);
-      })
-      .catch(() => {
-        if (!cancelled) setOrgBranches([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedOrgId, city]);
 
   useEffect(() => {
     if (moderationStatus !== "checking") {
@@ -627,12 +563,6 @@ function AddItemForm() {
         moderation_result: finalModerationResult,
         location_type: formData.locationType,
         city,
-        // Phase 7 — optional organization association. Server-side
-        // validation/compatibility checks and the pending-review reset
-        // happen in the enforce_organization_review_status trigger, not
-        // here — this is intent only, never a status.
-        ...(selectedOrgId ? { organization_id: selectedOrgId } : {}),
-        ...(selectedOrgId && selectedBranchId ? { branch_id: selectedBranchId } : {}),
       };
 
       const { data: item, error: itemError } = await supabase
@@ -989,7 +919,6 @@ function AddItemForm() {
                     { value: "university", emoji: "🎓" },
                     { value: "mall", emoji: "🛍️" },
                     { value: "office", emoji: "🏢" },
-                    { value: "event", emoji: "🎪" },
                     { value: "tourism", emoji: "🧳" },
                     { value: "bank", emoji: "🏦" },
                     { value: "none", emoji: "🤷" },
@@ -1040,76 +969,6 @@ function AddItemForm() {
                   ))}
                 </div>
               </div>
-
-              {/* Phase 7 — optional organization association. Only shown
-                  when the chosen place type has at least one active,
-                  compatible organization; never forced. */}
-              {formData.locationType && !loadingOrgs && compatibleOrgs.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">{t("orgPickerLabel")}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      aria-pressed={selectedOrgId === null}
-                      onClick={() => setSelectedOrgId(null)}
-                      className={cn(
-                        "h-9 px-3.5 rounded-md text-sm font-semibold cursor-pointer transition-colors",
-                        selectedOrgId === null
-                          ? "bg-emerald-500 text-white"
-                          : "bg-[#f2f6fa] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-                      )}
-                    >
-                      {t("orgPickerNone")}
-                    </button>
-                    {compatibleOrgs.map((org) => (
-                      <button
-                        key={org.id}
-                        type="button"
-                        aria-pressed={selectedOrgId === org.id}
-                        onClick={() => setSelectedOrgId(org.id)}
-                        className={cn(
-                          "h-9 px-3.5 rounded-md text-sm font-semibold cursor-pointer transition-colors",
-                          selectedOrgId === org.id
-                            ? "bg-emerald-500 text-white"
-                            : "bg-[#f2f6fa] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-                        )}
-                      >
-                        {org.name}
-                      </button>
-                    ))}
-                  </div>
-
-                  {selectedOrgId && orgBranches.length > 0 && (
-                    <div className="space-y-2 pt-1">
-                      <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">{t("orgBranchPickerLabel")}</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {orgBranches.map((branch) => (
-                          <button
-                            key={branch.id}
-                            type="button"
-                            aria-pressed={selectedBranchId === branch.id}
-                            onClick={() => setSelectedBranchId(branch.id)}
-                            className={cn(
-                              "h-9 px-3.5 rounded-md text-sm font-semibold cursor-pointer transition-colors",
-                              selectedBranchId === branch.id
-                                ? "bg-emerald-500 text-white"
-                                : "bg-[#f2f6fa] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
-                            )}
-                          >
-                            {branch.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedOrgId && (
-                    <p className="text-xs text-slate-400 dark:text-zinc-500 leading-relaxed">
-                      {t("orgReviewConsentNotice")}
-                    </p>
-                  )}
-                </div>
-              )}
             </div>
           )}
 

@@ -46,6 +46,14 @@ const PrivacyBlurEditor = dynamic(() =>
   import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
 );
 
+// Same place list as items/add and the home filter (and mobile), so a listing
+// can be edited to any place it could have been created with.
+const EDIT_LOCATION_TYPES = [
+  "taxi", "airport", "hotel_restaurant", "public_place", "gym", "university",
+  "mall", "office", "tourism", "bank",
+] as const;
+type EditLocationType = (typeof EDIT_LOCATION_TYPES)[number];
+
 export default function EditItemPage({
   params,
 }: {
@@ -65,9 +73,7 @@ export default function EditItemPage({
   // States for item type, category, and images
   const [type, setType] = useState<"lost" | "found">("lost");
   const [category, setCategory] = useState("");
-  const [locationType, setLocationType] = useState<
-    "taxi" | "hotel_restaurant" | "public_place" | "airport" | null
-  >(null);
+  const [locationType, setLocationType] = useState<EditLocationType | null>(null);
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [rewardEnabled, setRewardEnabled] = useState(false);
   const [contactTelegram, setContactTelegram] = useState(false);
@@ -575,7 +581,7 @@ export default function EditItemPage({
             <div className="space-y-6">
               <div className="relative group w-full aspect-square max-w-[220px] sm:max-w-[280px] lg:max-w-[220px] mx-auto">
                 <div className="absolute -inset-4 bg-emerald-500/10 rounded-md blur-2xl opacity-50 animate-pulse"></div>
-                <div className="relative h-full w-full rounded-md overflow-hidden border border-slate-100 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
+                <div className="relative h-full w-full rounded-md overflow-hidden border border-slate-100 dark:border-zinc-700 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
                   <div className="relative h-full w-full">
                     {previews[activeImageIndex] && (
                       <>
@@ -790,7 +796,7 @@ export default function EditItemPage({
                     setLocationType(
                       val === "none"
                         ? null
-                        : (val as "taxi" | "hotel_restaurant" | "public_place" | "airport"),
+                        : (val as EditLocationType),
                     )
                   }
                 >
@@ -801,18 +807,11 @@ export default function EditItemPage({
                     <SelectItem value="none" className="rounded-md">
                       {t("addItemLocationStep.notSpecified")}
                     </SelectItem>
-                    <SelectItem value="taxi" className="rounded-md">
-                      {t("addItemLocationStep.taxi")}
-                    </SelectItem>
-                    <SelectItem value="airport" className="rounded-md">
-                      {t("addItemLocationStep.airport")}
-                    </SelectItem>
-                    <SelectItem value="hotel_restaurant" className="rounded-md">
-                      {t("addItemLocationStep.hotel_restaurant")}
-                    </SelectItem>
-                    <SelectItem value="public_place" className="rounded-md">
-                      {t("addItemLocationStep.public_place")}
-                    </SelectItem>
+                    {EDIT_LOCATION_TYPES.map((loc) => (
+                      <SelectItem key={loc} value={loc} className="rounded-md">
+                        {t(`addItemLocationStep.${loc}`)}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

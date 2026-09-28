@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
-  Users, Package, CheckCircle2, Bot, Building2, CreditCard, Download,
+  Users, Package, CheckCircle2, Bot, Download,
 } from "lucide-react";
 import { StatCard } from "@/components/admin/stat-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,18 +44,6 @@ interface AdminAnalytics {
   matchesLow: number;
   matchesMid: number;
   matchesHigh: number;
-  organizationFoundMatches: number;
-  totalOrganizations: number;
-  pendingOrganizations: number;
-  activeOrganizations: number;
-  suspendedOrganizations: number;
-  archivedOrganizations: number;
-  totalBranches: number;
-  totalStaff: number;
-  totalSubscriptions: number;
-  activeSubscriptions: number;
-  subscriptionsByPlan: Record<string, number>;
-  subscriptionsByStatus: Record<string, number>;
   pushVolumeByKind: Record<string, number>;
   notificationReads: number;
   notificationDismissals: number;
@@ -122,9 +110,6 @@ export default function AdminAnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Building2} label="Созмонҳои фаъол" value={data.activeOrganizations} accent="amber" hint={`Дар интизор: ${data.pendingOrganizations}`} />
-        <StatCard icon={Building2} label="Филиалҳо" value={data.totalBranches} accent="amber" hint={`Кормандон: ${data.totalStaff}`} />
-        <StatCard icon={CreditCard} label="Обунаҳои B2B фаъол" value={data.activeSubscriptions} accent="rose" hint={`Ҳамагӣ: ${data.totalSubscriptions}`} />
         <StatCard icon={Package} label="Эълонҳои муҳлаташон гузашта" value={data.expiredPosts} hint={`Нест шуда: ${data.deletedPosts}`} />
       </div>
 

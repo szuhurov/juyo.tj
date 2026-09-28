@@ -6,6 +6,7 @@
 import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Item, ItemService } from "@/lib/services/item-service";
+import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 
 export interface ItemFilters {
   search?: string;
@@ -71,6 +72,8 @@ export function useVipItems() {
   return useQuery({
     queryKey: ITEM_KEYS.vip(),
     queryFn: ({ signal }) => ItemService.getVipItems(50, undefined, { signal }),
+    // Paid features are hidden (see lib/feature-flags.ts) — no VIP strip.
+    enabled: PAID_FEATURES_ENABLED,
     staleTime: 1000 * 30,
     retry: 1,
   });

@@ -327,7 +327,7 @@ export function StyleChipRow<T extends string>({
             )}
           >
             <div
-              className={cn("w-full h-full rounded-none overflow-hidden", !chipBg && "bg-white dark:bg-zinc-900")}
+              className="w-full h-full rounded-none overflow-hidden text-black dark:text-white"
               style={chipBg ? { backgroundColor: chipBg } : undefined}
             >
               {renderChip(opt)}

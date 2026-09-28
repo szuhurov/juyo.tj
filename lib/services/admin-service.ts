@@ -1,6 +1,7 @@
 /**
  * Client-side service for the admin panel — all requests go to /api/admin/*.
  */
+import { compressImage } from "@/lib/image-utils";
 
 async function adminFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -86,7 +87,9 @@ export const AdminService = {
   },
   async uploadUserAvatar(id: string, file: File) {
     const formData = new FormData();
-    formData.append("file", file);
+    // Re-encoding through a canvas drops EXIF (incl. GPS) before the photo
+    // lands in the public bucket.
+    formData.append("file", await compressImage(file));
     const res = await fetch(`/api/admin/users/${id}/avatar`, { method: "POST", body: formData });
     if (!res.ok) {
       const body = await res.json().catch(() => null);
@@ -131,7 +134,7 @@ export const AdminService = {
     const formData = new FormData();
     formData.append("image_id", imageId);
     formData.append("old_image_url", oldImageUrl);
-    formData.append("image", file);
+    formData.append("image", await compressImage(file));
     const res = await fetch(`/api/admin/posts/${postId}/images`, { method: "PATCH", body: formData });
     if (!res.ok) {
       const body = await res.json().catch(() => null);

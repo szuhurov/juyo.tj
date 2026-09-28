@@ -20,8 +20,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email" }, { status: 400 });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // The middleware limiter is per-IP and per-instance only; this stops the
+    // admin queue being flooded with repeats for one address. Same response
+    // either way so the endpoint doesn't reveal whether a request exists.
+    const { count, error: countError } = await supabaseAdmin
+      .from("account_deletion_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("email", normalizedEmail)
+      .eq("status", "pending");
+    if (countError) throw countError;
+    if ((count ?? 0) > 0) return NextResponse.json({ ok: true });
+
     const { error } = await supabaseAdmin.from("account_deletion_requests").insert({
-      email: email.trim().toLowerCase(),
+      email: normalizedEmail,
       note: typeof note === "string" ? note.trim().slice(0, 500) || null : null,
     });
     if (error) throw error;

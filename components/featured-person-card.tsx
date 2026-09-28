@@ -18,6 +18,7 @@ import {
   FEATURED_SINGLE_CARD_ASPECT,
 } from "@/components/featured-people-skeleton";
 import { cn } from "@/lib/utils";
+import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 import type { FeaturedItem } from "@/lib/featured-people";
 
 export function FeaturedPersonCard({ item, single }: { item: FeaturedItem; single?: boolean }) {
@@ -61,7 +62,7 @@ export function FeaturedPersonCard({ item, single }: { item: FeaturedItem; singl
           >
             {typeLabel}
           </span>
-          {(item.vipTier === "vip" || item.vipTier === "vvip") && (
+          {PAID_FEATURES_ENABLED && (item.vipTier === "vip" || item.vipTier === "vvip") && (
             <span
               className={cn(
                 "shrink-0 rounded-bl-xl px-2 py-1 text-xs font-semibold uppercase leading-none tracking-wider",

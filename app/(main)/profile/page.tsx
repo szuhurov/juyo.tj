@@ -64,6 +64,7 @@ import {
 import Link from "next/link"; // For links to other pages
 import { useRouter, useSearchParams } from "next/navigation"; // For managing the address and URL parameters
 import { cn } from "@/lib/utils"; // For combining CSS classes
+import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 import { readableTextOn, isNearWhite } from "@/lib/qr-palette";
 import { DotStyleChip, CornerBorderChip, CornerCenterChip, StyleChipRow, type ChipDotType } from "@/components/qr-editor/qr-style-chips";
 import { PercentSlider, GradientBiasToggle } from "@/components/qr-editor/percent-slider";
@@ -214,8 +215,12 @@ const SHOW_TIER_SELECTOR = false;
  */
 const biasPercentForStop = (percent: number, stopIdx: number) => (stopIdx === 0 ? 100 - percent : percent);
 
-/** A single color for the chip previews — not the QR's current color, so shape comparison stays clear. */
-const QR_CHIP_INK = "#000000";
+/**
+ * A single color for the chip previews — not the QR's current color, so shape comparison stays clear.
+ * `currentColor`: the chip has no background any more (user request), so the ink comes from the
+ * container's text color — black in light mode, white in dark — or it would vanish in dark mode.
+ */
+const QR_CHIP_INK = "currentColor";
 
 /**
  * Shape variants for the chip-picker.
@@ -2070,6 +2075,7 @@ function ProfileContent() {
                       {item.title}
                     </DropdownMenuItem>
                   ))}
+                  {PAID_FEATURES_ENABLED && (
                   <DropdownMenuItem
                     onClick={() => router.push("/vip")}
                     className="flex items-center gap-3 py-2.5 px-3 rounded-md cursor-pointer font-medium text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
@@ -2079,6 +2085,7 @@ function ProfileContent() {
                     </div>
                     {t("vipPageTitle")}
                   </DropdownMenuItem>
+                  )}
                   {isAdmin && (
                     <DropdownMenuItem
                       onClick={() => router.push("/admin")}

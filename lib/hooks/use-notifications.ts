@@ -5,6 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { createClerkSupabaseClient } from "@/lib/supabase";
 import { useLanguage } from "@/lib/language-context";
 import { toast } from "sonner";
+import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 
 const POLL_MS = 20_000;
 const TOAST_REMIND_MS = 60 * 60 * 1000; // Repeat the toast reminder if the user still hasn't seen it
@@ -19,7 +20,7 @@ export interface NotificationItem {
    *  "View listing" still points at something they posted.
    *  `vip_status` — a Phase 6 subscription activated/expired notice. Has no
    *  associated item (`itemId` is `""`); links to `/vip` instead. */
-  kind: "category_post" | "expiry_confirm" | "ai_match" | "vip_status" | "org_review_pending" | "org_review_result";
+  kind: "category_post" | "expiry_confirm" | "ai_match" | "vip_status";
   id: string;
   itemId: string;
   itemTitle: string;
@@ -35,12 +36,6 @@ export interface NotificationItem {
   /** Only for `vip_status` — the subscription's tier and which lifecycle event this is. */
   vipTier?: "vip" | "vvip";
   vipEventType?: "activated" | "expired";
-  /** Only for `org_review_pending`/`org_review_result` — which organization,
-   *  and (for a result) the outcome. Never "verified"/"verification" —
-   *  organization approval is not ownership verification. */
-  organizationId?: string;
-  organizationName?: string;
-  organizationReviewStatus?: "approved" | "rejected";
 }
 
 /** The read-state key for one notification — shared by the hook and its tests. */
@@ -108,19 +103,15 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
     // involving one of the user's own items.
     // get_my_notification_reads — this user's server-persisted read markers.
     // get_my_vip_notifications — Phase 6 subscription activated/expired events.
-    // get_my_org_review_notifications — Phase 7, staff-facing: posts of
-    // organizations the caller can approve/reject that are awaiting review.
-    // get_my_org_review_results — Phase 7, poster-facing: the outcome of
-    // their own post's organization association.
     const [
-      { data: catData }, { data: matchData }, { data: vipData },
-      { data: orgPendingData }, { data: orgResultData }, { data: readData },
+      { data: catData }, { data: matchData }, { data: vipData }, { data: readData },
     ] = await Promise.all([
       supabase.rpc("get_my_category_notifications", { p_limit: categoryLimit }),
       supabase.rpc("get_my_ai_match_notifications", { p_limit: categoryLimit }),
-      supabase.rpc("get_my_vip_notifications", { p_limit: categoryLimit }),
-      supabase.rpc("get_my_org_review_notifications", { p_limit: categoryLimit }),
-      supabase.rpc("get_my_org_review_results", { p_limit: categoryLimit }),
+      // Paid features are hidden (see lib/feature-flags.ts) — no VIP notices.
+      PAID_FEATURES_ENABLED
+        ? supabase.rpc("get_my_vip_notifications", { p_limit: categoryLimit })
+        : Promise.resolve({ data: [] as VipNotificationRow[] }),
       supabase.rpc("get_my_notification_reads", { p_limit: 500 }),
     ]);
 
@@ -192,49 +183,6 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
       vipEventType: row.event_type,
     }));
 
-    interface OrgReviewPendingRow {
-      item_id: string;
-      item_title: string;
-      organization_id: string;
-      organization_name: string;
-      created_at: string;
-    }
-
-    const orgPendingRows: NotificationItem[] = (orgPendingData ?? []).map((row: OrgReviewPendingRow) => ({
-      id: `org_review_pending:${row.item_id}`,
-      kind: "org_review_pending" as const,
-      // Points at the ITEM to review, not the caller's own post — the
-      // "View" action for this kind goes to the org review queue, not
-      // /items/[id] (handled in the notifications page).
-      itemId: row.item_id,
-      itemTitle: row.item_title ?? "",
-      itemImageUrl: null,
-      createdAt: row.created_at,
-      organizationId: row.organization_id,
-      organizationName: row.organization_name,
-    }));
-
-    interface OrgReviewResultRow {
-      item_id: string;
-      item_title: string;
-      organization_id: string;
-      organization_name: string;
-      organization_review_status: "approved" | "rejected";
-      organization_reviewed_at: string;
-    }
-
-    const orgResultRows: NotificationItem[] = (orgResultData ?? []).map((row: OrgReviewResultRow) => ({
-      id: `org_review_result:${row.item_id}`,
-      kind: "org_review_result" as const,
-      itemId: row.item_id,
-      itemTitle: row.item_title ?? "",
-      itemImageUrl: null,
-      createdAt: row.organization_reviewed_at,
-      organizationId: row.organization_id,
-      organizationName: row.organization_name,
-      organizationReviewStatus: row.organization_review_status,
-    }));
-
     // The user's OWN posts that received a "72 hours left" notice and
     // haven't been deleted yet. The two conditions have two meanings:
     //   expiry_notified_at not null  → the notice was sent (a PAST moment)
@@ -272,9 +220,9 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
 
     // The deletion notice is ALWAYS at the top — it's time-limited (72 hours),
     // whereas category posts and possible matches can wait. Matches, VIP
-    // status, and organization-review events come right after (all are
-    // stronger, more specific signals than a generic category post).
-    const merged = [...expiryRows, ...vipRows, ...orgPendingRows, ...orgResultRows, ...matchRows, ...rows];
+    // status come right after (both are stronger, more specific signals
+    // than a generic category post).
+    const merged = [...expiryRows, ...vipRows, ...matchRows, ...rows];
 
     const nextReadKeys = new Set(
       ((readData ?? []) as { kind: string; ref_id: string }[]).map((r) => notificationReadKey(r.kind, r.ref_id)),
@@ -297,14 +245,7 @@ export function useNotifications(options: { categoryLimit?: number } = {}) {
             ? t("aiMatchToast").replace("%{title}", r.itemTitle)
             : r.kind === "vip_status"
               ? t(r.vipEventType === "expired" ? "vipExpiredToast" : "vipActivatedToast").replace("%{tier}", r.itemTitle)
-              : r.kind === "org_review_pending"
-                ? t("orgReviewPendingToast").replace("%{organization}", r.organizationName ?? "")
-                : r.kind === "org_review_result"
-                  ? t(r.organizationReviewStatus === "approved" ? "orgReviewApprovedToast" : "orgReviewRejectedToast").replace(
-                      "%{organization}",
-                      r.organizationName ?? "",
-                    )
-                  : t("categoryPostToast").replace("%{title}", r.itemTitle),
+              : t("categoryPostToast").replace("%{title}", r.itemTitle),
       );
       timestamps[r.id] = now;
       timestampsChanged = true;

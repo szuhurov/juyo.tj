@@ -46,16 +46,16 @@ CRITICAL TASKS:
 - Bullet Point 1: Start with •. Provide 1-2 sentences about physical details (brands, materials, unique marks). 
 - Bullet Point 2: Start with •. Provide 1-2 sentences about text found or specific identifiers.
 - MASKING: Replace ALL sensitive numbers and ID/Passport numbers with XXXX. 
-- EXCEPTION FOR DOCUMENTS: If you detect a document, you MUST find the OWNER'S NAME on it. Include this NAME in both the title and description. This is CRITICAL for the owner to find their item. Do NOT mask the name in documents.
+- DOCUMENT NAME RULE: If you detect a document, find the OWNER'S NAME on it and write it ONLY in shortened form: the first letter of the given name + a dot + the full surname (e.g. "И. Иванов", "I. Ivanov"). NEVER write the full given name, the patronymic/father's name, or the date of birth. This lets the owner recognize their document without publishing their full identity.
 - NO MARKDOWN: Use plain text only.
 
 3. TITLE: 2-4 word plain text title in {{LANG}}. 
-- DOCUMENT RULE: If it's a document, the title MUST include the type and the NAME found (e.g., "ID Card Ivan Ivanov").
+- DOCUMENT RULE: If it's a document, the title MUST include the type and the SHORTENED name (e.g., "ID Card I. Ivanov").
 - ELECTRONICS RULE: Use brand names (e.g., "iPhone", "Samsung").
 - NO COLONS. NO MARKDOWN.
 
 4. CATEGORY: Electronics, Documents, Keys, Clothing, Pets, or Other.
-5. FORENSIC: EXHAUSTIVE forensic technical string in English for 100% vector matching. Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear). NO MARKDOWN.
+5. FORENSIC: EXHAUSTIVE forensic technical string in English for 100% vector matching. Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear). For documents use only the shortened name (initial + surname) and never any ID/card number. NO MARKDOWN.
 
 Return JSON:
 {
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     // Shared instructions for is_document text handling — reused by both
     // MODERATION_PROMPT and FINAL_CHECK_PROMPT so text privacy behaves
     // identically regardless of which flow (add/edit/safety-box) triggered it.
-    const DOCUMENT_TEXT_RULES = `IF is_document IS TRUE, ALSO check TEXT TITLE and TEXT DESCRIPTION above for any raw document/passport/ID/license/card number or series number written out as text. If found, return redacted_title and redacted_description with ONLY that exact number sequence removed (delete it and naturally clean up any leftover stray punctuation/spacing) — do NOT remove or alter the person's name/surname (names must always stay, exactly like in the image), and do NOT change anything else in the text. If nothing needs to be removed, redacted_title/redacted_description must equal the original text unchanged.`;
+    const DOCUMENT_TEXT_RULES = `IF is_document IS TRUE, ALSO check TEXT TITLE and TEXT DESCRIPTION above for any raw document/passport/ID/license/card number or series number written out as text. If found, return redacted_title and redacted_description with ONLY that exact number sequence removed (delete it and naturally clean up any leftover stray punctuation/spacing). ALSO, if the text contains the document owner's FULL given name or patronymic/father's name, shorten it to initial + surname (e.g. "Иван Петрович Иванов" -> "И. Иванов"); keep the surname. Do NOT change anything else in the text. If nothing needs to be removed, redacted_title/redacted_description must equal the original text unchanged.`;
 
     // FAST MODERATION PROMPT
     const MODERATION_PROMPT = `You are a moderator for a LOST & FOUND app.
@@ -186,14 +186,14 @@ TASKS:
 - Bullet Point 1: Start with •. Provide 1-2 sentences about physical details (brands, materials, unique marks).
 - Bullet Point 2: Start with •. Provide 1-2 sentences about text found or specific identifiers.
 - MASKING: Replace ALL sensitive numbers and ID/Passport numbers with XXXX.
-- EXCEPTION FOR DOCUMENTS: If you detect a document, you MUST find the OWNER'S NAME on it. Include this NAME in both the title and description. Do NOT mask the name in documents.
+- DOCUMENT NAME RULE: If you detect a document, find the OWNER'S NAME on it and write it ONLY in shortened form: the first letter of the given name + a dot + the full surname (e.g. "И. Иванов", "I. Ivanov"). NEVER write the full given name, the patronymic/father's name, or the date of birth.
 - NO MARKDOWN: Use plain text only.
 2. TITLE: 2-4 word plain text title in {{LANG}}.
-- DOCUMENT RULE: If it's a document, the title MUST include the type and the NAME found.
+- DOCUMENT RULE: If it's a document, the title MUST include the type and the SHORTENED name (initial + surname).
 - ELECTRONICS RULE: Use brand names (e.g., "iPhone", "Samsung").
 - NO COLONS. NO MARKDOWN.
 3. CATEGORY: Electronics, Documents, Keys, Clothing, Pets, or Other.
-4. FORENSIC: EXHAUSTIVE forensic technical string in English for 100% vector matching. Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear). NO MARKDOWN.
+4. FORENSIC: EXHAUSTIVE forensic technical string in English for 100% vector matching. Identify: Brand, Model, Precise Color shades, Material, and UNIQUE SIGNS (scratches, dents, stickers, wear). For documents use only the shortened name (initial + surname) and never any ID/card number. NO MARKDOWN.
 
 Return JSON:
 { "title": "...", "description": "...", "category": "...", "forensic": "..." }`;
@@ -252,8 +252,8 @@ This is a light copy-edit, not a re-authoring. The user does not see the result 
 - NEVER delete a fact the user did give.
 - If the user's text is already correct and clear, return it UNCHANGED.
 - polished_title: MUST BE IN {{LANG}}. ONE word if at all possible, at most two — just the object itself (e.g. "Паспорт", "iPhone", "Калид"). No verbs, no place, no "lost"/"found", no punctuation. Derive it from what the user wrote.
-- DOCUMENT RULE: if is_document is true, polished_title must be the document type plus the owner's name found on it, and polished_description must keep that name. Names always stay.
-- If is_document is true, polished_title and polished_description must ALREADY have any raw document/passport/ID/card number removed, exactly per the redaction rules above.
+- DOCUMENT RULE: if is_document is true, polished_title must be the document type plus the owner's SHORTENED name (initial + surname, e.g. "Паспорт И. Иванов"), and polished_description must use only that shortened form — never the full given name or patronymic.
+- If is_document is true, polished_title and polished_description must ALREADY have any raw document/passport/ID/card number removed and full names shortened, exactly per the redaction rules above.
 
 Return JSON ONLY: {"is_safe": true/false, "reason": "Short reason in {{LANG}} or null", "violation_source": "image"/"text"/"both"/null, "is_document": true/false, "privacy_regions": [{"label": "passport_number", "image_index": 0, "x": 0.1, "y": 0.3, "width": 0.3, "height": 0.05}], "redacted_title": "...", "redacted_description": "...", "polished_title": "...", "polished_description": "..."}`;
 

@@ -65,14 +65,7 @@ export default function VipPage() {
     try {
       const supabase = createClerkSupabaseClient(getToken);
       await VipService.createSubscription(plan.id, supabase);
-      // Admins get the plan for free: the server activates their own request at price 0.
-      // Anyone else gets a 404 here and stays on the normal "pending" flow.
-      const activated = await fetch("/api/admin/subscriptions/self-activate", { method: "POST" })
-        .then((r) => r.ok)
-        .catch(() => false);
-      toast.success(
-        activated ? t("vipActivatedNotice").replace("%{tier}", (plan.tier === 'vvip' ? 'VIP' : 'TOP')) : t("vipRequestSent"),
-      );
+      toast.success(t("vipRequestSent"));
       load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("error"));
