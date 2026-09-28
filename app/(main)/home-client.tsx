@@ -826,7 +826,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     <Icon
                       aria-hidden
                       className={cn(
-                        "w-[22px] h-[22px] min-[1503px]:w-6 min-[1503px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 shrink-0",
+                        "w-[26px] h-[26px] min-[1503px]:w-7 min-[1503px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 shrink-0",
                         active ? "text-white" : color,
                       )}
                     />
