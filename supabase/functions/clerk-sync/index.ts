@@ -60,15 +60,18 @@ Deno.serve(async (req) => {
       const primaryEmail = email_addresses?.find((e: any) => e.id === primary_email_address_id)
       const email = primaryEmail?.email_address || email_addresses?.[0]?.email_address || null
 
+      // Only values Clerk actually has: an empty Clerk field (e.g. no last
+      // name on a Google account, no phone) must not wipe what the user or
+      // the app already saved.
       const { error } = await supabase
         .from("profiles")
         .upsert({
           id: id,
-          first_name: first_name || "",
-          last_name: last_name || "",
-          avatar_url: image_url || "",
-          phone: phone,
-          email: email,
+          ...(first_name ? { first_name } : {}),
+          ...(last_name ? { last_name } : {}),
+          ...(image_url ? { avatar_url: image_url } : {}),
+          ...(phone ? { phone } : {}),
+          ...(email ? { email } : {}),
           updated_at: new Date().toISOString(),
         })
 

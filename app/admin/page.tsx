@@ -63,10 +63,10 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-4">
-      {/* The period label itself is the dropdown — no box, chevron in front. */}
+      {/* The period label itself is the dropdown — no box, chevron after the word. */}
       <div className="flex items-center">
         <Select value={period} onValueChange={(v) => setPeriod(v as StatsPeriod)}>
-          <SelectTrigger className="w-auto h-auto flex-row-reverse justify-end gap-1.5 border-none bg-transparent shadow-none px-0 py-0 text-sm font-semibold text-zinc-500 dark:text-zinc-400 focus:ring-0 [&>svg]:opacity-100">
+          <SelectTrigger className="w-auto h-auto gap-1.5 border-none bg-transparent shadow-none px-0 py-0 text-sm font-semibold text-zinc-500 dark:text-zinc-400 focus:ring-0 [&>svg]:opacity-100">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

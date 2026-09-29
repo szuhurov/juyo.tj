@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useUrlFilters } from "@/lib/hooks/use-url-filters";
-import { BellRing, Users, UserPlus, UserX, CalendarDays, Bell, ChevronDown, Loader2 } from "lucide-react";
+import { BellRing, Users, UserPlus, UserX, CalendarDays, Bell, ChevronDown, Loader2, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAdminUsers } from "@/lib/hooks/use-admin-users";
 import { useAdminStats } from "@/lib/hooks/use-admin-stats";
 import type { AdminUserFilters } from "@/lib/services/admin-service";
@@ -44,6 +46,24 @@ export default function AdminUsersPage() {
     defaults: { status: "active", page: 0, pageSize: INITIAL_PAGE_SIZE },
   });
   const archiveView = filters.archive === "1";
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
+  // Fills EMPTY email/name/phone of existing profiles from Clerk (server-side,
+  // production key) — never overwrites.
+  const syncFromClerk = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/users/sync-from-clerk", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Хатогӣ");
+      toast.success(`Аз Clerk пур шуд: ${data.updated} профил (санҷида шуд ${data.checked})`);
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Хатогӣ");
+    } finally {
+      setSyncing(false);
+    }
+  };
   const { rows: deletedRows } = useDeletedAccountRows();
   const [deletedRange, setDeletedRange] = useState<DeletedRange | undefined>(undefined);
   const [notifyOpen, setNotifyOpen] = useState(false);
@@ -174,10 +194,21 @@ export default function AdminUsersPage() {
               {archiveView ? "Корбарони нестшуда — trash ва пурра нестшуда" : data ? `${data.total} корбар` : "Боркунӣ..."}
             </p>
             {!archiveView && (
+              <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={syncFromClerk}
+                disabled={syncing}
+                className="gap-2 rounded-md h-10 px-4 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300"
+              >
+                {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Email/ном аз Clerk
+              </Button>
               <Button onClick={() => setNotifyOpen(true)} className="gap-2 rounded-md bg-blue-50 dark:bg-blue-500/10 hover:bg-blue-100 text-blue-600 dark:text-blue-400 border border-blue-100 h-10 px-4 shadow-none">
                 <BellRing className="w-4 h-4" />
                 Хабарнома ба ҳама
               </Button>
+              </div>
             )}
           </div>
         </div>

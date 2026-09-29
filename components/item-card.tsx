@@ -309,7 +309,7 @@ export function ItemCard({
                 "Found" are distinguishable and readable at a glance. */}
             <span
               className={cn(
-                "min-w-0 truncate text-[13px] font-semibold",
+                "min-w-0 truncate text-[13px] font-medium",
                 item.type === "lost"
                   ? "text-lost"
                   : "text-found",

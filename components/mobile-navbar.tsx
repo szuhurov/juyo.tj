@@ -10,6 +10,12 @@ import { Home, QrCode, PlusCircle, ScanLine, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
+// Same as the app's BottomNav: a wide capsule (56×40) in emerald at 16% behind
+// the active tab, the icon itself green — not a solid green square.
+const ACTIVE_PILL = "absolute w-14 h-10 rounded-full bg-emerald-500/15";
+const ACTIVE_ICON = "text-emerald-600 dark:text-emerald-400";
+const IDLE_ICON = "text-slate-400 dark:text-zinc-400";
+
 export function MobileNavbar() {
   const pathname = usePathname();
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
@@ -110,12 +116,10 @@ export function MobileNavbar() {
                   onMouseEnter={() => handlePrefetch(item.href)}
                   onTouchStart={() => handlePrefetch(item.href)}
                   aria-label={item.label}
-                  className="flex items-center justify-center"
+                  className="relative flex items-center justify-center"
                 >
-                  <div className={cn(
-                    "w-10 h-10 rounded-md flex items-center justify-center",
-                    isActive ? "bg-emerald-500 text-white" : "text-slate-400 dark:text-zinc-500"
-                  )}>
+                  {isActive && <span aria-hidden className={ACTIVE_PILL} />}
+                  <div className={cn("relative w-10 h-10 flex items-center justify-center", isActive ? ACTIVE_ICON : IDLE_ICON)}>
                     <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                   </div>
                 </button>
@@ -130,12 +134,10 @@ export function MobileNavbar() {
                   onMouseEnter={() => handlePrefetch(item.href)}
                   onTouchStart={() => handlePrefetch(item.href)}
                   aria-label={item.label}
-                  className="flex items-center justify-center"
+                  className="relative flex items-center justify-center"
                 >
-                  <div className={cn(
-                    "w-10 h-10 rounded-md flex items-center justify-center",
-                    isActive ? "bg-emerald-500" : ""
-                  )}>
+                  {isActive && <span aria-hidden className={ACTIVE_PILL} />}
+                  <div className="relative w-10 h-10 flex items-center justify-center">
                     <Avatar className="h-7 w-7">
                       <AvatarImage src={user?.imageUrl} />
                       <AvatarFallback className={cn(
@@ -157,14 +159,10 @@ export function MobileNavbar() {
                 onMouseEnter={() => handlePrefetch(item.href)}
                 onTouchStart={() => handlePrefetch(item.href)}
                 aria-label={item.label}
-                className="flex items-center justify-center"
+                className="relative flex items-center justify-center"
               >
-                <div className={cn(
-                  "w-10 h-10 rounded-md flex items-center justify-center",
-                  isActive
-                    ? "bg-emerald-500 text-white"
-                    : "text-slate-400 dark:text-zinc-500"
-                )}>
+                {isActive && <span aria-hidden className={ACTIVE_PILL} />}
+                <div className={cn("relative w-10 h-10 flex items-center justify-center", isActive ? ACTIVE_ICON : IDLE_ICON)}>
                   <item.icon className={cn("h-6 w-6", isActive && "stroke-[2.5px]")} />
                 </div>
               </button>

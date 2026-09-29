@@ -4,7 +4,7 @@
  * All pages in this section render inside this file.
  */
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { unstable_cache } from "next/cache";
 import { HomeOnlyHeader, MainContent, SiteFooter } from "@/components/home-only-header";
 import { MobileNavbar } from "@/components/mobile-navbar";
@@ -12,6 +12,7 @@ import { HomeProvider } from "@/lib/home-context";
 import { AddLauncherProvider } from "@/components/add-photo-launcher";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { BlockedAccountScreen } from "@/components/blocked-account-screen";
+import { syncProfileFromClerk } from "@/lib/services/profile-sync";
 
 // This read (status/phone) in this layout used to run on EVERY navigation
 // (even within this same group, e.g. home → profile) — one DB request per
@@ -23,13 +24,25 @@ const getCachedProfileStatus = unstable_cache(
   async (userId: string) => {
     const { data } = await supabaseAdmin
       .from("profiles")
-      .select("status, phone")
+      .select("status, phone, email, first_name")
       .eq("id", userId)
       .maybeSingle();
     return data;
   },
-  ["main-layout-profile-status"],
+  ["main-layout-profile-status-v2"],
   { revalidate: 30 },
+);
+
+// Clerk → profile fill (email/name/phone) at most once an hour per user, so a
+// profile that stays incomplete (e.g. no phone in Clerk) doesn't hit the Clerk
+// API on every navigation.
+const syncProfileHourly = unstable_cache(
+  async (userId: string) => {
+    await syncProfileFromClerk(userId);
+    return true;
+  },
+  ["main-layout-profile-sync"],
+  { revalidate: 3600 },
 );
 
 export default async function MainLayout({
@@ -44,34 +57,13 @@ export default async function MainLayout({
       return <BlockedAccountScreen />;
     }
 
-    // Fallback for when the clerk-sync webhook fails (e.g. a mismatched
-    // signing secret) — so the profile never ends up "missing", and the
-    // phone number from Clerk (e.g. when signing up with a phone number)
-    // isn't left without it. For a profile that already exists, only an
-    // EMPTY phone field gets filled — we don't re-fetch name/surname/email
-    // from Clerk, because the user may have updated them inside the app
-    // itself while Clerk (due to that same webhook issue) is still stale.
-    if (!profile) {
-      const clerkUser = await currentUser();
-      if (clerkUser) {
-        const primaryEmail = clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId);
-        const primaryPhone = clerkUser.phoneNumbers.find((p) => p.id === clerkUser.primaryPhoneNumberId);
-        await supabaseAdmin.from("profiles").upsert({
-          id: userId,
-          first_name: clerkUser.firstName || "",
-          last_name: clerkUser.lastName || "",
-          avatar_url: clerkUser.imageUrl || "",
-          phone: primaryPhone?.phoneNumber || clerkUser.phoneNumbers[0]?.phoneNumber || null,
-          email: primaryEmail?.emailAddress || clerkUser.emailAddresses[0]?.emailAddress || null,
-          updated_at: new Date().toISOString(),
-        });
-      }
-    } else if (!profile.phone) {
-      const clerkUser = await currentUser();
-      const primaryPhone = clerkUser?.phoneNumbers.find((p) => p.id === clerkUser.primaryPhoneNumberId);
-      const phone = primaryPhone?.phoneNumber || clerkUser?.phoneNumbers[0]?.phoneNumber;
-      if (phone) {
-        await supabaseAdmin.from("profiles").update({ phone, updated_at: new Date().toISOString() }).eq("id", userId);
+    // Fallback for the clerk-sync webhook: create the profile if it is missing
+    // and fill any EMPTY email/name/phone from Clerk (never overwrites).
+    if (!profile || !profile.email || !profile.first_name || !profile.phone) {
+      try {
+        await syncProfileHourly(userId);
+      } catch (err) {
+        console.error("profile sync from Clerk failed:", err instanceof Error ? err.message : "unknown");
       }
     }
   }

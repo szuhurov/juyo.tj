@@ -1,7 +1,10 @@
 
 [functions.clerk-sync]
 enabled = true
-verify_jwt = true
+# false: Clerk (Svix) sends no Supabase JWT — with true every webhook was
+# rejected at the gateway (401) and profiles never got email/name from Clerk.
+# The function verifies the Svix signature itself.
+verify_jwt = false
 import_map = "./functions/clerk-sync/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
