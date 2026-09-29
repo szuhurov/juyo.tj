@@ -19,8 +19,9 @@ export default async function AdminLayout({
     // bg-canvas — the same token used across the whole site (light #f1f5f9,
     // dark black). Before this, the panel had a hardcoded `bg-zinc-100` and
     // stayed blindingly white in dark mode.
-    <div className="min-h-screen md:h-screen bg-white dark:bg-zinc-900 md:bg-canvas md:p-4">
-      <div className="flex flex-col md:flex-row min-h-screen md:h-full bg-white dark:bg-zinc-900 md:rounded-md md:border md:border-zinc-200 md:dark:border-zinc-800 md:overflow-hidden">
+    // Full-bleed (owner request): no outer frame, border or side gaps.
+    <div className="min-h-screen md:h-screen bg-white dark:bg-zinc-900">
+      <div className="flex flex-col md:flex-row min-h-screen md:h-full bg-white dark:bg-zinc-900 md:overflow-hidden">
         <AdminSidebar />
         <AdminSearchProvider>
           <div className="flex-1 min-w-0 flex flex-col md:overflow-hidden">

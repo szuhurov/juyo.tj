@@ -14,18 +14,18 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[var(--shadow-2)] hover:bg-primary/90",
+          "bg-primary text-primary-foreground hover:bg-primary/90",
         // JUYO brand lime (#E0FF4F). Opt-in, not the default — swapping every
         // existing `default` Button to brand would silently reskin every
         // screen at once; screens adopt this deliberately in a later phase.
         brand:
-          "bg-brand text-brand-foreground shadow-[var(--shadow-2)] hover:bg-brand/90",
+          "bg-brand text-brand-foreground hover:bg-brand/90",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-[var(--shadow-2)] hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border border-input bg-background shadow-[var(--shadow-2)] hover:bg-accent hover:text-accent-foreground",
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-[var(--shadow-2)] hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },

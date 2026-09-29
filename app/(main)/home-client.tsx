@@ -29,6 +29,9 @@ import { HomeFiltersSkeleton, QuickActionsSkeleton } from "@/components/home-fil
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ITEM_KEYS, useItems, useVipItems } from "@/lib/hooks/use-items";
+import { useAuth } from "@clerk/nextjs";
+import { useDragScroll } from "@/lib/hooks/use-drag-scroll";
+import { NotificationBell } from "@/components/notification-bell";
 import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
@@ -120,7 +123,7 @@ function CategoryFilterCard({
           wide ? "aspect-square md:aspect-[1.3/1] lg:max-w-[96px]" : "aspect-square lg:max-w-[72px]",
           emoji && "grid place-items-center",
           !transparent &&
-            "rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none",
+            "rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800",
         )}
       >
         {emoji ? (
@@ -236,6 +239,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const [showCameraCapture, setShowCameraCapture] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { userId, isLoaded: isAuthLoaded } = useAuth();
 
   // The visual search icon is only shown when AI is enabled — without it
   // no embedding is generated and image search returns no results.
@@ -545,6 +549,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // query just means no data → no strip, no error UI.
   const { data: vipItems } = useVipItems();
   const showStrip = showTopSections && isDefaultFeed(filters);
+
+  // Mouse drag for the two horizontal rows (touch already scrolls natively).
+  const quickActionsRef = useRef<HTMLDivElement>(null);
+  const categoriesRef = useRef<HTMLDivElement>(null);
+  useDragScroll(quickActionsRef, showTopSections);
+  useDragScroll(categoriesRef, !visualSearchResults);
   const featuredItems = useMemo<FeaturedItem[]>(
     () => (showStrip && vipItems ? toFeaturedItems(vipItems) : []),
     [showStrip, vipItems],
@@ -570,7 +580,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   return (
     <div className="pb-18 min-h-screen bg-canvas">
       {/* Filters section (Header/Filters) */}
-      <div ref={filterBarRef} className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-canvas">
+      <div ref={filterBarRef} className="fixed top-0 md:top-16 left-0 right-0 z-40 bg-canvas">
         <div className="w-full max-w-7xl mx-auto pl-2.5 sm:pl-4">
           {/* The header itself already sits 6px below the search field, so `pt-0.5`
               bumps the gap to 8px — slightly larger than the 6px between filter
@@ -582,20 +592,20 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               remains.
               This number no longer depends on the hand-picked HOME_CONTENT_PT — the
               content padding now measures this bar's ACTUAL height live (filterBarHeight). */}
-          <div className="w-full pt-0.5 pb-1.5">
+          <div className="w-full pt-2.5 md:pt-0.5 pb-1.5">
           {/* Type selector: Lost or Found — a separate row, no swipe (few buttons).
               Moved ABOVE the category row (user request) — text-only pills, no
               icons, less rounded than before (rounded-md, not rounded-full). */}
           {!visualSearchResults && (
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5 max-md:gap-y-2">
                 {/* The color follows the same convention as the cards: found is green, lost is red.
                     When inactive the color is on the TEXT, when active it's on the
                     BACKGROUND — otherwise red text would end up on a green background. */}
                 {(
                   [
-                    { value: null, label: t("all"), on: "bg-primary text-primary-foreground", off: "bg-tile text-found dark:bg-transparent" },
-                    { value: "found", label: t("filterFound"), on: "bg-primary text-primary-foreground", off: "bg-tile text-found dark:bg-transparent" },
-                    { value: "lost", label: t("filterLost"), on: "bg-rose-700 text-white", off: "bg-tile text-lost dark:bg-transparent" },
+                    { value: null, label: t("all"), on: "bg-primary text-primary-foreground", off: "bg-tile text-zinc-900 dark:text-zinc-100" },
+                    { value: "found", label: t("filterFound"), on: "bg-primary text-primary-foreground", off: "bg-tile text-found" },
+                    { value: "lost", label: t("filterLost"), on: "bg-rose-700 text-white", off: "bg-tile text-lost" },
                   ] as const
                 ).map((opt) => (
                   <button
@@ -603,7 +613,8 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={() => setItemType(opt.value)}
                     aria-pressed={itemType === opt.value}
                     className={cn(
-                      "px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md font-semibold text-xs min-[1920px]:text-[13px] flex items-center cursor-pointer transition-colors duration-[var(--duration-fast)]",
+                      "max-md:order-5 max-md:flex-1 max-md:basis-0 max-md:justify-center px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md font-semibold text-xs min-[1920px]:text-[13px] flex items-center cursor-pointer transition-colors duration-[var(--duration-fast)]",
+                      opt.value === "lost" && "max-md:mr-2.5",
                       itemType === opt.value ? opt.on : opt.off,                    )}
                   >
                     {opt.label}
@@ -613,7 +624,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 {/* Search — moved here from Header (user request): level with the
                     type filter pills, right after Lost/Found. flex-1 fills the
                     remaining space, pushing the date button to the right edge. */}
-                <div className="relative flex-1 min-w-[120px]">
+                <div className="relative flex-1 min-w-[120px] max-md:order-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                   <Input
                     ref={searchInputRef}
@@ -658,8 +669,15 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   </div>
                 </div>
 
+                {/* Phones (like the app header): search → filter → bell on one row,
+                    the three type buttons on the next (order-5, flex-1 each). */}
+                <div className="order-3 md:hidden mr-2.5 flex items-center">
+                  {isAuthLoaded && userId && <NotificationBell />}
+                </div>
+                <div aria-hidden className="order-4 basis-full h-0 md:hidden" />
+
                 {/* Date range filter (From/To) — pushed to the right edge of the row (ml-auto) */}
-                <div className="relative ml-auto mr-2" ref={datePickerRef}>
+                <div className="relative ml-auto mr-2 max-md:order-2 max-md:ml-0 max-md:mr-0" ref={datePickerRef}>
                   <button
                     type="button"
                     onClick={openDatePicker}
@@ -740,11 +758,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
             </div>
           )}
           <div
+            ref={categoriesRef}
             className={cn(
               "-mx-1 px-1 mt-0.5",
               visualSearchResults
                 ? "flex items-center gap-1 overflow-x-auto no-scrollbar py-2.5 -my-2.5 w-full justify-end"
-                : "flex items-center gap-1 lg:gap-2 overflow-x-auto no-scrollbar py-2.5 -my-2.5",
+                : "flex items-center gap-1 lg:gap-2 overflow-x-auto overscroll-x-contain no-scrollbar py-2.5 -my-2.5",
             )}
           >
               {visualSearchResults ? (
@@ -792,7 +811,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
       {/* Main content: Listings feed */}
       <div
         className={cn(
-          "w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5 touch-pan-y",
+          "w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5",
           visualSearchResults
             ? "pt-[64px] md:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
             // Until the live measurement (filterBarHeight) is ready, the
@@ -814,7 +833,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         {showTopSections && (
           <div className="mb-2.5">
             {/* `mr-[-Npx]`: the row must reach the ACTUAL right edge of the screen. */}
-            <div className="flex gap-1.5 overflow-x-auto snap-x snap-mandatory no-scrollbar py-5 -my-5 mr-[-10px] sm:mr-[-16px] lg:mr-[-20px]">
+            <div
+              ref={quickActionsRef}
+              className="flex gap-1.5 overflow-x-auto overscroll-x-contain snap-x snap-mandatory no-scrollbar py-5 -my-5 mr-[-10px] sm:mr-[-16px] lg:mr-[-20px]"
+            >
               {QUICK_ACTIONS.map(({ value, icon: Icon, color }) => {
                 const active = value === "all" ? locationType === null : locationType === value;
                 const title = t(`quickActions.${value}.title`);

@@ -15,14 +15,11 @@ interface CombinedRow {
   kind: "trash" | "purged";
 }
 
-export function DeletedAccountsArchive() {
-  const router = useRouter();
+/** Trash (soft-deleted profiles) + purged archive, newest first — shared by
+ *  the list and the users-page cards so both count the same rows. */
+export function useDeletedAccountRows() {
   const { data: trashData, isLoading: trashLoading } = useAdminUsers({ status: "deleted", page: 0, pageSize: 200 });
   const { data: archiveData, isLoading: archiveLoading } = useDeletedAccountsArchive();
-
-  if (trashLoading || archiveLoading) {
-    return <p className="py-16 text-center text-sm font-semibold text-zinc-400">Боркунӣ...</p>;
-  }
 
   const trashRows: CombinedRow[] = (trashData?.users ?? []).map((u) => ({
     key: `trash-${u.id}`,
@@ -46,6 +43,28 @@ export function DeletedAccountsArchive() {
   });
 
   const rows = [...trashRows, ...purgedRows].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  return { rows, isLoading: trashLoading || archiveLoading };
+}
+
+export type DeletedRange = "today" | "month";
+
+export function isInDeletedRange(date: string, range?: DeletedRange) {
+  if (!range) return true;
+  const d = new Date(date);
+  const now = new Date();
+  if (range === "today") return d.toDateString() === now.toDateString();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
+export function DeletedAccountsArchive({ range }: { range?: DeletedRange }) {
+  const router = useRouter();
+  const { rows: allRows, isLoading } = useDeletedAccountRows();
+
+  if (isLoading) {
+    return <p className="py-16 text-center text-sm font-semibold text-zinc-400">Боркунӣ...</p>;
+  }
+  const rows = allRows.filter((row) => isInDeletedRange(row.date, range));
 
   if (rows.length === 0) {
     return <p className="py-16 text-center text-sm font-semibold text-zinc-400">Ягон корбари нестшуда нест</p>;

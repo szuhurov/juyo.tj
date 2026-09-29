@@ -141,7 +141,7 @@ export function ItemCard({
       <Link
         href={`/items/${item.id}`}
         prefetch
-        className="group flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+        className="group flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 overflow-hidden"
       >
         {/* Image is rounded on all four sides — the type indicator moved
             to the bottom button, so a mask and `-mb-px` are no longer needed. */}

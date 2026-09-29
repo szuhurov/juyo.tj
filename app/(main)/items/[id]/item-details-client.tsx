@@ -589,9 +589,8 @@ export default function ItemDetailsClient({
             <div className="mt-auto flex flex-col gap-3">
               {isLoaded && isOwner ? (
                 <Button
-                  variant="brand"
                   size="lg"
-                  className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-md"
+                  className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-md bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-none"
                   onClick={() => setShowResolvedConfirm(true)}
                   disabled={isActionLoading}
                 >
@@ -705,7 +704,7 @@ export default function ItemDetailsClient({
                 {t("cancel")}
               </Button>
               <Button
-                variant="brand"
+                className="bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-none"
                 onClick={handleResolved}
                 disabled={isActionLoading}
               >

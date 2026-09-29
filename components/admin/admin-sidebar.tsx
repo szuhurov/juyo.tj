@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Package, UserX, ExternalLink, Bot, Crown, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, Package, UserX, ExternalLink, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePendingPostsCount } from "@/lib/hooks/use-admin-posts";
 import { usePendingDeletionRequestsCount } from "@/lib/hooks/use-admin-deletion-requests";
@@ -11,10 +11,8 @@ export const NAV_ITEMS = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
   { href: "/admin/users", label: "Корбарон", icon: Users },
   { href: "/admin/posts", label: "Эълонҳо", icon: Package },
-  { href: "/admin/matches", label: "Мутобиқатҳои AI", icon: Bot },
-  { href: "/admin/analytics", label: "Аналитика", icon: BarChart3 },
   { href: "/admin/subscriptions", label: "TOP/VIP", icon: Crown },
-  { href: "/admin/deletion-requests", label: "Нест кардани ҳисоб", icon: UserX },
+  { href: "/admin/deletion-requests", label: "Нестшудаҳо", icon: UserX },
 ];
 
 function isActive(pathname: string, href: string) {

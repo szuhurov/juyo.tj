@@ -66,7 +66,14 @@ export function AdminTopbar() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex-1" />
+      <div className="flex-1 min-w-0">
+        <>
+            <h1 className="truncate text-lg md:text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              Салом, {user?.firstName || "Admin"}! 👋
+            </h1>
+            <p className="hidden sm:block truncate text-xs font-medium text-zinc-400">Ин аст вазъи ҷории juyo.tj.</p>
+          </>
+      </div>
 
       <div className="flex items-center gap-2 shrink-0">
         {searchable && (

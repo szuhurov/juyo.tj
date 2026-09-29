@@ -5,47 +5,70 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { CATEGORIES } from "@/lib/services/item-service";
 import type { AdminPostFilters } from "@/lib/services/admin-service";
 
+type TabKey = "all" | "resolved" | "unresolved" | "pending" | "deleted";
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "all", label: "Ҳама эълонҳо" },
+  { key: "resolved", label: "Ҳалшуда" },
+  { key: "unresolved", label: "Ҳалнашуда" },
+  { key: "pending", label: "Дар интизорӣ" },
+  { key: "deleted", label: "Нестшудаҳо" },
+];
+
+function activeTab(filters: AdminPostFilters): TabKey {
+  if (filters.moderation_status === "pending") return "pending";
+  if (filters.resolved === "true") return "resolved";
+  if (filters.resolved === "false") return "unresolved";
+  return "all";
+}
+
 export function PostFilterBar({
   filters,
   onChange,
   archiveView,
   onArchiveViewChange,
 }: {
-  filters: AdminPostFilters;
-  onChange: (filters: AdminPostFilters) => void;
+  filters: AdminPostFilters & { archive?: string };
+  onChange: (filters: AdminPostFilters & { archive?: string }) => void;
   archiveView: boolean;
   onArchiveViewChange: (archiveView: boolean) => void;
 }) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-8">
-        <button
-          type="button"
-          onClick={() => {
-            onArchiveViewChange(false);
-            onChange({ ...filters, status: "active", page: 0 });
-          }}
-          className={cn(
-            "text-sm font-semibold pb-1 border-b-2 transition-colors",
-            !archiveView
-              ? "text-zinc-900 dark:text-white border-blue-600"
-              : "text-zinc-400 border-transparent hover:text-zinc-600",
-          )}
-        >
-          Ҳама эълонҳо
-        </button>
-        <button
-          type="button"
-          onClick={() => onArchiveViewChange(true)}
-          className={cn(
-            "text-sm font-semibold pb-1 border-b-2 transition-colors",
-            archiveView
-              ? "text-zinc-900 dark:text-white border-blue-600"
-              : "text-zinc-400 border-transparent hover:text-zinc-600",
-          )}
-        >
-          Нестшудаҳо
-        </button>
+      {/* One row of views (the old "Ҳал" dropdown moved in here). They share
+          the filter state with the stat cards and the dropdowns below. */}
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
+        {TABS.map((tab) => {
+          const on = tab.key === "deleted" ? archiveView : !archiveView && activeTab(filters) === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              aria-pressed={on}
+              onClick={() => {
+                if (tab.key === "deleted") {
+                  onArchiveViewChange(true);
+                  return;
+                }
+                // One update (archive off + the view's filters): two separate
+                // updates raced and the second put the old archive flag back.
+                onChange({
+                  ...filters,
+                  archive: undefined,
+                  status: "active",
+                  resolved: tab.key === "resolved" ? "true" : tab.key === "unresolved" ? "false" : undefined,
+                  moderation_status: tab.key === "pending" ? "pending" : filters.moderation_status === "pending" ? undefined : filters.moderation_status,
+                  page: 0,
+                });
+              }}
+              className={cn(
+                "text-sm font-semibold pb-1 border-b-2 transition-colors",
+                on ? "text-zinc-900 dark:text-white border-blue-600" : "text-zinc-400 border-transparent hover:text-zinc-600",
+              )}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       {!archiveView && (
@@ -95,20 +118,6 @@ export function PostFilterBar({
               <SelectItem value="pending">Дар интизор</SelectItem>
               <SelectItem value="approved">Тасдиқшуда</SelectItem>
               <SelectItem value="rejected">Рад шуда</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={filters.resolved ?? "all"}
-            onValueChange={(v) => onChange({ ...filters, resolved: v as AdminPostFilters["resolved"], page: 0 })}
-          >
-            <SelectTrigger className="w-36 h-11 rounded-md border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/60 focus:ring-blue-500/30">
-              <SelectValue placeholder="Ҳал" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Ҳама</SelectItem>
-              <SelectItem value="true">Ҳалшуда</SelectItem>
-              <SelectItem value="false">Ҳалнашуда</SelectItem>
             </SelectContent>
           </Select>
 

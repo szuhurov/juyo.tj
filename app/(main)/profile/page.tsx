@@ -29,13 +29,11 @@ import { createClerkSupabaseClient } from "@/lib/supabase"; // For connecting to
 import { getErrorMessage } from "@/lib/error-utils"; // Readable message from a Clerk/Supabase error
 import {
   User,
-  Settings,
   Bookmark,
   LogOut,
   ChevronRight,
   PackageSearch,
   Mail,
-  LayoutGrid,
   Trash2,
   Loader2,
   ShieldCheck,
@@ -43,14 +41,12 @@ import {
   Pencil,
   QrCode,
   ChevronLeft,
-  Menu as MenuIcon,
   Download,
   Palette,
   KeyRound,
   MousePointerClick,
   Globe,
   UserCog,
-  Crown,
   Grid2x2,
   Scan,
   Droplet,
@@ -65,7 +61,6 @@ import {
 import Link from "next/link"; // For links to other pages
 import { useRouter, useSearchParams } from "next/navigation"; // For managing the address and URL parameters
 import { cn } from "@/lib/utils"; // For combining CSS classes
-import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 import { readableTextOn, isNearWhite } from "@/lib/qr-palette";
 import { DotStyleChip, CornerBorderChip, CornerCenterChip, StyleChipRow, type ChipDotType } from "@/components/qr-editor/qr-style-chips";
 import { PercentSlider, GradientBiasToggle } from "@/components/qr-editor/percent-slider";
@@ -87,12 +82,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"; // For confirmation dialogs (modals)
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"; // Generic action-confirmation dialog
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // QR integration
 // This component uses html-to-image and react-colorful (heavy) and is only
@@ -671,39 +660,6 @@ function ProfileContent() {
     { value: "system", labelKey: "themeSystem" },
     { value: "light", labelKey: "themeLight" },
     { value: "dark", labelKey: "themeDark" },
-  ];
-
-  // All menu icons share one color (emerald) — the different colors
-  // (blue/purple/indigo) had no distinct meaning and were purely decorative.
-  const menuItems = [
-    {
-      id: "posts",
-      title: t("myPosts"),
-      icon: LayoutGrid,
-      color: "text-slate-500",
-      bg: "",
-    },
-    {
-      id: "info",
-      title: t("settings"),
-      icon: Settings,
-      color: "text-slate-500",
-      bg: "",
-    },
-    {
-      id: "qr",
-      title: t("qrMyCode"),
-      icon: QrCode,
-      color: "text-slate-500",
-      bg: "",
-    },
-    {
-      id: "saved",
-      title: t("savedItems"),
-      icon: Bookmark,
-      color: "text-slate-500",
-      bg: "",
-    },
   ];
 
   useEffect(() => {
@@ -1338,7 +1294,7 @@ function ProfileContent() {
                 {/* Preview column. Only the QR ITSELF is sticky — the status
                     card, buttons, and settings scroll past underneath it. */}
                 <div className="flex flex-col">
-                <div className="sticky top-[12px] sm:top-[66px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                <div className="sticky top-0 md:top-[66px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
                   {/* WHITE card with a soft border — matching the profile
                       cards' look. Previously this had a DASHED border: it
                       suggests an "empty state waiting to be filled", while
@@ -1962,6 +1918,18 @@ function ProfileContent() {
                 </p>
               </div>
 
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => router.push("/admin")}
+                  className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
+                >
+                  <UserCog className="w-[18px] h-[18px] text-slate-500 shrink-0" />
+                  <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">{t("adminPanel")}</span>
+                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                </button>
+              )}
+
               {/* Sign out — user request: BELOW "Delete account", and
                   REDDER in color than it. */}
               <div className="space-y-2">
@@ -2052,74 +2020,15 @@ function ProfileContent() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => handleTabChange("info")}
-                className="flex-1 h-9 md:h-10 rounded-md bg-white hover:bg-zinc-50 border border-hairline dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 font-medium text-[10px] md:text-[11px] tracking-wider shadow-none"
-              >
-                <Pencil className="w-3.5 h-3.5 md:w-4 md:h-4 mr-2 text-slate-500" />
-                {t("edit") || "Edit"}
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button className="flex-1 h-9 md:h-10 rounded-md bg-white hover:bg-zinc-50 border border-hairline dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 text-[10px] md:text-[11px] tracking-wider shadow-none gap-2">
-                    <MenuIcon className="w-4 h-4 md:w-[18px] md:h-[18px] text-slate-500" />
-                    {t("settings") || "Settings"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-56 md:w-60 rounded-md shadow-xl p-2 border-hairline dark:border-zinc-700 bg-white dark:bg-zinc-800"
-                >
-                  {menuItems.map((item) => (
-                    <DropdownMenuItem
-                      key={item.id}
-                      onClick={() => handleTabChange(item.id)}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-md cursor-pointer font-medium text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                    >
-                      <div
-                        className={cn("p-1.5 rounded-md", item.bg, item.color)}
-                      >
-                        <item.icon className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      </div>
-                      {item.title}
-                    </DropdownMenuItem>
-                  ))}
-                  {PAID_FEATURES_ENABLED && (
-                  <DropdownMenuItem
-                    onClick={() => router.push("/vip")}
-                    className="flex items-center gap-3 py-2.5 px-3 rounded-md cursor-pointer font-medium text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                  >
-                    <div className="p-1.5 text-amber-500">
-                      <Crown className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                    </div>
-                    {t("vipPageTitle")}
-                  </DropdownMenuItem>
-                  )}
-                  {isAdmin && (
-                    <DropdownMenuItem
-                      onClick={() => router.push("/admin")}
-                      className="flex items-center gap-3 py-2.5 px-3 rounded-md cursor-pointer font-medium text-[11px] md:text-xs tracking-wider text-zinc-700 dark:text-zinc-300"
-                    >
-                      <div className="p-1.5 text-slate-500 dark:text-zinc-400">
-                        <UserCog className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                      </div>
-                      {t("adminPanel")}
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem className="p-0">
-                    <SignOutButton>
-                      <button className="w-full flex items-center gap-3 py-2.5 px-3 rounded-md text-zinc-700 dark:text-zinc-300 font-medium text-[11px] tracking-wider">
-                        <div className="p-1.5 text-slate-500 dark:text-zinc-400">
-                          <LogOut className="w-3.5 h-3.5" />
-                        </div>
-                        {t("signOut")}
-                      </button>
-                    </SignOutButton>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {/* Only "Edit", like the app (identityEditBtn → settings). The
+                other entries (tabs, sign out, admin) live in Settings. */}
+            <Button
+              onClick={() => handleTabChange("info")}
+              className="w-full h-9 rounded-[10px] bg-tile hover:bg-zinc-200/60 dark:hover:bg-zinc-700 border-none shadow-none text-zinc-500 dark:text-zinc-400 font-medium text-xs"
+            >
+              <Pencil className="w-3.5 h-3.5 mr-2" />
+              {t("edit") || "Edit"}
+            </Button>
           </div>
         )}
 

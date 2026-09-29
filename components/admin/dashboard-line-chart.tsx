@@ -12,12 +12,15 @@ function tickFormat(granularity: "hour" | "day" | "month", d: string) {
 export function DashboardLineChart({
   data,
   granularity = "day",
+  height = 220,
 }: {
   data: { date: string; count: number }[];
   granularity?: "hour" | "day" | "month";
+  /** A number, or "100%" to fill a sized parent. */
+  height?: number | `${number}%`;
 }) {
   return (
-    <ResponsiveContainer width="100%" height={220}>
+    <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }} barCategoryGap="30%">
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f4f4f5" />
         <XAxis

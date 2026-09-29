@@ -24,13 +24,16 @@ export function HomeFiltersSkeleton() {
     // category row on desktop).
     <div className="bg-canvas" aria-hidden>
       <div className="w-full max-w-7xl mx-auto pl-2.5 sm:pl-4">
-        <div className="w-full pt-0.5 pb-1.5">
-          <div className="flex items-center gap-1.5">
+        <div className="w-full pt-2.5 md:pt-0.5 pb-1.5">
+          {/* Same order as the real bar: phones = search, filter, bell / three type buttons. */}
+          <div className="flex flex-wrap items-center gap-1.5 max-md:gap-y-2">
             {TYPE_WIDTHS.map((w, i) => (
-              <Skeleton key={i} className={`shrink-0 ${w} ${CONTROL_H} rounded-md`} />
+              <Skeleton key={i} className={`shrink-0 ${w} ${CONTROL_H} rounded-md max-md:order-5 max-md:flex-1 max-md:basis-0 ${i === 2 ? "max-md:mr-2.5" : ""}`} />
             ))}
-            <Skeleton className={`flex-1 min-w-[120px] ${CONTROL_H} rounded-md`} />
-            <Skeleton className="ml-auto mr-2 shrink-0 h-9 w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] rounded-md" />
+            <Skeleton className={`flex-1 min-w-[120px] ${CONTROL_H} rounded-md max-md:order-1`} />
+            <Skeleton className="order-3 md:hidden mr-2.5 shrink-0 h-9 w-9 rounded-md" />
+            <div aria-hidden className="order-4 basis-full h-0 md:hidden" />
+            <Skeleton className="ml-auto mr-2 max-md:order-2 max-md:ml-0 max-md:mr-0 shrink-0 h-9 w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] rounded-md" />
           </div>
 
           <div className="mt-0.5 flex items-start gap-1 overflow-hidden py-2.5 -my-2.5">

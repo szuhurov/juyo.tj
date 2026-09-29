@@ -871,59 +871,7 @@ function AddItemForm() {
                       : t("addItemLocationStep.title")}
                 </h2>
               </div>
-              <RadioGroup
-                value={locationAnswered ? formData.locationType || "none" : undefined}
-                onValueChange={(val) => {
-                  setLocationAnswered(true);
-                  setFormData((prev) => ({
-                    ...prev,
-                    locationType:
-                      val === "none"
-                        ? null
-                        : (val as typeof prev.locationType),
-                  }));
-                }}
-                className="grid grid-cols-1 gap-3"
-              >
-                {(
-                  [
-                    { value: "taxi", emoji: "🚕" },
-                    { value: "airport", emoji: "✈️" },
-                    { value: "hotel_restaurant", emoji: "🏨" },
-                    { value: "public_place", emoji: "🎭" },
-                    { value: "gym", emoji: "🏋️" },
-                    { value: "university", emoji: "🎓" },
-                    { value: "mall", emoji: "🛍️" },
-                    { value: "office", emoji: "🏢" },
-                    { value: "tourism", emoji: "🧳" },
-                    { value: "bank", emoji: "🏦" },
-                    { value: "none", emoji: "🤷" },
-                  ] as const
-                ).map((opt) => (
-                  <div key={opt.value} className="relative">
-                    <Label
-                      htmlFor={`loc-${opt.value}`}
-                      className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-action cursor-pointer transition-all group"
-                    >
-                      <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
-                        {opt.emoji}
-                      </div>
-                      <span className="flex-1 font-semibold text-base min-[1084px]:text-lg leading-snug">
-                        {opt.value === "none"
-                          ? t("addItemLocationStep.notSpecified")
-                          : t(`addItemLocationStep.${opt.value}`)}
-                      </span>
-                      <RadioGroupItem
-                        value={opt.value}
-                        id={`loc-${opt.value}`}
-                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-action data-[state=checked]:bg-action [&_span]:hidden transition-colors"
-                      />
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-
-              {/* City — swipe sideways; Dushanbe is preselected. */}
+              {/* City first (like the app) — swipe sideways; nothing is preselected. */}
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-500 dark:text-zinc-400">{t("cityLabel")}</p>
                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-1">
@@ -944,6 +892,53 @@ function AddItemForm() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Places as a 2-column grid of tiles — label left, emoji right —
+                  exactly like the app's placeGrid/placeTile. */}
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { value: "taxi", emoji: "🚕" },
+                    { value: "airport", emoji: "✈️" },
+                    { value: "hotel_restaurant", emoji: "🏨" },
+                    { value: "public_place", emoji: "🎭" },
+                    { value: "gym", emoji: "🏋️" },
+                    { value: "university", emoji: "🎓" },
+                    { value: "mall", emoji: "🛍️" },
+                    { value: "office", emoji: "🏢" },
+                    { value: "tourism", emoji: "🧳" },
+                    { value: "bank", emoji: "🏦" },
+                    { value: "none", emoji: "🤷" },
+                  ] as const
+                ).map((opt) => {
+                  const on = locationAnswered && (formData.locationType || "none") === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => {
+                        setLocationAnswered(true);
+                        setFormData((prev) => ({
+                          ...prev,
+                          locationType: opt.value === "none" ? null : opt.value,
+                        }));
+                      }}
+                      className={cn(
+                        "flex items-center justify-between gap-1.5 rounded-[10px] px-2.5 py-3 text-left transition-colors",
+                        on ? "bg-emerald-500 text-white" : "bg-tile text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-700",
+                      )}
+                    >
+                      <span className="min-w-0 line-clamp-2 text-[13px] font-semibold leading-snug">
+                        {opt.value === "none"
+                          ? t("addItemLocationStep.notSpecified")
+                          : t(`addItemLocationStep.${opt.value}`)}
+                      </span>
+                      <span aria-hidden className="shrink-0 text-[26px] leading-none">{opt.emoji}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1234,7 +1229,7 @@ function AddItemForm() {
                           </span>
                           <Input
                             placeholder={t("reward_gives_input")}
-                            className="rounded-md h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg text-action pr-14 pl-5 transition-all"
+                            className="rounded-md h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none text-base min-[1084px]:text-lg text-action pr-14 pl-5 transition-all"
                             value={formData.reward}
                             onChange={(e) => {
                               const digits = e.target.value
@@ -1284,10 +1279,9 @@ function AddItemForm() {
             )}
             {step === 5 && (
               <Button
-                variant="brand"
                 onClick={nextStep}
                 disabled={loading}
-                className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] text-sm min-[1920px]:text-[15px] font-semibold transition-all"
+                className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] text-sm min-[1920px]:text-[15px] font-semibold transition-all bg-emerald-500 hover:bg-emerald-600 text-white border-none shadow-none"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 animate-spin" />

@@ -72,7 +72,7 @@ export const HOME_GRID_CLASS =
  * the first row of cards — making the rounded corner look cut off.
  */
 export const HOME_CONTENT_PT =
-  "pt-[calc(58px+(100vw-20px)*0.1382)] md:pt-[138px] lg:pt-[134px] min-[1084px]:pt-[138px]";
+  "pt-[calc(110px+(100vw-20px)*0.1382)] md:pt-[138px] lg:pt-[134px] min-[1084px]:pt-[138px]";
 
 /**
  * Communication between the "add listing" page and the listing list.

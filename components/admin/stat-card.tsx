@@ -16,6 +16,8 @@ export function StatCard({
   accent = "blue",
   hint,
   trend,
+  onClick,
+  active,
 }: {
   icon: LucideIcon;
   label: string;
@@ -24,19 +26,32 @@ export function StatCard({
   hint?: string;
   /** Percentage change vs. the previous period — only set when real data is available. */
   trend?: number;
+  /** Makes the card a filter toggle (users page). */
+  onClick?: () => void;
+  active?: boolean;
 }) {
   const hasTrend = typeof trend === "number" && Number.isFinite(trend);
   const positive = hasTrend && trend! >= 0;
 
   return (
-    <div className="rounded-md bg-blue-50 dark:bg-blue-500/10 p-4 h-full border border-zinc-200 dark:border-zinc-800">
-      <div className="flex items-start justify-between">
-        <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{label}</p>
-        <div className={cn("w-7 h-7 rounded-full flex items-center justify-center shrink-0", ACCENTS[accent])}>
-          <Icon className="w-3.5 h-3.5" />
-        </div>
-      </div>
+    <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-pressed={onClick ? !!active : undefined}
+      onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+      className={cn(
+        "rounded-md bg-blue-50 dark:bg-blue-500/10 p-4 h-full border border-zinc-200 dark:border-zinc-800",
+        onClick && "cursor-pointer transition-colors hover:border-blue-300 dark:hover:border-blue-500/50",
+        active && "border-blue-600 ring-1 ring-blue-600 dark:border-blue-400 dark:ring-blue-400",
+      )}
+    >
+      <p className="text-xs font-medium text-blue-600 dark:text-blue-400">{label}</p>
+      {/* Icon beside the number (owner request), not in the corner. */}
       <div className="mt-3 flex items-center gap-2 flex-wrap">
+        <div className={cn("w-8 h-8 rounded-full flex items-center justify-center shrink-0", ACCENTS[accent])}>
+          <Icon className="w-4 h-4" />
+        </div>
         <p className="text-2xl font-semibold tracking-tight text-blue-900 dark:text-blue-200">{value}</p>
         {hasTrend && (
           <span

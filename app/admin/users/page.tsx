@@ -2,13 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useUrlFilters } from "@/lib/hooks/use-url-filters";
-import { BellRing, Users, UserPlus, CalendarDays, Bell, ChevronDown, Loader2 } from "lucide-react";
+import { BellRing, Users, UserPlus, UserX, CalendarDays, Bell, ChevronDown, Loader2 } from "lucide-react";
 import { useAdminUsers } from "@/lib/hooks/use-admin-users";
 import { useAdminStats } from "@/lib/hooks/use-admin-stats";
 import type { AdminUserFilters } from "@/lib/services/admin-service";
-import { UserFilterBar } from "@/components/admin/users/user-filter-bar";
 import { UserTable } from "@/components/admin/users/user-table";
-import { DeletedAccountsArchive } from "@/components/admin/users/deleted-accounts-archive";
+import {
+  DeletedAccountsArchive,
+  isInDeletedRange,
+  useDeletedAccountRows,
+  type DeletedRange,
+} from "@/components/admin/users/deleted-accounts-archive";
 import { StatCard } from "@/components/admin/stat-card";
 import { StatCardGrid } from "@/components/admin/stat-card-grid";
 import { Button } from "@/components/ui/button";
@@ -16,6 +20,7 @@ import { SendNotificationDialog } from "@/components/admin/users/send-notificati
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminSearch } from "@/lib/admin-search-context";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
+import { cn } from "@/lib/utils";
 
 const INITIAL_PAGE_SIZE = 20;
 const LOAD_MORE_STEP = 100;
@@ -39,6 +44,8 @@ export default function AdminUsersPage() {
     defaults: { status: "active", page: 0, pageSize: INITIAL_PAGE_SIZE },
   });
   const archiveView = filters.archive === "1";
+  const { rows: deletedRows } = useDeletedAccountRows();
+  const [deletedRange, setDeletedRange] = useState<DeletedRange | undefined>(undefined);
   const [notifyOpen, setNotifyOpen] = useState(false);
   const { data, isLoading, isFetching, isError, error } = useAdminUsers({ ...filters, search: search || undefined });
   const { data: stats } = useAdminStats();
@@ -50,8 +57,9 @@ export default function AdminUsersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const handleFilterChange = (next: AdminUserFilters) => {
-    setFilters({ ...next, page: 0, pageSize: INITIAL_PAGE_SIZE });
+  // A card toggles its own filter; leaving the "Deleted" view on the way.
+  const toggleQuick = (patch: Partial<AdminUserFilters>) => {
+    setFilters({ ...filters, archive: undefined, ...patch, page: 0, pageSize: INITIAL_PAGE_SIZE });
   };
 
   const loadMore = () => {
@@ -64,12 +72,99 @@ export default function AdminUsersPage() {
   return (
     <div className="space-y-4">
       {stats && (
-        <StatCardGrid>
-          <StatCard icon={Users} label="Ҳамаи корбарон" value={stats.totalUsers} />
-          <StatCard icon={UserPlus} label="Имрӯз пайваст шуданд" value={stats.usersJoinedToday} accent="blue" />
-          <StatCard icon={CalendarDays} label="Ин моҳ пайваст шуданд" value={stats.usersJoinedThisMonth} accent="amber" />
-          <StatCard icon={Bell} label="Push фаъол доранд" value={stats.totalPushEnabledUsers} accent="sky" />
-        </StatCardGrid>
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex-1 min-w-0">
+            {archiveView ? (
+              // "Deleted" view: the cards count deleted accounts instead; no push card.
+              <StatCardGrid cols={3}>
+                <StatCard
+                  icon={UserX}
+                  label="Ҳамаи нестшудаҳо"
+                  value={deletedRows.length}
+                  accent="rose"
+                  active={!deletedRange}
+                  onClick={() => setDeletedRange(undefined)}
+                />
+                <StatCard
+                  icon={UserX}
+                  label="Имрӯз нест шуданд"
+                  value={deletedRows.filter((r) => isInDeletedRange(r.date, "today")).length}
+                  accent="rose"
+                  active={deletedRange === "today"}
+                  onClick={() => setDeletedRange(deletedRange === "today" ? undefined : "today")}
+                />
+                <StatCard
+                  icon={CalendarDays}
+                  label="Ин моҳ нест шуданд"
+                  value={deletedRows.filter((r) => isInDeletedRange(r.date, "month")).length}
+                  accent="amber"
+                  active={deletedRange === "month"}
+                  onClick={() => setDeletedRange(deletedRange === "month" ? undefined : "month")}
+                />
+              </StatCardGrid>
+            ) : (
+              <StatCardGrid>
+                <StatCard
+                  icon={Users}
+                  label="Ҳамаи корбарон"
+                  value={stats.totalUsers}
+                  active={!archiveView && filters.status === "all" && !filters.joined && !filters.pushEnabled}
+                  onClick={() => setFilters({ status: "all", page: 0, pageSize: INITIAL_PAGE_SIZE })}
+                />
+                <StatCard
+                  icon={UserPlus}
+                  label="Имрӯз пайваст шуданд"
+                  value={stats.usersJoinedToday}
+                  accent="blue"
+                  active={!archiveView && filters.joined === "today"}
+                  onClick={() => toggleQuick({ joined: filters.joined === "today" ? undefined : "today" })}
+                />
+                <StatCard
+                  icon={CalendarDays}
+                  label="Ин моҳ пайваст шуданд"
+                  value={stats.usersJoinedThisMonth}
+                  accent="amber"
+                  active={!archiveView && filters.joined === "month"}
+                  onClick={() => toggleQuick({ joined: filters.joined === "month" ? undefined : "month" })}
+                />
+                <StatCard
+                  icon={Bell}
+                  label="Push фаъол доранд"
+                  value={stats.totalPushEnabledUsers}
+                  accent="sky"
+                  active={!archiveView && filters.pushEnabled === "1"}
+                  onClick={() => toggleQuick({ pushEnabled: filters.pushEnabled === "1" ? undefined : "1" })}
+                />
+              </StatCardGrid>
+            )}
+          </div>
+          {/* The only filters the cards don't already cover. */}
+          <div className="flex lg:flex-col gap-2 lg:w-44">
+            {([
+              { key: "active", label: "Фаъол", on: !archiveView && (filters.status ?? "active") === "active" },
+              { key: "deleted", label: "Нестшудаҳо", on: archiveView },
+            ] as const).map((b) => (
+              <button
+                key={b.key}
+                type="button"
+                aria-pressed={b.on}
+                onClick={() =>
+                  b.key === "deleted"
+                    ? setFilters({ ...filters, archive: "1", page: 0 })
+                    : setFilters({ status: "active", page: 0, pageSize: INITIAL_PAGE_SIZE })
+                }
+                className={cn(
+                  "flex-1 h-12 lg:h-auto rounded-md border px-4 text-sm font-semibold transition-colors",
+                  b.on
+                    ? "border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500"
+                    : "border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700",
+                )}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 overflow-hidden">
@@ -85,19 +180,11 @@ export default function AdminUsersPage() {
               </Button>
             )}
           </div>
-          <UserFilterBar
-            filters={filters}
-            onChange={handleFilterChange}
-            archiveView={archiveView}
-            onArchiveViewChange={(next) =>
-              setFilters({ ...filters, archive: next ? "1" : undefined, page: 0 })
-            }
-          />
         </div>
 
         <div className="p-4 pt-3">
         {archiveView ? (
-          <DeletedAccountsArchive />
+          <DeletedAccountsArchive range={deletedRange} />
         ) : isError ? (
           <p className="py-16 text-center text-sm font-semibold text-rose-500 dark:text-rose-400">
             Хатогӣ ҳангоми боркунӣ: {error instanceof Error ? error.message : "номаълум"}

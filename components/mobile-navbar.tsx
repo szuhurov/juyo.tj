@@ -83,7 +83,7 @@ export function MobileNavbar() {
     // the bar ITSELF, so the content doesn't touch the home indicator on iPhone.
     <nav
       data-nosnippet
-      className="fixed bottom-0 left-0 right-0 z-[5000] md:hidden bg-white dark:bg-zinc-800 border-t border-hairline dark:border-zinc-800"
+      className="fixed bottom-0 left-0 right-0 z-[45] md:hidden bg-white dark:bg-zinc-800 border-t border-hairline dark:border-zinc-800"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div>

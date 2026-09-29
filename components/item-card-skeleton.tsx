@@ -5,7 +5,7 @@
  *   feed    → ItemFeedCard (home): 16:10 image, no left padding (pr-3 pt-1 pb-1),
  *             title+date, one description line (-mt-0.5), then the type label
  *             with the size-6/7 arrow circle (mt-0.5 mb-0.5).
- *   profile → ItemCard (profile): white card with shadow, 4:3 image,
+ *   profile → ItemCard (profile): white card, no shadow (like the app), 4:3 image,
  *             px-3.5 pt-1.5 pb-2, description mt-0.5, then the rounded
  *             canvas pill (mt-1 -mx-1 p-0.5 pl-3) with the size-7/8 circle.
  *
@@ -26,7 +26,7 @@ export function ItemCardSkeleton({
     return (
       <div
         aria-hidden
-        className="flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none overflow-hidden"
+        className="flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 overflow-hidden"
       >
         <div className={cn("aspect-[4/3] w-full rounded-md", BLOCK)} />
         <div className="px-3.5 pt-1.5 pb-2 flex flex-col flex-1">

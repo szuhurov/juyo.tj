@@ -50,14 +50,56 @@ export default function AdminPostsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  const applyCard = (patch: Partial<AdminPostFilters>) =>
+    setFilters({ ...filters, archive: undefined, status: "active", ...patch, page: 0 });
+
   return (
     <div className="space-y-4">
       {stats && (
         <StatCardGrid>
-          <StatCard icon={PackageSearch} label="Гумшуда" value={stats.totalLostItems} accent="rose" />
-          <StatCard icon={PackageCheck} label="Ёфтшуда" value={stats.totalFoundItems} accent="amber" />
-          <StatCard icon={Clock} label="Дар навбати тасдиқ" value={stats.pendingModerationCount} accent="sky" />
-          <StatCard icon={CheckCircle2} label="Ҳалшуда" value={stats.totalResolvedItems} accent="emerald" />
+          {/* The cards filter the list; the tabs/dropdowns below read the same filters. */}
+          <StatCard
+            icon={PackageSearch}
+            label="Гумшуда"
+            value={stats.totalLostItems}
+            accent="rose"
+            active={!archiveView && filters.type === "lost"}
+            onClick={() => applyCard({ type: filters.type === "lost" ? undefined : "lost" })}
+          />
+          <StatCard
+            icon={PackageCheck}
+            label="Ёфтшуда"
+            value={stats.totalFoundItems}
+            accent="amber"
+            active={!archiveView && filters.type === "found"}
+            onClick={() => applyCard({ type: filters.type === "found" ? undefined : "found" })}
+          />
+          <StatCard
+            icon={Clock}
+            label="Дар навбати тасдиқ"
+            value={stats.pendingModerationCount}
+            accent="sky"
+            active={!archiveView && filters.moderation_status === "pending"}
+            onClick={() =>
+              applyCard({
+                moderation_status: filters.moderation_status === "pending" ? undefined : "pending",
+                resolved: undefined,
+              })
+            }
+          />
+          <StatCard
+            icon={CheckCircle2}
+            label="Ҳалшуда"
+            value={stats.totalResolvedItems}
+            accent="emerald"
+            active={!archiveView && filters.resolved === "true"}
+            onClick={() =>
+              applyCard({
+                resolved: filters.resolved === "true" ? undefined : "true",
+                moderation_status: filters.moderation_status === "pending" ? undefined : filters.moderation_status,
+              })
+            }
+          />
         </StatCardGrid>
       )}
 
