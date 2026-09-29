@@ -12,7 +12,7 @@
  */
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import { HomeFiltersSkeleton, QuickActionsSkeleton } from "@/components/home-filters-skeleton";
-import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
+import { HOME_GRID_CLASS } from "@/lib/ui-constants";
 
 // BUG FOUND (user request: "the Taxi row has no skeleton"): this row
 // (QUICK_ACTIONS in home-client.tsx) sits not in the fixed bar
@@ -24,7 +24,7 @@ export default function MainLoading() {
   return (
     <div className="pb-18 min-h-screen bg-canvas">
       <HomeFiltersSkeleton />
-      <div className={`w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5 ${HOME_CONTENT_PT}`}>
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5">
         <QuickActionsSkeleton />
         <div className={HOME_GRID_CLASS}>
           {[...Array(8)].map((_, i) => (

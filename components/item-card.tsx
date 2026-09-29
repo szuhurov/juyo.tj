@@ -175,7 +175,7 @@ export function ItemCard({
           )}
 
           {item.similarity_score !== undefined && (
-            <span className="absolute top-2 left-2 mt-8 inline-flex items-center rounded-full px-2.5 py-1 text-[9px] font-medium bg-emerald-600 text-white">
+            <span className="absolute top-2 left-2 mt-8 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-primary text-primary-foreground">
               {Math.round(item.similarity_score * 100)}% {t("matchForYourImage")}
             </span>
           )}
@@ -186,17 +186,17 @@ export function ItemCard({
                 type="button"
                 onClick={handleEdit}
                 aria-label={t("edit")}
-                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                className="size-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-zinc-700 dark:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
               >
-                <Pencil className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
+                <Pencil className="size-4" />
               </button>
               <button
                 type="button"
                 onClick={handleDelete}
                 aria-label={t("delete")}
-                className="w-7 h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                className="size-9 flex items-center justify-center rounded-full bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5 min-[1084px]:w-4 min-[1084px]:h-4 min-[1920px]:w-[18px] min-[1920px]:h-[18px]" />
+                <Trash2 className="size-4" />
               </button>
             </div>
           )}
@@ -239,10 +239,10 @@ export function ItemCard({
           {approvedFlash && (
             <div className="absolute inset-0 z-30 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-2">
               <div className="bg-white/95 dark:bg-zinc-800/95 px-3 py-2.5 rounded-md flex flex-col items-center text-center gap-1.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                <div className="w-8 h-8 rounded-full bg-found-soft flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-found" />
                 </div>
-                <span className="text-[10px] font-medium text-emerald-600 leading-tight block">
+                <span className="text-xs font-semibold text-found leading-tight block">
                   {t("postApproved")}
                 </span>
               </div>
@@ -262,7 +262,7 @@ export function ItemCard({
                 <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center animate-pulse">
                   <Clock className="w-4 h-4 text-amber-500" />
                 </div>
-                <span className="text-[10px] font-medium text-amber-600 leading-tight block">
+                <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 leading-tight block">
                   {t("imageModeration.pending")}
                 </span>
               </div>
@@ -275,7 +275,7 @@ export function ItemCard({
                 <div className="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center">
                   <ShieldAlert className="w-4 h-4 text-red-600" />
                 </div>
-                <span className="text-[10px] font-medium text-red-600 leading-tight block">
+                <span className="text-xs font-semibold text-destructive dark:text-red-400 leading-tight block">
                   {t("imageModeration.rejected")}
                 </span>
               </div>
@@ -288,14 +288,14 @@ export function ItemCard({
             <h3 className="min-w-0 flex-1 truncate font-semibold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
               {item.title || item.category}
             </h3>
-            <span className="shrink-0 text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 dark:text-zinc-500">
+            <span className="shrink-0 text-xs font-medium text-muted-foreground">
               {exactDate}
             </span>
           </div>
 
           {/* Description — one line, see ItemFeedCard (both cards look the same). */}
           {item.description && (
-            <p className="mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <p className="mt-0.5 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
               {item.description}
             </p>
           )}
@@ -309,16 +309,16 @@ export function ItemCard({
                 "Found" are distinguishable and readable at a glance. */}
             <span
               className={cn(
-                "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-medium",
+                "min-w-0 truncate text-[13px] font-semibold",
                 item.type === "lost"
-                  ? "text-rose-700 dark:text-rose-400"
-                  : "text-emerald-700 dark:text-emerald-400",
+                  ? "text-lost"
+                  : "text-found",
               )}
             >
               {item.type === "lost" ? t("lost") : t("found")}
             </span>
-            <span className="shrink-0 grid place-items-center size-7 min-[1084px]:size-8 rounded-full bg-emerald-500 shadow-[0_2px_8px_-2px_rgba(16,185,129,0.55)] dark:shadow-none">
-              <ArrowRight className="w-[17px] h-[17px] min-[1084px]:w-[19px] min-[1084px]:h-[19px] text-white" />
+            <span className="shrink-0 grid place-items-center size-7 min-[1084px]:size-8 rounded-full bg-primary text-primary-foreground">
+              <ArrowRight className="w-[17px] h-[17px] min-[1084px]:w-[19px] min-[1084px]:h-[19px]" />
             </span>
           </span>
         </div>
@@ -347,7 +347,7 @@ export function ItemCard({
             <Button
               type="button"
               variant="destructive"
-              className="flex-1 h-12 rounded-[var(--radius-control)] tracking-widest text-[10px] text-white"
+              className="flex-1 h-12 rounded-[var(--radius-control)] text-sm"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -360,7 +360,7 @@ export function ItemCard({
             <Button
               type="button"
               variant="outline"
-              className="flex-1 h-12 rounded-[var(--radius-control)] tracking-widest text-[10px] border-slate-200 dark:border-zinc-700"
+              className="flex-1 h-12 rounded-[var(--radius-control)] text-sm border-slate-200 dark:border-zinc-700"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

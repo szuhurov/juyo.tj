@@ -12,8 +12,8 @@ import {
 import { useLanguage } from "@/lib/language-context";
 import { ItemService } from "@/lib/services/item-service";
 import { toast } from "sonner";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { VisualSearchScanUI } from "@/components/visual-search-scan-ui";
 
 interface VisualSearchModalProps {
   isOpen: boolean;
@@ -27,7 +27,6 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [scanProgress, setScanProgress] = useState(0);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -43,21 +42,9 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
 
   const handleSearch = async (file: File) => {
     setIsSearching(true);
-    setScanProgress(0);
-
-    // Progress animation
-    const interval = setInterval(() => {
-      setScanProgress(prev => (prev < 95 ? prev + Math.random() * 5 : prev));
-    }, 300);
 
     try {
       const results = await ItemService.visualSearch(file);
-
-      // Show the result immediately (no artificial delay)
-      setScanProgress(100);
-
-      // Short wait just to let the animation finish
-      await new Promise(resolve => setTimeout(resolve, 400));
 
       onResults(results);
       onClose();
@@ -72,7 +59,6 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
       toast.error(t('visualSearchError') || "Хатогӣ ҳангоми ҷустуҷӯи визуалӣ");
       onClose();
     } finally {
-      clearInterval(interval);
       setIsSearching(false);
     }
   };
@@ -106,128 +92,20 @@ export function VisualSearchModal({ isOpen, onClose, onResults, directFile }: Vi
             <DialogDescription>Scanning your image to find matches</DialogDescription>
           </DialogHeader>
 
-          <div className="relative group px-4 sm:px-0">
-            {/* Soft glow around the container (Glassy Glow) */}
-            <div className="absolute -inset-0.5 bg-emerald-500/20 rounded-md blur-sm opacity-50"></div>
-
-            <div className={cn(
-              "relative rounded-md overflow-hidden border border-white/10 shadow-2xl transition-all duration-700",
-              (isSearching || scanProgress === 100)
-                ? (scanProgress === 100 ? "bg-emerald-950/60 backdrop-blur-xl" : "bg-emerald-950/70 backdrop-blur-xl")
-                : "bg-emerald-950/95"
-            )}>
-              {(isSearching || scanProgress === 100) ? (
-                <div className="flex flex-col items-center">
-                  {/* AI visualization section */}
-                  <div className="relative w-full aspect-square overflow-hidden">
-                    {previewUrl && (
-                      <>
-                        {/* Blurred background for empty spaces */}
-                        <Image
-                          src={previewUrl}
-                          alt=""
-                          fill
-                          className="object-cover blur-3xl opacity-40 scale-110"
-                        />
-                        <Image
-                          src={previewUrl}
-                          alt="Analyzing"
-                          fill
-                          className={cn(
-                            "object-contain transition-opacity duration-700 relative z-10",
-                            scanProgress === 100 ? "opacity-40" : "opacity-60"
-                          )}
-                        />
-                      </>
-                    )}
-
-                    {/* Laser scanner */}
-                    {scanProgress < 100 && (
-                      <div className="absolute inset-0 z-10">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast"></div>
-                        <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent h-1/2 animate-scan-overlay"></div>
-                      </div>
-                    )}
-
-                    {/* AI dots (Neural Grid) */}
-                    <div
-                      className={cn(
-                        "absolute inset-0 transition-opacity duration-700 animate-grid-scan",
-                        scanProgress === 100 ? "opacity-40" : "opacity-90"
-                      )}
-                      style={{
-                        backgroundImage: "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
-                        backgroundSize: "25px 25px"
-                      }}
-                    ></div>
-
-                    {/* Timer & Counter Overlay */}
-                    {scanProgress < 100 && (
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-md flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-[10px] font-medium text-white tracking-widest whitespace-nowrap">
-                          {t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="p-20 flex items-center justify-center bg-emerald-950">
-                  <div className="w-12 h-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
-                </div>
-              )}
-            </div>
+          {/* Same scan screen as the app (VisualSearchScanUI): ring + photo + steps. */}
+          {/* Ring also capped by viewport height, so the card never touches the top/bottom edges. */}
+          <div className="mx-4 sm:mx-0 max-h-[calc(100dvh-32px)] overflow-y-auto rounded-2xl bg-canvas px-5 py-6 shadow-[var(--shadow-3)]">
+            <VisualSearchScanUI
+              photoUrl={previewUrl}
+              size="min(calc(100vw - 120px), 220px, 30dvh)"
+              footer={
+                <p className="mt-4 text-xs font-medium text-muted-foreground tabular-nums">
+                  {t('ai_steps.seconds_left').replace('%{count}', elapsedSeconds.toString())}
+                </p>
+              }
+            />
           </div>
         </DialogPrimitive.Content>
-
-        <style jsx global>{`
-          @keyframes scan-fast {
-            0% { top: 0; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-          }
-          @keyframes scan-overlay {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(200%); }
-          }
-          @keyframes gemini-gradient {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          .animate-scan-fast {
-            animation: scan-fast 1.5s linear infinite;
-          }
-          .animate-scan-overlay {
-            animation: scan-overlay 2.5s ease-in-out infinite;
-          }
-          .animate-gemini-gradient {
-            animation: gemini-gradient 3s ease infinite;
-          }
-          @keyframes pulse-data {
-            0%, 100% { opacity: 0; transform: scale(0.5); }
-            50% { opacity: 0.8; transform: scale(1.2); }
-          }
-          @keyframes slow-pan {
-            0% { background-position: 0% 0%; }
-            100% { background-position: 100% 100%; }
-          }
-          .animate-pulse-data {
-            animation: pulse-data 3s ease-in-out infinite;
-          }
-          .animate-slow-pan {
-            animation: slow-pan 60s linear infinite;
-          }
-          @keyframes grid-scan {
-            0% { background-position: 0% 0%; }
-            100% { background-position: 25px 25px; }
-          }
-          .animate-grid-scan {
-            animation: grid-scan 1.5s linear infinite;
-          }
-        `}</style>
       </DialogPortal>
     </Dialog>
   );

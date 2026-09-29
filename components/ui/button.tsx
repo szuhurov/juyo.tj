@@ -9,7 +9,7 @@ import { cva, type VariantProps } from "class-variance-authority" // For button 
 import { cn } from "@/lib/utils" // This is for CSS classes
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:border-ring border border-transparent disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-control)] text-sm font-semibold transition-[transform,background-color,box-shadow,color] duration-[var(--duration-fast)] ease-[var(--ease-out-soft)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:border-ring border border-transparent disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -32,7 +32,7 @@ const buttonVariants = cva(
       size: {
         default: "h-11 px-4 py-2",
         sm: "h-10 rounded-[var(--radius-control)] px-3 text-xs",
-        lg: "h-11 rounded-[var(--radius-control)] px-8",
+        lg: "h-12 rounded-[var(--radius-control)] px-8 text-base",
         icon: "h-11 w-11",
       },
     },

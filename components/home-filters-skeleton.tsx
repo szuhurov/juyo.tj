@@ -6,18 +6,23 @@
  *   row 1 — All / Found / Lost pills (rounded-md) + search field (flex-1)
  *           + the square filter button on the right
  *   row 2 — category tiles (5.5 per screen on mobile, fixed widths from md):
- *           square icon at 76% width + one-line label
- *   QuickActionsSkeleton — the place tiles (title/desc column + emoji)
+ *           square icon at 76% width (no label placeholder — owner request)
+ *   QuickActionsSkeleton — the place tiles (title/desc lines + icon, no fill:
+ *           the real tiles have no background)
  */
 import { Skeleton } from "@/components/ui/skeleton";
 
-const CONTROL_H = "h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px]";
+const CONTROL_H = "h-9 min-[1084px]:h-10 min-[1920px]:h-[42px]";
 const TYPE_WIDTHS = ["w-12 md:w-14", "w-20 md:w-24", "w-20 md:w-24"];
 const CATEGORY_COUNT = 9;
 
 export function HomeFiltersSkeleton() {
   return (
-    <div className="fixed top-12 sm:top-16 left-0 right-0 z-40 bg-canvas" aria-hidden>
+    // In normal flow (not fixed like the real bar): whatever follows — the
+    // place-tiles skeleton — then sits right under it at every breakpoint,
+    // instead of depending on a guessed top padding (it hid under the
+    // category row on desktop).
+    <div className="bg-canvas" aria-hidden>
       <div className="w-full max-w-7xl mx-auto pl-2.5 sm:pl-4">
         <div className="w-full pt-0.5 pb-1.5">
           <div className="flex items-center gap-1.5">
@@ -32,10 +37,11 @@ export function HomeFiltersSkeleton() {
             {Array.from({ length: CATEGORY_COUNT }).map((_, i) => (
               <div
                 key={i}
-                className="shrink-0 flex flex-col items-center w-[calc((100vw-20px)/5.5)] md:w-20 min-[1503px]:w-24"
+                className="shrink-0 flex flex-col items-center w-[calc((100vw-20px)/5.5)] md:w-20 min-[1503px]:w-24 lg:flex-1"
               >
-                <Skeleton className="w-[76%] md:w-full aspect-square rounded-md" />
-                <Skeleton className="mt-1 h-2.5 w-3/5 rounded" />
+                <Skeleton className="w-[76%] md:w-full lg:max-w-[72px] aspect-square rounded-md" />
+                {/* Room for the real label (not drawn — owner request). */}
+                <div className="h-3" />
               </div>
             ))}
           </div>
@@ -45,7 +51,7 @@ export function HomeFiltersSkeleton() {
   );
 }
 
-const QUICK_ACTION_WIDTHS = ["w-24", "w-28", "w-32", "w-28", "w-32", "w-28"];
+const QUICK_ACTION_WIDTHS = ["w-14", "w-16", "w-20", "w-16", "w-20", "w-16", "w-14"];
 
 /** The place tiles row — same padding/height as the real buttons
  *  (px-3 py-1.5, the place icon next to a title + description column). */
@@ -53,10 +59,13 @@ export function QuickActionsSkeleton() {
   return (
     <div className="mb-2.5 flex gap-1.5 overflow-hidden mr-[-10px] sm:mr-[-16px] lg:mr-[-20px]" aria-hidden>
       {QUICK_ACTION_WIDTHS.map((w, i) => (
-        <Skeleton
-          key={i}
-          className={`shrink-0 ${w} h-[45px] min-[1503px]:h-[58px] min-[1920px]:h-[60px] rounded-md`}
-        />
+        <div key={i} className="shrink-0 flex items-center gap-3 px-3 py-1.5 min-[1503px]:py-2.5">
+          <div className="flex flex-col gap-1.5">
+            <Skeleton className={`h-3 ${w} rounded`} />
+            <Skeleton className="h-2.5 w-20 rounded" />
+          </div>
+          <Skeleton className="w-[30px] h-[30px] min-[1503px]:w-8 min-[1503px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 rounded-md" />
+        </div>
       ))}
     </div>
   );

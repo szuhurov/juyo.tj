@@ -22,6 +22,10 @@ export function ItemDetailsSkeleton() {
       aria-hidden
       className="min-h-screen bg-canvas mx-auto max-w-6xl md:pt-8 md:px-4 -mb-20 pb-20 md:mb-0 md:pb-0"
     >
+      {/* Desktop back button row (h-10 + mb-3), see item-details-client. */}
+      <div className="hidden md:flex items-center h-10 mb-3">
+        <Skeleton className="h-4 w-24 rounded" />
+      </div>
       <div className="flex flex-col md:grid md:grid-cols-2 gap-0 md:gap-12 md:items-start relative">
         <div className="w-full h-[100vw] md:h-auto md:aspect-square">
           <Skeleton className="w-full h-full rounded-none md:rounded-md" />
@@ -32,7 +36,7 @@ export function ItemDetailsSkeleton() {
             <div className="w-10 h-1.5 rounded-full bg-slate-300 dark:bg-zinc-700" />
           </div>
 
-          <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100 dark:border-zinc-800">
+          <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-3">
               <Skeleton className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 rounded-full" />
               <div className="flex flex-col gap-1.5">
@@ -40,7 +44,7 @@ export function ItemDetailsSkeleton() {
                 <Skeleton className="h-3 w-16 rounded" />
               </div>
             </div>
-            <Skeleton className="h-3.5 w-10 rounded" />
+            <Skeleton className="mr-3 h-3.5 w-10 rounded" />
           </div>
 
           <div className="flex items-center justify-between gap-3 mb-3">

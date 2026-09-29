@@ -9,6 +9,7 @@ import { unstable_cache } from "next/cache";
 import { HomeOnlyHeader, MainContent, SiteFooter } from "@/components/home-only-header";
 import { MobileNavbar } from "@/components/mobile-navbar";
 import { HomeProvider } from "@/lib/home-context";
+import { AddLauncherProvider } from "@/components/add-photo-launcher";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { BlockedAccountScreen } from "@/components/blocked-account-screen";
 
@@ -77,6 +78,7 @@ export default async function MainLayout({
 
   return (
     <HomeProvider>
+    <AddLauncherProvider>
     <div className="flex flex-col min-h-screen bg-canvas">
       {/* Site header (Header) - only on the home page (user request: other
           pages don't need duplicate search/navigation). */}
@@ -91,6 +93,7 @@ export default async function MainLayout({
       {/* Mobile navbar (Bottom Navigation) - Persistent UI */}
       <MobileNavbar />
     </div>
+    </AddLauncherProvider>
     </HomeProvider>
   );
 }

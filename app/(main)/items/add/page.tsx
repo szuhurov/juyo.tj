@@ -35,11 +35,14 @@ import {
   ArrowLeft,
   ShieldAlert,
   CheckCircle2,
-  Camera,
-  Image as ImageIcon,
+  ImageOff,
   ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
+import { VisualSearchScanUI } from "@/components/visual-search-scan-ui";
+import { PhotoSourceSheet } from "@/components/photo-source-sheet";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PENDING_ADD_FILES_EVENT, takePendingAddFiles } from "@/lib/pending-add-files";
 import { cn, stripDocumentNumbers } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -124,7 +127,7 @@ function AddItemForm() {
   // "Ман сурат надорам" — lets the user skip photos entirely. A category
   // icon stands in for the image on the feed card, and search falls back
   // to title/description only (no visual-search vector to build).
-  const [noPhoto, setNoPhoto] = useState(false);
+  const [noPhotoAdviceOpen, setNoPhotoAdviceOpen] = useState(false);
 
   // Privacy protection editor — not a separate AI call, it uses the same
   // result from the already-run final_check (is_document + privacy_regions).
@@ -240,12 +243,28 @@ function AddItemForm() {
     setImages(newImages);
     const newPreviews = files.map((file) => URL.createObjectURL(file));
     setPreviews((prev) => [...prev, ...newPreviews]);
-    setNoPhoto(false);
 
     // Reset AI state when images change
     setModerationStatus("idle");
   };
 
+
+  useEffect(() => {
+    const consume = () => {
+      const files = takePendingAddFiles();
+      if (!files) return;
+      setImages(files);
+      setPreviews((prev) => {
+        prev.forEach((url) => URL.revokeObjectURL(url));
+        return files.map((file) => URL.createObjectURL(file));
+      });
+      setStep(1);
+      setModerationStatus("idle");
+    };
+    consume();
+    window.addEventListener(PENDING_ADD_FILES_EVENT, consume);
+    return () => window.removeEventListener(PENDING_ADD_FILES_EVENT, consume);
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     addNewFiles(Array.from(e.target.files || []));
@@ -266,7 +285,7 @@ function AddItemForm() {
   // Validate steps before moving forward
   const nextStep = () => {
     if (step === 1) {
-      if (images.length === 0 && !noPhoto) {
+      if (images.length === 0) {
         toast.error(t("pickImage"));
         return;
       }
@@ -677,9 +696,9 @@ function AddItemForm() {
               className={cn(
                 "h-full flex-1 transition-all duration-700 ease-in-out",
                 stepIndex > i
-                  ? "bg-emerald-500"
+                  ? "bg-action"
                   : stepIndex === i
-                    ? "bg-emerald-400"
+                    ? "bg-action/60"
                     : "bg-slate-100 dark:bg-zinc-700",
               )}
             />
@@ -691,7 +710,7 @@ function AddItemForm() {
           {step === 1 && (
             <div className="space-y-6 w-full pt-4">
               <div className="text-center space-y-1 mb-8">
-                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-action">
                   {t("pickImage")}
                 </h2>
               </div>
@@ -699,9 +718,9 @@ function AddItemForm() {
                 {images.length < 4 && (
                   <div
                     onClick={() => setShowPhotoChoice(true)}
-                    className="aspect-square flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-700 transition-all group order-first"
+                    className="aspect-square flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-zinc-700 rounded-md bg-white dark:bg-zinc-800 cursor-pointer hover:border-action/60 transition-all group order-first"
                   >
-                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full bg-canvas dark:bg-zinc-700 flex items-center justify-center text-slate-400 dark:text-zinc-500 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                    <div className="w-11 h-11 min-[1084px]:w-12 min-[1084px]:h-12 rounded-full bg-canvas dark:bg-zinc-700 flex items-center justify-center text-slate-400 dark:text-zinc-500 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                       <Plus className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6" strokeWidth={3} />
                     </div>
                   </div>
@@ -732,28 +751,6 @@ function AddItemForm() {
                 ))}
               </div>
 
-              {images.length === 0 && (
-                <div className="flex flex-col items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNoPhoto((prev) => !prev)}
-                    className={cn(
-                      "text-xs min-[1084px]:text-sm font-medium tracking-wide px-4 py-2 rounded-md transition-all",
-                      noPhoto
-                        ? "bg-emerald-500 text-white"
-                        : "text-slate-500 dark:text-zinc-400 hover:text-emerald-600",
-                    )}
-                  >
-                    {t("noPhotoBtn")}
-                  </button>
-                  {noPhoto && (
-                    <p className="text-[11px] min-[1084px]:text-xs text-slate-400 text-center max-w-xs px-4">
-                      {t("noPhotoNote")}
-                    </p>
-                  )}
-                </div>
-              )}
-
               {/* Hidden Inputs */}
               <input
                 type="file"
@@ -764,47 +761,26 @@ function AddItemForm() {
                 onChange={handleImageChange}
               />
 
-              <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
-                <DialogContent className="max-w-[320px] rounded-md p-5 pt-11 border-none shadow-2xl gap-4 focus:ring-0 focus:outline-none">
-                  <DialogHeader className="mb-2">
-                    <DialogTitle className="text-lg min-[1084px]:text-xl min-[1920px]:text-2xl tracking-tight text-center text-emerald-600 dark:text-emerald-400">
-                      {t("choose_photo_method")}
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      variant="outline"
-                      className="flex flex-col gap-2 h-24 rounded-md bg-white border border-hairline dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
-                      onClick={() => {
-                        setShowPhotoChoice(false);
-                        setShowCameraCapture(true);
-                      }}
-                    >
-                      <div className="w-10 h-10 rounded-md bg-blue-500 flex items-center justify-center text-white transition-all">
-                        <Camera className="w-5 h-5" />
-                      </div>
-                      <span className="text-[11px] font-medium tracking-wide text-slate-500">
-                        {t("camera")}
-                      </span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex flex-col gap-2 h-24 rounded-md bg-white border border-hairline dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
-                      onClick={() => {
-                        setShowPhotoChoice(false);
-                        galleryInputRef.current?.click();
-                      }}
-                    >
-                      <div className="w-10 h-10 rounded-md bg-orange-500 flex items-center justify-center text-white transition-all">
-                        <ImageIcon className="w-5 h-5" />
-                      </div>
-                      <span className="text-[11px] font-medium tracking-wide text-slate-500">
-                        {t("gallery")}
-                      </span>
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <PhotoSourceSheet
+                open={showPhotoChoice}
+                onOpenChange={setShowPhotoChoice}
+                onCamera={() => setShowCameraCapture(true)}
+                onGallery={() => galleryInputRef.current?.click()}
+                onNoPhoto={() => setNoPhotoAdviceOpen(true)}
+              />
+              <ConfirmDialog
+                open={noPhotoAdviceOpen}
+                onOpenChange={setNoPhotoAdviceOpen}
+                icon={ImageOff}
+                title={t("addNoPhotoTitle")}
+                description={t("addNoPhotoDesc")}
+                confirmLabel={t("addNoPhotoConfirm")}
+                cancelLabel={t("cancel")}
+                onConfirm={() => {
+                  setNoPhotoAdviceOpen(false);
+                  galleryInputRef.current?.click();
+                }}
+              />
 
               <CameraCaptureModal
                 isOpen={showCameraCapture}
@@ -818,7 +794,7 @@ function AddItemForm() {
           {step === 2 && (
             <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1">
-                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-action">
                   {t("what_happened")}
                 </h2>
               </div>
@@ -836,46 +812,46 @@ function AddItemForm() {
                 <div className="relative">
                   <Label
                     htmlFor="lost"
-                    className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-action cursor-pointer transition-all group"
                   >
                     <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                       🔍
                     </div>
                     <div className="flex-1">
-                      <span className="block font-semibold text-base min-[1084px]:text-lg leading-snug text-red-600 dark:text-red-500">
+                      <span className="block font-semibold text-base min-[1084px]:text-lg leading-snug text-lost">
                         {t("lost")}
                       </span>
-                      <span className="text-slate-400 text-[13px] min-[1084px]:text-sm font-medium">
+                      <span className="text-muted-foreground text-[13px] min-[1084px]:text-sm font-medium">
                         {t("lost_desc")}
                       </span>
                     </div>
                     <RadioGroupItem
                       value="lost"
                       id="lost"
-                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-action data-[state=checked]:bg-action [&_span]:hidden transition-colors"
                     />
                   </Label>
                 </div>
                 <div className="relative">
                   <Label
                     htmlFor="found"
-                    className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                    className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-action cursor-pointer transition-all group"
                   >
                     <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                       🎁
                     </div>
                     <div className="flex-1">
-                      <span className="block font-semibold text-base min-[1084px]:text-lg leading-snug text-emerald-600 dark:text-emerald-500">
+                      <span className="block font-semibold text-base min-[1084px]:text-lg leading-snug text-found">
                         {t("found")}
                       </span>
-                      <span className="text-slate-400 text-[13px] min-[1084px]:text-sm font-medium">
+                      <span className="text-muted-foreground text-[13px] min-[1084px]:text-sm font-medium">
                         {t("found_desc")}
                       </span>
                     </div>
                     <RadioGroupItem
                       value="found"
                       id="found"
-                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                      className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-action data-[state=checked]:bg-action [&_span]:hidden transition-colors"
                     />
                   </Label>
                 </div>
@@ -887,7 +863,7 @@ function AddItemForm() {
           {step === 6 && (
             <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1">
-                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-action">
                   {formData.type === "lost"
                     ? t("addItemLocationStep.titleLost")
                     : formData.type === "found"
@@ -927,7 +903,7 @@ function AddItemForm() {
                   <div key={opt.value} className="relative">
                     <Label
                       htmlFor={`loc-${opt.value}`}
-                      className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-emerald-500 cursor-pointer transition-all group"
+                      className="flex items-center gap-3 rounded-md bg-white dark:bg-zinc-800 p-4 min-[1084px]:p-5 ring-2 ring-transparent has-[button[data-state=checked]]:ring-action cursor-pointer transition-all group"
                     >
                       <div className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center text-2xl min-[1084px]:text-3xl shrink-0">
                         {opt.emoji}
@@ -940,7 +916,7 @@ function AddItemForm() {
                       <RadioGroupItem
                         value={opt.value}
                         id={`loc-${opt.value}`}
-                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-emerald-500 data-[state=checked]:bg-emerald-500 [&_span]:hidden transition-colors"
+                        className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 shrink-0 border-2 border-slate-200 dark:border-zinc-600 data-[state=checked]:border-action data-[state=checked]:bg-action [&_span]:hidden transition-colors"
                       />
                     </Label>
                   </div>
@@ -960,8 +936,8 @@ function AddItemForm() {
                       className={cn(
                         "shrink-0 h-9 px-3.5 rounded-md text-sm font-semibold cursor-pointer transition-colors",
                         city === id
-                          ? "bg-emerald-500 text-white"
-                          : "bg-[#f2f6fa] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-tile text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
                       )}
                     >
                       {cityLabel(id, locale)}
@@ -976,76 +952,26 @@ function AddItemForm() {
           {step === 3 && (
             <div className="space-y-6 text-center max-w-5xl mx-auto w-full py-2 flex-1 flex flex-col justify-start pt-4 sm:pt-6">
               {moderationStatus === "checking" && (
-                <div className="flex flex-col items-center gap-4 w-full">
-                  <div className="relative group w-full aspect-square max-w-[85vw] sm:max-w-[40vh] lg:max-w-[30vh]">
-                    {/* Soft Glow */}
-                    <div className="absolute -inset-4 bg-emerald-500/10 rounded-md blur-2xl opacity-50 animate-pulse"></div>
-
-                    {/* Image Container - Exact Visual Search Style */}
-                    <div className="relative h-full w-full rounded-md overflow-hidden border border-white/10 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
-                      <div className="flex flex-col items-center h-full w-full">
-                        <div className="relative w-full h-full overflow-hidden">
-                          {previews[activeImageIndex] && (
-                            <>
-                              {/* Blurred background for empty spaces */}
-                              <Image
-                                src={previews[activeImageIndex]}
-                                alt=""
-                                fill
-                                className="object-cover blur-3xl opacity-40 scale-110"
-                              />
-                              <Image
-                                src={previews[activeImageIndex]}
-                                alt="Analyzing"
-                                fill
-                                className="object-contain opacity-60 transition-all duration-1000 relative z-10"
-                                key={activeImageIndex}
-                              />
-                            </>
-                          )}
-
-                          {/* Laser Scanner - Exact match to modal */}
-                          <div className="absolute inset-0 z-20 pointer-events-none">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast" />
-                            <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent h-1/2 animate-scan-overlay" />
-                          </div>
-
-                          {/* Neural Grid Overlay - Exact match to modal */}
-                          <div
-                            className="absolute inset-0 opacity-90 animate-grid-scan z-10 pointer-events-none"
-                            style={{
-                              backgroundImage:
-                                "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
-                              backgroundSize: "25px 25px",
-                            }}
-                          />
-
-                          {/* Timer & Counter Overlay */}
-                          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-md flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-sm min-[1084px]:text-base min-[1920px]:text-lg font-semibold text-white tracking-widest whitespace-nowrap">
-                              {t("ai_steps.seconds_left").replace(
-                                "%{count}",
-                                elapsedSeconds.toString(),
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Status Text & Info */}
-                  <div className="space-y-4 w-full px-4 sm:px-6">
-                    <div className="h-8 flex items-center justify-center">
-                      <p
-                        className="text-sm sm:text-base min-[1084px]:text-lg min-[1920px]:text-xl text-emerald-600 dark:text-emerald-400 font-semibold tracking-[0.2em] text-center"
-                        key={scanMessage}
-                      >
-                        {scanMessage}
+                // Same scan screen as the app's add flow (VisualSearchScanUI with the AI-check steps).
+                <div className="flex justify-center w-full">
+                  <VisualSearchScanUI
+                    photoUrl={previews[activeImageIndex] ?? previews[0] ?? null}
+                    size="min(calc(100vw - 96px), 240px)"
+                    stepLabels={[
+                      t("ai_steps.scanning_pixels"),
+                      t("ai_steps.detecting_features"),
+                      t("ai_steps.checking_safety"),
+                      t("ai_steps.matching_categories"),
+                      t("ai_steps.optimizing_description"),
+                    ]}
+                    stepDelays={[0, 3000, 8000, 16000, 28000]}
+                    caption={scanMessage}
+                    footer={
+                      <p className="mt-4 text-xs font-medium text-muted-foreground tabular-nums">
+                        {t("ai_steps.seconds_left").replace("%{count}", elapsedSeconds.toString())}
                       </p>
-                    </div>
-                  </div>
+                    }
+                  />
                 </div>
               )}
 
@@ -1088,7 +1014,7 @@ function AddItemForm() {
                         setModerationStatus("idle");
                         setModerationViolationSource(null);
                       }}
-                      className="rounded-md font-medium text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-widest mt-4 text-red-600 dark:text-red-400 border-red-200 hover:bg-red-100"
+                      className="rounded-md text-sm min-[1920px]:text-[15px] font-semibold mt-4 text-red-600 dark:text-red-400 border-red-200 hover:bg-red-100"
                     >
                       {t("ai_steps.step5_fix_btn")}
                     </Button>
@@ -1102,10 +1028,10 @@ function AddItemForm() {
               {moderationStatus === "passed" && (
                 <div className="space-y-6 max-w-sm mx-auto w-full">
                   <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-emerald-500" />
+                    <CheckCircle2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-action" />
                   </div>
                   <div className="space-y-2">
-                    <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                    <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-action">
                       {t("success")}
                     </h2>
                     <p className="text-slate-500 dark:text-zinc-400 font-semibold text-sm tracking-tight">
@@ -1114,7 +1040,7 @@ function AddItemForm() {
                   </div>
                   <Button
                     onClick={() => router.push(postSuccessRedirect)}
-                    className="w-full h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] rounded-md font-medium tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-[15px] bg-emerald-500 hover:bg-emerald-600 text-white"
+                    className="w-full h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] rounded-md font-medium text-xs min-[1084px]:text-sm min-[1920px]:text-[15px] bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {t("done")}
                   </Button>
@@ -1126,7 +1052,7 @@ function AddItemForm() {
               {moderationStatus === "idle" && (
                 <div className="space-y-4">
                   <div className="w-20 h-20 min-[1084px]:w-24 min-[1084px]:h-24 min-[1920px]:w-[104px] min-[1920px]:h-[104px] rounded-md bg-canvas dark:bg-zinc-700 flex items-center justify-center mx-auto">
-                    <Loader2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-emerald-500 animate-spin" />
+                    <Loader2 className="w-10 h-10 min-[1084px]:w-12 min-[1084px]:h-12 min-[1920px]:w-[52px] min-[1920px]:h-[52px] text-action animate-spin" />
                   </div>
                 </div>
               )}
@@ -1137,7 +1063,7 @@ function AddItemForm() {
           {step === 4 && (
             <div className="space-y-5 max-w-lg mx-auto w-full">
               <div className="space-y-1.5">
-                <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
+                <Label className="text-sm font-semibold text-muted-foreground ml-1">
                   {t("titleLabel")}
                 </Label>
                 <Input
@@ -1158,7 +1084,7 @@ function AddItemForm() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
+                <Label className="text-sm font-semibold text-muted-foreground ml-1">
                   {t("categoryLabel")}
                 </Label>
                 <div className="grid grid-cols-3 gap-1.5">
@@ -1175,7 +1101,7 @@ function AddItemForm() {
                       className={cn(
                         "flex flex-col items-center gap-1 p-2 min-[1084px]:p-2.5 rounded-md bg-white dark:bg-zinc-800 ring-2 ring-transparent transition-all text-center",
                         formData.category === cat.name
-                          ? "ring-2 ring-emerald-500 bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400"
+                          ? "ring-2 ring-action bg-white dark:bg-zinc-800 text-action"
                           : "text-slate-600",
                       )}
                     >
@@ -1189,7 +1115,7 @@ function AddItemForm() {
                       >
                         {cat.icon}
                       </div>
-                      <span className="text-[10px] min-[1084px]:text-[11px] font-medium tracking-tight leading-tight">
+                      <span className="text-xs font-medium tracking-tight leading-tight">
                         {t(`categories.${cat.id}`)}
                       </span>
                     </button>
@@ -1198,7 +1124,7 @@ function AddItemForm() {
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
+                <Label className="text-sm font-semibold text-muted-foreground ml-1">
                   {t("description")}
                 </Label>
                 <Textarea
@@ -1228,18 +1154,18 @@ function AddItemForm() {
           {step === 5 && (
             <div className="space-y-6 max-w-lg mx-auto w-full">
               <div className="text-center space-y-1 mb-4">
-                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-400">
+                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-action">
                   {t("contactInfo") || "Contact Information"}
                 </h2>
               </div>
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
+                  <Label className="text-sm font-semibold text-muted-foreground ml-1">
                     {t("phoneLabel")}
                   </Label>
                   <PhoneInput
                     containerClassName="h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800"
-                    className="text-base min-[1084px]:text-lg text-emerald-600 dark:text-emerald-400"
+                    className="text-base min-[1084px]:text-lg text-action"
                     value={formData.phone}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -1292,23 +1218,23 @@ function AddItemForm() {
                             }
                           }}
                         />
-                        <span className="text-sm min-[1084px]:text-base font-semibold text-emerald-700 dark:text-emerald-400">
+                        <span className="text-sm min-[1084px]:text-base font-semibold text-action">
                           {t("reward_gives")}
                         </span>
                       </label>
                     )}
                     {!rewardEnabled && (
                       <div className="space-y-1.5">
-                        <Label className="text-[11px] min-[1084px]:text-xs tracking-wider text-slate-500 dark:text-zinc-400 ml-1">
+                        <Label className="text-sm font-semibold text-muted-foreground ml-1">
                           {t("reward_gives_input")}
                         </Label>
                         <div className="relative">
-                          <span className="absolute right-5 top-1/2 -translate-y-1/2 font-semibold text-sm min-[1084px]:text-base text-slate-400">
+                          <span className="absolute right-5 top-1/2 -translate-y-1/2 font-semibold text-sm min-[1084px]:text-base text-muted-foreground">
                             TJS
                           </span>
                           <Input
                             placeholder={t("reward_gives_input")}
-                            className="rounded-md h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg text-emerald-600 dark:text-emerald-400 pr-14 pl-5 transition-all"
+                            className="rounded-md h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border-none shadow-none text-base min-[1084px]:text-lg text-action pr-14 pl-5 transition-all"
                             value={formData.reward}
                             onChange={(e) => {
                               const digits = e.target.value
@@ -1351,7 +1277,7 @@ function AddItemForm() {
               <Button
                 size="lg"
                 onClick={nextStep}
-                className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white transition-all"
+                className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] text-sm min-[1920px]:text-[15px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
               >
                 {t("next")}
               </Button>
@@ -1361,7 +1287,7 @@ function AddItemForm() {
                 variant="brand"
                 onClick={nextStep}
                 disabled={loading}
-                className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] tracking-widest text-[10px] min-[1084px]:text-xs min-[1920px]:text-[13px] transition-all"
+                className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] text-sm min-[1920px]:text-[15px] font-semibold transition-all"
               >
                 {loading ? (
                   <Loader2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 animate-spin" />
@@ -1403,14 +1329,14 @@ function AddItemForm() {
                     setPoliceAdviceOpen(true);
                   }
                 }}
-                className="w-full flex items-center gap-3 rounded-lg border-[1.5px] border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 px-3.5 py-3.5 text-left cursor-pointer hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                className="w-full flex items-center gap-3 rounded-lg border-[1.5px] border-action bg-found-soft px-3.5 py-3.5 text-left cursor-pointer hover:bg-found-soft/70 transition-colors"
               >
                 <span className="text-3xl shrink-0">{opt.emoji}</span>
                 <span className="flex-1 min-w-0">
                   <span className="block text-[15px] font-bold text-zinc-900 dark:text-zinc-100">{t(opt.label)}</span>
                   <span className="block text-xs font-medium text-slate-500 mt-0.5">{t(opt.hint)}</span>
                 </span>
-                <ChevronRight className="w-5 h-5 text-emerald-600 shrink-0" />
+                <ChevronRight className="w-5 h-5 text-action shrink-0" />
               </button>
             ))}
           </div>
@@ -1429,7 +1355,7 @@ function AddItemForm() {
           <Button
             type="button"
             onClick={() => setPoliceAdviceOpen(false)}
-            className="w-full h-12 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+            className="w-full h-12 rounded-md bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           >
             {t("policeAdviceOk")}
           </Button>
@@ -1472,7 +1398,7 @@ function AddItemForm() {
                 setSafetyAck(null);
                 resolve?.(true);
               }}
-              className="w-full h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] rounded-md font-medium tracking-widest text-xs min-[1084px]:text-sm min-[1920px]:text-[15px] text-white bg-emerald-500 hover:bg-emerald-600"
+              className="w-full h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] rounded-md font-medium text-xs min-[1084px]:text-sm min-[1920px]:text-[15px] text-primary-foreground bg-primary hover:bg-primary/90"
             >
               {t("safetyPostModal.confirmBtn")}
             </Button>

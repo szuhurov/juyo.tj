@@ -34,6 +34,18 @@ html {
   --color-hairline: var(--hairline);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  /* Lost/found status colours — design-system/juyo/MASTER.md §2. */
+  --color-tile: var(--tile);
+  /* Green that stays green in dark mode (dark --primary is near-white). */
+  --color-action: var(--action);
+  --color-lost: var(--lost);
+  --color-lost-soft: var(--lost-soft);
+  --color-found: var(--found);
+  --color-found-soft: var(--found-soft);
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 300ms;
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
   --font-sans: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
   --color-card: var(--card);
@@ -113,7 +125,7 @@ html {
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.696 0.17 162.48); /* #22C55E - Bright Green */
+  --primary: #10b981; /* brand green (emerald-500) — owner choice, see MASTER.md §2 */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -125,7 +137,13 @@ html {
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.696 0.17 162.48);
+  --ring: #059669;
+  --action: #10b981;
+  --tile: #f2f6fa; /* inactive chip/tile fill — mobile c.tileFill */
+  --lost: #be123c;
+  --lost-soft: #fff1f2;
+  --found: #047857;
+  --found-soft: #ecfdf5;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -234,6 +252,12 @@ html {
   --border: #2f3e4f;
   --input: #2f3e4f;
   --ring: #43546a;
+  --action: #34d399;
+  --tile: #232e3c;
+  --lost: #fb7185;
+  --lost-soft: rgba(244, 63, 94, 0.14);
+  --found: #34d399;
+  --found-soft: rgba(16, 185, 129, 0.14);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -355,4 +379,32 @@ html {
    only switches the border on). Dark mode keeps the widths it already had. */
 html:not(.dark) .border-hairline {
   border-width: 0.5px !important;
+}
+
+/* Visual-search / AI-check scan UI (components/visual-search-scan-ui.tsx) —
+   same motion as the app's TwinkleStar and PulseDot. */
+@keyframes juyo-twinkle {
+  0%, 100% { opacity: 0.25; transform: scale(0.6) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.25) rotate(45deg); }
+}
+.juyo-twinkle { animation: juyo-twinkle 2.2s linear infinite; }
+
+@keyframes juyo-pulse-dot {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+.juyo-pulse-dot { animation: juyo-pulse-dot 1.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .juyo-twinkle, .juyo-pulse-dot { animation: none; }
+}
+
+/* Tailwind v4 dropped the pointer cursor on buttons — every clickable control
+   (navbar pages, filters, dialog buttons) gets it back here, site-wide. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href] {
+    cursor: pointer;
+  }
 }

@@ -63,18 +63,18 @@ export function ItemFeedCard({ item }: { item: Item }) {
           />
         )}
         {item.similarity_score !== undefined && (
-          <span className="absolute top-2 left-2 inline-flex items-center rounded-full px-2.5 py-1 text-[9px] font-medium bg-emerald-600 text-white">
+          <span className="absolute top-2 left-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-primary text-primary-foreground">
             {Math.round(item.similarity_score * 100)}% {t("matchForYourImage")}
           </span>
         )}
         {PAID_FEATURES_ENABLED && (item.vip_tier === "vip" || item.vip_tier === "vvip") && (
           <span
             className={cn(
-              "absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-bold text-white shadow-sm",
+              "absolute top-2 right-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-bold text-white shadow-sm",
               item.vip_tier === "vvip" ? "bg-gradient-to-r from-amber-500 to-amber-600" : "bg-zinc-700",
             )}
           >
-            <Crown className="w-2.5 h-2.5" />
+            <Crown className="w-3 h-3" />
             {item.vip_tier === "vvip" ? "VIP" : "TOP"}
           </span>
         )}
@@ -88,7 +88,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
           <h3 className="min-w-0 flex-1 truncate font-semibold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
             {item.title || item.category}
           </h3>
-          <span className="shrink-0 text-[11px] min-[1084px]:text-xs font-medium text-zinc-400 dark:text-zinc-500">
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
             {exactDate}
           </span>
         </div>
@@ -100,7 +100,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
             at publish time (`stripDocumentNumbers` on the `items/add`
             page), so no filtering is needed here. */}
         {item.description && (
-          <p className="-mt-0.5 truncate text-[11px] min-[1084px]:text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <p className="-mt-0.5 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
             {item.description}
           </p>
         )}
@@ -117,19 +117,19 @@ export function ItemFeedCard({ item }: { item: Item }) {
               distinguishable at a glance. 700 shades pass WCAG AA contrast
               against the `--canvas` background (500/600 don't).
               Size — user request: smaller than the title, larger than the
-              description (title text-sm/base, description text-[11px]/xs). */}
+              description (title text-sm/base, description text-xs). */}
           <span
             className={cn(
-              "min-w-0 truncate text-xs min-[1084px]:text-[13px] font-medium",
+              "min-w-0 truncate text-[13px] font-semibold",
               item.type === "lost"
-                ? "text-rose-700 dark:text-rose-400"
-                : "text-emerald-700 dark:text-emerald-400",
+                ? "text-lost"
+                : "text-found",
             )}
           >
             {item.type === "lost" ? t("lost") : t("found")}
           </span>
-          <span className="shrink-0 grid place-items-center size-6 min-[1084px]:size-7 rounded-full bg-emerald-500 shadow-[0_2px_8px_-2px_rgba(16,185,129,0.55)] dark:shadow-none">
-            <ArrowRight className="w-[15px] h-[15px] min-[1084px]:w-[17px] min-[1084px]:h-[17px] text-white" />
+          <span className="shrink-0 grid place-items-center size-6 min-[1084px]:size-7 rounded-full bg-primary text-primary-foreground">
+            <ArrowRight className="w-[15px] h-[15px] min-[1084px]:w-[17px] min-[1084px]:h-[17px]" />
           </span>
         </span>
       </div>

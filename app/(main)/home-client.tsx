@@ -28,7 +28,7 @@ import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import { HomeFiltersSkeleton, QuickActionsSkeleton } from "@/components/home-filters-skeleton";
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { useItems, useVipItems } from "@/lib/hooks/use-items";
+import { ITEM_KEYS, useItems, useVipItems } from "@/lib/hooks/use-items";
 import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
@@ -82,6 +82,7 @@ const CameraCaptureModal = dynamic(() =>
 function CategoryFilterCard({
   label,
   image,
+  emoji,
   transparent,
   wide,
   active,
@@ -90,11 +91,13 @@ function CategoryFilterCard({
 }: {
   label: string;
   image?: string;
+  /** Shown instead of the picture — "Other" uses 🤷 like the mobile app. */
+  emoji?: string;
   transparent: boolean;
   /** Wide pictures (Electronics, Clothing) get a 1.3:1 slot so they show as large as the square ones. */
   wide?: boolean;
   active: boolean;
-  /** Another category is selected: show this one grey, like it is switched off. */
+  /** Another category is selected: fade this one, like it is switched off. */
   dimmed?: boolean;
   onClick: () => void;
 }) {
@@ -103,21 +106,26 @@ function CategoryFilterCard({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "shrink-0 cursor-pointer flex flex-col items-center gap-0 transition-[opacity,filter]",
-        dimmed && "opacity-40 grayscale",
+        "shrink-0 cursor-pointer flex flex-col items-center gap-0 transition-opacity",
+        // Same as the app (catCardDimmed): faded only, colours kept.
+        dimmed && "opacity-40",
         // Mobile: 5.5 cells fit so the last one is cut in half (signals swiping); md+ keeps fixed widths.
-        wide ? "w-[calc((100vw-20px)/5.5)] md:w-[104px] min-[1503px]:w-[125px]" : "w-[calc((100vw-20px)/5.5)] md:w-20 min-[1503px]:w-24",
+        // lg+: the row fills the full width (owner request) — cells grow, pictures stay capped below.
+        wide ? "w-[calc((100vw-20px)/5.5)] md:w-[104px] min-[1503px]:w-[125px] lg:flex-[1.3]" : "w-[calc((100vw-20px)/5.5)] md:w-20 min-[1503px]:w-24 lg:flex-1",
       )}
     >
       <span
         className={cn(
           "relative block w-[76%] md:w-full",
-          wide ? "aspect-square md:aspect-[1.3/1]" : "aspect-square",
+          wide ? "aspect-square md:aspect-[1.3/1] lg:max-w-[96px]" : "aspect-square lg:max-w-[72px]",
+          emoji && "grid place-items-center",
           !transparent &&
             "rounded-md overflow-hidden bg-slate-100 dark:bg-zinc-800 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_5px_12px_-4px_rgba(15,23,42,0.07),0_12px_24px_-14px_rgba(15,23,42,0.09)] dark:shadow-none",
         )}
       >
-        {image && (
+        {emoji ? (
+          <span aria-hidden className="text-[34px] md:text-[48px] leading-none">{emoji}</span>
+        ) : image && (
           <Image
             src={image}
             alt=""
@@ -129,8 +137,8 @@ function CategoryFilterCard({
       </span>
       <span
         className={cn(
-          "-mt-1 text-[10px] min-[1503px]:text-[11px] font-medium tracking-wide whitespace-nowrap",
-          active ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-600 dark:text-zinc-300",
+          "-mt-1 text-[11px] min-[1503px]:text-xs font-semibold whitespace-nowrap",
+          active ? "text-found" : "text-zinc-600 dark:text-zinc-300",
         )}
       >
         {label}
@@ -406,19 +414,19 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // initialItems applies only for the default filters (i.e. the same ones
   // that were fetched on the server) — filters differing from the default
   // mean the user has already changed a filter.
-  // `type === "found"` is the DEFAULT, not a filter chosen by the user — so
-  // it still counts as the default state. Otherwise `isDefaultFilters` would
-  // always be `false`, the server's `initialItems` would never be used, and
-  // every load would trigger an extra client-side fetch (see page.tsx — it
-  // fetches with exactly this same filter).
+  // The default type is "All" (no `type`) — page.tsx fetches exactly that.
+  // If these two disagree, `initialItems` is never used, every load refetches
+  // on the client and Home shows a second skeleton after the first.
   const isDefaultFilters =
-    !filters.category && filters.type === "found" && !filters.search && !filters.dateFrom && !filters.dateTo && !filters.locationType && !filters.city;
+    !filters.category && !filters.type && !filters.search && !filters.dateFrom && !filters.dateTo && !filters.locationType && !filters.city;
 
   const {
     data,
     isLoading,
     isFetching,
     isError,
+    isFetchNextPageError,
+    isRefetchError,
     refetch,
     fetchNextPage,
     hasNextPage,
@@ -427,10 +435,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
   // Load the next page when the end of the list is reached
   useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
+    if (inView && hasNextPage && !isFetchingNextPage && !isFetchNextPageError) {
       fetchNextPage();
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [inView, hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
   useEffect(() => {
     const handleItemsUpdate = () =>
@@ -485,8 +493,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     handledGoHomeRef.current = goHomeSignal;
     setVisualSearchResults(null);
     clearAllFilters();
+    // Fresh list in the background — the current items stay on screen (no
+    // skeleton). Replaces the old router.refresh(), whose new server
+    // `initialItems` React Query ignored anyway (the cache already had data).
+    queryClient.invalidateQueries({ queryKey: ITEM_KEYS.lists() });
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [goHomeSignal, setVisualSearchResults, clearAllFilters]);
+  }, [goHomeSignal, setVisualSearchResults, clearAllFilters, queryClient]);
 
   // Close the date filter popup on click outside it
   useEffect(() => {
@@ -581,9 +593,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     BACKGROUND — otherwise red text would end up on a green background. */}
                 {(
                   [
-                    { value: null, label: t("all"), on: "bg-emerald-500 text-white", off: "bg-[#f2f6fa] text-emerald-700 dark:bg-transparent dark:text-emerald-400" },
-                    { value: "found", label: t("filterFound"), on: "bg-emerald-500 text-white", off: "bg-[#f2f6fa] text-emerald-700 dark:bg-transparent dark:text-emerald-400" },
-                    { value: "lost", label: t("filterLost"), on: "bg-rose-500 text-white", off: "bg-[#f2f6fa] text-rose-700 dark:bg-transparent dark:text-rose-400" },
+                    { value: null, label: t("all"), on: "bg-primary text-primary-foreground", off: "bg-tile text-found dark:bg-transparent" },
+                    { value: "found", label: t("filterFound"), on: "bg-primary text-primary-foreground", off: "bg-tile text-found dark:bg-transparent" },
+                    { value: "lost", label: t("filterLost"), on: "bg-rose-700 text-white", off: "bg-tile text-lost dark:bg-transparent" },
                   ] as const
                 ).map((opt) => (
                   <button
@@ -591,7 +603,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={() => setItemType(opt.value)}
                     aria-pressed={itemType === opt.value}
                     className={cn(
-                      "px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md font-medium text-[11px] min-[1084px]:text-xs min-[1920px]:text-[13px] tracking-wide flex items-center cursor-pointer transition-colors",
+                      "px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md font-semibold text-xs min-[1920px]:text-[13px] flex items-center cursor-pointer transition-colors duration-[var(--duration-fast)]",
                       itemType === opt.value ? opt.on : opt.off,                    )}
                   >
                     {opt.label}
@@ -610,7 +622,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     enterKeyHint="search"
                     autoComplete="off"
                     placeholder={t("search")}
-                    className="pl-8 pr-9 h-7 md:h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md bg-white dark:bg-zinc-800 border border-emerald-500 dark:border-emerald-400 shadow-none focus-visible:ring-0 focus-visible:border-2 transition-all text-[11px] min-[1084px]:text-xs w-full"
+                    className="pl-8 pr-16 h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none focus-visible:ring-0 focus-visible:border-primary dark:focus-visible:border-emerald-400 transition-all text-base md:text-sm w-full"
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     onKeyDown={(e) => {
@@ -641,7 +653,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       )}
                       title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
                     >
-                      <Camera className="h-3.5 w-3.5" />
+                      <Camera className="w-5 h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
                     </button>
                   </div>
                 </div>
@@ -653,10 +665,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={openDatePicker}
                     aria-label={t("filterTitle")}
                     className={cn(
-                      "h-9 w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-md border cursor-pointer transition-colors",
+                      "h-9 w-9 min-[1503px]:h-10 min-[1503px]:w-10 min-[1920px]:h-[42px] min-[1920px]:w-[42px] flex items-center justify-center rounded-md cursor-pointer transition-colors",
                       dateFrom || dateTo || city
-                        ? "bg-emerald-500 text-white border-emerald-500"
-                        : "bg-white border-hairline dark:bg-zinc-800 text-slate-400",
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-transparent text-slate-500 dark:text-zinc-400",
                     )}
                   >
                     <SlidersHorizontal className="w-5 h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
@@ -673,10 +685,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                         onClick={() => setShowDatePicker(false)}
                         aria-hidden
                       />
-                    <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(20rem,calc(100vw-2rem))] rounded-md border border-hairline dark:border-zinc-800 bg-white dark:bg-zinc-800 shadow-[var(--shadow-3)] p-3 space-y-2.5">
-                      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{t("filterTitle")}</h2>
+                    <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(20rem,calc(100vw-2rem))] rounded-md border border-hairline dark:border-zinc-800 bg-white dark:bg-zinc-800 shadow-[var(--shadow-3)] p-5 space-y-3">
+                      <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{t("filterTitle")}</h2>
                       {/* City — swipe sideways; "All" (default) = no city filter. Applies immediately. */}
-                      <div className="-mx-3 px-3 flex gap-1.5 overflow-x-auto no-scrollbar snap-x">
+                      <div className="-mx-5 px-5 scroll-px-5 flex gap-1.5 overflow-x-auto no-scrollbar snap-x">
                         {(["all", ...CITY_IDS] as const).map((id) => {
                           const on = id === "all" ? city === null : city === id;
                           return (
@@ -705,18 +717,18 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                           setDraftTo(to || "");
                         }}
                       />
-                      <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center justify-between pt-2">
                         <button
                           type="button"
                           onClick={clearDateFilter}
-                          className="text-[11px] font-medium text-slate-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                          className="h-9 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
                         >
                           {t("clearFilter")}
                         </button>
                         <button
                           type="button"
                           onClick={applyDateFilter}
-                          className="px-3 h-8 rounded-md bg-emerald-500 text-white text-[11px] font-medium cursor-pointer"
+                          className="px-4 h-9 rounded-md bg-primary text-primary-foreground text-xs font-semibold cursor-pointer"
                         >
                           {t("applyFilter")}
                         </button>
@@ -732,7 +744,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               "-mx-1 px-1 mt-0.5",
               visualSearchResults
                 ? "flex items-center gap-1 overflow-x-auto no-scrollbar py-2.5 -my-2.5 w-full justify-end"
-                : "flex items-center gap-1 overflow-x-auto no-scrollbar py-2.5 -my-2.5",
+                : "flex items-center gap-1 lg:gap-2 overflow-x-auto no-scrollbar py-2.5 -my-2.5",
             )}
           >
               {visualSearchResults ? (
@@ -761,6 +773,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                       key={cat.id}
                       label={t(`categories.${cat.id}`)}
                       image={CATEGORY_FILTER_IMAGES[cat.name] ?? CATEGORY_IMAGES[cat.name]}
+                      emoji={cat.name === "Other" ? "🤷" : undefined}
                       transparent={!!CATEGORY_FILTER_IMAGES[cat.name]}
                       wide={cat.name === "Electronics" || cat.name === "Clothing"}
                       active={category === cat.name}
@@ -813,21 +826,23 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     aria-label={title}
                     className={cn(
                       "shrink-0 snap-start w-max flex items-center justify-between gap-3 px-3 py-1.5 min-[1503px]:py-2.5 rounded-md text-left cursor-pointer transition-colors",
-                      active ? "bg-emerald-500 text-white" : "bg-[#f2f6fa] text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100",                    )}
+                      active ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground",                    )}
                   >
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold text-xs min-[1503px]:text-[13px] min-[1920px]:text-sm leading-tight tracking-wide whitespace-nowrap">
                         {title}
                       </span>
-                      <span className="text-left font-medium text-[10px] min-[1503px]:text-[11px] min-[1920px]:text-xs leading-tight tracking-wide whitespace-nowrap opacity-70">
+                      <span className="text-left font-medium text-[11px] min-[1920px]:text-xs leading-tight whitespace-nowrap opacity-80">
                         {t(`quickActions.${value}.desc`)}
                       </span>
                     </div>
                     <Icon
                       aria-hidden
                       className={cn(
-                        "w-[30px] h-[30px] min-[1503px]:w-8 min-[1503px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 shrink-0",
-                        active ? "text-white" : color,
+                        value === "taxi"
+                          ? "w-[36px] h-[36px] min-[1503px]:w-[38px] min-[1503px]:h-[38px] min-[1920px]:w-[42px] min-[1920px]:h-[42px] shrink-0"
+                          : "w-[30px] h-[30px] min-[1503px]:w-8 min-[1503px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9 shrink-0",
+                        active ? "text-primary-foreground" : color,
                       )}
                     />
                   </button>
@@ -855,6 +870,16 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           // The second condition: a page made only of strip items must still
           // render the infinite-scroll sentinel so the next page loads.
           <>
+            {/* A refresh failed while the cached results are still shown — say
+                so instead of silently showing them (app: searchRefreshFailed). */}
+            {isRefetchError && !isFetchNextPageError && !isFetching && !visualSearchResults && (
+              <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-md bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
+                <span className="text-sm font-medium text-amber-800 dark:text-amber-300">{t("searchRefreshFailed")}</span>
+                <button type="button" onClick={() => refetch()} className="shrink-0 h-8 px-3 rounded-md text-sm font-semibold text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40">
+                  {t("retry")}
+                </button>
+              </div>
+            )}
             <div className={HOME_GRID_CLASS}>
               {displayedItems.map((item) => (
                 <ItemFeedCard key={item.id} item={item} />
@@ -866,7 +891,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               ref={ref}
               className="h-10 mt-4 flex items-center justify-center"
             >
-              {isFetchingNextPage && (
+              {isFetchNextPageError && !isFetchingNextPage ? (
+                <div role="alert" className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-muted-foreground">{t("loadMoreFailed")}</span>
+                  <button type="button" onClick={() => fetchNextPage()} className="h-8 px-3 rounded-md text-sm font-semibold text-foreground bg-tile hover:bg-zinc-200/60 dark:hover:bg-zinc-700">
+                    {t("retry")}
+                  </button>
+                </div>
+              ) : isFetchingNextPage && (
                 <div className="flex gap-1.5 items-center">
                   <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s]"></span>
                   <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-600 animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]"></span>
@@ -880,7 +912,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                 the end of THIS result set, not the end of all listings —
                 otherwise they might think there's nothing else on the site. There's
                 no pagination for visual search results, so this text isn't shown there. */}
-            {!visualSearchResults && !hasNextPage && !isFetchingNextPage && (
+            {!visualSearchResults && !hasNextPage && !isFetchingNextPage && !isFetchNextPageError && (
               <p className="pb-6 text-center text-xs min-[1084px]:text-[13px] font-medium text-slate-400 dark:text-zinc-500">
                 {isDefaultFilters ? t("endOfListAll") : t("endOfListFiltered")}
               </p>
@@ -966,7 +998,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         <DialogContent
           overlayClassName="bg-black/50"
           showCloseButton={false}
-          className="w-[min(20rem,calc(100vw-2rem))] max-w-none rounded-md border border-hairline dark:border-zinc-800 bg-white dark:bg-zinc-800 p-3 gap-2.5 shadow-[var(--shadow-3)] focus:ring-0 focus:outline-none"
+          className="w-[min(20rem,calc(100vw-2rem))] max-w-none rounded-md border border-hairline dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 gap-3 shadow-[var(--shadow-3)] focus:ring-0 focus:outline-none"
         >
           <DialogHeader>
             <DialogTitle className="text-sm font-semibold text-left text-zinc-900 dark:text-zinc-100">
@@ -985,7 +1017,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               <div className="w-10 h-10 rounded-md bg-blue-500 flex items-center justify-center text-white transition-all">
                 <Camera className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-medium tracking-wide text-slate-500">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {t("camera")}
               </span>
             </Button>
@@ -1000,7 +1032,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               <div className="w-10 h-10 rounded-md bg-orange-500 flex items-center justify-center text-white transition-all">
                 <ImageIcon className="w-5 h-5" />
               </div>
-              <span className="text-[11px] font-medium tracking-wide text-slate-500">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {t("gallery")}
               </span>
             </Button>
@@ -1021,7 +1053,7 @@ function HomeSkeleton() {
   return (
     <div className="pb-18 min-h-screen bg-canvas">
       <HomeFiltersSkeleton />
-      <div className={cn("w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5", HOME_CONTENT_PT)}>
+      <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5">
         <QuickActionsSkeleton />
         <div className={HOME_GRID_CLASS}>
           {[...Array(8)].map((_, i) => (

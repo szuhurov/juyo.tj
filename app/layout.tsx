@@ -20,8 +20,10 @@ import Script from "next/script";
 
 // Nunito — rounded, friendly, similar to SF Compact Rounded; full
 // support for both Latin and Cyrillic (Tajik/Russian/English in one font).
+// Tajik letters (ғ ӣ қ ӯ ҳ ҷ) live in `cyrillic-ext`, not `cyrillic` —
+// without it they fell back to a system font mid-word.
 const nunito = Nunito({
-  subsets: ["latin", "cyrillic"],
+  subsets: ["latin", "cyrillic", "cyrillic-ext"],
   variable: "--font-nunito",
 });
 

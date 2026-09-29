@@ -166,8 +166,10 @@ export const QRCard: React.FC<QRCardProps> = ({
   const qrContainerRef = useRef<HTMLDivElement>(null);
   const qrCodeInstance = useRef<QRCodeStyling | null>(null);
 
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const qrUrl = qrCode ? `${origin}/q/${qrCode}` : `${origin}/qr/${id}`;
+  // Always the canonical short host, exactly like the app (qr.tsx `qrValue`):
+  // `window.location.origin` (www., localhost, preview URLs) made the text
+  // longer → a bigger QR version → more, smaller dots than the app's sticker.
+  const qrUrl = qrCode ? `https://juyo.tj/q/${qrCode}` : `https://juyo.tj/qr/${id}`;
 
   useEffect(() => {
     if (!qrCodeInstance.current) {

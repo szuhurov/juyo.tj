@@ -57,8 +57,11 @@ export const HOME_GRID_CLASS =
  * much empty space, another time the quick-action buttons got hidden
  * underneath the bar.
  *
- * `HomeFiltersSkeleton` also uses this same value (there, JS hasn't
- * started measuring yet).
+ * Skeletons don't use it any more: `HomeFiltersSkeleton` sits in normal
+ * flow, so the content below it is placed by the browser.
+ *
+ * Current math (type row 36/40 + category row image + ~12px label + 10px
+ * paddings): mobile image = 76% of (100vw-20px)/5.5, md 80px, lg+ ~74px.
  *
  * BUG FOUND (user report: "the skeleton's top corner isn't rounded, as if
  * something is covering it"): the previous numbers (76/92) were 4px less
@@ -69,7 +72,7 @@ export const HOME_GRID_CLASS =
  * the first row of cards — making the rounded corner look cut off.
  */
 export const HOME_CONTENT_PT =
-  "pt-[80px] min-[768px]:pt-[96px]";
+  "pt-[calc(58px+(100vw-20px)*0.1382)] md:pt-[138px] lg:pt-[134px] min-[1084px]:pt-[138px]";
 
 /**
  * Communication between the "add listing" page and the listing list.

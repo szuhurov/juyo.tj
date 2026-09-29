@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useUser, useAuth } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { useHomeState } from "@/lib/home-context";
+import { useAddLauncher } from "@/components/add-photo-launcher";
 import { Home, QrCode, PlusCircle, ScanLine, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ export function MobileNavbar() {
   const [optimisticPath, setOptimisticPath] = useState<string | null>(null);
   const router = useRouter();
   const { triggerGoHome } = useHomeState();
+  const { openAddLauncher } = useAddLauncher();
 
   useEffect(() => {
     setOptimisticPath(null);
@@ -44,9 +46,11 @@ export function MobileNavbar() {
       if (isProtected && !userId) {
         router.push("/sign-up");
       } else {
+        // Like the app: "+" opens the photo sheet over this page first.
+        if (href === "/items/add") { openAddLauncher(); return; }
         const target = href === "/profile" ? "/profile?tab=posts" : href;
         if (href === "/") {
-          if (pathname === "/") { router.refresh(); return; }
+          if (pathname === "/") { triggerGoHome(); return; }
           triggerGoHome();
         }
         setOptimisticPath(href);

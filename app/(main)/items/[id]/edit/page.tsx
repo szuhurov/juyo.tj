@@ -613,7 +613,7 @@ export default function EditItemPage({
                     />
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-md flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[10px] font-medium text-white tracking-widest">
+                      <span className="text-xs font-medium text-white">
                         {elapsedSeconds}с / 60с
                       </span>
                     </div>
@@ -622,7 +622,7 @@ export default function EditItemPage({
               </div>
               <div className="h-6 flex items-center justify-center">
                 <p
-                  className="text-emerald-600 font-medium text-xs tracking-[0.2em]"
+                  className="text-action font-medium text-xs"
                   key={scanMessage}
                 >
                   {scanMessage}
@@ -648,7 +648,7 @@ export default function EditItemPage({
                 <Button
                   variant="outline"
                   onClick={() => setModerationStatus("idle")}
-                  className="rounded-md font-medium text-[10px] tracking-widest mt-4 text-red-600 border-red-200 hover:bg-red-100 h-12 px-8"
+                  className="rounded-md font-medium text-xs mt-4 text-red-600 border-red-200 hover:bg-red-100 h-12 px-8"
                 >
                   <ArrowLeft className="w-4 h-4 mr-2" />{" "}
                   {t("ai_steps.step5_fix_btn")}
@@ -691,7 +691,7 @@ export default function EditItemPage({
       <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-4 py-8 max-w-2xl">
         <Card className="rounded-md overflow-hidden border border-slate-200 dark:border-zinc-700 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_4px_12px_-2px_rgba(15,23,42,0.08)] dark:shadow-none">
           {/* Form header */}
-          <CardHeader className="bg-emerald-600 text-white p-6">
+          <CardHeader className="bg-primary text-primary-foreground p-6">
             <CardTitle className="text-2xl min-[1084px]:text-3xl min-[1920px]:text-[32px] font-semibold tracking-tight">
               {t("editItemTitle")}
             </CardTitle>
@@ -700,7 +700,7 @@ export default function EditItemPage({
             <form onSubmit={onSubmit} className="space-y-6">
               {/* Listing type selection (Radio buttons) */}
               <div className="space-y-3">
-                <Label className="text-sm min-[1084px]:text-base tracking-wider text-slate-400">
+                <Label className="text-sm min-[1084px]:text-base text-muted-foreground">
                   {t("what_happened")}
                 </Label>
                 <RadioGroup
@@ -716,7 +716,7 @@ export default function EditItemPage({
                     />
                     <Label
                       htmlFor="lost"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-red-600 peer-data-[state=checked]:bg-red-50 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-lost peer-data-[state=checked]:bg-lost-soft cursor-pointer transition-all"
                     >
                       <span className="text-2xl min-[1084px]:text-3xl mb-1">🔍</span>
                       <span className="font-semibold text-sm min-[1084px]:text-base">{t("lost")}</span>
@@ -730,7 +730,7 @@ export default function EditItemPage({
                     />
                     <Label
                       htmlFor="found"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-emerald-600 peer-data-[state=checked]:bg-white dark:peer-data-[state=checked]:bg-zinc-900 cursor-pointer transition-all"
+                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-zinc-50 peer-data-[state=checked]:border-found peer-data-[state=checked]:bg-white dark:peer-data-[state=checked]:bg-zinc-900 cursor-pointer transition-all"
                     >
                       <span className="text-2xl min-[1084px]:text-3xl mb-1">🎁</span>
                       <span className="font-semibold text-sm min-[1084px]:text-base">{t("found")}</span>
@@ -830,8 +830,8 @@ export default function EditItemPage({
                       className={cn(
                         "shrink-0 h-9 px-3.5 rounded-md text-sm font-semibold cursor-pointer transition-colors",
                         city === id
-                          ? "bg-emerald-500 text-white"
-                          : "bg-[#f2f6fa] text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-tile text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200",
                       )}
                     >
                       {cityLabel(id, locale)}
@@ -911,7 +911,7 @@ export default function EditItemPage({
                           setRewardEnabled(checked === true)
                         }
                       />
-                      <span className="font-medium text-xs min-[1084px]:text-sm text-emerald-700 dark:text-emerald-400">
+                      <span className="font-medium text-xs min-[1084px]:text-sm text-action">
                         {t("reward_gives")}
                       </span>
                     </label>
@@ -972,7 +972,7 @@ export default function EditItemPage({
                       <TooltipTrigger asChild>
                         <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed rounded-md cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
                           <Upload className="w-5 h-5 text-slate-400 mb-1" />
-                          <span className="text-[8px] text-slate-400 font-medium">
+                          <span className="text-xs text-muted-foreground font-medium">
                             {t("pickImage")}
                           </span>
                           <input
@@ -996,7 +996,7 @@ export default function EditItemPage({
               <Button
                 type="submit"
                 size="lg"
-                className="w-full h-12 min-[1084px]:h-14 rounded-md text-base min-[1084px]:text-lg bg-emerald-500 hover:bg-emerald-600 mt-4 tracking-wider text-white"
+                className="w-full h-12 min-[1084px]:h-14 rounded-md text-base min-[1084px]:text-lg bg-primary hover:bg-primary/90 mt-4 text-primary-foreground"
                 disabled={saving}
               >
                 {saving ? (

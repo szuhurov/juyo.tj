@@ -20,15 +20,15 @@ import { HomeClient } from "./home-client";
 // 15-second cache doesn't eliminate this delay — new listings appear up to
 // 15 seconds later (a small cost), but transitions between pages become
 // instant.
-// `type: "found"` must exactly match the client's DEFAULT filter
-// (home-client.tsx). If the server returned a mixed list while the client
-// wants only "found", the initial HTML would also show lost listings, and
-// the list would jump after hydration.
-// The cache key was also changed — otherwise the old mixed list would
-// still be served from the Data Cache until the next revalidation.
+// The filters here must exactly match the client's DEFAULT filter
+// (home-client.tsx `isDefaultFilters`) — the default is now "All" (no type).
+// While this still fetched `type: "found"`, the client never accepted these
+// items as initial data, refetched on every load, and Home showed a second
+// skeleton right after the first one.
+// New cache key so the old "found"-only list isn't served from the Data Cache.
 const getCachedHomeItems = unstable_cache(
-  () => ItemService.getItems({ type: "found" }),
-  ["home-initial-items-found"],
+  () => ItemService.getItems({}),
+  ["home-initial-items-all"],
   { revalidate: 15 },
 );
 

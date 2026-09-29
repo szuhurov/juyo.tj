@@ -35,6 +35,7 @@ import {
 import { useEffect, useState } from "react";
 import { useHomeState } from "@/lib/home-context";
 import { NotificationBell } from "@/components/notification-bell";
+import { useAddLauncher } from "@/components/add-photo-launcher";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
@@ -65,6 +66,7 @@ export function Header() {
 
   const { t } = useLanguage();
   const { triggerGoHome } = useHomeState();
+  const { openAddLauncher } = useAddLauncher();
 
   const [mounted, setMounted] = useState(false);
 
@@ -102,12 +104,8 @@ export function Header() {
               aria-label="JUYO"
               className="flex items-center space-x-2 shrink-0"
               onClick={(e) => {
-                if (pathname === "/") {
-                  e.preventDefault();
-                  router.refresh();
-                } else {
-                  triggerGoHome();
-                }
+                if (pathname === "/") e.preventDefault();
+                triggerGoHome();
               }}
             >
               <span className="hidden sm:inline text-2xl font-semibold tracking-[-0.1em] text-zinc-900 dark:text-zinc-100">
@@ -119,7 +117,7 @@ export function Header() {
           {/* Middle section: Main navigation, centered — this used to be the
               search bar's slot; search moved to the home page's filter bar. */}
           <div className="flex-[2] sm:flex-[1.5] max-w-xl flex items-center justify-center">
-            <nav className="hidden lg:flex items-center space-x-1 bg-white dark:bg-zinc-800/50 p-1 rounded-md border border-hairline">
+            <nav className="hidden lg:flex items-center space-x-1 p-1">
               {/* `mounted` used to be used here too, to prevent a hydration
                   mismatch (based on the localStorage/cookie locale), but
                   that caused "icons appearing late" — a user complaint.
@@ -143,7 +141,7 @@ export function Header() {
 
                     if (link.href === "/") {
                       if (pathname === "/") {
-                        router.refresh();
+                        triggerGoHome();
                         return;
                       }
                       triggerGoHome();
@@ -162,10 +160,10 @@ export function Header() {
                       variant={isActive ? "secondary" : "ghost"}
                       size="sm"
                       onClick={handleNavClick}
-                      className={`gap-2 rounded-md text-[13px] min-[1503px]:text-sm tracking-wider transition-all border ${
+                      className={`gap-2 rounded-sm text-[13px] min-[1503px]:text-sm transition-all border bg-transparent shadow-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 ${
                         isActive
-                          ? "bg-white text-zinc-900 border-emerald-500 ring-2 ring-emerald-500/20 dark:bg-zinc-700 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                          : "text-slate-500 hover:text-zinc-900 dark:hover:text-zinc-100 border-transparent focus:outline-none"
+                          ? "border-primary dark:border-emerald-400 text-zinc-900 dark:text-zinc-100 hover:bg-transparent"
+                          : "border-transparent text-slate-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                       }`}
                     >
                       <link.icon className="h-4 w-4 min-[1503px]:h-[18px] min-[1503px]:w-[18px]" />
@@ -188,14 +186,14 @@ export function Header() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border border-hairline rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100"
+                    className="text-[13px] text-zinc-900 dark:text-zinc-100 h-10 px-3 border border-hairline rounded-md bg-white dark:bg-zinc-800 hover:bg-zinc-100 shadow-none"
                     asChild
                   >
                     <Link href="/sign-in">{t("login")}</Link>
                   </Button>
                   <Button
                     size="sm"
-                    className="rounded-md text-[13px] bg-emerald-500 text-white hover:bg-emerald-600 h-10 px-4"
+                    className="rounded-md text-[13px] bg-emerald-500 text-white hover:bg-emerald-600 h-10 px-4 shadow-none"
                     asChild
                   >
                     <Link href="/sign-up">{t("signup")}</Link>
@@ -210,7 +208,14 @@ export function Header() {
                         className="rounded-md text-[13px] bg-emerald-500 hover:bg-emerald-600 text-white h-10 px-4"
                         asChild
                       >
-                        <Link href="/items/add">
+                        <Link
+                          href="/items/add"
+                          onClick={(e) => {
+                            // Like the app: pick photos first, then open the form.
+                            e.preventDefault();
+                            openAddLauncher();
+                          }}
+                        >
                           <PlusCircle className="h-[18px] w-[18px] mr-1.5" />
                           {t("addItemTitle")}
                         </Link>

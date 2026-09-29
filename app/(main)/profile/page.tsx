@@ -42,6 +42,7 @@ import {
   AlertTriangle,
   Pencil,
   QrCode,
+  ChevronLeft,
   Menu as MenuIcon,
   Download,
   Palette,
@@ -119,9 +120,11 @@ import {
   useUserItems,
   useSavedItems,
 } from "@/lib/hooks/use-items"; // Dedicated hooks for fetching items from the database
-import { useQueryClient } from "@tanstack/react-query"; // For managing the data cache
+import { useQuery, useQueryClient } from "@tanstack/react-query"; // For managing the data cache
 import { VerifiedBadge } from "@/components/verified-badge";
-import { UserAnalyticsCard } from "@/components/profile/user-analytics-card";
+import { UserAnalyticsCard, type PostsFilter } from "@/components/profile/user-analytics-card";
+import { MatchCard, MatchCardSkeleton } from "@/components/match-card";
+import { MatchService, type PossibleMatch } from "@/lib/services/match-service";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
 
 // Clerk normally sends errors as { errors: [{ code, longMessage, message }] }
@@ -556,6 +559,33 @@ function ProfileContent() {
     userId || undefined,
     getToken,
   );
+
+  // "My posts" filter — same as the app (profile.tsx postsFilter): the three
+  // UserAnalyticsCard tiles pick Active / Resolved / Matches.
+  const [postsFilter, setPostsFilter] = useState<PostsFilter>("active");
+  const filteredMyItems = myItems.filter((item) =>
+    postsFilter === "resolved" ? item.is_resolved : !item.is_resolved,
+  );
+  const { data: myMatches = [], isLoading: matchesLoading } = useQuery({
+    queryKey: ["my-possible-matches", userId],
+    queryFn: () => MatchService.getMyPossibleMatches(30, createClerkSupabaseClient(getToken)),
+    enabled: !!userId && postsFilter === "matches",
+    staleTime: 30000,
+  });
+  const [dismissingMatchId, setDismissingMatchId] = useState<string | null>(null);
+  const handleDismissMatch = async (match: PossibleMatch) => {
+    setDismissingMatchId(match.matchId);
+    try {
+      await MatchService.dismiss(match, createClerkSupabaseClient(getToken));
+      queryClient.setQueryData<PossibleMatch[]>(["my-possible-matches", userId], (prev) =>
+        (prev ?? []).filter((m) => m.matchId !== match.matchId),
+      );
+    } catch {
+      toast.error(t("error"));
+    } finally {
+      setDismissingMatchId(null);
+    }
+  };
   // The listing the user just published — a check countdown is shown on
   // top of its photo.
   //
@@ -1115,8 +1145,40 @@ function ProfileContent() {
       case "posts":
         return (
           <div className="space-y-6">
-            <UserAnalyticsCard />
-            {/* List of personal listings */}
+            <UserAnalyticsCard
+              items={myItems}
+              itemsLoading={postsLoading}
+              selectedFilter={postsFilter}
+              onSelectFilter={setPostsFilter}
+            />
+            {postsFilter === "matches" ? (
+              // Only the matches themselves (same RPC/card as /matches) — never
+              // the posts grid, like the app.
+              matchesLoading ? (
+                <div className="space-y-3 max-w-2xl">
+                  {[0, 1, 2].map((i) => (
+                    <MatchCardSkeleton key={i} />
+                  ))}
+                </div>
+              ) : myMatches.length > 0 ? (
+                <div className="space-y-3 max-w-2xl">
+                  <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{t("matchesPageTitle")}</h3>
+                  {myMatches.map((match) => (
+                    <MatchCard
+                      key={match.matchId}
+                      match={match}
+                      onDismiss={handleDismissMatch}
+                      dismissing={dismissingMatchId === match.matchId}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-md border-2 border-dashed border-slate-200 dark:border-zinc-800">
+                  <Sparkles className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
+                  <h4 className="font-medium text-muted-foreground text-sm">{t("matchesEmpty")}</h4>
+                </div>
+              )
+            ) : (
             <div>
               {postsLoading ? (
                 <div className={ITEM_GRID_CLASS}>
@@ -1124,9 +1186,9 @@ function ProfileContent() {
                     <ItemCardSkeleton key={i} variant="profile" />
                   ))}
                 </div>
-              ) : myItems.length > 0 ? (
+              ) : filteredMyItems.length > 0 ? (
                 <div className={ITEM_GRID_CLASS}>
-                  {myItems.map((item) => (
+                  {filteredMyItems.map((item) => (
                     <ItemCard
                       key={item.id}
                       item={item}
@@ -1141,12 +1203,13 @@ function ProfileContent() {
               ) : (
                 <div className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-md border-2 border-dashed border-slate-200 dark:border-zinc-800">
                   <PackageSearch className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 text-zinc-300 mx-auto mb-4" />
-                  <h4 className="font-medium text-slate-400 text-xs min-[1084px]:text-sm tracking-widest">
+                  <h4 className="font-medium text-muted-foreground text-sm">
                     {t("noItemsFound")}
                   </h4>
                 </div>
               )}
             </div>
+            )}
           </div>
         );
 
@@ -1184,20 +1247,8 @@ function ProfileContent() {
         // until then we show a skeleton, not the incomplete UI with
         // profile=null (broken buttons, an empty QR), so navigating from
         // another page to this tab doesn't feel like it "stands empty".
-        if (profileLoading) {
-          return (
-            <div className="space-y-8 pb-32">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start px-2">
-                <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-md" />
-                <div className="space-y-5">
-                  <Skeleton className="h-10 w-40 rounded-md" />
-                  <Skeleton className="h-24 w-full rounded-md" />
-                  <Skeleton className="h-24 w-full rounded-md" />
-                </div>
-              </div>
-            </div>
-          );
-        }
+        // Like the app: the page renders at once; only the QR preview and the
+        // status toggle show a skeleton until the profile arrives.
         return (
           // `pb-4`, not `pb-32`: user request — the page shouldn't scroll
           // past the bottom of the QR code. `pb-32` was there to compensate
@@ -1205,18 +1256,27 @@ function ProfileContent() {
           // within itself via `max-h-[50dvh]` (see its comment below), so
           // this extra space is no longer needed.
           <div className="space-y-8 pb-4">
-            {/* QR status — like native (see app/(tabs)/qr.tsx's qrTitleRow),
-                a compact title+toggle row at the very top of the tab on
-                mobile. The desktop copy lives further down, at the top of
-                the right (settings) column instead — see its comment there. */}
-            <div className="md:hidden flex items-center gap-2 px-2">
-              <QrCode className="w-[18px] h-[18px] text-zinc-900 dark:text-white shrink-0" />
-              <span className="flex-1 font-semibold text-sm text-zinc-900 dark:text-white">
-                {t("qrMyCode")}
+            {/* Title row — same as the app's qrTitleRow on every screen size:
+                back, "Your QR code", and the status toggle across from it. */}
+            <div className="flex items-center gap-1.5 px-2">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                aria-label={t("back")}
+                className="grid size-9 -ml-2 place-items-center rounded-md text-zinc-900 dark:text-white hover:bg-tile transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="flex-1 font-semibold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
+                {t("qrCodeLabel")}
               </span>
-              {!isQrLocked && (
+              {profileLoading ? (
+                <Skeleton className="h-6 w-11 rounded-full" />
+              ) : !isQrLocked && (
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={qrToggleOn}
                   onClick={handleToggleQrActive}
                   aria-label={t("qrStatus")}
                   className={cn(
@@ -1293,8 +1353,11 @@ function ProfileContent() {
                       SQUARE, and `w-full` (no max-w limit) — user request:
                       "the square should be full width". The max-w-[280px]
                       limit (for "no scroll") was reverted. */}
-                  <div className="relative group bg-white dark:bg-zinc-800 rounded-md p-3 flex items-center justify-center border border-hairline dark:border-zinc-700 w-full aspect-square overflow-hidden shadow-none transition-all duration-300">
+                  <div className="relative flex items-center justify-center w-full py-2">
                     <div className="scale-95 md:scale-100 min-[1084px]:scale-110 min-[1503px]:scale-[1.15] origin-center transition-transform duration-300 shrink-0">
+                      {profileLoading ? (
+                        <Skeleton className="size-[246px] rounded-2xl" />
+                      ) : (
                       <QRCard
                         id={user?.id || ""}
                         qrCode={profile?.qr_code}
@@ -1318,6 +1381,7 @@ function ProfileContent() {
                         className="qr-card-mobile-hide-text"
                         innerRef={qrRef}
                       />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1344,7 +1408,7 @@ function ProfileContent() {
                   <div className="md:hidden mt-5 w-full px-1">
                     <Button
                       onClick={() => toast.info(t("qrComingSoon"))}
-                      className="w-full h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                      className="w-full h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[13px] transition-all"
                     >
                       {t("qrBuy")}
                     </Button>
@@ -1353,13 +1417,13 @@ function ProfileContent() {
                   <div className="md:hidden flex items-center gap-3 mt-5 w-full px-1">
                     <Button
                       onClick={handleDownloadQR}
-                      disabled={isDownloading}
-                      className="flex-1 h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      disabled={isDownloading || profileLoading}
+                      className="flex-1 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[13px] transition-all gap-2 px-2.5"
                     >
                       {isDownloading ? (
-                        <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
+                        <Loader2 className="w-[18px] h-[18px] animate-spin" />
                       ) : (
-                        <Download className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px] text-white" />
+                        <Download className="w-[18px] h-[18px] text-white" />
                       )}
                       {t("download")}
                     </Button>
@@ -1369,10 +1433,11 @@ function ProfileContent() {
                         explanatory modal, not the actual action. */}
                     <Button
                       onClick={() => setShowWallpaperInfoModal(true)}
+                      disabled={profileLoading}
                       variant="outline"
-                      className="flex-1 h-11 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      className="flex-1 h-11 rounded-xl bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 shadow-none text-zinc-700 dark:text-zinc-200 font-medium text-xs transition-all gap-2 px-2.5"
                     >
-                      <Smartphone className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
+                      <Smartphone className="w-[18px] h-[18px]" />
                       {t("qrWallpaperBtn")}
                     </Button>
                   </div>
@@ -1382,46 +1447,6 @@ function ProfileContent() {
                 {/* Right column: settings, and below it (md+ only) the same
                     download/wallpaper buttons — user request. */}
                 <div className="flex flex-col gap-5">
-                {/* QR status — desktop copy of the mobile row above (see its
-                    comment), placed on the right side (top of this column)
-                    per user request. Shown regardless of tier — unlike the
-                    settings panel below, this has nothing to do with the
-                    sticker's design. */}
-                {!isQrLocked && (
-                  <div className="hidden md:flex items-center justify-between gap-3 px-4 py-3.5 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <QrCode className="w-[18px] h-[18px] text-slate-500 shrink-0" />
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                          {t("qrStatus")}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowWhyQRModal(true)}
-                          className="text-[11px] font-medium text-slate-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors underline decoration-dotted underline-offset-2 text-left"
-                        >
-                          {t("qrSecurityStatusWhy") || "Барои чӣ QR-код лозим аст?"}
-                        </button>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleToggleQrActive}
-                      aria-label={t("qrStatus")}
-                      className={cn(
-                        "relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none",
-                        qrToggleOn ? "bg-emerald-500" : "bg-slate-300 dark:bg-zinc-700",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
-                          qrToggleOn ? "translate-x-5" : "translate-x-0",
-                        )}
-                      />
-                    </button>
-                  </div>
-                )}
                 {/* All settings only exist in "Custom" and "Pro".
                     In "Basic" the column stays intentionally empty. */}
                 {!isBasicTier && (
@@ -1433,7 +1458,7 @@ function ProfileContent() {
                 // the page must NOT scroll at all, and the panel needs to
                 // sit closer to the buttons above. For that reason we
                 // deliberately reduced native's padding.
-                <div className="space-y-1.5 px-3 pt-4 pb-6 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
+                <div className="space-y-1.5 px-3 pt-4 pb-6 rounded-3xl bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
                   {/* Text gradient and background gradient in ONE row —
                       they come FIRST (native's order: gradient → dot shape
                       → corners, not the other way around). */}
@@ -1497,7 +1522,7 @@ function ProfileContent() {
                   <div className="hidden md:block w-full px-1">
                     <Button
                       onClick={() => toast.info(t("qrComingSoon"))}
-                      className="w-full h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all"
+                      className="w-full h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[13px] transition-all"
                     >
                       {t("qrBuy")}
                     </Button>
@@ -1506,22 +1531,23 @@ function ProfileContent() {
                   <div className="hidden md:flex items-center gap-3 w-full px-1">
                     <Button
                       onClick={handleDownloadQR}
-                      disabled={isDownloading}
-                      className="flex-1 h-11 rounded-md bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      disabled={isDownloading || profileLoading}
+                      className="flex-1 h-11 rounded-xl bg-emerald-500 hover:bg-emerald-600 border-none shadow-none text-white font-medium text-[13px] transition-all gap-2 px-2.5"
                     >
                       {isDownloading ? (
-                        <Loader2 className="w-3 h-3 min-[1084px]:w-3.5 min-[1084px]:h-3.5 animate-spin" />
+                        <Loader2 className="w-[18px] h-[18px] animate-spin" />
                       ) : (
-                        <Download className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px] text-white" />
+                        <Download className="w-[18px] h-[18px] text-white" />
                       )}
                       {t("download")}
                     </Button>
                     <Button
                       onClick={() => setShowWallpaperInfoModal(true)}
+                      disabled={profileLoading}
                       variant="outline"
-                      className="flex-1 h-11 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 shadow-none text-zinc-900 dark:text-white font-medium text-[11px] min-[1084px]:text-xs tracking-normal transition-all gap-1.5 px-2.5"
+                      className="flex-1 h-11 rounded-xl bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 shadow-none text-zinc-700 dark:text-zinc-200 font-medium text-xs transition-all gap-2 px-2.5"
                     >
-                      <Smartphone className="w-3.5 h-3.5 min-[1084px]:w-[18px] min-[1084px]:h-[18px]" />
+                      <Smartphone className="w-[18px] h-[18px]" />
                       {t("qrWallpaperBtn")}
                     </Button>
                   </div>
@@ -1534,17 +1560,7 @@ function ProfileContent() {
 
       case "info":
         return (
-          <div className="pb-20">
-            {/* Settings tab header */}
-            {/* Full-bleed: `-mx-*` cancels the parent's padding and `px-*`
-                adds it back — so both must match the parent's padding
-                (`px-2 sm:px-4`) ACROSS breakpoints, otherwise the block runs
-                off the screen and a horizontal scroll appears. */}
-            <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-4">
-              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight">
-                {t("settings")}
-              </h3>
-            </div>
+          <div className="pb-20 pt-4">
 
             <div className="max-w-2xl px-2 space-y-6 md:mx-auto">
               {/* Profile card — avatar, name, email */}
@@ -1968,13 +1984,7 @@ function ProfileContent() {
 
       case "saved":
         return (
-          <div className="space-y-6">
-            {/* Saved tab header */}
-            <div className="sticky top-0 z-40 bg-canvas/80 backdrop-blur-md pt-4 pb-4 px-2.5 -mx-2.5 sm:px-4 sm:-mx-4 mb-6">
-              <h3 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight">
-                {t("savedItems")}
-              </h3>
-            </div>
+          <div className="space-y-6 pt-4">
 
             {/* List of saved items */}
             <div className="">
@@ -2683,20 +2693,8 @@ function ProfileContent() {
  */
 export default function ProfilePage() {
   return (
-    <Suspense
-      fallback={
-        <div className="space-y-8 pb-32 px-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
-            <Skeleton className="aspect-square w-full max-w-sm mx-auto rounded-md" />
-            <div className="space-y-5">
-              <Skeleton className="h-10 w-40 rounded-md" />
-              <Skeleton className="h-24 w-full rounded-md" />
-              <Skeleton className="h-24 w-full rounded-md" />
-            </div>
-          </div>
-        </div>
-      }
-    >
+    // No fallback: each tab draws its own skeleton, so only one skeleton style shows.
+    <Suspense fallback={null}>
       <ProfileContent />
     </Suspense>
   );
