@@ -14,8 +14,7 @@ const PrivacyBlurEditor = dynamic(() =>
 /**
  * The "Мозаика кардан" (Pixelate) button — lets the admin manually pixelate
  * sensitive areas in any post (not only when it's first submitted).
- * There's no AI suggestion here (initialRegions=[]) — the admin draws it
- * themselves, since the image already exists in storage.
+ * The admin draws the regions, since the image already exists in storage.
  */
 export function PostBlurButton({ postId, images }: { postId: string; images: { id: string; image_url: string }[] }) {
   const [open, setOpen] = useState(false);
@@ -73,7 +72,6 @@ export function PostBlurButton({ postId, images }: { postId: string; images: { i
         <PrivacyBlurEditor
           open={open}
           files={files}
-          initialRegions={[]}
           onConfirm={handleConfirm}
           onCancel={() => setOpen(false)}
         />

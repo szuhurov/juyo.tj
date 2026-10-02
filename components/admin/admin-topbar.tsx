@@ -44,7 +44,7 @@ export function AdminTopbar() {
   };
 
   return (
-    <header className="h-20 border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-30 flex items-center gap-3 px-4 lg:px-8">
+    <header className="h-20 border-b border-zinc-100 dark:border-zinc-800 material sticky top-0 z-30 flex items-center gap-3 px-4 lg:px-8">
       <Button
         variant="ghost"
         size="icon"

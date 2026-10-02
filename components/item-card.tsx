@@ -18,13 +18,12 @@ import {
   Loader2,
   ShieldAlert,
   Clock,
-  CheckCircle2,
 } from "lucide-react";
 import { useLanguage } from "@/lib/language-context";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { createClerkSupabaseClient } from "@/lib/supabase";
 import {
@@ -37,26 +36,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ImagePlaceholder } from "@/components/image-placeholder";
-import { PUBLISH_COUNTDOWN_SECONDS } from "@/lib/ui-constants";
-
-const APPROVED_FLASH_MS = 4000;
 
 export function ItemCard({
   item,
-  justPublishedAt,
 }: {
   item: Item;
   index?: number;
   savedItemIds?: Set<string>;
-  /** The moment publishing started (Date.now()) — if the user just
-   *  published this listing. A countdown is shown over the image because
-   *  the AI check on the server takes a few seconds.
-   *
-   *  Deliberately a TIMESTAMP, not a `boolean`: uploading images takes
-   *  3-5 seconds and the card only appears afterward — with a boolean
-   *  the countdown would restart from 10 right at that point, even
-   *  though the check had already begun. */
-  justPublishedAt?: number;
 }) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -66,42 +52,7 @@ export function ItemCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   // The URL may exist but the image may still fail to load — see ItemFeedCard.
   const [imgFailed, setImgFailed] = useState(false);
-  // `tick` is only used to recompute the remaining time — the countdown
-  // itself is derived from `justPublishedAt`, not from state, so it
-  // doesn't restart if the card appears late.
-  const [tick, setTick] = useState(0);
-  const [flashDone, setFlashDone] = useState(false);
-
-  const countdown = justPublishedAt
-    ? Math.max(
-        0,
-        PUBLISH_COUNTDOWN_SECONDS -
-          Math.floor((Date.now() - justPublishedAt) / 1000),
-      )
-    : 0;
-
-  useEffect(() => {
-    if (!justPublishedAt || countdown <= 0) return;
-    const id = setTimeout(() => setTick((v) => v + 1), 1000);
-    return () => clearTimeout(id);
-  }, [justPublishedAt, countdown, tick]);
-
-  // After the countdown, if the listing was approved, a green indicator
-  // stays for a few seconds — otherwise the user would see no result at
-  // all, since an approved listing has no overlay.
-  useEffect(() => {
-    if (!justPublishedAt || countdown > 0 || flashDone) return;
-    const id = setTimeout(() => setFlashDone(true), APPROVED_FLASH_MS);
-    return () => clearTimeout(id);
-  }, [justPublishedAt, countdown, flashDone]);
-
   const isOwner = !!userId && userId === item.user_id;
-  const checkingNow = countdown > 0;
-  const approvedFlash =
-    !!justPublishedAt &&
-    countdown === 0 &&
-    !flashDone &&
-    item.moderation_status === "approved";
   const exactDate = format(new Date(item.date), "dd.MM.yyyy");
   const thumb = item.images?.[0]?.image_url;
   // "I don't have a photo" listings have no item_images row — fall back to
@@ -141,7 +92,7 @@ export function ItemCard({
       <Link
         href={`/items/${item.id}`}
         prefetch
-        className="group flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 overflow-hidden"
+        className="pressable group flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 overflow-hidden"
       >
         {/* Image is rounded on all four sides — the type indicator moved
             to the bottom button, so a mask and `-mb-px` are no longer needed. */}
@@ -174,12 +125,6 @@ export function ItemCard({
             />
           )}
 
-          {item.similarity_score !== undefined && (
-            <span className="absolute top-2 left-2 mt-8 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-primary text-primary-foreground">
-              {Math.round(item.similarity_score * 100)}% {t("matchForYourImage")}
-            </span>
-          )}
-
           {isOwner && (
             <div className="absolute top-2 right-2 flex items-center gap-1.5">
               <button
@@ -198,54 +143,6 @@ export function ItemCard({
               >
                 <Trash2 className="size-4" />
               </button>
-            </div>
-          )}
-
-          {/* Verification countdown — z-30, above everything else (the
-              item type indicator is z-20, the moderation overlay is z-10). */}
-          {checkingNow && (
-            <div className="absolute inset-0 z-30 bg-black/65 backdrop-blur-[2px] flex items-center justify-center">
-              <div className="relative w-14 h-14">
-                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="16"
-                    fill="none"
-                    strokeWidth="3"
-                    className="stroke-white/25"
-                  />
-                  <circle
-                    cx="18"
-                    cy="18"
-                    r="16"
-                    fill="none"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    className="stroke-emerald-400 transition-[stroke-dashoffset] duration-1000 ease-linear"
-                    strokeDasharray={2 * Math.PI * 16}
-                    strokeDashoffset={
-                      2 * Math.PI * 16 * (1 - countdown / PUBLISH_COUNTDOWN_SECONDS)
-                    }
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-white font-semibold text-lg tabular-nums">
-                  {countdown}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {approvedFlash && (
-            <div className="absolute inset-0 z-30 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-2">
-              <div className="bg-white/95 dark:bg-zinc-800/95 px-3 py-2.5 rounded-md flex flex-col items-center text-center gap-1.5">
-                <div className="w-8 h-8 rounded-full bg-found-soft flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-found" />
-                </div>
-                <span className="text-xs font-semibold text-found leading-tight block">
-                  {t("postApproved")}
-                </span>
-              </div>
             </div>
           )}
 

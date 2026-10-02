@@ -127,14 +127,16 @@ Deno.serve(async (req) => {
     for (const { id: itemId } of expiredItems ?? []) {
       const { data: images } = await supabase
         .from("item_images")
-        .select("image_url")
+        .select("image_url, thumbnail_url")
         .eq("item_id", itemId);
 
       if (images?.length) {
         const filePaths = images
-          .map((img: { image_url: string }) => {
+          .flatMap((img: { image_url: string; thumbnail_url: string | null }) => [img.image_url, img.thumbnail_url])
+          .filter((url): url is string => !!url)
+          .map((url) => {
             try {
-              const parts = new URL(img.image_url).pathname.split("/public/items/");
+              const parts = new URL(url).pathname.split("/public/items/");
               return parts.length > 1 ? parts[1] : null;
             } catch {
               return null;

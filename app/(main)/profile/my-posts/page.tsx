@@ -67,13 +67,11 @@ export default function MyPostsPage() {
     };
   }, [userId, loadMyItems]);
 
-  // The AI check on the server is async (trigger_image_moderation, takes a
-  // few seconds) — until it finishes, the listing stays "pending". Without
-  // this polling, the user would see "Under review" until a manual reload,
-  // even if the server had already approved it.
+  // A "pending" listing waits for an admin. Without this polling the user
+  // would see "Under review" until a manual reload, even after approval.
   useEffect(() => {
     if (!items.some((item) => item.moderation_status === "pending")) return;
-    const interval = setInterval(loadMyItems, 3000);
+    const interval = setInterval(loadMyItems, 60_000);
     return () => clearInterval(interval);
   }, [items, loadMyItems]);
 

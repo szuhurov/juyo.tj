@@ -5,9 +5,7 @@ import dynamic from "next/dynamic";
 import { Users, Package, CheckCircle2, BellRing } from "lucide-react";
 import { useAdminStats, type StatsPeriod } from "@/lib/hooks/use-admin-stats";
 import { StatCard } from "@/components/admin/stat-card";
-import { AiModerationToggle } from "@/components/admin/ai-moderation-toggle";
 import { PostExpiryPanel } from "@/components/admin/post-expiry-panel";
-import { ReprocessEmbeddingsButton } from "@/components/admin/reprocess-embeddings-button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
@@ -95,12 +93,7 @@ export default function AdminDashboardPage() {
         <StatCard icon={BellRing} label="Push фаъол" value={stats.totalPushEnabledUsers} accent="sky" />
       </div>
 
-      {/* Left: AI moderation + embeddings (same width); right: post expiry. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-        <div className="space-y-4 min-w-0">
-          <AiModerationToggle />
-          <ReprocessEmbeddingsButton />
-        </div>
         <div className="min-w-0">
           <PostExpiryPanel />
         </div>

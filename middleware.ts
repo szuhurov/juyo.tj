@@ -34,8 +34,7 @@ const rateLimitHits = new Map<string, { count: number; resetAt: number }>();
 /**
  * SECURITY GAP FOUND (audit): `/api/account/request-deletion` is public and
  * unauthenticated by design (Google Play Data Safety requires it to work
- * without sign-in), and `/api/items/moderate` triggers a paid OpenAI call —
- * neither was covered by the contact-route limiter below. Same in-memory
+ * without sign-in) — it was not covered by the contact-route limiter below. Same in-memory
  * mechanism, a separate (tighter) bucket, since these are action endpoints,
  * not page loads.
  */
@@ -76,9 +75,7 @@ function isRateLimited(request: Request, path: string): boolean {
 // Exported for tests/middleware.test.ts — same reasoning as the rest of this
 // file: in-memory only, not distributed, but a real obstacle either way.
 export function isLimitedActionRateLimited(request: Request, path: string): boolean {
-  const isLimitedAction =
-    path === "/api/account/request-deletion" || path === "/api/items/moderate";
-  if (!isLimitedAction) return false;
+  if (path !== "/api/account/request-deletion") return false;
 
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||

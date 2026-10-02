@@ -73,30 +73,3 @@ export const HOME_GRID_CLASS =
  */
 export const HOME_CONTENT_PT =
   "pt-[calc(110px+(100vw-20px)*0.1382)] md:pt-[138px] lg:pt-[134px] min-[1084px]:pt-[138px]";
-
-/**
- * Communication between the "add listing" page and the listing list.
- *
- * "Done" navigates to the profile IMMEDIATELY — the listing is still
- * being saved in the background and may finish only after the navigation.
- * So the new listing's id is announced via an event (if the list is
- * already open) and simultaneously written to sessionStorage (in case the
- * list is opened later). The list picks it up and shows a verification
- * countdown on top of that same card.
- */
-export const JUST_PUBLISHED_EVENT = "juyo-item-published";
-export const JUST_PUBLISHED_KEY = "juyo-just-published";
-
-/** The countdown is tied to `startedAt`, not to the moment the card
- *  appears — otherwise it would restart from 10 after the images finish
- *  uploading (3-5 seconds), even though verification had already started
- *  long before. */
-export const PUBLISH_COUNTDOWN_SECONDS = 10;
-export const PUBLISH_COUNTDOWN_MS = PUBLISH_COUNTDOWN_SECONDS * 1000;
-
-export interface JustPublishedState {
-  /** Unknown until the save completes. */
-  id?: string;
-  /** The moment "Publish" was pressed (Date.now()). */
-  startedAt: number;
-}

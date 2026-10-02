@@ -2,7 +2,8 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 
 /**
- * Phase 5 — AI Matching. Read-only from the client's point of view: every
+ * Possible matches (rule-based, no AI — see migration
+ * 20261001000000_remove_ai). Read-only from the client's point of view: every
  * row here comes from a SECURITY DEFINER RPC (see
  * supabase/migrations/20260924000000_ai_matching.sql) — there is no
  * client-callable write. Scores/reasons are computed entirely server-side

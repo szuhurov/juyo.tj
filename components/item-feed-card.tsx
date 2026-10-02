@@ -33,7 +33,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
     <Link
       href={`/items/${item.id}`}
       prefetch
-      className="group flex flex-col gap-0 rounded-md bg-white dark:bg-transparent overflow-hidden"
+      className="pressable group flex flex-col gap-0 rounded-md bg-white dark:bg-transparent overflow-hidden"
     >
       {/* Image is rounded on all four sides — the type indicator moved
           from here to the bottom button, so the mask's inner corner and
@@ -61,11 +61,6 @@ export function ItemFeedCard({ item }: { item: Item }) {
             sizes="(max-width: 640px) 50vw, 25vw"
             className="object-cover rounded-md"
           />
-        )}
-        {item.similarity_score !== undefined && (
-          <span className="absolute top-2 left-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold bg-primary text-primary-foreground">
-            {Math.round(item.similarity_score * 100)}% {t("matchForYourImage")}
-          </span>
         )}
         {PAID_FEATURES_ENABLED && (item.vip_tier === "vip" || item.vip_tier === "vvip") && (
           <span
@@ -96,9 +91,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
         {/* Description — ONE line, gray and smaller than the title, so the
             hierarchy isn't broken. `truncate` is mandatory: the card's
             height in the grid must stay consistent regardless of text
-            length. The text has already been stripped of document numbers
-            at publish time (`stripDocumentNumbers` on the `items/add`
-            page), so no filtering is needed here. */}
+            length. */}
         {item.description && (
           <p className="-mt-0.5 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
             {item.description}

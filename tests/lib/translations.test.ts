@@ -33,15 +33,17 @@ describe('translations completeness', () => {
     });
   }
 
-  it('tg locale has ai_steps object with all required sub-keys', () => {
-    const aiSteps = translations.tg.ai_steps as Record<string, any>;
-    expect(aiSteps).toBeDefined();
-    const requiredSubKeys = [
-      'scanning_pixels', 'detecting_features', 'checking_safety',
-      'brain_started', 'please_wait', 'do_not_exit',
+  it('every locale has the report / block strings', () => {
+    const keys = [
+      'reportTitle', 'reportSend', 'reportSent', 'reportReasonSpam', 'reportReasonOther',
+      'blockUser', 'blockConfirmTitle', 'userBlocked', 'blockedUsersTitle', 'unblock',
+      'mod_reported_content',
     ];
-    for (const key of requiredSubKeys) {
-      expect(aiSteps[key], `Missing ai_steps.${key}`).toBeDefined();
+    for (const locale of ['tg', 'ru', 'en'] as const) {
+      const dict = translations[locale] as Record<string, unknown>;
+      for (const key of keys) {
+        expect(dict[key], `Missing ${locale}.${key}`).toBeTypeOf('string');
+      }
     }
   });
 

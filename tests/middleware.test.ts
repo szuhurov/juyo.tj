@@ -26,13 +26,6 @@ describe('Limited-action rate limit', () => {
     expect(isLimitedActionRateLimited(req(ip), '/api/account/request-deletion')).toBe(true);
   });
 
-  it('tracks items/moderate and request-deletion as separate buckets per IP', () => {
-    const ip = '203.0.113.20';
-    for (let i = 0; i < 10; i++) isLimitedActionRateLimited(req(ip), '/api/items/moderate');
-    // The moderate bucket for this IP is now exhausted, but request-deletion is a different key.
-    expect(isLimitedActionRateLimited(req(ip), '/api/account/request-deletion')).toBe(false);
-  });
-
   it('does not rate-limit unrelated paths', () => {
     expect(isLimitedActionRateLimited(req('203.0.113.30'), '/api/some-other-route')).toBe(false);
   });

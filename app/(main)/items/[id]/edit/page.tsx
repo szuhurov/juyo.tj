@@ -2,7 +2,6 @@
 
 /**
  * Item edit page.
- * Optimized for speed and AI quality.
  */
 
 import { useEffect, useState, useCallback, use } from "react"; // For working with state and effects
@@ -11,7 +10,7 @@ import { useRouter } from "next/navigation"; // For navigating to other pages
 import { useAuth } from "@clerk/nextjs"; // For getting user data
 import { useLanguage } from "@/lib/language-context"; // For language translation
 import { CATEGORIES, Item, UNSPECIFIED_REWARD } from "@/lib/services/item-service"; // For working with listings
-import { createClerkSupabaseClient, supabase as anonSupabase } from "@/lib/supabase"; // For connecting to the database
+import { createClerkSupabaseClient } from "@/lib/supabase"; // For connecting to the database
 import { Button } from "@/components/ui/button"; // Button component
 import { Input } from "@/components/ui/input"; // Text input component
 import { Textarea } from "@/components/ui/textarea"; // Long text input component
@@ -27,12 +26,11 @@ import {
 } from "@/components/ui/select"; // For a selectable list
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // Card component
 import { toast } from "sonner"; // For showing messages
-import { Loader2, X, Upload, ShieldAlert, ArrowLeft } from "lucide-react"; // Icons
+import { Loader2, X, Upload, EyeOff } from "lucide-react"; // Icons
 import Image from "next/image"; // For images
 import { compressImage } from "@/lib/image-utils";
 import { CITY_IDS, DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { cn } from "@/lib/utils";
-import type { PrivacyRegion } from "@/components/privacy-blur-editor";
 import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 
 import {
@@ -83,80 +81,12 @@ export default function EditItemPage({
     { url: string; isExisting: boolean }[]
   >([]);
 
-  // Privacy protection editor — see items/add/page.tsx
+  // Privacy editor — opened by the user to hide document numbers, names or
+  // faces on NEW photos (drawn by hand; see items/add/page.tsx).
   const [privacyReview, setPrivacyReview] = useState<{
     files: File[];
-    regions: PrivacyRegion[];
     resolve: (result: File[] | null) => void;
   } | null>(null);
-
-  // Moderation states (AI Moderation States)
-  const [moderationStatus, setModerationStatus] = useState<
-    "idle" | "checking" | "passed" | "failed"
-  >("idle");
-  const [moderationError, setModerationError] = useState<string | null>(null);
-  const [scanMessage, setScanMessage] = useState("");
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  // Defaults to true (until settings load) — see items/add/page.tsx for the
-  // full explanation. If it's off, we skip the AI check in edit too (no
-  // point spending on OpenAI) — the listing stays in "pending" status.
-  const [aiModerationEnabled, setAiModerationEnabled] = useState(true);
-
-  useEffect(() => {
-    anonSupabase
-      .from("app_settings")
-      .select("ai_moderation_enabled")
-      .eq("id", true)
-      .single()
-      .then(({ data }) => {
-        if (data) setAiModerationEnabled(data.ai_moderation_enabled);
-      });
-  }, []);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | undefined;
-    let timer: ReturnType<typeof setInterval> | undefined;
-
-    if (moderationStatus === "checking") {
-      const technicalSteps = [
-        t("ai_steps.scanning_pixels"),
-        t("ai_steps.detecting_features"),
-        t("ai_steps.checking_safety"),
-        t("ai_steps.matching_categories"),
-        t("ai_steps.optimizing_description"),
-        t("ai_steps.forensic_engine"),
-      ];
-
-      setScanMessage(t("ai_steps.brain_started"));
-
-      let stepCount = 0;
-      interval = setInterval(() => {
-        stepCount++;
-        if (stepCount % 6 === 3) {
-          setScanMessage(t("ai_steps.please_wait"));
-        } else if (stepCount % 6 === 0) {
-          setScanMessage(t("ai_steps.do_not_exit"));
-        } else {
-          const techIndex = Math.floor(stepCount / 2) % technicalSteps.length;
-          setScanMessage(technicalSteps[techIndex]);
-        }
-      }, 3000);
-
-      timer = setInterval(() => {
-        setElapsedSeconds((prev) => Math.min(prev + 1, 120));
-      }, 1000);
-    } else {
-      setElapsedSeconds(0);
-      setActiveImageIndex(0);
-      setScanMessage("");
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-      if (timer) clearInterval(timer);
-    };
-  }, [moderationStatus, previews.length, t]);
 
   /**
    * Function for fetching listing data from the database
@@ -168,7 +98,7 @@ export default function EditItemPage({
 
       const { data, error } = await supabase
         .from("items")
-        .select("*, images:item_images(image_url)")
+        .select("*, images:item_images(image_url, thumbnail_url)")
         .eq("id", id)
         .single();
 
@@ -244,109 +174,6 @@ export default function EditItemPage({
   };
 
   /**
-   * Function for AI moderation (only for new images)
-   */
-  const runAIModeration = async (
-    newFiles: File[],
-    currentTitle: string,
-    currentDesc: string,
-  ) => {
-    setModerationStatus("checking");
-    setModerationError(null);
-
-    try {
-      const supabase = createClerkSupabaseClient(getToken);
-
-      const formDataAI = new FormData();
-
-      // We only send the new files for checking
-      newFiles.forEach((file) => {
-        formDataAI.append("image", file);
-      });
-
-      formDataAI.append("lang", locale);
-      formDataAI.append("type", type);
-      formDataAI.append("title", currentTitle);
-      formDataAI.append("description", currentDesc);
-      formDataAI.append("mode", "moderation_only");
-
-      const { data, error } = await supabase.functions.invoke("ai-brain", {
-        body: formDataAI,
-      });
-
-      if (error || (data && data.is_safe === false)) {
-        // See supabase/functions/ai-brain — a technical failure (`technical_error`)
-        // must not read as "your content was rejected".
-        const isTechnical = !error && data?.technical_error === true;
-        setModerationStatus("failed");
-        setModerationError(
-          isTechnical
-            ? t("ai_steps.technical_error") || t("error")
-            : data?.reason || error?.message || t("error"),
-        );
-        return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[], redactedTitle: currentTitle, redactedDescription: currentDesc };
-      }
-
-      setModerationStatus("passed");
-      setScanMessage(t("ai_steps.images_passed") || "Аксҳо қабул шуданд!");
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return {
-        isSafe: true,
-        isDocument: !!data?.is_document,
-        privacyRegions: (data?.privacy_regions ?? []) as PrivacyRegion[],
-        redactedTitle: (data?.redacted_title as string) || currentTitle,
-        redactedDescription: (data?.redacted_description as string) || currentDesc,
-      };
-    } catch (error) {
-      console.error("AI Moderation Error:", error);
-      setModerationStatus("failed");
-      setModerationError(error instanceof Error ? error.message : String(error));
-      return { isSafe: false, isDocument: false, privacyRegions: [] as PrivacyRegion[], redactedTitle: currentTitle, redactedDescription: currentDesc };
-    }
-  };
-
-  /**
-   * Function for text moderation (only for changed text)
-   */
-  const runTextModeration = async (title: string, description: string) => {
-    setModerationStatus("checking");
-    setModerationError(null);
-    setScanMessage(
-      t("ai_steps.checking_custom_text") || "AI матни нави шуморо месанҷад...",
-    );
-
-    try {
-      const supabase = createClerkSupabaseClient(getToken);
-
-      const { data, error } = await supabase.functions.invoke(
-        "text-moderation",
-        {
-          body: {
-            record: { title, description, moderation_status: "pending" },
-            lang: locale,
-          },
-        },
-      );
-
-      if (error || (data && data.is_safe === false)) {
-        setModerationStatus("failed");
-        setModerationError(data?.reason || error?.message || t("error"));
-        return false;
-      }
-
-      setModerationStatus("passed");
-      setScanMessage(t("ai_steps.text_passed") || "Матн қабул шуд!");
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return true;
-    } catch (error) {
-      console.error("Text Moderation Error:", error);
-      setModerationStatus("failed");
-      setModerationError(error instanceof Error ? error.message : String(error));
-      return false;
-    }
-  };
-
-  /**
    * Main function for saving changes (Update)
    */
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -382,54 +209,14 @@ export default function EditItemPage({
     try {
       const supabase = createClerkSupabaseClient(getToken);
 
-      let finalImages = images;
-      let finalTitle = title;
-      let finalDescription = description;
-      let finalCategory = category;
+      const finalImages = images;
+      const finalTitle = title;
+      const finalDescription = description;
+      const finalCategory = category;
 
+      // Any content change sends the listing back to an admin
+      // (enforce_moderation_status puts it in 'pending').
       const contentChanged = hasNewImages || textChanged;
-
-      // MANDATORY MODERATION — only if AI is enabled by the admin and
-      // something has actually changed. If AI is off, we don't call OpenAI at
-      // all (pointless) — the listing stays "pending", awaiting the admin.
-      if (aiModerationEnabled && hasNewImages) {
-        // If there's a new image, AI Brain checks both (image + text)
-        const { isSafe, isDocument, privacyRegions, redactedTitle, redactedDescription } = await runAIModeration(images, title, description);
-        if (!isSafe) {
-          setSaving(false);
-          return;
-        }
-        // This is the result of the same check above (is_document +
-        // privacy_regions) — not a new AI call. If it's a document, the user
-        // sees the regions AI suggested and can edit/add to them with the pen tool.
-        if (isDocument) {
-          // The document/passport number was removed from the text, name/surname unchanged.
-          finalTitle = redactedTitle;
-          finalDescription = redactedDescription;
-          finalCategory = "Documents";
-
-          setModerationStatus("idle");
-          const blurred = await new Promise<File[] | null>((resolve) => {
-            setPrivacyReview({ files: images, regions: privacyRegions, resolve });
-          });
-          if (!blurred) {
-            // User canceled — we stop saving, so an unblurred image doesn't get published.
-            setSaving(false);
-            return;
-          }
-          finalImages = blurred;
-          setImages(blurred);
-        }
-      } else if (aiModerationEnabled && textChanged) {
-        // If only the text was changed
-        const isSafe = await runTextModeration(title, description);
-        if (!isSafe) {
-          setSaving(false);
-          return;
-        }
-      }
-
-      setSaving(true); // Re-confirm saving state after moderation
 
       const existingUrls = item.images?.map((img) => img.image_url) || [];
       const imagesChanged =
@@ -474,9 +261,6 @@ export default function EditItemPage({
         contact_telegram: contactTelegram,
         contact_whatsapp: contactWhatsapp,
         reward: reward ? `${reward}` : null,
-        // If AI is off and something has actually changed, it stays
-        // "pending" (awaiting admin) — otherwise AI has already checked it.
-        moderation_status: !aiModerationEnabled && contentChanged ? "pending" : "approved",
         location_type: locationType,
         city,
       };
@@ -490,9 +274,13 @@ export default function EditItemPage({
 
       // 3. Remove old images and save new images
       if (imagesChanged) {
-        const removedUrls = existingUrls.filter(
-          (url) => !finalImageUrls.includes(url),
+        const thumbByUrl = new Map(
+          (item.images ?? []).map((img) => [img.image_url, img.thumbnail_url ?? null]),
         );
+        const removedUrls = existingUrls
+          .filter((url) => !finalImageUrls.includes(url))
+          .flatMap((url) => [url, thumbByUrl.get(url)])
+          .filter((url): url is string => !!url);
 
         if (removedUrls.length > 0) {
           const filePaths = removedUrls
@@ -518,6 +306,7 @@ export default function EditItemPage({
         const imageRecords = finalImageUrls.map((url) => ({
           item_id: id,
           image_url: url,
+          thumbnail_url: thumbByUrl.get(url) ?? null,
         }));
 
         const { error: imagesError } = await supabase
@@ -527,28 +316,10 @@ export default function EditItemPage({
           console.error("DATABASE ERROR (item_images):", imagesError.message);
       }
 
-      // 4. SEARCH VECTOR REFRESH (Vector/Embedding Update)
-      // We always regenerate the embedding, so visual search keeps working.
-      // generate-embedding fetches the images ITSELF from item_images (all of them).
-      // `force` is needed because if the user only changed the title/description,
-      // the image rows weren't updated and the old vector would remain.
-      supabase.functions
-        .invoke("generate-embedding", {
-          body: {
-            item_id: id,
-            text: `${finalTitle} ${finalDescription}`,
-            force: true,
-          },
-        })
-        .catch((err) =>
-          console.error("Background embedding failed (Edit):", err),
-        );
-
       toast.success(t("updateSuccess"));
-      if (!aiModerationEnabled && contentChanged) {
-        // AI is off — the listing became "pending", awaiting admin. We take
-        // the user to their profile (not to the listing's own page), so they
-        // see "under review" in "My Listings".
+      if (contentChanged) {
+        // The listing is back in "pending", awaiting the admin — the profile
+        // shows it as "under review" in "My Listings".
         router.push("/profile?tab=posts");
       } else {
         router.push(`/items/${id}`);
@@ -557,8 +328,6 @@ export default function EditItemPage({
     } catch (error) {
       console.error(error);
       toast.error(error instanceof Error ? error.message : t("error"));
-      // If a technical error occurs, revert to the original state
-      setModerationStatus("idle");
     } finally {
       setSaving(false);
     }
@@ -568,120 +337,6 @@ export default function EditItemPage({
     return (
       <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-4 py-8 flex items-center justify-center min-h-[50vh]">
         <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-      </div>
-    );
-  }
-
-  // If we're in scanning state, show the Step 3 interface
-  if (moderationStatus !== "idle") {
-    return (
-      <div className="fixed inset-0 z-50 bg-canvas flex flex-col items-center justify-start pt-10 sm:pt-16 px-4">
-        <div className="w-full max-w-lg space-y-6 text-center">
-          {moderationStatus === "checking" && (
-            <div className="space-y-6">
-              <div className="relative group w-full aspect-square max-w-[220px] sm:max-w-[280px] lg:max-w-[220px] mx-auto">
-                <div className="absolute -inset-4 bg-emerald-500/10 rounded-md blur-2xl opacity-50 animate-pulse"></div>
-                <div className="relative h-full w-full rounded-md overflow-hidden border border-slate-100 dark:border-zinc-700 shadow-2xl bg-zinc-950/70 backdrop-blur-xl transition-all duration-700">
-                  <div className="relative h-full w-full">
-                    {previews[activeImageIndex] && (
-                      <>
-                        <Image
-                          src={previews[activeImageIndex].url}
-                          alt=""
-                          fill
-                          className="object-cover blur-3xl opacity-40 scale-110"
-                        />
-                        <Image
-                          src={previews[activeImageIndex].url}
-                          alt="Analyzing"
-                          fill
-                          className="object-contain opacity-60 transition-all duration-1000 relative z-10"
-                          key={activeImageIndex}
-                        />
-                      </>
-                    )}
-                    <div className="absolute inset-0 z-20 pointer-events-none">
-                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_30px_rgba(16,185,129,0.5)] animate-scan-fast" />
-                    </div>
-                    <div
-                      className="absolute inset-0 opacity-90 animate-grid-scan z-10 pointer-events-none"
-                      style={{
-                        backgroundImage:
-                          "radial-gradient(rgba(52, 211, 153, 1) 1.5px, transparent 1.5px)",
-                        backgroundSize: "25px 25px",
-                      }}
-                    />
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2 rounded-md flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-xs font-medium text-white">
-                        {elapsedSeconds}с / 60с
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="h-6 flex items-center justify-center">
-                <p
-                  className="text-action font-medium text-xs"
-                  key={scanMessage}
-                >
-                  {scanMessage}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {moderationStatus === "failed" && (
-            <div className="space-y-6">
-              <div className="w-20 h-20 rounded-md bg-red-50 flex items-center justify-center mx-auto shadow-sm">
-                <ShieldAlert className="w-10 h-10 text-red-500" />
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-xl font-semibold tracking-tight text-red-600">
-                  {t("ai_steps.step5_failed")}
-                </h2>
-                <div className="bg-red-50/50 p-6 rounded-md border border-red-100">
-                  <p className="text-red-700 font-semibold text-sm leading-relaxed">
-                    {moderationError || t("error")}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => setModerationStatus("idle")}
-                  className="rounded-md font-medium text-xs mt-4 text-red-600 border-red-200 hover:bg-red-100 h-12 px-8"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />{" "}
-                  {t("ai_steps.step5_fix_btn")}
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <style jsx global>{`
-          @keyframes scan-fast {
-            0% {
-              top: 0;
-            }
-            100% {
-              top: 100%;
-            }
-          }
-          @keyframes grid-scan {
-            0% {
-              background-position: 0% 0%;
-            }
-            100% {
-              background-position: 25px 25px;
-            }
-          }
-          .animate-scan-fast {
-            animation: scan-fast 1.5s linear infinite !important;
-          }
-          .animate-grid-scan {
-            animation: grid-scan 1.5s linear infinite !important;
-          }
-        `}</style>
       </div>
     );
   }
@@ -990,6 +645,33 @@ export default function EditItemPage({
                     </Tooltip>
                   )}
                 </div>
+                {/* Documents, cards, faces on NEW photos: hidden by the user before saving. */}
+                {images.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPrivacyReview({
+                        files: images,
+                        resolve: (blurred) => {
+                          if (!blurred) return;
+                          setImages(blurred);
+                          setPreviews((prev) => {
+                            let idx = 0;
+                            return prev.map((p) => {
+                              if (p.isExisting) return p;
+                              URL.revokeObjectURL(p.url);
+                              return { url: URL.createObjectURL(blurred[idx++]), isExisting: false };
+                            });
+                          });
+                        },
+                      })
+                    }
+                    className="pressable w-full h-11 rounded-md border border-hairline dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+                  >
+                    <EyeOff className="w-4 h-4" />
+                    {t("hidePersonalInfo")}
+                  </button>
+                )}
               </div>
 
               {/* Submit button */}
@@ -1017,7 +699,6 @@ export default function EditItemPage({
         <PrivacyBlurEditor
           open
           files={privacyReview.files}
-          initialRegions={privacyReview.regions}
           onConfirm={(finalFiles) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);

@@ -8,13 +8,7 @@ import { useEffect, useState, useRef, Suspense } from "react"; // For managing t
 import dynamic from "next/dynamic";
 import { useUser, SignOutButton, useAuth } from "@clerk/nextjs"; // For working with the signed-in user's data and signing out
 import { useLanguage } from "@/lib/language-context"; // For managing the interface language
-import {
-  ITEM_GRID_CLASS,
-  JUST_PUBLISHED_EVENT,
-  JUST_PUBLISHED_KEY,
-  PUBLISH_COUNTDOWN_MS,
-  type JustPublishedState,
-} from "@/lib/ui-constants";
+import { ITEM_GRID_CLASS } from "@/lib/ui-constants";
 import { useTheme } from "next-themes";
 import { ItemCardSkeleton } from "@/components/item-card-skeleton";
 import { Profile, ProfileService } from "@/lib/services/profile-service"; // For managing the user's personal data
@@ -30,6 +24,7 @@ import { getErrorMessage } from "@/lib/error-utils"; // Readable message from a 
 import {
   User,
   Bookmark,
+  Ban,
   LogOut,
   ChevronRight,
   PackageSearch,
@@ -82,6 +77,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"; // For confirmation dialogs (modals)
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"; // Generic action-confirmation dialog
+import { BlockedUsersDialog } from "@/components/blocked-users-dialog";
 
 // QR integration
 // This component uses html-to-image and react-colorful (heavy) and is only
@@ -306,6 +302,7 @@ function ProfileContent() {
   /** Lock-screen wallpaper is a phone-only feature — on web the button exists (like native), but it opens an explanatory modal instead. */
   const [showWallpaperInfoModal, setShowWallpaperInfoModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   // ADMIN_USER_IDS lives on the server (an env var outside NEXT_PUBLIC_) —
@@ -575,50 +572,6 @@ function ProfileContent() {
       setDismissingMatchId(null);
     }
   };
-  // The listing the user just published — a check countdown is shown on
-  // top of its photo.
-  //
-  // "Done" navigates here immediately, but the listing's write may still be
-  // continuing in the background. So the id arrives via two paths: an event
-  // (if the write finishes after this page opens) or sessionStorage (if it
-  // finished before that).
-  const [justPublished, setJustPublished] =
-    useState<JustPublishedState | null>(null);
-
-  useEffect(() => {
-    // Stale state (e.g. from yesterday's publish that the user never saw)
-    // shouldn't show the countdown again.
-    const isFresh = (s: JustPublishedState) =>
-      Date.now() - s.startedAt < PUBLISH_COUNTDOWN_MS;
-
-    const take = (state: JustPublishedState | null) => {
-      if (!state || !isFresh(state)) return;
-      setJustPublished(state);
-      // We only clear it after the id has arrived — otherwise the "publish
-      // in progress" marker gets lost before the listing arrives.
-      if (state.id) {
-        try {
-          sessionStorage.removeItem(JUST_PUBLISHED_KEY);
-        } catch {
-          // Safari private mode — no harm done.
-        }
-      }
-    };
-
-    try {
-      const raw = sessionStorage.getItem(JUST_PUBLISHED_KEY);
-      if (raw) take(JSON.parse(raw) as JustPublishedState);
-    } catch {
-      // read failure or corrupt JSON — we ignore it.
-    }
-
-    const onPublished = (e: Event) =>
-      take((e as CustomEvent<JustPublishedState>).detail);
-    window.addEventListener(JUST_PUBLISHED_EVENT, onPublished);
-    return () => window.removeEventListener(JUST_PUBLISHED_EVENT, onPublished);
-  }, []);
-
-  const justPublishedId = justPublished?.id ?? null;
   const [infoSubmitting, setInfoSubmitting] = useState(false);
   // The "Settings" tab is built in the iOS list style — personal info and
   // the list of blocked users expand/collapse on clicking their own row,
@@ -1145,15 +1098,7 @@ function ProfileContent() {
               ) : filteredMyItems.length > 0 ? (
                 <div className={ITEM_GRID_CLASS}>
                   {filteredMyItems.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      item={item}
-                      justPublishedAt={
-                        item.id === justPublishedId
-                          ? justPublished?.startedAt
-                          : undefined
-                      }
-                    />
+                    <ItemCard key={item.id} item={item} />
                   ))}
                 </div>
               ) : (
@@ -1899,6 +1844,19 @@ function ProfileContent() {
                   with regular settings (an irreversible action). User
                   request: GRAY color (not red) — "Sign out" is now the
                   reddest one. */}
+              <button
+                type="button"
+                onClick={() => setShowBlockedUsers(true)}
+                className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
+              >
+                <Ban className="w-[18px] h-[18px] text-slate-500 shrink-0" />
+                <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  {t("blockedUsersTitle")}
+                </span>
+                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+              </button>
+              <BlockedUsersDialog open={showBlockedUsers} onOpenChange={setShowBlockedUsers} />
+
               <div className="space-y-2">
                 <div className="space-y-2">
                   <button

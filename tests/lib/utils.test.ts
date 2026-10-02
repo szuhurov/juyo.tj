@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn, stripDocumentNumbers } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 describe('cn (className merger)', () => {
   it('merges simple class names', () => {
@@ -30,49 +30,3 @@ describe('cn (className merger)', () => {
   });
 });
 
-describe('stripDocumentNumbers', () => {
-  // This is the last filter before the PUBLIC page — if the AI leaves a
-  // passport number in the text, it gets cut here.
-  it('removes a bare document number', () => {
-    expect(stripDocumentNumbers('Паспорт Алимов рақами 1234567.')).toBe(
-      'Паспорт Алимов рақами.',
-    );
-  });
-
-  it('removes the series letter attached to the number', () => {
-    expect(stripDocumentNumbers('Паспорти Алимов Ҷамшед, № A1234567')).toBe(
-      'Паспорти Алимов Ҷамшед',
-    );
-  });
-
-  it('removes a spaced series prefix', () => {
-    expect(stripDocumentNumbers('Корти бонкӣ AB 1234567890 Раҳимов')).toBe(
-      'Корти бонкӣ Раҳимов',
-    );
-  });
-
-  it('removes a number glued to the preceding word', () => {
-    expect(stripDocumentNumbers('рақами1234567 гум шуд')).toBe('рақами гум шуд');
-  });
-
-  it('does not eat letters from the preceding word', () => {
-    // The regex captures the series prefix (up to 2 letters) — without this
-    // safeguard, "рақами" would turn into "рақа".
-    expect(stripDocumentNumbers('рақами 1234567')).toBe('рақами');
-  });
-
-  it('keeps names, dates and ordinary phone numbers', () => {
-    expect(stripDocumentNumbers('Шиносномаи Каримов, 12.05.2003')).toBe(
-      'Шиносномаи Каримов, 12.05.2003',
-    );
-    expect(stripDocumentNumbers('Телефон 900 12 34 56')).toBe(
-      'Телефон 900 12 34 56',
-    );
-    expect(stripDocumentNumbers('iPhone 13 Pro сиёҳ')).toBe('iPhone 13 Pro сиёҳ');
-  });
-
-  it('leaves clean text untouched', () => {
-    expect(stripDocumentNumbers('Калиди мошин')).toBe('Калиди мошин');
-    expect(stripDocumentNumbers('Паспорт')).toBe('Паспорт');
-  });
-});

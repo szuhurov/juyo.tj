@@ -5,9 +5,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://juyo.tj";
 const PUSH_INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET");
 
-// The admin's account (zuhurovsamariddinn1@gmail.com) — listings published
-// with moderation_status='pending' without AI moderation (disabled by the
-// admin) send their notification only to this account.
+// The admin's account (zuhurovsamariddinn1@gmail.com) — every new listing
+// waits in moderation_status='pending' for the admin; the notification goes
+// only to this account.
 const ADMIN_USER_ID = "user_3GTmOz49mVZU6KeypHzMV14Dx10";
 
 const corsHeaders = {
@@ -29,8 +29,8 @@ async function sendWebPush(token: string, payload: object): Promise<{ ok: boolea
   return result;
 }
 
-// When a new listing is created with moderation_status='pending' without AI
-// moderation (the admin disabled it from the dashboard), sends a distinct
+// When a new listing is created with moderation_status='pending' (every
+// listing is reviewed by the admin — there is no AI), sends a distinct
 // notification to the admin — see trigger_notify_pending_review() in
 // supabase/migrations/20260731000000_notify_pending_review.sql.
 Deno.serve(async (req) => {
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
     }
 
     const title = "🔴 Санҷиши дастӣ лозим аст";
-    const body = `AI хомӯш аст — эълони нав дар интизор: "${item.title}"`;
+    const body = `Эълони нав дар интизори тасдиқ: "${item.title}"`;
     const data = { type: "pending_review", item_id: item.id };
 
     let sent = 0;

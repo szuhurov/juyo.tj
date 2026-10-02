@@ -1,17 +1,9 @@
 /**
- * Privacy protection editor — opens when AI moderation (final_check/
- * moderation_only in ai-brain) determines the image is a document
- * (is_document). No SEPARATE AI call is made for this — the same
- * moderation check that already ran also returns suggested regions
- * (privacy_regions), so no speed is lost. The user can accept these
- * regions or add/resize/move/delete them manually with a "pen" (dragging
- * with mouse/finger). Every region is pixelated (mosaic, not a plain
- * blur — because blur can sometimes be reversed, pixelation cannot).
- *
- * AI regions are also FULLY editable. Previously they were locked, but
- * the vision model's coordinates can drift — in one real passport the
- * box drifted to the right of the actual number, and the user could see
- * the problem but couldn't fix it.
+ * Privacy protection editor — the user (or an admin) opens it to hide
+ * document numbers, names or faces, and draws/resizes/moves/deletes the
+ * regions with a "pen" (dragging with mouse/finger). Every region is
+ * pixelated (mosaic, not a plain blur — because blur can sometimes be
+ * reversed, pixelation cannot).
  *
  * Multiple images at once: all images are reviewed in this ONE dialog
  * with left/right buttons (not one at a time in separate dialogs) — so
@@ -33,17 +25,6 @@ import { Undo2, Redo2, X, RotateCw, ChevronLeft, ChevronRight } from "lucide-rea
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
-export interface PrivacyRegion {
-  label?: string;
-  /** Which image this refers to (0-based), when several images are sent
-   *  to ai-brain together — see the decodeSlot comment below. */
-  imageIndex?: number;
-  x: number; // 0-1
-  y: number; // 0-1
-  width: number; // 0-1
-  height: number; // 0-1
-}
-
 interface EditableRegion {
   id: string;
   x: number; // 0-1
@@ -51,9 +32,6 @@ interface EditableRegion {
   width: number; // 0-1
   height: number; // 0-1
   rotation: number; // degrees, 0-360
-  /** Only affects the border style — both kinds are equally editable.
-   *  "ai" — AI suggestion (dashed border). "user" — drawn with the pen. */
-  origin: "ai" | "user";
 }
 
 interface ImageSlot {
@@ -84,80 +62,8 @@ interface DragState {
 const MAX_WORKING_WIDTH = 1400;
 const MIN_SIZE = 0.03; // Minimum region size — so a very small/accidental drag doesn't stick around
 const PEN_PADDING = 0.02; // Padding around the pen's path, so it covers fully
-const AI_REGION_MAX_AREA = 0.25; // Max area of a single AI region (relative to the total image area) — if AI made a mistake and gave an oversized region (e.g. almost the whole document), it's shrunk to this size.
-
-// Padding for AI regions. Vision models don't give EXACT coordinates —
-// the box typically drifts by 3-8%. A fixed 2% padding didn't cover this
-// drift: in one real passport the number's box drifted to the right and
-// the number itself was left exposed. Now the padding is PROPORTIONAL —
-// a small box gets relatively more padding, because drift is most
-// damaging exactly for small boxes.
-const AI_PAD_MIN = 0.02;
-const AI_PAD_X_RATIO = 0.18;
-const AI_PAD_Y_RATIO = 0.55;
-
-// MRZ (the machine-readable lines at the bottom of a passport/ID) — this
-// is the one field whose structure is known IN ADVANCE: it's always a
-// FULL-width strip of the document, 2-3 monospace lines at the bottom.
-// The model, however, gives it as a small box and covers only part of
-// it. So for MRZ we don't rely on the model's coordinates: we open the
-// width to 100% and extend the height to cover the whole strip.
-const MRZ_MIN_HEIGHT = 0.1;
-
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
-}
-
-function isMrzLabel(label?: string) {
-  return !!label && /mrz|machine[\s_-]?readable/i.test(label);
-}
-
-function initialRegionsFor(suggested: PrivacyRegion[] | undefined): EditableRegion[] {
-  return (suggested ?? []).map((r, i) => {
-    const mrz = isMrzLabel(r.label);
-
-    let x: number, y: number, width: number, height: number;
-
-    if (mrz) {
-      const centerY = r.y + r.height / 2;
-      height = Math.min(1, Math.max(r.height, MRZ_MIN_HEIGHT) + AI_PAD_MIN * 2);
-      x = 0;
-      width = 1;
-      y = clamp01(centerY - height / 2);
-      height = Math.min(1 - y, height);
-    } else {
-      const padX = Math.max(AI_PAD_MIN, r.width * AI_PAD_X_RATIO);
-      const padY = Math.max(AI_PAD_MIN, r.height * AI_PAD_Y_RATIO);
-      x = Math.max(0, r.x - padX);
-      y = Math.max(0, r.y - padY);
-      width = Math.min(1 - x, r.width + padX * 2);
-      height = Math.min(1 - y, r.height + padY * 2);
-
-      // If AI suggests a way-too-large region (e.g. from a decoding
-      // error), we shrink it to the max area while keeping it centered
-      // on itself — so the whole document never ends up covered.
-      // MRZ is exempt from this rule — the full strip is deliberately large.
-      if (width * height > AI_REGION_MAX_AREA) {
-        const scale = Math.sqrt(AI_REGION_MAX_AREA / (width * height));
-        const cx = x + width / 2;
-        const cy = y + height / 2;
-        width *= scale;
-        height *= scale;
-        x = clamp01(cx - width / 2);
-        y = clamp01(cy - height / 2);
-      }
-    }
-
-    return {
-      id: `ai-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      x,
-      y,
-      width,
-      height,
-      rotation: 0,
-      origin: "ai" as const,
-    };
-  });
 }
 
 // "Contain"-fit calculation — the image must fit entirely within the
@@ -177,8 +83,8 @@ function fitContain(naturalW: number, naturalH: number, availW: number, availH: 
 }
 
 // Loads and decodes a single image into a working canvas (size capped
-// for speed) — regions start out with the AI suggestions (if any).
-function decodeSlot(file: File, suggested: PrivacyRegion[] | undefined): Promise<ImageSlot> {
+// for speed) — it starts with no regions.
+function decodeSlot(file: File): Promise<ImageSlot> {
   return new Promise((resolve) => {
     const img = new window.Image();
     const url = URL.createObjectURL(file);
@@ -195,13 +101,12 @@ function decodeSlot(file: File, suggested: PrivacyRegion[] | undefined): Promise
       const bctx = base.getContext("2d");
       bctx?.drawImage(img, 0, 0, w, h);
 
-      const initial = initialRegionsFor(suggested);
       URL.revokeObjectURL(url);
       resolve({
         file,
         base,
-        regions: initial,
-        history: [initial],
+        regions: [],
+        history: [[]],
         historyIndex: 0,
       });
     };
@@ -259,16 +164,11 @@ function redactRect(
 export function PrivacyBlurEditor({
   open,
   files,
-  initialRegions,
   onConfirm,
   onCancel,
 }: {
   open: boolean;
   files: File[];
-  /** Regions suggested by the moderation check that has already run
-   * (privacy_regions) — applied identically to each image.
-   * The user can accept them or replace/add/delete them with the pen. */
-  initialRegions?: PrivacyRegion[];
   onConfirm: (finalFiles: File[]) => void;
   /** Pressing "×"/Escape/clicking outside — all images remain unconfirmed
    * (an unconfirmed image never goes to upload). */
@@ -347,20 +247,8 @@ export function PrivacyBlurEditor({
       setReady(false);
       setCurrentIndex(0);
       setSelectedId(null);
-      // BUG FOUND (user report: "things that should be hidden aren't
-      // being hidden"): previously ALL regions (from however many images)
-      // were applied identically to EVERY image — image 1's coordinates
-      // covered the wrong spot on image 2, leaving the actual number
-      // exposed. Now ai-brain assigns each region an `imageIndex` (see
-      // supabase/functions/ai-brain) — here, only the regions belonging
-      // to that specific image are applied to it.
       Promise.all(
-        files.map((file, i) =>
-          decodeSlot(
-            file,
-            initialRegions?.filter((r) => (r.imageIndex ?? 0) === i),
-          ),
-        ),
+        files.map((file) => decodeSlot(file)),
       ).then((newSlots) => {
         setSlots(newSlots);
         setReady(true);
@@ -368,7 +256,7 @@ export function PrivacyBlurEditor({
     } else if (!open) {
       wasOpenRef.current = false;
     }
-  }, [open, files, initialRegions]);
+  }, [open, files]);
 
   // The touch-action CSS only sometimes works (especially in iOS Safari)
   // — by listening directly for "touchmove" (passive:false) we guarantee
@@ -489,10 +377,6 @@ export function PrivacyBlurEditor({
 
     if (role === "handle" && regionId) {
       const region = regions.find((r) => r.id === regionId);
-      // AI regions are also editable. Previously they were locked — but
-      // the model's coordinates can drift, and the user could see the
-      // problem but couldn't fix it: the drifted box remained as a
-      // useless mosaic while the actual number stayed exposed.
       if (!region) return;
       setSelectedId(regionId);
       dragRef.current = {
@@ -533,9 +417,7 @@ export function PrivacyBlurEditor({
     }
 
     // Dragging on empty space — this is always a new "pen" stroke
-    // (no addMode needed, dragging is itself the default action). Only a
-    // user region is editable and rotatable this way — an AI region
-    // always stays locked.
+    // (no addMode needed, dragging is itself the default action).
     const id = `region-new-${Date.now()}`;
     const newRegion: EditableRegion = {
       id,
@@ -544,7 +426,6 @@ export function PrivacyBlurEditor({
       width: 0,
       height: 0,
       rotation: 0,
-      origin: "user",
     };
     updateRegions((prev) => [...prev, newRegion]);
     setSelectedId(id);
@@ -787,9 +668,6 @@ export function PrivacyBlurEditor({
                 <canvas ref={canvasRef} style={{ width: "100%", height: "100%", display: "block" }} />
                 {regions.map((r) => {
                   const selected = r.id === selectedId;
-                  // The dashed border is just an origin marker (AI or pen)
-                  // — both kinds are equally movable, resizable, and deletable.
-                  const fromAi = r.origin === "ai";
                   return (
                     <div key={r.id}>
                       <div
@@ -797,12 +675,9 @@ export function PrivacyBlurEditor({
                         data-region-id={r.id}
                         className={cn(
                           "absolute border-2 cursor-move",
-                          fromAi && !selected && "border-dashed",
                           selected
                             ? "border-emerald-500 bg-emerald-500/10"
-                            : fromAi
-                              ? "border-emerald-400/70 hover:border-emerald-400"
-                              : "border-white/80 hover:border-emerald-400",
+                            : "border-white/80 hover:border-emerald-400",
                         )}
                         style={{
                           left: `${r.x * 100}%`,

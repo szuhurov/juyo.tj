@@ -28,9 +28,6 @@ export async function PATCH(req: NextRequest) {
 
   const body = await req.json();
   const updates: Record<string, unknown> = {};
-  if (typeof body.ai_moderation_enabled === "boolean") {
-    updates.ai_moderation_enabled = body.ai_moderation_enabled;
-  }
   // Post lifetime in days. A limit is mandatory: 0 would mean "delete
   // everything tomorrow", and a nonsensical number would break the cron
   // schedule. 7 days to 10 years is a reasonable range.

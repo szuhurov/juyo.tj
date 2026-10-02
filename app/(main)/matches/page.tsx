@@ -1,5 +1,6 @@
 /**
- * "Possible Matches" — Phase 5 AI Matching. Every row here is a computed
+ * "Possible Matches" — rule-based (words, title, colour, city, place, date;
+ * no AI — migration 20261001000000_remove_ai). Every row here is a computed
  * score + reasons between two DIFFERENT people's listings (one of them is
  * always the current user's own). This page never declares ownership and
  * never unlocks contact info on its own — it only surfaces the possibility

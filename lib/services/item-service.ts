@@ -26,7 +26,7 @@ export interface Item {
   views?: number;
   moderation_status?: "pending" | "approved" | "rejected";
   moderation_result?: string;
-  images?: { image_url: string }[];
+  images?: { image_url: string; thumbnail_url?: string | null }[];
   similarity_score?: number;
   location_type?:
     | "taxi" | "hotel_restaurant" | "public_place" | "airport" | "gym"
@@ -184,27 +184,6 @@ export const ItemService = {
       : query);
     if (error) throw error;
     return (data ?? []) as Item[];
-  },
-
-  async visualSearch(imageFile: File) {
-    const formData = new FormData();
-    formData.append("image", imageFile);
-    formData.append("type", "all");
-
-    const { data, error } = await supabase.functions.invoke("visual-search", {
-      body: formData,
-    });
-
-    if (error) throw error;
-
-    // The edge function (supabase/functions/visual-search) already returns
-    // FULL `items` rows (with `images:item_images(image_url)` and
-    // `similarity_score`) — exactly in `Item` shape. Re-mapping here is
-    // not needed — it used to be done this way, and it replaced these
-    // already-correct fields with the old flat shape (`image_url`/`score`),
-    // which no longer exist — the result came out without images and
-    // without a match percentage.
-    return (data.results ?? []) as Item[];
   },
 
   /**

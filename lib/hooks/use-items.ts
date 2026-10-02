@@ -169,12 +169,11 @@ export function useUserItems(userId?: string, getToken?: () => Promise<string | 
     enabled: !!userId && !!getToken,
     staleTime: 1000 * 60 * 5, // 5 minute cache
     refetchOnWindowFocus: false,
-    // The AI check on the server is async (takes a few seconds) — until it
-    // finishes, the post stays "pending". Without this, the 5-minute
+    // A "pending" post waits for an admin. Without this, the 5-minute
     // staleTime would leave the user with a stale "Under review" state until a manual reload.
     refetchInterval: (query) =>
       query.state.data?.some((item) => item.moderation_status === "pending")
-        ? 3000
+        ? 60_000
         : false,
   });
 }

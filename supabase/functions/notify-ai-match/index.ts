@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
     for (const recipient of recipients) {
       if (capped.has(recipient.userId)) continue;
 
-      const body = `🤖 Мо барои эълони шумо "${recipient.itemTitle}" як мутобиқати эҳтимолӣ ёфтем (${scoreRounded}%)`;
+      const body = `Мо барои эълони шумо "${recipient.itemTitle}" як мутобиқати эҳтимолӣ ёфтем (${scoreRounded}%)`;
       const result = await sendToUser(supabase, recipient.userId, "JUYO", body, {
         type: "ai_match",
         match_id: match.id,

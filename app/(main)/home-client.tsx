@@ -29,14 +29,14 @@ import { HomeFiltersSkeleton, QuickActionsSkeleton } from "@/components/home-fil
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ITEM_KEYS, useItems, useVipItems } from "@/lib/hooks/use-items";
+import { useBlockedIds } from "@/lib/hooks/use-blocked-ids";
 import { useAuth } from "@clerk/nextjs";
 import { useDragScroll } from "@/lib/hooks/use-drag-scroll";
 import { NotificationBell } from "@/components/notification-bell";
 import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
-import dynamic from "next/dynamic";
 import {
   X,
   SlidersHorizontal,
@@ -53,30 +53,11 @@ import {
   Landmark,
   CircleHelp,
   Search,
-  Camera,
-  Image as ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { DateRangeCalendar } from "@/components/date-range-calendar";
-import { supabase } from "@/lib/supabase";
-
-// Same next/dynamic split header.tsx used to use — this code only runs when
-// a visual search is actually opened, so it stays out of the home page's
-// main bundle.
-const VisualSearchModal = dynamic(() =>
-  import("@/components/visual-search-modal").then((m) => m.VisualSearchModal),
-);
-const CameraCaptureModal = dynamic(() =>
-  import("@/components/camera-capture-modal").then((m) => m.CameraCaptureModal),
-);
 
 // Category filter card. A transparent-background 3D icon stands on its own
 // (no tile, no scrim), with the label UNDER it; the selected category shows
@@ -109,7 +90,7 @@ function CategoryFilterCard({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "shrink-0 cursor-pointer flex flex-col items-center gap-0 transition-opacity",
+        "pressable shrink-0 cursor-pointer flex flex-col items-center gap-0",
         // Same as the app (catCardDimmed): faded only, colours kept.
         dimmed && "opacity-40",
         // Mobile: 5.5 cells fit so the last one is cut in half (signals swiping); md+ keeps fixed widths.
@@ -208,13 +189,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   const queryClient = useQueryClient();
   const { ref, inView } = useInView();
 
-  const {
-    visualSearchResults,
-    isSearchTyping,
-    goHomeSignal,
-    setVisualSearchResults,
-    setIsSearchTyping,
-  } = useHomeState();
+  const { isSearchTyping, goHomeSignal, setIsSearchTyping } = useHomeState();
 
   // Filters are kept in the URL, not in useState.
   //
@@ -233,29 +208,8 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // version, this component only ever renders on "/", so the "jump to
   // home first" branch that used to be needed there is gone.
   const [searchValue, setSearchValue] = useState(searchParams.get("q") || "");
-  const [isVisualSearchOpen, setIsVisualSearchOpen] = useState(false);
-  const [directFile, setDirectFile] = useState<File | null>(null);
-  const [showPhotoChoice, setShowPhotoChoice] = useState(false);
-  const [showCameraCapture, setShowCameraCapture] = useState(false);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { userId, isLoaded: isAuthLoaded } = useAuth();
-
-  // The visual search icon is only shown when AI is enabled — without it
-  // no embedding is generated and image search returns no results.
-  const { data: appSettings } = useQuery({
-    queryKey: ["app-settings-ai-enabled"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("app_settings")
-        .select("ai_moderation_enabled")
-        .eq("id", true)
-        .maybeSingle();
-      return data;
-    },
-    staleTime: 60 * 1000,
-  });
-  const aiEnabled = appSettings?.ai_moderation_enabled ?? false;
 
   // Sync the box FROM the URL — fixes the search box showing stale text
   // after browser back/forward.
@@ -301,25 +255,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchValue, searchParams, commitSearch, setIsSearchTyping]);
-
-  const handlePhotoPicked = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setDirectFile(file);
-      setIsVisualSearchOpen(true);
-    }
-    e.target.value = "";
-  };
-
-  const handleCameraCapture = (file: File) => {
-    setDirectFile(file);
-    setIsVisualSearchOpen(true);
-  };
-
-  const handleVisualSearchResults = (items: Item[]) => {
-    setVisualSearchResults(items);
-    setDirectFile(null);
-  };
 
   const category = searchParams.get("cat") || "All";
   // Default — "All" (user request): an empty `type` means "All"
@@ -457,22 +392,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     };
   }, [queryClient]);
 
-  // Reset filters when visual search results arrive.
-  // `handledVisualRef` guarantees the body runs once per NEW result — not
-  // every time `clearAllFilters`'s identity changes (it depends on
-  // searchParams and gets a new identity after every navigation).
-  const handledVisualRef = useRef<unknown>(null);
-  useEffect(() => {
-    if (!visualSearchResults) {
-      handledVisualRef.current = null;
-      return;
-    }
-    if (handledVisualRef.current === visualSearchResults) return;
-    handledVisualRef.current = visualSearchResults;
-    clearAllFilters();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [visualSearchResults, clearAllFilters]);
-
   // User request: the quick action buttons (taxi/hotel/... row) must be
   // visible every time the user clicks one of the filters ABOVE (category,
   // type, date).
@@ -483,7 +402,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // Reset everything when user clicks the home logo
   //
   // `handledGoHomeRef` is MANDATORY — the same guard used in the effect
-  // above (`handledVisualRef`). Without it, the effect would run on EVERY
+  // for other URL-driven effects. Without it, the effect would run on EVERY
   // URL change, because `clearAllFilters` depends on `searchParams` and
   // gets a new identity after every navigation. The result: once the user
   // clicked the "Home" button from another page (goHomeSignal ≠ 0), every
@@ -495,14 +414,13 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     if (goHomeSignal === 0) return;
     if (handledGoHomeRef.current === goHomeSignal) return;
     handledGoHomeRef.current = goHomeSignal;
-    setVisualSearchResults(null);
     clearAllFilters();
     // Fresh list in the background — the current items stay on screen (no
     // skeleton). Replaces the old router.refresh(), whose new server
     // `initialItems` React Query ignored anyway (the cache already had data).
     queryClient.invalidateQueries({ queryKey: ITEM_KEYS.lists() });
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [goHomeSignal, setVisualSearchResults, clearAllFilters, queryClient]);
+  }, [goHomeSignal, clearAllFilters, queryClient]);
 
   // Close the date filter popup on click outside it
   useEffect(() => {
@@ -539,22 +457,16 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
     return data?.pages.flatMap((page) => page) || [];
   }, [data]);
 
-  // The quick action buttons stay visible during TEXT SEARCH as well.
-  // During VISUAL search this row is still hidden, because there the
-  // whole strip is replaced by the "clear results" button and the
-  // padding is different too (pt-[64px]).
-  const showTopSections = !visualSearchResults;
-
   // VIP/VVIP strip: only in the plain feed (no search, no filter). A failed
   // query just means no data → no strip, no error UI.
   const { data: vipItems } = useVipItems();
-  const showStrip = showTopSections && isDefaultFeed(filters);
+  const showStrip = isDefaultFeed(filters);
 
   // Mouse drag for the two horizontal rows (touch already scrolls natively).
   const quickActionsRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
-  useDragScroll(quickActionsRef, showTopSections);
-  useDragScroll(categoriesRef, !visualSearchResults);
+  useDragScroll(quickActionsRef, true);
+  useDragScroll(categoriesRef, true);
   const featuredItems = useMemo<FeaturedItem[]>(
     () => (showStrip && vipItems ? toFeaturedItems(vipItems) : []),
     [showStrip, vipItems],
@@ -563,10 +475,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // A listing shown in the strip must not ALSO be in the ordinary list.
   // Done after flattening the pages, so paging is untouched. With any
   // search/filter active featuredItems is empty and nothing is removed.
+  // Listings of users this user blocked are left out as well.
+  const blockedIds = useBlockedIds();
   const displayedItems = useMemo(() => {
-    if (visualSearchResults) return visualSearchResults;
-    return excludeFeatured(allItems, featuredItems);
-  }, [allItems, featuredItems, visualSearchResults]);
+    const list = excludeFeatured(allItems, featuredItems);
+    return blockedIds.size ? list.filter((i) => !i.user_id || !blockedIds.has(i.user_id)) : list;
+  }, [allItems, featuredItems, blockedIds]);
 
   const hasActiveFilters =
     category !== "All" || !!itemType || !!locationType || !!city || !!dateFrom || !!dateTo;
@@ -580,7 +494,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   return (
     <div className="pb-18 min-h-screen bg-canvas">
       {/* Filters section (Header/Filters) */}
-      <div ref={filterBarRef} className="fixed top-0 md:top-16 left-0 right-0 z-40 bg-canvas">
+      <div ref={filterBarRef} className="fixed top-0 md:top-16 left-0 right-0 z-40 material">
         <div className="w-full max-w-7xl mx-auto pl-2.5 sm:pl-4">
           {/* The header itself already sits 6px below the search field, so `pt-0.5`
               bumps the gap to 8px — slightly larger than the 6px between filter
@@ -596,7 +510,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           {/* Type selector: Lost or Found — a separate row, no swipe (few buttons).
               Moved ABOVE the category row (user request) — text-only pills, no
               icons, less rounded than before (rounded-md, not rounded-full). */}
-          {!visualSearchResults && (
+          {(
             <div className="flex flex-wrap items-center gap-1.5 max-md:gap-y-2">
                 {/* The color follows the same convention as the cards: found is green, lost is red.
                     When inactive the color is on the TEXT, when active it's on the
@@ -613,7 +527,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     onClick={() => setItemType(opt.value)}
                     aria-pressed={itemType === opt.value}
                     className={cn(
-                      "max-md:order-5 max-md:flex-1 max-md:basis-0 max-md:justify-center px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md font-semibold text-xs min-[1920px]:text-[13px] flex items-center cursor-pointer transition-colors duration-[var(--duration-fast)]",
+                      "pressable max-md:order-5 max-md:flex-1 max-md:basis-0 max-md:justify-center px-3 md:px-4 min-[1084px]:px-5 min-[1920px]:px-[22px] h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md font-semibold text-xs min-[1920px]:text-[13px] flex items-center cursor-pointer transition-colors duration-[var(--duration-fast)]",
                       opt.value === "lost" && "max-md:mr-2.5",
                       itemType === opt.value ? opt.on : opt.off,                    )}
                   >
@@ -656,16 +570,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                         <X className="h-3 w-3" />
                       </button>
                     )}
-                    <button
-                      onClick={() => setShowPhotoChoice(true)}
-                      className={cn(
-                        "p-1 text-slate-400 hover:text-zinc-600 transition-colors cursor-pointer",
-                        !aiEnabled && "hidden",
-                      )}
-                      title={t("visualSearchTitle") || "Ҷустуҷӯ бо акс"}
-                    >
-                      <Camera className="w-5 h-5 min-[1503px]:w-[22px] min-[1503px]:h-[22px]" />
-                    </button>
                   </div>
                 </div>
 
@@ -759,25 +663,9 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           )}
           <div
             ref={categoriesRef}
-            className={cn(
-              "-mx-1 px-1 mt-0.5",
-              visualSearchResults
-                ? "flex items-center gap-1 overflow-x-auto no-scrollbar py-2.5 -my-2.5 w-full justify-end"
-                : "flex items-center gap-1 lg:gap-2 overflow-x-auto overscroll-x-contain no-scrollbar py-2.5 -my-2.5",
-            )}
+            className="-mx-1 px-1 mt-0.5 flex items-center gap-1 lg:gap-2 overflow-x-auto overscroll-x-contain no-scrollbar py-2.5 -my-2.5"
           >
-              {visualSearchResults ? (
-                // Floating bottom-right (above the mobile navbar) so it stays
-                // visible and within thumb reach while scrolling results.
-                <button
-                  type="button"
-                  onClick={() => setVisualSearchResults(null)}
-                  className="fixed right-4 bottom-[calc(56px+16px+env(safe-area-inset-bottom))] md:bottom-6 z-[4000] flex items-center gap-2 h-12 px-5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-lg cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                  {t("clearResults")}
-                </button>
-              ) : (
+              {(
                 <>
                   <CategoryFilterCard
                     label={t("all")}
@@ -812,14 +700,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
       <div
         className={cn(
           "w-full max-w-7xl mx-auto px-2.5 sm:px-4 lg:px-5",
-          visualSearchResults
-            ? "pt-[64px] md:pt-[72px] min-[1084px]:pt-[80px] min-[1503px]:pt-[88px] min-[1920px]:pt-[96px]"
-            // Until the live measurement (filterBarHeight) is ready, the
-            // estimated HOME_CONTENT_PT class is used — otherwise there
-            // would be no padding at all on the very first render (SSR/before JS).
-            : filterBarHeight == null && HOME_CONTENT_PT,
+          // Until the live measurement (filterBarHeight) is ready, the
+          // estimated HOME_CONTENT_PT class is used — otherwise there
+          // would be no padding at all on the very first render (SSR/before JS).
+          filterBarHeight == null && HOME_CONTENT_PT,
         )}
-        style={!visualSearchResults && filterBarHeight != null ? { paddingTop: filterBarHeight } : undefined}
+        style={filterBarHeight != null ? { paddingTop: filterBarHeight } : undefined}
       >
         {/* Quick action buttons — inside the SCROLLABLE content, not in the
             fixed bar. When scrolling they move up and hide under the filter bar;
@@ -830,7 +716,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
             NO margin-top: the 6px gap comes from the `pb-1.5` inside the fixed
             bar (see above).
             `py-5 -my-5` is room for the shadow, so the shadow isn't clipped. */}
-        {showTopSections && (
+        {(
           <div className="mb-2.5">
             {/* `mr-[-Npx]`: the row must reach the ACTUAL right edge of the screen. */}
             <div
@@ -847,7 +733,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     aria-pressed={active}
                     aria-label={title}
                     className={cn(
-                      "shrink-0 snap-start w-max flex items-center justify-between gap-3 px-3 py-1.5 min-[1503px]:py-2.5 rounded-md text-left cursor-pointer transition-colors",
+                      "pressable shrink-0 snap-start w-max flex items-center justify-between gap-3 px-3 py-1.5 min-[1503px]:py-2.5 rounded-md text-left cursor-pointer transition-colors",
                       active ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground",                    )}
                   >
                     <div className="flex flex-col gap-0.5">
@@ -894,7 +780,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
           <>
             {/* A refresh failed while the cached results are still shown — say
                 so instead of silently showing them (app: searchRefreshFailed). */}
-            {isRefetchError && !isFetchNextPageError && !isFetching && !visualSearchResults && (
+            {isRefetchError && !isFetchNextPageError && !isFetching && (
               <div role="alert" className="mb-3 flex items-center justify-between gap-3 rounded-md bg-amber-50 dark:bg-amber-900/20 px-3 py-2">
                 <span className="text-sm font-medium text-amber-800 dark:text-amber-300">{t("searchRefreshFailed")}</span>
                 <button type="button" onClick={() => refetch()} className="shrink-0 h-8 px-3 rounded-md text-sm font-semibold text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40">
@@ -932,15 +818,14 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
             {/* End of the list. The text differs depending on state: if a
                 filter/search is active, the user should understand that this is
                 the end of THIS result set, not the end of all listings —
-                otherwise they might think there's nothing else on the site. There's
-                no pagination for visual search results, so this text isn't shown there. */}
-            {!visualSearchResults && !hasNextPage && !isFetchingNextPage && !isFetchNextPageError && (
+                otherwise they might think there's nothing else on the site. */}
+            {!hasNextPage && !isFetchingNextPage && !isFetchNextPageError && (
               <p className="pb-6 text-center text-xs min-[1084px]:text-[13px] font-medium text-slate-400 dark:text-zinc-500">
                 {isDefaultFilters ? t("endOfListAll") : t("endOfListFiltered")}
               </p>
             )}
           </>
-        ) : isError && !isFetching && !visualSearchResults ? (
+        ) : isError && !isFetching ? (
           <div
             role="alert"
             className="text-center py-20 bg-slate-50 dark:bg-zinc-800/50 rounded-md border-2 border-dashed border-slate-200 dark:border-zinc-800"
@@ -968,7 +853,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]"></span>
                   </span>
                 </>
-              ) : !visualSearchResults && searchQuery ? (
+              ) : searchQuery ? (
                 <span className="break-words">{t("noResultsFor", { query: searchQuery })}</span>
               ) : (
                 t("noItemsFound")
@@ -976,13 +861,12 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
             </h2>
             {!(isLoading || isFetching || isSearchTyping) && (
               <p className="text-slate-500 text-sm mt-2">
-                {!visualSearchResults && (searchQuery || hasActiveFilters)
+                {(searchQuery || hasActiveFilters)
                   ? t("noResultsHint")
                   : t("noItemsSubtitle")}
               </p>
             )}
             {!(isLoading || isFetching || isSearchTyping) &&
-              !visualSearchResults &&
               (searchQuery || hasActiveFilters) && (
                 <Button
                   variant="outline"
@@ -997,76 +881,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
         )}
       </div>
 
-      {/* Visual search — moved here from Header along with the text search box. */}
-      <VisualSearchModal
-        isOpen={isVisualSearchOpen}
-        onClose={() => {
-          setIsVisualSearchOpen(false);
-          setDirectFile(null);
-        }}
-        onResults={handleVisualSearchResults}
-        directFile={directFile}
-      />
-
-      <input
-        type="file"
-        className="hidden"
-        accept="image/*"
-        ref={galleryInputRef}
-        onChange={handlePhotoPicked}
-      />
-
-      <Dialog open={showPhotoChoice} onOpenChange={setShowPhotoChoice}>
-        <DialogContent
-          overlayClassName="bg-black/50"
-          showCloseButton={false}
-          className="w-[min(20rem,calc(100vw-2rem))] max-w-none rounded-md border border-hairline dark:border-zinc-800 bg-white dark:bg-zinc-800 p-5 gap-3 shadow-[var(--shadow-3)] focus:ring-0 focus:outline-none"
-        >
-          <DialogHeader>
-            <DialogTitle className="text-sm font-semibold text-left text-zinc-900 dark:text-zinc-100">
-              {t("choose_photo_method")}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
-              className="flex flex-col gap-2 h-24 rounded-md bg-white border border-hairline dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
-              onClick={() => {
-                setShowPhotoChoice(false);
-                setShowCameraCapture(true);
-              }}
-            >
-              <div className="w-10 h-10 rounded-md bg-blue-500 flex items-center justify-center text-white transition-all">
-                <Camera className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-semibold text-muted-foreground">
-                {t("camera")}
-              </span>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex flex-col gap-2 h-24 rounded-md bg-white border border-hairline dark:bg-zinc-800 dark:border-zinc-700 group transition-all focus:ring-0 focus-visible:ring-0 outline-none shadow-none"
-              onClick={() => {
-                setShowPhotoChoice(false);
-                galleryInputRef.current?.click();
-              }}
-            >
-              <div className="w-10 h-10 rounded-md bg-orange-500 flex items-center justify-center text-white transition-all">
-                <ImageIcon className="w-5 h-5" />
-              </div>
-              <span className="text-xs font-semibold text-muted-foreground">
-                {t("gallery")}
-              </span>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <CameraCaptureModal
-        isOpen={showCameraCapture}
-        onClose={() => setShowCameraCapture(false)}
-        onCapture={handleCameraCapture}
-      />
     </div>
   );
 }

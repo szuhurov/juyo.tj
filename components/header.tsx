@@ -93,7 +93,7 @@ export function Header() {
       <header
         data-nosnippet
         // Phones (< md, where the bottom navbar shows): no top bar, like the app.
-        className="fixed top-0 left-0 right-0 z-50 w-full bg-canvas max-md:hidden"
+        className="fixed top-0 left-0 right-0 z-50 w-full material max-md:hidden"
       >
         <div className="w-full max-w-7xl mx-auto flex h-12 sm:h-16 items-center px-2.5 sm:px-4 gap-2 sm:gap-4">
           {/* Left section: Logo only — nav moved to its own centered slot

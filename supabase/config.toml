@@ -22,16 +22,16 @@ entrypoint = "./functions/clerk-sync/index.ts"
 enabled = true
 verify_jwt = true
 
-[functions.image-moderation]
+# ai-brain, text-moderation, generate-embedding: no-AI compatibility stubs
+# for mobile builds released before 2026-10-01 (see each index.ts). verify_jwt
+# matches what those builds already used live.
+[functions.text-moderation]
 enabled = true
-verify_jwt = true
-import_map = "./functions/image-moderation/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/image-moderation/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/image-moderation/*.html" ]
+verify_jwt = false
+
+[functions.generate-embedding]
+enabled = true
+verify_jwt = false
 
 # Server-to-server only (called from trigger_notify_ai_match with the
 # service-role key as bearer token, same shape as notify-category-post) —

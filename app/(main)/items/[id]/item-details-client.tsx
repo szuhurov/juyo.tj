@@ -31,6 +31,8 @@ import {
   ShieldAlert,
   Loader2,
   Store,
+  Flag,
+  Ban,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -53,6 +55,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { TelegramIcon, WhatsappIcon, socialHref } from "@/components/social-icons";
+import { ReportDialog } from "@/components/report-dialog";
+import { useBlockedIds } from "@/lib/hooks/use-blocked-ids";
 
 /**
  * `item.phone_number` is a local number only (no country code). Telegram/
@@ -86,6 +90,7 @@ export default function ItemDetailsClient({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   const { data: item, isLoading: loading, isError: loadFailed, refetch: retryLoad } = useItemDetails(
     id,
@@ -94,6 +99,8 @@ export default function ItemDetailsClient({
     initialItem,
   );
   const isOwner = !!userId && userId === item?.user_id;
+  const blockedIds = useBlockedIds();
+  const authorBlocked = !!item?.user_id && blockedIds.has(item.user_id);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isManualScroll = useRef(false);
@@ -422,7 +429,7 @@ export default function ItemDetailsClient({
                 </button>
                 <Badge
                   className={cn(
-                    "rounded-md px-3 py-1 border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800 font-semibold",
+                    "rounded-md px-3 py-1 border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800 font-medium",
                     item?.type === "lost"
                       ? "text-lost"
                       : "text-found",
@@ -485,7 +492,7 @@ export default function ItemDetailsClient({
               </h1>
               <Badge
                 className={cn(
-                  "shrink-0 rounded-md px-3 py-1 text-sm font-semibold border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800",
+                  "shrink-0 rounded-md px-3 py-1 text-sm font-medium border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800",
                   item?.type === "lost"
                     ? "text-lost"
                     : "text-found",
@@ -501,7 +508,7 @@ export default function ItemDetailsClient({
                   {t("description")}
                 </h2>
                 {item?.type === "lost" && item.reward && (
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-found text-sm min-[1503px]:text-base font-semibold">
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 min-[1084px]:px-4 min-[1084px]:py-2 bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700 text-found text-sm min-[1503px]:text-base font-medium">
                     {item.reward === UNSPECIFIED_REWARD
                       ? t("reward_unspecified_viewer")
                       : `${t("reward_gives_viewer")} ${item.reward} TJS`}
@@ -563,13 +570,31 @@ export default function ItemDetailsClient({
                   )}
                 />
               </Button>
+              {isLoaded && !isOwner && (
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  aria-label={t("reportListing")}
+                  className="flex-1 h-12 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 rounded-md bg-white dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 border border-hairline dark:border-zinc-700"
+                  onClick={() => {
+                    if (!userId) {
+                      toast.info(t("signInToReport"));
+                      router.push("/sign-in");
+                      return;
+                    }
+                    setShowReport(true);
+                  }}
+                >
+                  <Flag className="w-5 h-5 md:w-7 md:h-7 min-[1084px]:w-8 min-[1084px]:h-8 min-[1920px]:w-9 min-[1920px]:h-9" />
+                </Button>
+              )}
             </div>
 
             {item?.handoff_type === "nearby" && (
               <div className="rounded-md bg-found-soft p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <Store className="w-4.5 h-4.5 text-found" />
-                  <span className="text-sm font-semibold text-found">
+                  <span className="text-sm font-medium text-found">
                     {t("handoffCardTitle")}
                   </span>
                 </div>
@@ -598,7 +623,11 @@ export default function ItemDetailsClient({
                   {t("resolved")}?
                 </Button>
               ) : null}
-              {isLoaded && isOwner ? null : item?.phone_number ? (
+              {isLoaded && isOwner ? null : authorBlocked ? (
+                <div className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-md bg-tile flex items-center justify-center gap-2 text-muted-foreground font-semibold text-sm min-[1503px]:text-base text-center px-4">
+                  <Ban className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 shrink-0" /> {t("listingFromBlockedUser")}
+                </div>
+              ) : item?.phone_number ? (
                 <div className="flex gap-3">
                   <Button
                     size="lg"
@@ -653,6 +682,16 @@ export default function ItemDetailsClient({
             </div>
           </div>
         </div>
+
+        {isLoaded && !isOwner && !!userId && item?.user_id && (
+          <ReportDialog
+            open={showReport}
+            onOpenChange={setShowReport}
+            itemId={id}
+            ownerId={item.user_id}
+            onBlocked={() => router.push("/")}
+          />
+        )}
 
         <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
           <DialogContent className="rounded-md border-none shadow-2xl">

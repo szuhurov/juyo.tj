@@ -20,7 +20,7 @@ export function HomeOnlyHeader() {
 
 export function MainContent({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex-1 pb-20 md:pb-0 md:pt-16">
+    <main className="flex-1 pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-0 md:pt-16">
       {children}
     </main>
   );

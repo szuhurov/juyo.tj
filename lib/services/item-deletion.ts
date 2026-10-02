@@ -11,14 +11,14 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
   }
 }
 
-const ITEM_FIELDS = "*, images:item_images(image_url)";
+const ITEM_FIELDS = "*, images:item_images(image_url, thumbnail_url)";
 
 /**
  * Actually deletes the listing (by the owner themselves) — as opposed to
  * ItemService.deleteItem (soft-delete, status='deleted'), which is used
  * both for "Delete" and for "Resolved". This function is only for the
- * real "Delete" action: a snapshot is saved to deleted_items_archive,
- * the images are removed from storage, then the row is fully deleted from
+ * real "Delete" action (no archived copy is kept): the images are removed
+ * from storage, then the row is fully deleted from
  * items (CASCADE item_images/saved_items). We nullify the
  * external_items.published_item_id FK before this (it's ON DELETE NO
  * ACTION, otherwise it would raise an FK violation for imported listings).
@@ -36,13 +36,12 @@ export async function hardDeleteItem(
   if (!item) return { ok: false, status: 404, reason: "Эълон ёфт нашуд" };
   if (item.user_id !== requesterUserId) return { ok: false, status: 403, reason: "Шумо соҳиби ин эълон нестед" };
 
-  await supabaseAdmin.from("deleted_items_archive").insert([{ item_id: itemId, item_snapshot: item }]);
-
   await supabaseAdmin.from("external_items").update({ published_item_id: null }).eq("published_item_id", itemId);
 
-  const itemImages = (item as { images?: { image_url: string }[] }).images ?? [];
+  const itemImages = (item as { images?: { image_url: string; thumbnail_url: string | null }[] }).images ?? [];
   const storagePaths = itemImages
-    .map((img) => extractStoragePath(img.image_url))
+    .flatMap((img) => [img.image_url, img.thumbnail_url])
+    .map((url) => extractStoragePath(url))
     .filter((p): p is string => !!p);
   if (storagePaths.length > 0) {
     await supabaseAdmin.storage.from("items").remove(storagePaths);

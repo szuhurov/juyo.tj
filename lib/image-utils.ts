@@ -43,8 +43,10 @@ export async function compressImage(
         // Converting the Canvas content to a Blob (Binary Large Object) in JPEG format
         canvas.toBlob(
           (blob) => {
+            // Never fall back to the original file: re-encoding is what
+            // strips EXIF (incl. GPS location).
             if (!blob) {
-              return resolve(file);
+              return reject(new Error("Image processing failed"));
             }
             // Creating a new compressed file from the Blob object
             const compressedFile = new File([blob], file.name, {

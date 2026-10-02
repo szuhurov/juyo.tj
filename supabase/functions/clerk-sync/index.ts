@@ -86,8 +86,8 @@ Deno.serve(async (req) => {
     // own account" (user.delete() in Settings), THIS IS THE ONLY path that
     // runs it — so "user.deleted" must be enabled in Clerk Dashboard →
     // Webhooks, otherwise self-deleted accounts never get cleaned up from
-    // Supabase. Both paths do the same thing: snapshot into
-    // deleted_accounts_archive, clean up Storage files (listing photos +
+    // Supabase. Both paths do the same thing (no archived copy is kept):
+    // clean up Storage files (listing photos +
     // avatar) and push_tokens (they have no FK), then DELETE the profile
     // itself — whose CASCADE FK also cleans up all items/item_images/
     // saved_items.
@@ -100,36 +100,9 @@ Deno.serve(async (req) => {
       const { data: profile } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle()
 
       if (profile) {
-        const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url)"
+        const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url, thumbnail_url)"
 
         const { data: items } = await supabase.from("items").select(ITEM_FIELDS).eq("user_id", id)
-        const { data: savedItems } = await supabase
-          .from("saved_items")
-          .select(`item_id, created_at, items(${ITEM_FIELDS})`)
-          .eq("user_id", id)
-
-        const itemIds = (items ?? []).map((i: any) => i.id)
-
-        await supabase.from("deleted_accounts_archive").insert([{
-          user_id: id,
-          profile_snapshot: {
-            profile,
-            items: items ?? [],
-            savedItems: savedItems ?? [],
-          },
-          items_count: itemIds.length,
-        }])
-
-        // Each of the user's listings is also separately recorded in
-        // deleted_items_archive, so the Listings → "Deleted" page can see them too.
-        if ((items ?? []).length > 0) {
-          await supabase.from("deleted_items_archive").insert(
-            (items ?? []).map((item: any) => ({
-              item_id: item.id,
-              item_snapshot: { ...item, profiles: { first_name: profile.first_name, last_name: profile.last_name } },
-            })),
-          )
-        }
 
         const storagePaths: string[] = []
         const extractStoragePath = (imageUrl: string | null) => {
@@ -145,8 +118,10 @@ Deno.serve(async (req) => {
 
         for (const item of items ?? []) {
           for (const img of (item as any).images ?? []) {
-            const path = extractStoragePath(img.image_url)
-            if (path) storagePaths.push(path)
+            for (const url of [img.image_url, img.thumbnail_url]) {
+              const path = extractStoragePath(url)
+              if (path) storagePaths.push(path)
+            }
           }
         }
         const avatarPath = extractStoragePath(profile.avatar_url)
@@ -157,6 +132,11 @@ Deno.serve(async (req) => {
         }
 
         await supabase.from("push_tokens").delete().eq("user_id", id)
+        await supabase.from("item_lifecycle_events").update({ actor_id: null }).eq("actor_id", id)
+        // Tables keyed by user_id without an FK to profiles — not removed by the cascade.
+        for (const table of ["push_notification_log", "notification_reads", "dismissed_notifications", "deleted_notifications_archive", "subscriptions"]) {
+          await supabase.from(table).delete().eq("user_id", id)
+        }
 
         const { error: deleteError } = await supabase.from("profiles").delete().eq("id", id)
         if (deleteError) throw deleteError

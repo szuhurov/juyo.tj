@@ -146,21 +146,11 @@ export const AdminService = {
   getSettings() {
     return adminFetch("/api/admin/settings");
   },
-  updateSettings(updates: { ai_moderation_enabled?: boolean; post_lifetime_days?: number }) {
+  updateSettings(updates: { post_lifetime_days?: number }) {
     return adminFetch("/api/admin/settings", {
       method: "PATCH",
       body: JSON.stringify(updates),
     });
-  },
-
-  getEmbeddingsMissingCount() {
-    return adminFetch<{ missingCount: number }>("/api/admin/reprocess-embeddings");
-  },
-  reprocessEmbeddings() {
-    return adminFetch<{ total: number; processed: number; failed: number }>(
-      "/api/admin/reprocess-embeddings",
-      { method: "POST" },
-    );
   },
 
   getDeletionRequests(filters: { status?: string } = {}) {
@@ -170,6 +160,15 @@ export const AdminService = {
     return adminFetch(`/api/admin/deletion-requests/${id}`, {
       method: "PATCH",
       body: JSON.stringify(updates),
+    });
+  },
+  getReports(filters: { status?: string } = {}) {
+    return adminFetch(`/api/admin/reports${toQueryString(filters)}`);
+  },
+  updateReport(id: string, body: { action: "remove_item" | "keep_item" | "dismiss"; note?: string }) {
+    return adminFetch(`/api/admin/reports/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
     });
   },
 };

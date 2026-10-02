@@ -13,11 +13,12 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
   }
 }
 
-const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url)";
+const ITEM_FIELDS = "id, title, category, type, is_resolved, moderation_status, created_at, images:item_images(image_url, thumbnail_url)";
 
 /**
- * Fully deletes an account (Clerk + Supabase + storage), with a snapshot
- * saved to the archive before deletion — used both by the user themself
+ * Fully deletes an account (Clerk + Supabase + storage). No copy is kept:
+ * the owner decided (2026-10-01) that deleted accounts are not archived, and
+ * the privacy policy says so — used both by the user themself
  * (/api/account/delete) and by admin (after approving a /delete-account
  * request). A single piece of logic, so the two don't drift apart.
  */
@@ -33,43 +34,17 @@ export async function deleteUserAccount(userId: string): Promise<{ ok: true } | 
     if (getErrorStatus(clerkErr) !== 404) throw clerkErr;
   }
 
-  const [{ data: items }, { data: savedItems }] = await Promise.all([
-    supabaseAdmin.from("items").select(ITEM_FIELDS).eq("user_id", userId),
-    supabaseAdmin
-      .from("saved_items")
-      .select(`item_id, created_at, items(${ITEM_FIELDS})`)
-      .eq("user_id", userId),
-  ]);
-
-  const snapshot = {
-    profile,
-    items: items ?? [],
-    savedItems: savedItems ?? [],
-  };
-
-  await supabaseAdmin.from("deleted_accounts_archive").insert([
-    {
-      user_id: userId,
-      profile_snapshot: snapshot,
-      items_count: (items ?? []).length,
-    },
-  ]);
-
-  if ((items ?? []).length > 0) {
-    await supabaseAdmin.from("deleted_items_archive").insert(
-      (items ?? []).map((item) => ({
-        item_id: item.id,
-        item_snapshot: { ...item, profiles: { first_name: profile.first_name, last_name: profile.last_name } },
-      })),
-    );
-  }
+  // Only needed to find the photos to remove from storage.
+  const { data: items } = await supabaseAdmin.from("items").select(ITEM_FIELDS).eq("user_id", userId);
 
   const storagePaths: string[] = [];
   for (const item of items ?? []) {
-    const itemImages = (item as { images?: { image_url: string }[] }).images ?? [];
+    const itemImages = (item as { images?: { image_url: string; thumbnail_url: string | null }[] }).images ?? [];
     for (const img of itemImages) {
-      const path = extractStoragePath(img.image_url);
-      if (path) storagePaths.push(path);
+      for (const url of [img.image_url, img.thumbnail_url]) {
+        const path = extractStoragePath(url);
+        if (path) storagePaths.push(path);
+      }
     }
   }
   const avatarPath = extractStoragePath(profile.avatar_url);
@@ -79,6 +54,14 @@ export async function deleteUserAccount(userId: string): Promise<{ ok: true } | 
   }
 
   await supabaseAdmin.from("push_tokens").delete().eq("user_id", userId);
+  // Tables keyed by user_id without an FK to profiles — not removed by the cascade.
+  await Promise.all(
+    ["push_notification_log", "notification_reads", "dismissed_notifications", "deleted_notifications_archive", "subscriptions"].map(
+      (table) => supabaseAdmin.from(table).delete().eq("user_id", userId),
+    ),
+  );
+  // Listing history rows outlive the listing (analytics); drop the link to the person.
+  await supabaseAdmin.from("item_lifecycle_events").update({ actor_id: null }).eq("actor_id", userId);
 
   const { error: deleteError } = await supabaseAdmin.from("profiles").delete().eq("id", userId);
   if (deleteError) throw deleteError;

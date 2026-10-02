@@ -89,11 +89,12 @@ export function MobileNavbar() {
     // the bar ITSELF, so the content doesn't touch the home indicator on iPhone.
     <nav
       data-nosnippet
-      className="fixed bottom-0 left-0 right-0 z-[45] md:hidden bg-white dark:bg-zinc-800 border-t border-hairline dark:border-zinc-800"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      // Floating, rounded (Telegram-style): gaps from the sides and from the
+      // bottom/home indicator; content scrolls under it.
+      className="fixed left-3 right-3 bottom-[calc(env(safe-area-inset-bottom)+8px)] z-[45] md:hidden material rounded-[28px] border border-hairline dark:border-white/10 shadow-[0_6px_24px_-6px_rgba(0,0,0,0.25)] overflow-hidden"
     >
       <div>
-        <div className="flex items-center justify-around h-[60px] px-2">
+        <div className="flex items-center justify-around h-[60px] px-1.5">
           {navItems.map((item) => {
             const currentPath = optimisticPath || pathname;
             let isActive = currentPath === item.href;

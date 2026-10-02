@@ -17,11 +17,7 @@ function extractStoragePath(imageUrl: string | null | undefined): string | null 
 
 /**
  * Permanently deletes a post — only for posts that are already in the
- * trash (status='deleted'). A snapshot is saved to deleted_items_archive
- * (the same table also used by the "permanently delete user" cascade —
- * see app/api/admin/users/[id]/permanent-delete), so the Posts page can
- * show both cases (directly deleted and cascaded from a deleted user)
- * together.
+ * trash (status='deleted'). No archived copy is kept.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { userId: adminId } = await auth();
@@ -34,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const { data: item, error } = await supabaseAdmin
       .from("items")
-      .select("*, images:item_images(image_url), profiles!items_user_id_fkey(first_name, last_name)")
+      .select("*, images:item_images(image_url, thumbnail_url), profiles!items_user_id_fkey(first_name, last_name)")
       .eq("id", id)
       .maybeSingle();
     if (error) throw error;
@@ -48,11 +44,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       );
     }
 
-    await supabaseAdmin.from("deleted_items_archive").insert([{ item_id: id, item_snapshot: item }]);
-
-    const itemImages = (item as { images?: { image_url: string }[] }).images ?? [];
+    const itemImages = (item as { images?: { image_url: string; thumbnail_url: string | null }[] }).images ?? [];
     const storagePaths = itemImages
-      .map((img) => extractStoragePath(img.image_url))
+      .flatMap((img) => [img.image_url, img.thumbnail_url])
+      .map((url) => extractStoragePath(url))
       .filter((p): p is string => !!p);
     if (storagePaths.length > 0) {
       await supabaseAdmin.storage.from("items").remove(storagePaths);
