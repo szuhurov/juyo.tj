@@ -1,12 +1,13 @@
 "use client";
 
 /**
- * Content of the Privacy Policy page — a Client Component, so switching the
- * language from the header (without navigation/reload) is reflected
- * instantly, like on all other pages. Metadata (title/description) is
- * handled in the parent page.tsx (a Server Component).
+ * Content of the Privacy Policy page. Opens in Russian by default (owner
+ * request) whatever the site language is; the buttons on top switch only
+ * this page, styled like the sign-in / sign-up language buttons.
+ * Metadata (title/description) is handled in the parent page.tsx.
  */
-import { useLanguage } from "@/lib/language-context";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const content = {
   tg: {
@@ -212,12 +213,40 @@ const content = {
   }
 } satisfies Record<string, { title: string; lastUpdated: string; intro: string; sections: { id: string; title: string; text: string }[] }>;
 
+const LANGUAGES = [
+  { code: "tg", label: "Тоҷикӣ" },
+  { code: "ru", label: "Русский" },
+  { code: "en", label: "English" },
+] as const;
+
+type PolicyLocale = (typeof LANGUAGES)[number]["code"];
+
 export function PrivacyContent() {
-  const { locale } = useLanguage();
-  const currentContent = content[locale as keyof typeof content] || content.en;
+  const [locale, setLocale] = useState<PolicyLocale>("ru");
+  const currentContent = content[locale];
 
   return (
     <div className="max-w-3xl mx-auto my-6 px-4 sm:px-8 py-10 rounded-md bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700">
+      <div className="flex justify-center gap-1.5 sm:gap-2 mb-8">
+        {LANGUAGES.map((lang) => (
+          <Button
+            key={lang.code}
+            variant={locale === lang.code ? "default" : "outline"}
+            size="sm"
+            onClick={() => setLocale(lang.code)}
+            aria-pressed={locale === lang.code}
+            lang={lang.code}
+            className={`font-medium rounded-md px-3 sm:px-4 h-8 sm:h-9 transition-all text-[10px] sm:text-xs ${
+              locale === lang.code
+                ? "bg-emerald-500 text-white"
+                : "bg-white dark:bg-zinc-900 text-slate-600 hover:text-zinc-900 border-hairline dark:border-zinc-800"
+            }`}
+          >
+            {lang.label}
+          </Button>
+        ))}
+      </div>
+
       <h1 className="text-3xl font-bold mb-4">{currentContent.title}</h1>
       <p className="text-sm text-slate-500 mb-8">{currentContent.lastUpdated}</p>
 
