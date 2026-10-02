@@ -29,7 +29,6 @@ import { HomeFiltersSkeleton, QuickActionsSkeleton } from "@/components/home-fil
 import { HOME_GRID_CLASS, HOME_CONTENT_PT } from "@/lib/ui-constants";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { ITEM_KEYS, useItems, useVipItems } from "@/lib/hooks/use-items";
-import { useBlockedIds } from "@/lib/hooks/use-blocked-ids";
 import { useAuth } from "@clerk/nextjs";
 import { useDragScroll } from "@/lib/hooks/use-drag-scroll";
 import { NotificationBell } from "@/components/notification-bell";
@@ -475,12 +474,10 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
   // A listing shown in the strip must not ALSO be in the ordinary list.
   // Done after flattening the pages, so paging is untouched. With any
   // search/filter active featuredItems is empty and nothing is removed.
-  // Listings of users this user blocked are left out as well.
-  const blockedIds = useBlockedIds();
-  const displayedItems = useMemo(() => {
-    const list = excludeFeatured(allItems, featuredItems);
-    return blockedIds.size ? list.filter((i) => !i.user_id || !blockedIds.has(i.user_id)) : list;
-  }, [allItems, featuredItems, blockedIds]);
+  const displayedItems = useMemo(
+    () => excludeFeatured(allItems, featuredItems),
+    [allItems, featuredItems],
+  );
 
   const hasActiveFilters =
     category !== "All" || !!itemType || !!locationType || !!city || !!dateFrom || !!dateTo;

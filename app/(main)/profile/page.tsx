@@ -24,7 +24,6 @@ import { getErrorMessage } from "@/lib/error-utils"; // Readable message from a 
 import {
   User,
   Bookmark,
-  Ban,
   LogOut,
   ChevronRight,
   PackageSearch,
@@ -77,7 +76,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"; // For confirmation dialogs (modals)
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"; // Generic action-confirmation dialog
-import { BlockedUsersDialog } from "@/components/blocked-users-dialog";
 
 // QR integration
 // This component uses html-to-image and react-colorful (heavy) and is only
@@ -302,7 +300,6 @@ function ProfileContent() {
   /** Lock-screen wallpaper is a phone-only feature — on web the button exists (like native), but it opens an explanatory modal instead. */
   const [showWallpaperInfoModal, setShowWallpaperInfoModal] = useState(false);
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
-  const [showBlockedUsers, setShowBlockedUsers] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   // ADMIN_USER_IDS lives on the server (an env var outside NEXT_PUBLIC_) —
@@ -1844,19 +1841,6 @@ function ProfileContent() {
                   with regular settings (an irreversible action). User
                   request: GRAY color (not red) — "Sign out" is now the
                   reddest one. */}
-              <button
-                type="button"
-                onClick={() => setShowBlockedUsers(true)}
-                className="w-full flex items-center gap-3 py-3.5 text-left cursor-pointer"
-              >
-                <Ban className="w-[18px] h-[18px] text-slate-500 shrink-0" />
-                <span className="flex-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  {t("blockedUsersTitle")}
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-              </button>
-              <BlockedUsersDialog open={showBlockedUsers} onOpenChange={setShowBlockedUsers} />
-
               <div className="space-y-2">
                 <div className="space-y-2">
                   <button

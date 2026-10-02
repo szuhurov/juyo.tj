@@ -162,13 +162,4 @@ export const AdminService = {
       body: JSON.stringify(updates),
     });
   },
-  getReports(filters: { status?: string } = {}) {
-    return adminFetch(`/api/admin/reports${toQueryString(filters)}`);
-  },
-  updateReport(id: string, body: { action: "remove_item" | "keep_item" | "dismiss"; note?: string }) {
-    return adminFetch(`/api/admin/reports/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    });
-  },
 };

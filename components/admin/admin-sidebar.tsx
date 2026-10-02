@@ -2,17 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Package, UserX, ExternalLink, Crown, Flag } from "lucide-react";
+import { LayoutDashboard, Users, Package, UserX, ExternalLink, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePendingPostsCount } from "@/lib/hooks/use-admin-posts";
 import { usePendingDeletionRequestsCount } from "@/lib/hooks/use-admin-deletion-requests";
-import { useOpenReportsCount } from "@/lib/hooks/use-admin-reports";
 
 export const NAV_ITEMS = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
   { href: "/admin/users", label: "Корбарон", icon: Users },
   { href: "/admin/posts", label: "Эълонҳо", icon: Package },
-  { href: "/admin/reports", label: "Шикоятҳо", icon: Flag },
   { href: "/admin/subscriptions", label: "TOP/VIP", icon: Crown },
   { href: "/admin/deletion-requests", label: "Нестшудаҳо", icon: UserX },
 ];
@@ -36,7 +34,6 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const { data: pendingCount = 0 } = usePendingPostsCount();
   const { data: pendingDeletions = 0 } = usePendingDeletionRequestsCount();
-  const { data: openReports = 0 } = useOpenReportsCount();
 
   return (
     <nav className="flex-1 px-3 py-4 space-y-1">
@@ -58,7 +55,6 @@ export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
             {label}
             {href === "/admin/posts" && <PendingBadge count={pendingCount} />}
             {href === "/admin/deletion-requests" && <PendingBadge count={pendingDeletions} />}
-            {href === "/admin/reports" && <PendingBadge count={openReports} />}
           </Link>
         );
       })}
@@ -83,7 +79,6 @@ export function AdminSidebar() {
   const pathname = usePathname();
   const { data: pendingCount = 0 } = usePendingPostsCount();
   const { data: pendingDeletions = 0 } = usePendingDeletionRequestsCount();
-  const { data: openReports = 0 } = useOpenReportsCount();
 
   return (
     <aside className="hidden md:flex md:w-64 shrink-0 flex-col bg-white dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800">
@@ -109,7 +104,6 @@ export function AdminSidebar() {
               {label}
               {href === "/admin/posts" && <PendingBadge count={pendingCount} />}
               {href === "/admin/deletion-requests" && <PendingBadge count={pendingDeletions} />}
-              {href === "/admin/reports" && <PendingBadge count={openReports} />}
             </Link>
           );
         })}

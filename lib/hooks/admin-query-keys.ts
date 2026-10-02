@@ -10,6 +10,4 @@ export const ADMIN_KEYS = {
   settings: () => [...ADMIN_KEYS.all, "settings"] as const,
   deletionRequests: () => [...ADMIN_KEYS.all, "deletion-requests"] as const,
   deletionRequestsList: (status: string) => [...ADMIN_KEYS.deletionRequests(), "list", status] as const,
-  reports: () => [...ADMIN_KEYS.all, "reports"] as const,
-  reportsList: (status: string) => [...ADMIN_KEYS.reports(), "list", status] as const,
 };

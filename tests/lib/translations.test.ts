@@ -33,20 +33,6 @@ describe('translations completeness', () => {
     });
   }
 
-  it('every locale has the report / block strings', () => {
-    const keys = [
-      'reportTitle', 'reportSend', 'reportSent', 'reportReasonSpam', 'reportReasonOther',
-      'blockUser', 'blockConfirmTitle', 'userBlocked', 'blockedUsersTitle', 'unblock',
-      'mod_reported_content',
-    ];
-    for (const locale of ['tg', 'ru', 'en'] as const) {
-      const dict = translations[locale] as Record<string, unknown>;
-      for (const key of keys) {
-        expect(dict[key], `Missing ${locale}.${key}`).toBeTypeOf('string');
-      }
-    }
-  });
-
   it('tg locale has imageModeration with submitted, pending, rejected', () => {
     const mod = translations.tg.imageModeration as Record<string, any>;
     expect(mod).toBeDefined();
