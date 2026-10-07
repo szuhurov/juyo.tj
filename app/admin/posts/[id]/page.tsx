@@ -4,6 +4,7 @@ import { use } from "react";
 import { useAdminPost } from "@/lib/hooks/use-admin-posts";
 import { PostDetailHeader } from "@/components/admin/posts/post-detail-header";
 import { PostEditForm } from "@/components/admin/posts/post-edit-form";
+import { PostModerationPanel } from "@/components/admin/posts/post-moderation";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminPostDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -26,6 +27,7 @@ export default function AdminPostDetailPage({ params }: { params: Promise<{ id: 
   return (
     <div className="space-y-5">
       <PostDetailHeader item={data.item} />
+      <PostModerationPanel item={data.item} />
       <PostEditForm item={data.item} />
     </div>
   );

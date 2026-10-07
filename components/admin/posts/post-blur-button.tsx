@@ -47,7 +47,7 @@ export function PostBlurButton({ postId, images }: { postId: string; images: { i
 
   const handleConfirm = (finalFiles: File[]) => {
     setOpen(false);
-    const replacements = images.map((img, i) => ({ imageId: img.id, oldUrl: img.image_url, file: finalFiles[i] }));
+    const replacements = images.map((img, i) => ({ imageId: img.id, file: finalFiles[i] }));
     mutate(replacements, {
       onSuccess: () => toast.success("Аксҳо мозаика ва захира шуданд"),
       onError: (err: Error) => toast.error(err.message || "Хатогӣ рух дод"),

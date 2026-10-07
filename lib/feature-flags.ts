@@ -9,3 +9,12 @@
  */
 export const PAID_FEATURES_ENABLED: boolean =
   process.env.NEXT_PUBLIC_PAID_FEATURES_ENABLED === "true";
+
+/**
+ * "Search by photo" (vectors made in the browser, lib/visual-search.ts). Off
+ * until the visual_search migration is live and the existing photos are
+ * backfilled (tools/visual-bench/backfill.ts). Same flag as
+ * app/lib/feature-flags.ts (EXPO_PUBLIC_IMAGE_SEARCH).
+ */
+export const IMAGE_SEARCH: boolean =
+  process.env.NEXT_PUBLIC_IMAGE_SEARCH === "true";

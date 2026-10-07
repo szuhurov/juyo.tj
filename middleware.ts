@@ -75,7 +75,9 @@ function isRateLimited(request: Request, path: string): boolean {
 // Exported for tests/middleware.test.ts — same reasoning as the rest of this
 // file: in-memory only, not distributed, but a real obstacle either way.
 export function isLimitedActionRateLimited(request: Request, path: string): boolean {
-  if (path !== "/api/account/request-deletion") return false;
+  // Image search is a nearest-neighbour query over listing photos: limited per
+  // IP here and, shared by all instances, per hashed IP in search_visual().
+  if (path !== "/api/account/request-deletion" && path !== "/api/search/image") return false;
 
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||

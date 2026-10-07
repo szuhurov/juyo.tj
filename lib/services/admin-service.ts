@@ -104,6 +104,15 @@ export const AdminService = {
   getPost(id: string) {
     return adminFetch(`/api/admin/posts/${id}`);
   },
+  getSafePosts() {
+    return adminFetch("/api/admin/posts/safe");
+  },
+  bulkApprovePosts(items: { id: string; updated_at: string }[]) {
+    return adminFetch<{ approved: string[] }>("/api/admin/posts/bulk-approve", {
+      method: "POST",
+      body: JSON.stringify({ items }),
+    });
+  },
   updatePost(id: string, updates: Record<string, unknown>) {
     return adminFetch(`/api/admin/posts/${id}`, {
       method: "PATCH",
@@ -130,11 +139,12 @@ export const AdminService = {
     });
   },
 
-  async replacePostImage(postId: string, imageId: string, oldImageUrl: string, file: File) {
+  async replacePostImage(postId: string, imageId: string, file: File) {
     const formData = new FormData();
     formData.append("image_id", imageId);
-    formData.append("old_image_url", oldImageUrl);
     formData.append("image", await compressImage(file));
+    // The small copy shown in the feed must be redacted too (see the route).
+    formData.append("thumbnail", await compressImage(file, 400, 0.7));
     const res = await fetch(`/api/admin/posts/${postId}/images`, { method: "PATCH", body: formData });
     if (!res.ok) {
       const body = await res.json().catch(() => null);

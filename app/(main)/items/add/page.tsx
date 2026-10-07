@@ -49,6 +49,11 @@ import {
 } from "@/components/ui/dialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
+import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
+import { warmPhotoAnalysis } from "@/lib/photo-privacy";
+import { attachEmbeddings } from "@/lib/visual-search";
+import { isSafeFor, markReviewed, preparePhotos } from "@/lib/prepare-photos";
+import type { Rect } from "@/lib/privacy-pipeline";
 
 // These two components (the privacy blur canvas editor, the camera modal) are
 // heavy and only needed in specific cases (a document was detected / the
@@ -120,12 +125,45 @@ function AddItemForm() {
   // to title/description only.
   const [noPhotoAdviceOpen, setNoPhotoAdviceOpen] = useState(false);
 
-  // Privacy editor — the user opens it from the photo step to hide document
-  // numbers, names or faces before publishing (drawn by hand).
+  // Privacy editor — opened by the person from the photo step, or by the
+  // privacy pipeline when a photo needs a person's check (document, card,
+  // detector unavailable).
   const [privacyReview, setPrivacyReview] = useState<{
     files: File[];
-    resolve: (result: File[] | null) => void;
+    documentMode: boolean;
+    initialRegions?: (Rect[] | null)[];
+    resolve: (result: { files: File[]; covers: Rect[][] } | null) => void;
   } | null>(null);
+  const [checkingPhotos, setCheckingPhotos] = useState(false);
+  // Every photo passes the in-browser privacy pipeline (lib/prepare-photos.ts)
+  // before "Next" on the details step; only its safe output is uploaded.
+  const needsPrivacyCheck = () => images.some((f) => !isSafeFor(f, formData.category));
+  // Start the analysis as soon as a photo is there, so "Next" rarely waits.
+  useEffect(() => {
+    images.forEach(warmPhotoAnalysis);
+  }, [images]);
+
+  const openPrivacyEditor = (files: File[], documentMode: boolean, initialRegions?: (Rect[] | null)[]) =>
+    new Promise<{ files: File[]; covers: Rect[][] } | null>((resolve) => {
+      setPrivacyReview({ files, documentMode, initialRegions, resolve });
+    });
+
+  const replaceImages = (files: File[]) => {
+    setImages(files);
+    setPreviews((prev) => {
+      prev.forEach((url) => URL.revokeObjectURL(url));
+      return files.map((f) => URL.createObjectURL(f));
+    });
+  };
+
+  // "Hide personal info" on the photo step: covered by hand; the pipeline
+  // still checks the result on "Next".
+  const reviewPhotos = async (documentMode: boolean) => {
+    const result = await openPrivacyEditor(images, documentMode);
+    if (!result) return;
+    result.files.forEach((f, i) => markReviewed(f, result.covers[i] ?? []));
+    replaceImages(result.files);
+  };
 
   // The safety notice is shown AFTER the blur step (if it's a document), but
   // BEFORE the actual publish — publishing only starts after "Got it".
@@ -222,7 +260,7 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      setStep(5); // Details → contact
+      continueFromDetails();
     } else if (step === 6) {
       if (!city || !locationAnswered) {
         toast.error(t("fillAllFields"));
@@ -236,6 +274,33 @@ function AddItemForm() {
       }
       onFinalSubmit();
     }
+  };
+
+  // Step 4 → next: the category is known now, so every photo goes through
+  // the privacy pipeline. A photo that needs a person's check opens the
+  // editor pre-covered; nothing moves on until every photo is safe.
+  const continueFromDetails = async () => {
+    if (checkingPhotos) return;
+    if (needsPrivacyCheck()) {
+      setCheckingPhotos(true);
+      try {
+        const outcome = await preparePhotos(images, formData.category, openPrivacyEditor);
+        replaceImages(outcome.files);
+        if (outcome.status === "cancelled") return;
+        if (outcome.status === "still_visible") {
+          toast.error(t("privacyStillVisible"));
+          return;
+        }
+        if (outcome.status === "person_photo") {
+          toast.error(t("privacyPersonPhoto"));
+          return;
+        }
+        if (outcome.autoCovered) toast.success(t("privacyAutoCovered"));
+      } finally {
+        setCheckingPhotos(false);
+      }
+    }
+    setStep(5); // Details → contact
   };
 
   const prevStep = () => {
@@ -261,10 +326,16 @@ function AddItemForm() {
   };
 
   const onFinalSubmit = async () => {
+    if (needsPrivacyCheck()) {
+      setStep(4);
+      return;
+    }
     setLoading(true);
     const finalImages: File[] = images;
-    const finalTitle = formData.title;
-    const finalDescription = formData.description;
+    // The database masks these numbers too; doing it here keeps what the
+    // poster sees in sync with what is saved.
+    const finalTitle = maskSensitiveNumbers(formData.title, formData.category);
+    const finalDescription = maskSensitiveNumbers(formData.description, formData.category);
     const finalCategory = formData.category;
 
     // We start the notification permission prompt right here (not after
@@ -311,7 +382,12 @@ function AddItemForm() {
     const publishWork = async () => {
       const supabase = createClerkSupabaseClient(getToken);
 
-      const imageUrls = [];
+      const imageUrls: string[] = [];
+      // Uploaded bytes by public URL: the visual-search vector is made from
+      // exactly the file that was published.
+      const uploadedFiles = new Map<string, Blob>();
+      // finalImages are the privacy pipeline's safe files; the re-encode
+      // below also drops all metadata (EXIF/GPS).
       for (const file of finalImages) {
         const compressedFile = await compressImage(file);
         const ext = compressedFile.name.split(".").pop();
@@ -324,6 +400,7 @@ function AddItemForm() {
           data: { publicUrl },
         } = supabase.storage.from("items").getPublicUrl(fileName);
         imageUrls.push(publicUrl);
+        uploadedFiles.set(publicUrl, compressedFile);
       }
 
 
@@ -368,14 +445,18 @@ function AddItemForm() {
           image_url: url,
         }));
 
-        const { error: imagesError } = await supabase
+        const { data: imageRows, error: imagesError } = await supabase
           .from("item_images")
-          .insert(imageRecords);
+          .insert(imageRecords)
+          .select("id, image_url");
 
         announcePublished();
 
         if (imagesError) {
           console.error("DATABASE ERROR:", imagesError.message);
+        } else if (imageRows) {
+          // In the background, on this device; never delays or fails the listing.
+          void attachEmbeddings(supabase, imageRows, uploadedFiles);
         }
       }
 
@@ -475,19 +556,9 @@ function AddItemForm() {
               {images.length > 0 && (
                 <button
                   type="button"
-                  onClick={() =>
-                    setPrivacyReview({
-                      files: images,
-                      resolve: (blurred) => {
-                        if (!blurred) return;
-                        setImages(blurred);
-                        setPreviews((prev) => {
-                          prev.forEach((url) => URL.revokeObjectURL(url));
-                          return blurred.map((f) => URL.createObjectURL(f));
-                        });
-                      },
-                    })
-                  }
+                  onClick={() => {
+                    reviewPhotos(isDocumentCategory(formData.category));
+                  }}
                   className="pressable w-full h-11 rounded-md border border-hairline dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
                 >
                   <EyeOff className="w-4 h-4" />
@@ -803,6 +874,9 @@ function AddItemForm() {
                     }))
                   }
                 />
+                {isDocumentCategory(formData.category) && (
+                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("docDescHint")}</p>
+                )}
               </div>
             </div>
           )}
@@ -934,9 +1008,15 @@ function AddItemForm() {
               <Button
                 size="lg"
                 onClick={nextStep}
+                disabled={checkingPhotos}
+                aria-label={checkingPhotos ? t("privacyChecking") : undefined}
                 className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] text-sm min-[1920px]:text-[15px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
               >
-                {t("next")}
+                {checkingPhotos ? (
+                  <Loader2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 animate-spin" />
+                ) : (
+                  t("next")
+                )}
               </Button>
             )}
             {step === 5 && (
@@ -1066,10 +1146,13 @@ function AddItemForm() {
         <PrivacyBlurEditor
           open
           files={privacyReview.files}
-          onConfirm={(finalFiles) => {
+          documentMode={privacyReview.documentMode}
+          category={formData.category}
+          initialRegions={privacyReview.initialRegions}
+          onConfirm={(finalFiles, covers) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
-            resolve(finalFiles);
+            resolve({ files: finalFiles, covers });
           }}
           onCancel={() => {
             const resolve = privacyReview.resolve;

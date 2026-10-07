@@ -2,8 +2,17 @@
  * Privacy protection editor — the user (or an admin) opens it to hide
  * document numbers, names or faces, and draws/resizes/moves/deletes the
  * regions with a "pen" (dragging with mouse/finger). Every region is
- * pixelated (mosaic, not a plain blur — because blur can sometimes be
- * reversed, pixelation cannot).
+ * painted over with a solid color — blur and pixelation can sometimes be
+ * reversed (known fonts on documents make digits guessable from the
+ * blocks), a solid fill cannot. Same as the mobile editor.
+ *
+ * Suggested covers come from the in-browser privacy pipeline
+ * (lib/photo-privacy.ts) — passed in as `initialRegions`, or detected here
+ * when the editor is opened by hand. `documentMode` (Documents/Cards, or a
+ * photo that looks like a document) applies the document rules, lists what
+ * to hide, and asks again before confirming a photo with nothing hidden.
+ * `onConfirm` also returns what was covered, so the caller can re-check
+ * the exported photo (lib/photo-privacy.ts finalizePhoto).
  *
  * Multiple images at once: all images are reviewed in this ONE dialog
  * with left/right buttons (not one at a time in separate dialogs) — so
@@ -21,9 +30,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, X, RotateCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Undo2, Redo2, X, RotateCw, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
+import { boundingRect, suggestCovers } from "@/lib/photo-privacy";
+import type { Rect } from "@/lib/privacy-pipeline";
 
 interface EditableRegion {
   id: string;
@@ -114,11 +126,9 @@ function decodeSlot(file: File): Promise<ImageSlot> {
   });
 }
 
-// A crisp mosaic with hard block edges (sharp, not blurry) — the same
-// look we originally produced with the pen. Blocks are larger than the
-// first attempt (up to 7 cells along the shorter side) — so no
-// letter/digit shape survives, while still keeping the clear "big pixel"
-// look (not a solid black fill, not a smooth blur).
+const REDACT_COLOR = "#18181b";
+
+// Paints the region solid — nothing of the original pixels survives.
 function redactRect(
   source: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
@@ -128,48 +138,38 @@ function redactRect(
   h: number,
   rotationDeg = 0,
 ) {
-  const cx = Math.max(0, Math.round(x));
-  const cy = Math.max(0, Math.round(y));
-  const cw = Math.min(source.width - cx, Math.round(w));
-  const ch = Math.min(source.height - cy, Math.round(h));
+  // Round outwards so no edge pixel of the covered area survives.
+  const cx = Math.max(0, Math.floor(x));
+  const cy = Math.max(0, Math.floor(y));
+  const cw = Math.min(source.width - cx, Math.ceil(x + w) - cx);
+  const ch = Math.min(source.height - cy, Math.ceil(y + h) - cy);
   if (cw <= 0 || ch <= 0) return;
 
-  const shortCells = 7;
-  const blockSize = Math.max(8, Math.round(Math.min(cw, ch) / shortCells));
-  const smallW = Math.max(1, Math.ceil(cw / blockSize));
-  const smallH = Math.max(1, Math.ceil(ch / blockSize));
-
-  const tmp = document.createElement("canvas");
-  tmp.width = smallW;
-  tmp.height = smallH;
-  const tmpCtx = tmp.getContext("2d");
-  if (!tmpCtx) return;
-  tmpCtx.drawImage(source, cx, cy, cw, ch, 0, 0, smallW, smallH);
-
-  ctx.imageSmoothingEnabled = false;
-  if (!rotationDeg) {
-    ctx.drawImage(tmp, 0, 0, smallW, smallH, cx, cy, cw, ch);
-  } else {
-    // Rotated region — we rotate the mosaic around the rectangle's OWN
-    // center, so it matches the overlay's CSS display.
-    ctx.save();
-    ctx.translate(cx + cw / 2, cy + ch / 2);
-    ctx.rotate((rotationDeg * Math.PI) / 180);
-    ctx.drawImage(tmp, 0, 0, smallW, smallH, -cw / 2, -ch / 2, cw, ch);
-    ctx.restore();
-  }
-  ctx.imageSmoothingEnabled = true;
+  // Rotated around the rectangle's own center, matching the overlay's CSS.
+  ctx.save();
+  ctx.fillStyle = REDACT_COLOR;
+  ctx.translate(cx + cw / 2, cy + ch / 2);
+  ctx.rotate((rotationDeg * Math.PI) / 180);
+  ctx.fillRect(-cw / 2, -ch / 2, cw, ch);
+  ctx.restore();
 }
 
 export function PrivacyBlurEditor({
   open,
   files,
+  documentMode = false,
+  category,
+  initialRegions,
   onConfirm,
   onCancel,
 }: {
   open: boolean;
   files: File[];
-  onConfirm: (finalFiles: File[]) => void;
+  documentMode?: boolean;
+  category?: string | null;
+  /** Covers already suggested per photo (null = detection unavailable for it); skips detection here. */
+  initialRegions?: (Rect[] | null)[];
+  onConfirm: (finalFiles: File[], covers: Rect[][]) => void;
   /** Pressing "×"/Escape/clicking outside — all images remain unconfirmed
    * (an unconfirmed image never goes to upload). */
   onCancel: () => void;
@@ -184,6 +184,13 @@ export function PrivacyBlurEditor({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  // Document mode: photos the user confirmed with nothing hidden — asked once.
+  const [emptyWarning, setEmptyWarning] = useState(false);
+  const [detectStatus, setDetectStatus] = useState<"idle" | "running" | "done" | "unavailable">("idle");
+  // Bumped on every open, so a detection still running from a previous
+  // open never writes into the new set of photos.
+  const detectRunRef = useRef(0);
 
   const current = slots[currentIndex] as ImageSlot | undefined;
   // useMemo: if `current` doesn't exist, `?? []` would create a NEW array
@@ -243,20 +250,54 @@ export function PrivacyBlurEditor({
     if (open && !wasOpenRef.current) {
       wasOpenRef.current = true;
       if (files.length === 0) return;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(false);
+      setEmptyWarning(false);
+      setDetectStatus("idle");
+      const run = ++detectRunRef.current;
       setCurrentIndex(0);
       setSelectedId(null);
       Promise.all(
         files.map((file) => decodeSlot(file)),
-      ).then((newSlots) => {
+      ).then(async (newSlots) => {
+        const toEditable = (rs: Rect[], i: number): EditableRegion[] =>
+          rs.map((r, k) => ({ x: r.x, y: r.y, width: r.width, height: r.height, rotation: 0, id: `region-auto-${i}-${k}` }));
+        if (initialRegions) {
+          setSlots(newSlots.map((sl, i) => {
+            const regions = toEditable(initialRegions[i] ?? [], i);
+            return regions.length ? { ...sl, regions, history: [[], regions], historyIndex: 1 } : sl;
+          }));
+          setDetectStatus(initialRegions.some((r) => r === null) ? "unavailable" : "done");
+          setReady(true);
+          return;
+        }
         setSlots(newSlots);
         setReady(true);
+        setDetectStatus("running");
+        let unavailable = false;
+        for (let i = 0; i < newSlots.length; i++) {
+          const suggested = await suggestCovers(newSlots[i].file, category, documentMode);
+          if (run !== detectRunRef.current) return;
+          if (suggested === null) {
+            unavailable = true;
+            continue;
+          }
+          if (suggested.length === 0) continue;
+          const withIds = toEditable(suggested, i);
+          // Never overwrite what the person already drew on this photo.
+          setSlots((prev) =>
+            prev.map((sl, j) =>
+              j === i && sl.regions.length === 0
+                ? { ...sl, regions: withIds, history: [[], withIds], historyIndex: 1 }
+                : sl,
+            ),
+          );
+        }
+        setDetectStatus(unavailable ? "unavailable" : "done");
       });
     } else if (!open) {
       wasOpenRef.current = false;
     }
-  }, [open, files]);
+  }, [open, files, documentMode, category, initialRegions]);
 
   // The touch-action CSS only sometimes works (especially in iOS Safari)
   // — by listening directly for "touchmove" (passive:false) we guarantee
@@ -592,10 +633,30 @@ export function PrivacyBlurEditor({
     });
   };
 
-  const finalizeAll = async () => {
-    if (!ready || slots.length === 0) return;
-    const finalFiles = await Promise.all(slots.map(exportSlot));
-    onConfirm(finalFiles);
+  const finalizeAll = async (confirmedEmpty = false) => {
+    if (!ready || slots.length === 0 || exporting) return;
+    if (documentMode && !confirmedEmpty) {
+      const firstEmpty = slots.findIndex((s) => s.regions.length === 0);
+      if (firstEmpty !== -1) {
+        goToIndex(firstEmpty);
+        setEmptyWarning(true);
+        return;
+      }
+    }
+    setExporting(true);
+    try {
+      const finalFiles = await Promise.all(slots.map(exportSlot));
+      // What is painted on each exported photo, as upright boxes.
+      const covers = slots.map((s) =>
+        s.regions.map((r) => boundingRect(r, s.base ? s.base.width / s.base.height : 1)),
+      );
+      onConfirm(finalFiles, covers);
+    } catch {
+      // Nothing is uploaded: the caller only ever receives redacted files.
+      toast.error(t("privacyExportFailed"));
+    } finally {
+      setExporting(false);
+    }
   };
 
   // On the last image — final confirmation (all images at once). On a
@@ -620,7 +681,7 @@ export function PrivacyBlurEditor({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {t("privacyReviewTitle")}
+                  {documentMode ? t("docPrivacyTitle") : t("privacyReviewTitle")}
                 </DialogTitle>
                 {slots.length > 1 && (
                   <span className="shrink-0 text-[10px] font-medium tracking-widest text-slate-400 bg-slate-100 dark:bg-zinc-700 rounded-full px-2 py-0.5">
@@ -629,8 +690,20 @@ export function PrivacyBlurEditor({
                 )}
               </div>
               <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                {t("privacyReviewDesc")}
+                {documentMode ? t("docPrivacyDesc") : t("privacyReviewDesc")}
               </p>
+              {detectStatus !== "idle" && (
+                <p aria-live="polite" className="mt-2 flex items-start gap-1.5 text-xs font-semibold leading-relaxed text-emerald-600 dark:text-emerald-400">
+                  {detectStatus === "running" && <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />}
+                  <span>
+                    {detectStatus === "running"
+                      ? t("docDetecting")
+                      : detectStatus === "done"
+                        ? t(documentMode ? "docDetectDone" : "privacyDetectDone")
+                        : t("docDetectUnavailable")}
+                  </span>
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -814,11 +887,33 @@ export function PrivacyBlurEditor({
           </div>
         </div>
 
-        <DialogFooter className="p-6 pt-4 shrink-0">
+        <DialogFooter className="p-6 pt-4 shrink-0 flex-col gap-2 sm:flex-col">
+          {emptyWarning && (
+            <div role="alert" className="w-full rounded-md border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 p-3 space-y-2">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">{t("docPrivacyNothingHidden")}</p>
+              <div className="flex gap-2">
+                <Button type="button" size="sm" className="flex-1" onClick={() => setEmptyWarning(false)}>
+                  {t("docPrivacyHideNow")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setEmptyWarning(false);
+                    finalizeAll(true);
+                  }}
+                >
+                  {t("docPrivacyNoDocument")}
+                </Button>
+              </div>
+            </div>
+          )}
           <Button
             type="button"
             onClick={handleFooterButton}
-            disabled={!ready}
+            disabled={!ready || exporting || detectStatus === "running"}
             className="w-full h-12 rounded-md tracking-widest text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
           >
             {isLastSlot ? t("privacyConfirmBtn") : t("next")}

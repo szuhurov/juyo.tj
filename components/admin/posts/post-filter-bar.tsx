@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { CATEGORIES } from "@/lib/services/item-service";
@@ -69,6 +70,12 @@ export function PostFilterBar({
             </button>
           );
         })}
+        <Link
+          href="/admin/posts/safe"
+          className="text-sm font-semibold pb-1 border-b-2 border-transparent text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+        >
+          Бехатар (AI)
+        </Link>
       </div>
 
       {!archiveView && (

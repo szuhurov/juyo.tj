@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useDeleteAdminPost, useUpdateAdminPost, usePermanentlyDeletePost } from "@/lib/hooks/use-admin-posts";
 import type { AdminPostDetail } from "@/lib/hooks/use-admin-posts";
 import { PostBlurButton } from "@/components/admin/posts/post-blur-button";
+import { PostVisualCheck } from "@/components/admin/posts/post-visual-check";
 
 export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
   const router = useRouter();
@@ -91,6 +92,8 @@ export function PostDetailHeader({ item }: { item: AdminPostDetail["item"] }) {
         <h1 className="text-lg font-bold text-zinc-900 dark:text-white tracking-tight">{item.title}</h1>
         <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mt-1">{item.description}</p>
       </div>
+
+      <PostVisualCheck item={item} />
 
       {item.images.length > 0 && (
         <div className="space-y-2">

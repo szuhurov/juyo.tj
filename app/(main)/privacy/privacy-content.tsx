@@ -23,17 +23,17 @@ const content = {
       {
         id: "camera",
         title: "2. Камера ва галерея",
-        text: "Камера барои скан кардани QR-кодҳои JUYO ва гирифтани акси ашё истифода мешавад. Скани QR дар дастгоҳи шумо иҷро мешавад. Галерея барои илова кардани акс ба эълон ва сабти QR-и шумо истифода мешавад. Пеш аз боркунӣ маълумоти пинҳонии акс (EXIF, аз ҷумла ҷойгиршавии GPS) нест карда мешавад. Дар ҳуҷҷатҳо рақамҳо ва номҳоро шумо метавонед бо тугмаи «Пинҳон кардани маълумоти шахсӣ» пӯшонед."
+        text: "Камера барои скан кардани QR-кодҳои JUYO ва гирифтани акси ашё истифода мешавад. Скани QR дар дастгоҳи шумо иҷро мешавад. Галерея барои илова кардани акс ба эълон ва сабти QR-и шумо истифода мешавад. Пеш аз боркунӣ маълумоти пинҳонии акс (EXIF, аз ҷумла ҷойгиршавии GPS) нест карда мешавад. Дар ҳар акс шумо метавонед бо тугмаи «Пинҳон кардани маълумоти шахсӣ» рақамҳо, номҳо ва чеҳраҳоро пӯшонед. Барои эълонҳои категорияи «Ҳуҷҷат» ин ҳатмист: барнома пеш аз нашр талаб мекунад, ки рақами ҳуҷҷат, санаи таваллуд, имзо, номи чопшуда, сатрҳои поёнии <<< ва чашмони сурат пӯшонида шаванд, ва модератор инро месанҷад. Пӯшиш ба худи акс доимо сабт мешавад ва акси аслии пӯшиданашуда ба сервер фиристода намешавад. Рақамҳои ҳуҷҷат ва корти бонкӣ дар матни эълон худкор пинҳон мешаванд. Барои кумак барнома матн ва чашмҳоро дар акси ҳуҷҷат худаш меёбад ва пешакӣ мепӯшонад — бо воситаҳои шинохти матн ва чеҳра, ки дар худи дастгоҳи шумо кор мекунанд (дар iPhone — Apple Vision, дар Android — Tesseract ва детектори чеҳраи Android, дар сайт — Tesseract ва MediaPipe аз сервери худи JUYO). Акс барои ин ба ҳеҷ ҷо фиристода намешавад ва натиҷа нигоҳ дошта намешавад."
       },
       {
         id: "usage",
         title: "3. Истифодаи маълумот",
-        text: "Маълумоти шумо танҳо барои кори JUYO истифода мешавад: ҳисоб ва вуруд, нашри эълонҳо, ҷустуҷӯ ва мутобиқатҳои эҳтимолӣ (аз рӯи матн, категория, шаҳр ва сана — бо қоидаҳо, бе зеҳни сунъӣ), тамос байни соҳиб ва ёбанда ва огоҳиномаҳо. Ҳар эълон пеш аз нашр аз ҷониби модератор санҷида мешавад (ба истиснои эълонҳои корбароне, ки модератор онҳоро боэътимод қайд кардааст). JUYO зеҳни сунъӣ (AI) истифода намебарад. Мо маълумоти шуморо намефурӯшем ва барои реклама истифода намебарем."
+        text: "Маълумоти шумо танҳо барои кори JUYO истифода мешавад: ҳисоб ва вуруд, нашри эълонҳо, ҷустуҷӯ ва мутобиқатҳои эҳтимолӣ (аз рӯи матн, категория, шаҳр ва сана — бо қоидаҳо, бе зеҳни сунъӣ), тамос байни соҳиб ва ёбанда ва огоҳиномаҳо. Ҳар эълон пеш аз нашр аз ҷониби модератор санҷида мешавад (ба истиснои эълонҳои корбароне, ки модератор онҳоро боэътимод қайд кардааст). JUYO маълумоти шуморо ба ягон хидмати зеҳни сунъӣ (AI) намефиристад. Мо маълумоти шуморо намефурӯшем ва барои реклама истифода намебарем."
       },
       {
         id: "public",
         title: "4. Чӣ ба ҳама намоён аст",
-        text: "Эълони тасдиқшуда (матн ва суратҳо) барои ҳама, ҳатто бе ҳисоб, намоён аст. Суратҳои эълон бо пайванди умумӣ нигоҳ дошта мешаванд — ҳар касе, ки пайвандро дорад, метавонад суратро кушояд. Рақами телефон ва шабакаҳои эълон ба бинанда барои тамос нишон дода мешаванд. QR-и шумо танҳо ҳамон маълумотеро нишон медиҳад, ки худатон ворид кардаед, ва онро дар ҳар лаҳза бо тумблери «Статуси QR-код» хомӯш карда метавонед."
+        text: "Эълони тасдиқшуда (матн ва суратҳо) барои ҳама, ҳатто бе ҳисоб, намоён аст. Суратҳои эълон бо пайванди умумӣ нигоҳ дошта мешаванд — ҳар касе, ки пайвандро дорад, метавонад суратро кушояд. Рақами телефон ва шабакаҳои эълон ба бинанда барои тамос нишон дода мешаванд. QR-и шумо танҳо ҳамон маълумотеро нишон медиҳад, ки худатон ворид кардаед, ва онро дар ҳар лаҳза бо тумблери «Статуси QR-код» хомӯш карда метавонед. Дар эълони ҳуҷҷат номи соҳиб танҳо бо насаб ва ҳарфи аввали ном нишон дода мешавад, ва ҳар чунин эълонро модератор пеш аз нашр месанҷад. Агар эълон ҳуҷҷат ё номи шуморо нишон диҳад, ба s.zuhurov@outlook.com нависед — мо онро пинҳон ё нест мекунем."
       },
       {
         id: "third-party",
@@ -90,17 +90,17 @@ const content = {
       {
         id: "camera",
         title: "2. Камера и галерея",
-        text: "Камера используется для сканирования QR-кодов JUYO и фотографирования вещей. Сканирование QR выполняется на вашем устройстве. Галерея используется для добавления фото к объявлению и сохранения вашего QR. Перед загрузкой скрытые данные фото (EXIF, в том числе GPS-координаты) удаляются. Номера и имена на документах вы можете закрыть кнопкой «Скрыть личные данные на фото»."
+        text: "Камера используется для сканирования QR-кодов JUYO и фотографирования вещей. Сканирование QR выполняется на вашем устройстве. Галерея используется для добавления фото к объявлению и сохранения вашего QR. Перед загрузкой скрытые данные фото (EXIF, в том числе GPS-координаты) удаляются. На любом фото вы можете закрыть номера, имена и лица кнопкой «Скрыть личные данные на фото». Для объявлений в категории «Документ» это обязательно: перед публикацией приложение требует закрыть номер документа, дату рождения, подпись, напечатанное имя, нижние строки <<< и глаза на фото, а модератор это проверяет. Закрашивание сохраняется в самом фото навсегда, а исходное незакрытое фото на сервер не отправляется. Номера документов и банковских карт в тексте объявления скрываются автоматически. Чтобы помочь, приложение само находит текст и глаза на фото документа и заранее закрывает их — с помощью распознавания текста и лиц, которое работает на самом вашем устройстве (на iPhone — Apple Vision, на Android — Tesseract и детектор лиц Android, на сайте — Tesseract и MediaPipe с сервера самого JUYO). Фото для этого никуда не отправляется, результат не сохраняется."
       },
       {
         id: "usage",
         title: "3. Как мы используем данные",
-        text: "Данные используются только для работы JUYO: аккаунт и вход, публикация объявлений, поиск и возможные совпадения (по тексту, категории, городу и дате — по правилам, без искусственного интеллекта), связь между владельцем и нашедшим и уведомления. Каждое объявление проверяет модератор перед публикацией (кроме объявлений пользователей, отмеченных модератором как доверенные). JUYO не использует искусственный интеллект (AI). Мы не продаём ваши данные и не используем их для рекламы."
+        text: "Данные используются только для работы JUYO: аккаунт и вход, публикация объявлений, поиск и возможные совпадения (по тексту, категории, городу и дате — по правилам, без искусственного интеллекта), связь между владельцем и нашедшим и уведомления. Каждое объявление проверяет модератор перед публикацией (кроме объявлений пользователей, отмеченных модератором как доверенные). JUYO не передаёт ваши данные никаким сервисам искусственного интеллекта (AI). Мы не продаём ваши данные и не используем их для рекламы."
       },
       {
         id: "public",
         title: "4. Что видно всем",
-        text: "Одобренное объявление (текст и фото) видно всем, даже без аккаунта. Фотографии объявлений хранятся по публичной ссылке — любой, у кого есть ссылка, может открыть фото. Номер телефона и соцсети объявления показываются посетителю для связи. Ваш QR показывает только те данные, которые вы сами ввели, и его можно отключить в любой момент переключателем «Статус QR-кода»."
+        text: "Одобренное объявление (текст и фото) видно всем, даже без аккаунта. Фотографии объявлений хранятся по публичной ссылке — любой, у кого есть ссылка, может открыть фото. Номер телефона и соцсети объявления показываются посетителю для связи. Ваш QR показывает только те данные, которые вы сами ввели, и его можно отключить в любой момент переключателем «Статус QR-кода». В объявлении о документе имя владельца показывается только как фамилия и первая буква имени, и каждое такое объявление модератор проверяет до публикации. Если объявление показывает ваш документ или имя, напишите на s.zuhurov@outlook.com — мы скроем или удалим его."
       },
       {
         id: "third-party",
@@ -157,17 +157,17 @@ const content = {
       {
         id: "camera",
         title: "2. Camera and photos",
-        text: "The camera is used to scan JUYO QR codes and to photograph items. QR scanning happens on your device. The photo library is used to add photos to a listing and to save your QR code. Hidden photo data (EXIF, including GPS location) is removed before upload. You can cover numbers and names on documents with the \"Hide personal info on photos\" button."
+        text: "The camera is used to scan JUYO QR codes and to photograph items. QR scanning happens on your device. The photo library is used to add photos to a listing and to save your QR code. Hidden photo data (EXIF, including GPS location) is removed before upload. On any photo you can cover numbers, names and faces with the \"Hide personal info on photos\" button. For listings in the Documents category this is required: before publishing, the app asks you to cover the document number, date of birth, signature, printed name, the bottom <<< lines and the eyes on the photo, and a moderator checks it. The covering is saved into the photo permanently, and the uncovered original is never sent to our servers. Document and bank card numbers in the listing text are hidden automatically. To help, the app finds the text and the eyes on a document photo and covers them in advance, using text and face recognition that runs on your own device (on iPhone, Apple Vision; on Android, Tesseract and the Android face detector; on the website, Tesseract and MediaPipe served by JUYO itself). The photo is not sent anywhere for this, and the result is not stored."
       },
       {
         id: "usage",
         title: "3. How we use data",
-        text: "Your data is used only to run JUYO: your account and sign-in, publishing listings, search and possible matches (based on text, category, city and date — rule-based, no artificial intelligence), contact between owner and finder, and notifications. Every listing is reviewed by a moderator before it is published (except listings by users the moderator has marked as trusted). JUYO does not use artificial intelligence (AI). We do not sell your data or use it for advertising."
+        text: "Your data is used only to run JUYO: your account and sign-in, publishing listings, search and possible matches (based on text, category, city and date — rule-based, no artificial intelligence), contact between owner and finder, and notifications. Every listing is reviewed by a moderator before it is published (except listings by users the moderator has marked as trusted). JUYO does not send your data to any artificial intelligence (AI) service. We do not sell your data or use it for advertising."
       },
       {
         id: "public",
         title: "4. What is public",
-        text: "An approved listing (text and photos) is visible to everyone, even without an account. Listing photos are stored at public links — anyone with the link can open the photo. The listing's phone number and social accounts are shown to visitors so they can contact you. Your QR shows only the data you entered yourself, and you can switch it off at any time with the QR status toggle."
+        text: "An approved listing (text and photos) is visible to everyone, even without an account. Listing photos are stored at public links — anyone with the link can open the photo. The listing's phone number and social accounts are shown to visitors so they can contact you. Your QR shows only the data you entered yourself, and you can switch it off at any time with the QR status toggle. In a listing about a document, the owner's name is shown only as surname and first initial, and a moderator checks every such listing before it is published. If a listing shows your document or name, email s.zuhurov@outlook.com and we will hide or remove it."
       },
       {
         id: "third-party",

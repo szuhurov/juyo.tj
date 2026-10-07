@@ -29,9 +29,14 @@ import { toast } from "sonner"; // For showing messages
 import { Loader2, X, Upload, EyeOff } from "lucide-react"; // Icons
 import Image from "next/image"; // For images
 import { compressImage } from "@/lib/image-utils";
+import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
+import { warmPhotoAnalysis } from "@/lib/photo-privacy";
+import { isSafeFor, markReviewed, preparePhotos } from "@/lib/prepare-photos";
+import { DOCUMENT_CATEGORIES, type Rect } from "@/lib/privacy-pipeline";
 import { CITY_IDS, DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { cn } from "@/lib/utils";
 import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
+import { attachEmbeddings } from "@/lib/visual-search";
 
 import {
   Tooltip,
@@ -81,12 +86,44 @@ export default function EditItemPage({
     { url: string; isExisting: boolean }[]
   >([]);
 
-  // Privacy editor — opened by the user to hide document numbers, names or
-  // faces on NEW photos (drawn by hand; see items/add/page.tsx).
+  // Privacy editor — opened by the person for NEW photos, or by the privacy
+  // pipeline when a photo needs a person's check (see items/add/page.tsx).
   const [privacyReview, setPrivacyReview] = useState<{
     files: File[];
-    resolve: (result: File[] | null) => void;
+    documentMode: boolean;
+    initialRegions?: (Rect[] | null)[];
+    resolve: (result: { files: File[]; covers: Rect[][] } | null) => void;
   } | null>(null);
+  // Start the analysis as soon as a photo is there, so saving rarely waits.
+  useEffect(() => {
+    images.forEach(warmPhotoAnalysis);
+  }, [images]);
+
+  const openPrivacyEditor = (files: File[], documentMode: boolean, initialRegions?: (Rect[] | null)[]) =>
+    new Promise<{ files: File[]; covers: Rect[][] } | null>((resolve) => {
+      setPrivacyReview({ files, documentMode, initialRegions, resolve });
+    });
+
+  // Switching a listing INTO Documents/Cards re-checks its current photos:
+  // they are fetched, go through the pipeline like new ones, and are then
+  // replaced (the old files deleted, like any removed photo).
+  const existingAsNewFiles = async (): Promise<File[] | null> => {
+    try {
+      let newIdx = 0;
+      return await Promise.all(
+        previews.map(async (p) => {
+          if (!p.isExisting) return images[newIdx++];
+          const res = await fetch(p.url);
+          if (!res.ok) throw new Error(String(res.status));
+          const blob = await res.blob();
+          return new File([blob], "image.jpg", { type: blob.type || "image/jpeg" });
+        }),
+      );
+    } catch {
+      toast.error(t("error"));
+      return null;
+    }
+  };
 
   /**
    * Function for fetching listing data from the database
@@ -201,7 +238,51 @@ export default function EditItemPage({
       return;
     }
 
-    const hasNewImages = images.length > 0;
+    let currentImages = images;
+    let currentPreviews = previews;
+    const isDocCat = (c: string | null | undefined) => !!c && DOCUMENT_CATEGORIES.includes(c);
+    if (isDocCat(category) && !isDocCat(item?.category) && previews.some((p) => p.isExisting)) {
+      const all = await existingAsNewFiles();
+      if (!all) return;
+      currentImages = all;
+      currentPreviews = all.map(() => ({ url: "", isExisting: false }));
+    }
+    // Every new photo passes the in-browser privacy pipeline; only its safe
+    // output is uploaded.
+    if (currentImages.some((f) => !isSafeFor(f, category))) {
+      setSaving(true);
+      let outcome;
+      try {
+        outcome = await preparePhotos(currentImages, category, openPrivacyEditor);
+      } finally {
+        setSaving(false);
+      }
+      currentImages = outcome.files;
+      let idx = 0;
+      // Refused photos (a person) leave outcome.files shorter than the new previews.
+      currentPreviews = currentPreviews.flatMap((p) => {
+        if (p.isExisting) return [p];
+        const f = outcome.files[idx++];
+        return f ? [{ url: URL.createObjectURL(f), isExisting: false }] : [];
+      });
+      setImages(currentImages);
+      setPreviews((prev) => {
+        prev.forEach((pv) => !pv.isExisting && URL.revokeObjectURL(pv.url));
+        return currentPreviews;
+      });
+      if (outcome.status === "cancelled") return;
+      if (outcome.status === "still_visible") {
+        toast.error(t("privacyStillVisible"));
+        return;
+      }
+      if (outcome.status === "person_photo") {
+        toast.error(t("privacyPersonPhoto"));
+        return;
+      }
+      if (outcome.autoCovered) toast.success(t("privacyAutoCovered"));
+    }
+
+    const hasNewImages = currentImages.length > 0;
     const textChanged =
       title !== item.title || description !== item.description;
 
@@ -209,9 +290,10 @@ export default function EditItemPage({
     try {
       const supabase = createClerkSupabaseClient(getToken);
 
-      const finalImages = images;
-      const finalTitle = title;
-      const finalDescription = description;
+      const finalImages = currentImages;
+      // The database masks these numbers too.
+      const finalTitle = maskSensitiveNumbers(title, category);
+      const finalDescription = maskSensitiveNumbers(description, category);
       const finalCategory = category;
 
       // Any content change sends the listing back to an admin
@@ -221,18 +303,21 @@ export default function EditItemPage({
       const existingUrls = item.images?.map((img) => img.image_url) || [];
       const imagesChanged =
         hasNewImages ||
-        previews.length !== existingUrls.length ||
-        previews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
+        currentPreviews.length !== existingUrls.length ||
+        currentPreviews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
 
       // 1. Upload new images to the Cloud (Storage)
       const finalImageUrls: string[] = [];
+      // New uploads by public URL, for the visual-search vectors below.
+      const uploadedFiles = new Map<string, Blob>();
       const newFiles = finalImages;
       let newFileIdx = 0;
 
-      for (const preview of previews) {
+      for (const preview of currentPreviews) {
         if (preview.isExisting) {
           finalImageUrls.push(preview.url);
         } else {
+          // The privacy pipeline's safe file; the re-encode also drops all metadata.
           const file = newFiles[newFileIdx++];
           const compressedFile = await compressImage(file);
           const ext = compressedFile.name.split(".").pop();
@@ -248,6 +333,7 @@ export default function EditItemPage({
             data: { publicUrl },
           } = supabase.storage.from("items").getPublicUrl(fileName);
           finalImageUrls.push(publicUrl);
+          uploadedFiles.set(publicUrl, compressedFile);
         }
       }
 
@@ -309,11 +395,28 @@ export default function EditItemPage({
           thumbnail_url: thumbByUrl.get(url) ?? null,
         }));
 
-        const { error: imagesError } = await supabase
+        const { data: imageRows, error: imagesError } = await supabase
           .from("item_images")
-          .insert(imageRecords);
+          .insert(imageRecords)
+          .select("id, image_url");
         if (imagesError)
           console.error("DATABASE ERROR (item_images):", imagesError.message);
+        // Photos kept from before are re-read from their public URL. In the
+        // background, on this device; never delays or fails the edit.
+        else if (imageRows) {
+          void (async () => {
+            for (const url of finalImageUrls) {
+              if (uploadedFiles.has(url)) continue;
+              try {
+                const res = await fetch(url);
+                if (res.ok) uploadedFiles.set(url, await res.blob());
+              } catch {
+                // the admin's review recomputes it anyway
+              }
+            }
+            await attachEmbeddings(supabase, imageRows, uploadedFiles);
+          })();
+        }
       }
 
       toast.success(t("updateSuccess"));
@@ -510,6 +613,9 @@ export default function EditItemPage({
                   className="rounded-md min-h-[100px] resize-none"
                   required
                 />
+                {isDocumentCategory(category) && (
+                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("docDescHint")}</p>
+                )}
               </div>
 
               {/* Phone and Reward */}
@@ -649,23 +755,21 @@ export default function EditItemPage({
                 {images.length > 0 && (
                   <button
                     type="button"
-                    onClick={() =>
-                      setPrivacyReview({
-                        files: images,
-                        resolve: (blurred) => {
-                          if (!blurred) return;
-                          setImages(blurred);
-                          setPreviews((prev) => {
-                            let idx = 0;
-                            return prev.map((p) => {
-                              if (p.isExisting) return p;
-                              URL.revokeObjectURL(p.url);
-                              return { url: URL.createObjectURL(blurred[idx++]), isExisting: false };
-                            });
-                          });
-                        },
-                      })
-                    }
+                    onClick={async () => {
+                      // Covered by hand; the pipeline still re-checks it on save.
+                      const result = await openPrivacyEditor(images, isDocumentCategory(category));
+                      if (!result) return;
+                      result.files.forEach((f, i) => markReviewed(f, result.covers[i] ?? []));
+                      setImages(result.files);
+                      setPreviews((prev) => {
+                        let idx = 0;
+                        return prev.map((p) => {
+                          if (p.isExisting) return p;
+                          URL.revokeObjectURL(p.url);
+                          return { url: URL.createObjectURL(result.files[idx++]), isExisting: false };
+                        });
+                      });
+                    }}
                     className="pressable w-full h-11 rounded-md border border-hairline dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
                   >
                     <EyeOff className="w-4 h-4" />
@@ -699,10 +803,13 @@ export default function EditItemPage({
         <PrivacyBlurEditor
           open
           files={privacyReview.files}
-          onConfirm={(finalFiles) => {
+          documentMode={privacyReview.documentMode}
+          category={category}
+          initialRegions={privacyReview.initialRegions}
+          onConfirm={(finalFiles, covers) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
-            resolve(finalFiles);
+            resolve({ files: finalFiles, covers });
           }}
           onCancel={() => {
             const resolve = privacyReview.resolve;

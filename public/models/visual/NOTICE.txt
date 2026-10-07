@@ -1,0 +1,8 @@
+dinov2-small-q4.onnx
+  DINOv2 ViT-S/14 — Copyright (c) Meta Platforms, Inc. and affiliates.
+  Licensed under the Apache License, Version 2.0
+  (https://www.apache.org/licenses/LICENSE-2.0).
+  Source weights: https://huggingface.co/facebook/dinov2-small
+  ONNX conversion with 4-bit weight quantization (modified from the original):
+  https://huggingface.co/onnx-community/dinov2-small-ONNX (onnx/model_q4.onnx)
+  SHA-256 0f4a7f7d8524f2959407d0f35b09281111bc90c6ed105509290e36da1c669314

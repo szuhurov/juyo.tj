@@ -53,6 +53,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { TelegramIcon, WhatsappIcon, socialHref } from "@/components/social-icons";
+import { isDocumentCategory } from "@/lib/sensitive-text";
 
 /**
  * `item.phone_number` is a local number only (no country code). Telegram/
@@ -511,6 +512,12 @@ export default function ItemDetailsClient({
               <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base min-[1084px]:text-lg min-[1503px]:text-xl whitespace-pre-wrap">
                 {item?.description}
               </p>
+              {isDocumentCategory(item?.category) && (
+                <div role="note" className="mt-4 flex items-start gap-2.5 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/60 dark:bg-amber-950/30">
+                  <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <p className="text-sm font-semibold leading-relaxed text-zinc-700 dark:text-zinc-300">{t("docHandoverWarning")}</p>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-row items-center gap-2 mb-2">

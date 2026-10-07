@@ -32,7 +32,7 @@ import { ITEM_KEYS, useItems, useVipItems } from "@/lib/hooks/use-items";
 import { useAuth } from "@clerk/nextjs";
 import { useDragScroll } from "@/lib/hooks/use-drag-scroll";
 import { NotificationBell } from "@/components/notification-bell";
-import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
+import { IMAGE_SEARCH, PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
 import { useQueryClient } from "@tanstack/react-query";
 import { useHomeState } from "@/lib/home-context";
 import { useInView } from "react-intersection-observer";
@@ -56,6 +56,7 @@ import {
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ImageSearchButton } from "@/components/image-search-button";
 import { DateRangeCalendar } from "@/components/date-range-calendar";
 
 // Category filter card. A transparent-background 3D icon stands on its own
@@ -544,7 +545,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     enterKeyHint="search"
                     autoComplete="off"
                     placeholder={t("search")}
-                    className="pl-8 pr-16 h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none focus-visible:ring-0 focus-visible:border-primary dark:focus-visible:border-emerald-400 transition-all text-base md:text-sm w-full"
+                    className={`pl-8 ${IMAGE_SEARCH ? "pr-16" : "pr-8"} h-9 min-[1084px]:h-10 min-[1920px]:h-[42px] rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-none focus-visible:ring-0 focus-visible:border-primary dark:focus-visible:border-emerald-400 transition-all text-base md:text-sm w-full`}
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     onKeyDown={(e) => {
@@ -553,6 +554,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     }}
                   />
                   <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+                    {IMAGE_SEARCH && <ImageSearchButton />}
                     {searchValue && (
                       <button
                         type="button"

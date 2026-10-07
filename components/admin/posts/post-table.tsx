@@ -5,6 +5,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { Package, Settings } from "lucide-react";
 import { StatusPill } from "@/components/admin/status-pill";
+import { ModerationBadge } from "@/components/admin/posts/post-moderation";
 import type { AdminPostRow } from "@/lib/hooks/use-admin-posts";
 
 const GRID_COLS =
@@ -75,6 +76,7 @@ export function PostTable({ rows }: { rows: AdminPostRow[] }) {
                   <StatusPill status={post.moderation_status} variant="dot" />
                 )}
                 {post.is_resolved && <StatusPill status="resolved" variant="dot" />}
+                {post.status !== "deleted" && <ModerationBadge images={post.images ?? []} pending={post.moderation_status === "pending"} />}
               </div>
 
               <button

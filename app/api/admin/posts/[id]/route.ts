@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { data: item, error } = await supabaseAdmin
       .from("items")
-      .select("*, images:item_images(id, image_url), profiles!items_user_id_fkey(id, first_name, last_name, avatar_url, phone)")
+      .select("*, images:item_images(id, image_url, embeddings:image_embeddings(model_id, source, author_match), moderation:image_moderation(decision, reasons, source, model_id, scores)), profiles!items_user_id_fkey(id, first_name, last_name, avatar_url, phone)")
       .eq("id", id)
       .maybeSingle();
 

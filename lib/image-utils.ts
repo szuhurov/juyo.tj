@@ -34,7 +34,8 @@ export async function compressImage(
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          return resolve(file); // If the Canvas context isn't available, send the original file
+          // Never upload the original: it still carries EXIF/GPS.
+          return reject(new Error("Image processing failed"));
         }
 
         // Drawing the image onto the Canvas at the new dimensions
