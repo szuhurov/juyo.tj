@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 const content = {
   tg: {
     title: "Сиёсати махфият",
-    lastUpdated: "Навсозии охирин: 3 октябри соли 2026",
+    lastUpdated: "Навсозии охирин: 7 октябри соли 2026",
     intro: "Мо ба махфияти шумо эҳтиром мегузорем. Ин ҳуҷҷат мефаҳмонад, ки кадом маълумотро ҷамъ мекунем, барои чӣ, бо кӣ мубодила мекунем ва кай нест мекунем. Ин сиёсат ба барномаи мобилии JUYO (Android ва iOS) ва сайти juyo.tj татбиқ мешавад.",
     sections: [
       {
@@ -23,7 +23,7 @@ const content = {
       {
         id: "camera",
         title: "2. Камера ва галерея",
-        text: "Камера барои скан кардани QR-кодҳои JUYO ва гирифтани акси ашё истифода мешавад. Скани QR дар дастгоҳи шумо иҷро мешавад. Галерея барои илова кардани акс ба эълон ва сабти QR-и шумо истифода мешавад. Пеш аз боркунӣ маълумоти пинҳонии акс (EXIF, аз ҷумла ҷойгиршавии GPS) нест карда мешавад. Дар ҳар акс шумо метавонед бо тугмаи «Пинҳон кардани маълумоти шахсӣ» рақамҳо, номҳо ва чеҳраҳоро пӯшонед. Барои эълонҳои категорияи «Ҳуҷҷат» ин ҳатмист: барнома пеш аз нашр талаб мекунад, ки рақами ҳуҷҷат, санаи таваллуд, имзо, номи чопшуда, сатрҳои поёнии <<< ва чашмони сурат пӯшонида шаванд, ва модератор инро месанҷад. Пӯшиш ба худи акс доимо сабт мешавад ва акси аслии пӯшиданашуда ба сервер фиристода намешавад. Рақамҳои ҳуҷҷат ва корти бонкӣ дар матни эълон худкор пинҳон мешаванд. Барои кумак барнома матн ва чашмҳоро дар акси ҳуҷҷат худаш меёбад ва пешакӣ мепӯшонад — бо воситаҳои шинохти матн ва чеҳра, ки дар худи дастгоҳи шумо кор мекунанд (дар iPhone — Apple Vision, дар Android — Tesseract ва детектори чеҳраи Android, дар сайт — Tesseract ва MediaPipe аз сервери худи JUYO). Акс барои ин ба ҳеҷ ҷо фиристода намешавад ва натиҷа нигоҳ дошта намешавад."
+        text: "Камера барои скан кардани QR-кодҳои JUYO ва гирифтани акси ашё истифода мешавад. Скани QR дар дастгоҳи шумо иҷро мешавад. Галерея барои илова кардани акс ба эълон ва сабти QR-и шумо истифода мешавад. Пеш аз боркунӣ маълумоти пинҳонии акс (EXIF, аз ҷумла ҷойгиршавии GPS) нест карда мешавад. Дар ҳар акс шумо метавонед бо тугмаи «Пинҳон кардани маълумоти шахсӣ» рақамҳо, номҳо ва чеҳраҳоро пӯшонед. Барои эълонҳои категорияи «Ҳуҷҷат» ин ҳатмист: барнома пеш аз нашр талаб мекунад, ки рақами ҳуҷҷат, санаи таваллуд, имзо, номи чопшуда, сатрҳои поёнии <<< ва чашмони сурат пӯшонида шаванд, ва модератор инро месанҷад. Пӯшиш ба худи акс доимо сабт мешавад ва акси аслии пӯшиданашуда ба сервер фиристода намешавад. Рақамҳои ҳуҷҷат ва корти бонкӣ дар матни эълон худкор пинҳон мешаванд. Барои кумак барнома матн ва чашмҳоро дар акси ҳуҷҷат худаш меёбад ва пешакӣ мепӯшонад — бо воситаҳои шинохти матн ва чеҳра, ки дар худи дастгоҳи шумо кор мекунанд (дар iPhone — Apple Vision, дар Android — Tesseract ва детектори чеҳраи Android, дар сайт — Tesseract ва MediaPipe аз сервери худи JUYO). Акс барои ин ба ҳеҷ ҷо фиристода намешавад ва натиҷа нигоҳ дошта намешавад. Ҳар акс пеш аз боркунӣ дар дастгоҳи шумо барои рақамҳо, номҳо, рӯйҳо ва кодҳо санҷида мешавад; акси одамон (на ашё ва на ҳуҷҷат) илова карда намешавад. Ҳангоми нашри эълон барнома ҳар аксро дар дастгоҳи шумо ба як қатор рақамҳо табдил медиҳад, ки намуди ашёро тасвир мекунанд (модели DINOv2, ки дар худи барнома аст). JUYO ин рақамҳоро бо эълон нигоҳ медорад: барои ёфтани эълонҳои монанд (ҷустуҷӯ бо акс) ва барои он ки модератор ашёи манъшуда, масалан силоҳро, зудтар бинад. Аз ин рақамҳо худи аксро барқарор кардан мумкин нест. Ҳангоми ҷустуҷӯ бо акс танҳо ин рақамҳо фиристода мешаванд, на акс."
       },
       {
         id: "usage",
@@ -79,7 +79,7 @@ const content = {
   },
   ru: {
     title: "Политика конфиденциальности",
-    lastUpdated: "Последнее обновление: 3 октября 2026 г.",
+    lastUpdated: "Последнее обновление: 7 октября 2026 г.",
     intro: "Мы уважаем вашу конфиденциальность. Этот документ объясняет, какие данные мы собираем, зачем, с кем ими делимся и когда удаляем. Политика применяется к мобильному приложению JUYO (Android и iOS) и сайту juyo.tj.",
     sections: [
       {
@@ -90,7 +90,7 @@ const content = {
       {
         id: "camera",
         title: "2. Камера и галерея",
-        text: "Камера используется для сканирования QR-кодов JUYO и фотографирования вещей. Сканирование QR выполняется на вашем устройстве. Галерея используется для добавления фото к объявлению и сохранения вашего QR. Перед загрузкой скрытые данные фото (EXIF, в том числе GPS-координаты) удаляются. На любом фото вы можете закрыть номера, имена и лица кнопкой «Скрыть личные данные на фото». Для объявлений в категории «Документ» это обязательно: перед публикацией приложение требует закрыть номер документа, дату рождения, подпись, напечатанное имя, нижние строки <<< и глаза на фото, а модератор это проверяет. Закрашивание сохраняется в самом фото навсегда, а исходное незакрытое фото на сервер не отправляется. Номера документов и банковских карт в тексте объявления скрываются автоматически. Чтобы помочь, приложение само находит текст и глаза на фото документа и заранее закрывает их — с помощью распознавания текста и лиц, которое работает на самом вашем устройстве (на iPhone — Apple Vision, на Android — Tesseract и детектор лиц Android, на сайте — Tesseract и MediaPipe с сервера самого JUYO). Фото для этого никуда не отправляется, результат не сохраняется."
+        text: "Камера используется для сканирования QR-кодов JUYO и фотографирования вещей. Сканирование QR выполняется на вашем устройстве. Галерея используется для добавления фото к объявлению и сохранения вашего QR. Перед загрузкой скрытые данные фото (EXIF, в том числе GPS-координаты) удаляются. На любом фото вы можете закрыть номера, имена и лица кнопкой «Скрыть личные данные на фото». Для объявлений в категории «Документ» это обязательно: перед публикацией приложение требует закрыть номер документа, дату рождения, подпись, напечатанное имя, нижние строки <<< и глаза на фото, а модератор это проверяет. Закрашивание сохраняется в самом фото навсегда, а исходное незакрытое фото на сервер не отправляется. Номера документов и банковских карт в тексте объявления скрываются автоматически. Чтобы помочь, приложение само находит текст и глаза на фото документа и заранее закрывает их — с помощью распознавания текста и лиц, которое работает на самом вашем устройстве (на iPhone — Apple Vision, на Android — Tesseract и детектор лиц Android, на сайте — Tesseract и MediaPipe с сервера самого JUYO). Фото для этого никуда не отправляется, результат не сохраняется. Каждое фото перед загрузкой проверяется на вашем устройстве на номера, имена, лица и коды; фото людей (не вещей и не документов) добавить нельзя. При публикации объявления приложение на вашем устройстве превращает каждое фото в набор чисел, описывающих внешний вид вещи (модель DINOv2, встроенная в приложение). JUYO хранит эти числа вместе с объявлением: чтобы находить похожие объявления (поиск по фото) и чтобы модератор быстрее замечал запрещённые предметы, например оружие. Восстановить фото по этим числам нельзя. При поиске по фото отправляются только эти числа, а не фото."
       },
       {
         id: "usage",
@@ -146,7 +146,7 @@ const content = {
   },
   en: {
     title: "Privacy Policy",
-    lastUpdated: "Last updated: October 3, 2026",
+    lastUpdated: "Last updated: October 7, 2026",
     intro: "We respect your privacy. This document explains what data we collect, why, who we share it with and when we delete it. It applies to the JUYO mobile app (Android and iOS) and the website juyo.tj.",
     sections: [
       {
@@ -157,7 +157,7 @@ const content = {
       {
         id: "camera",
         title: "2. Camera and photos",
-        text: "The camera is used to scan JUYO QR codes and to photograph items. QR scanning happens on your device. The photo library is used to add photos to a listing and to save your QR code. Hidden photo data (EXIF, including GPS location) is removed before upload. On any photo you can cover numbers, names and faces with the \"Hide personal info on photos\" button. For listings in the Documents category this is required: before publishing, the app asks you to cover the document number, date of birth, signature, printed name, the bottom <<< lines and the eyes on the photo, and a moderator checks it. The covering is saved into the photo permanently, and the uncovered original is never sent to our servers. Document and bank card numbers in the listing text are hidden automatically. To help, the app finds the text and the eyes on a document photo and covers them in advance, using text and face recognition that runs on your own device (on iPhone, Apple Vision; on Android, Tesseract and the Android face detector; on the website, Tesseract and MediaPipe served by JUYO itself). The photo is not sent anywhere for this, and the result is not stored."
+        text: "The camera is used to scan JUYO QR codes and to photograph items. QR scanning happens on your device. The photo library is used to add photos to a listing and to save your QR code. Hidden photo data (EXIF, including GPS location) is removed before upload. On any photo you can cover numbers, names and faces with the \"Hide personal info on photos\" button. For listings in the Documents category this is required: before publishing, the app asks you to cover the document number, date of birth, signature, printed name, the bottom <<< lines and the eyes on the photo, and a moderator checks it. The covering is saved into the photo permanently, and the uncovered original is never sent to our servers. Document and bank card numbers in the listing text are hidden automatically. To help, the app finds the text and the eyes on a document photo and covers them in advance, using text and face recognition that runs on your own device (on iPhone, Apple Vision; on Android, Tesseract and the Android face detector; on the website, Tesseract and MediaPipe served by JUYO itself). The photo is not sent anywhere for this, and the result is not stored. Before upload, every photo is checked on your device for numbers, names, faces and codes; photos of people (not items or documents) cannot be added. When you publish a listing, the app turns each photo, on your device, into a set of numbers that describes how the item looks (the DINOv2 model built into the app). JUYO stores these numbers with the listing to find similar listings (search by photo) and to help moderators notice prohibited items such as weapons. The photo cannot be rebuilt from these numbers. When you search by photo, only these numbers are sent, never the photo."
       },
       {
         id: "usage",
