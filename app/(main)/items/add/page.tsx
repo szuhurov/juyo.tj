@@ -52,6 +52,7 @@ import { ITEM_KEYS } from "@/lib/hooks/use-items";
 import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
 import { warmPhotoAnalysis } from "@/lib/photo-privacy";
 import { attachEmbeddings } from "@/lib/visual-search";
+import { isNoPhotoCategory, placeholderImageUrl } from "@/lib/photo-policy";
 import { isSafeFor, markReviewed, preparePhotos } from "@/lib/prepare-photos";
 import type { Rect } from "@/lib/privacy-pipeline";
 
@@ -137,7 +138,8 @@ function AddItemForm() {
   const [checkingPhotos, setCheckingPhotos] = useState(false);
   // Every photo passes the in-browser privacy pipeline (lib/prepare-photos.ts)
   // before "Next" on the details step; only its safe output is uploaded.
-  const needsPrivacyCheck = () => images.some((f) => !isSafeFor(f, formData.category));
+  // Documents/Cards: the photos are never uploaded (lib/photo-policy.ts), so there is nothing to check.
+  const needsPrivacyCheck = () => !isNoPhotoCategory(formData.category) && images.some((f) => !isSafeFor(f, formData.category));
   // Start the analysis as soon as a photo is there, so "Next" rarely waits.
   useEffect(() => {
     images.forEach(warmPhotoAnalysis);
@@ -295,6 +297,10 @@ function AddItemForm() {
           toast.error(t("privacyPersonPhoto"));
           return;
         }
+        if (outcome.status === "document_photo") {
+          toast.error(t("privacyDocumentPhoto"));
+          return;
+        }
         if (outcome.autoCovered) toast.success(t("privacyAutoCovered"));
       } finally {
         setCheckingPhotos(false);
@@ -331,7 +337,8 @@ function AddItemForm() {
       return;
     }
     setLoading(true);
-    const finalImages: File[] = images;
+    // Documents/Cards: no photo leaves the browser; the listing gets the JUYO image.
+    const finalImages: File[] = isNoPhotoCategory(formData.category) ? [] : images;
     // The database masks these numbers too; doing it here keeps what the
     // poster sees in sync with what is saved.
     const finalTitle = maskSensitiveNumbers(formData.title, formData.category);
@@ -435,6 +442,11 @@ function AddItemForm() {
         .select()
         .single();
       if (itemError) throw itemError;
+
+      if (isNoPhotoCategory(finalCategory)) {
+        const placeholder = placeholderImageUrl(finalCategory);
+        await supabase.from("item_images").insert({ item_id: item.id, image_url: placeholder, thumbnail_url: placeholder });
+      }
 
       // A photo-less listing — no images to wait for.
       if (imageUrls.length === 0) announcePublished();
@@ -876,6 +888,9 @@ function AddItemForm() {
                 />
                 {isDocumentCategory(formData.category) && (
                   <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("docDescHint")}</p>
+                )}
+                {isNoPhotoCategory(formData.category) && (
+                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("noPhotoNotice")}</p>
                 )}
               </div>
             </div>

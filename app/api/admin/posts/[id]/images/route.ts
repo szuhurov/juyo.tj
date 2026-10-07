@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getErrorMessage } from "@/lib/error-utils";
+import { isNoPhotoCategory } from "@/lib/photo-policy";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -48,6 +49,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if (!isJpegOrPng(file) || !isJpegOrPng(thumbnail) || file.size > MAX_IMAGE_BYTES || thumbnail.size > MAX_IMAGE_BYTES) {
       return NextResponse.json({ error: "Акс бояд JPEG ё PNG ва то 10 MB бошад" }, { status: 400 });
+    }
+
+    // Documents/Cards listings never hold a photo (lib/photo-policy.ts); do not
+    // put one in the public bucket even for a moment.
+    const { data: itemRow, error: itemError } = await supabaseAdmin
+      .from("items")
+      .select("category")
+      .eq("id", id)
+      .maybeSingle();
+    if (itemError) throw itemError;
+    if (isNoPhotoCategory(itemRow?.category)) {
+      return NextResponse.json({ error: "Эълонҳои ҳуҷҷат ва корт акс надоранд" }, { status: 400 });
     }
 
     const { data: existing, error: checkError } = await supabaseAdmin

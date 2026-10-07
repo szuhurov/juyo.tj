@@ -1,5 +1,8 @@
 import { finalizePhoto, protectPhoto } from "@/lib/photo-privacy";
 import { DOCUMENT_CATEGORIES, type Rect } from "@/lib/privacy-pipeline";
+import { isNoPhotoCategory } from "@/lib/photo-policy";
+import { looksLikeDocument } from "@/lib/document-head";
+import { embedPhoto } from "@/lib/visual-search";
 
 /**
  * Privacy state of a listing photo, kept beside the File the pages already
@@ -30,8 +33,12 @@ export type OpenEditor = (
 ) => Promise<{ files: File[]; covers: Rect[][] } | null>;
 
 export interface PrepareOutcome {
-  /** "person_photo": some photos show a person and were taken out of `files` (`removed` of them). */
-  status: "ready" | "cancelled" | "still_visible" | "person_photo";
+  /**
+   * "person_photo": some photos show a person and were taken out of `files` (`removed` of them).
+   * "document_photo": a photo looks like a document or bank card while the category is not
+   * Documents/Cards — nothing is uploaded until the person changes the category or removes it.
+   */
+  status: "ready" | "cancelled" | "still_visible" | "person_photo" | "document_photo";
   files: File[];
   /** Something was covered without the person opening the editor. */
   autoCovered: boolean;
@@ -50,6 +57,10 @@ export async function preparePhotos(files: File[], category: string | null | und
   let autoCovered = false;
   const review: { index: number; regions: Rect[] | null; documentLike: boolean }[] = [];
   const blocked = new Set<number>();
+
+  if (!isNoPhotoCategory(cat) && await anyLooksLikeDocument(out.filter((f) => !isSafeFor(f, cat)))) {
+    return { status: "document_photo", files: out, autoCovered: false };
+  }
 
   const markSafe = (index: number, file: File) => {
     states.set(file, { safeFor: { category: cat } });
@@ -97,4 +108,21 @@ export async function preparePhotos(files: File[], category: string | null | und
     if (stillVisible) return { status: "still_visible", files: out, autoCovered };
   }
   return { status: "ready", files: out, autoCovered };
+}
+
+/**
+ * A document or card photo outside Documents/Cards is never uploaded
+ * (lib/document-head.ts). If the in-browser model cannot load, the OCR
+ * pipeline above and the admin's review still apply.
+ */
+async function anyLooksLikeDocument(files: File[]): Promise<boolean> {
+  const hits = await Promise.all(files.map(async (file) => {
+    try {
+      const e = await embedPhoto(file);
+      return looksLikeDocument(e.model, e.vector);
+    } catch {
+      return false;
+    }
+  }));
+  return hits.some(Boolean);
 }

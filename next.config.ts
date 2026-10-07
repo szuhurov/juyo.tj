@@ -19,6 +19,8 @@ const remotePatterns: RemotePattern[] = [
   },
   // Images of listings imported from somon.tj (see scripts/somon-import/).
   { protocol: "https", hostname: "files.somon.tj", port: "", pathname: "/**" },
+  // Documents/Cards listings show these instead of a photo (lib/photo-policy.ts).
+  { protocol: "https", hostname: "juyo.tj", port: "", pathname: "/placeholders/**" },
 ];
 
 if (supabaseHostname) {

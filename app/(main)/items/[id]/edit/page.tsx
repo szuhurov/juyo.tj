@@ -37,6 +37,7 @@ import { CITY_IDS, DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { cn } from "@/lib/utils";
 import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import { attachEmbeddings } from "@/lib/visual-search";
+import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 
 import {
   Tooltip,
@@ -233,15 +234,19 @@ export default function EditItemPage({
       return;
     }
 
-    if (previews.length === 0) {
+    // Documents/Cards keep no photo at all (lib/photo-policy.ts): the old
+    // photo files are deleted below and the listing shows the JUYO image.
+    const noPhoto = isNoPhotoCategory(category);
+    const realPreviews = previews.filter((p) => !isPlaceholderUrl(p.url));
+    if (!noPhoto && realPreviews.length === 0) {
       toast.error(t("atLeastOneImage"));
       return;
     }
 
-    let currentImages = images;
-    let currentPreviews = previews;
+    let currentImages = noPhoto ? [] : images;
+    let currentPreviews = noPhoto ? [] : realPreviews;
     const isDocCat = (c: string | null | undefined) => !!c && DOCUMENT_CATEGORIES.includes(c);
-    if (isDocCat(category) && !isDocCat(item?.category) && previews.some((p) => p.isExisting)) {
+    if (!noPhoto && isDocCat(category) && !isDocCat(item?.category) && realPreviews.some((p) => p.isExisting)) {
       const all = await existingAsNewFiles();
       if (!all) return;
       currentImages = all;
@@ -279,6 +284,10 @@ export default function EditItemPage({
         toast.error(t("privacyPersonPhoto"));
         return;
       }
+      if (outcome.status === "document_photo") {
+        toast.error(t("privacyDocumentPhoto"));
+        return;
+      }
       if (outcome.autoCovered) toast.success(t("privacyAutoCovered"));
     }
 
@@ -301,10 +310,11 @@ export default function EditItemPage({
       const contentChanged = hasNewImages || textChanged;
 
       const existingUrls = item.images?.map((img) => img.image_url) || [];
-      const imagesChanged =
-        hasNewImages ||
-        currentPreviews.length !== existingUrls.length ||
-        currentPreviews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
+      const imagesChanged = noPhoto
+        ? !(existingUrls.length === 1 && existingUrls[0] === placeholderImageUrl(finalCategory))
+        : hasNewImages ||
+          currentPreviews.length !== existingUrls.length ||
+          currentPreviews.some((p, i) => p.isExisting && p.url !== existingUrls[i]);
 
       // 1. Upload new images to the Cloud (Storage)
       const finalImageUrls: string[] = [];
@@ -336,6 +346,8 @@ export default function EditItemPage({
           uploadedFiles.set(publicUrl, compressedFile);
         }
       }
+
+      if (noPhoto) finalImageUrls.push(placeholderImageUrl(finalCategory));
 
       // 2. Update the listing data in the database (Update query)
       const updateData: Omit<Partial<Item>, "reward"> & { reward: string | null } = {
@@ -392,7 +404,7 @@ export default function EditItemPage({
         const imageRecords = finalImageUrls.map((url) => ({
           item_id: id,
           image_url: url,
-          thumbnail_url: thumbByUrl.get(url) ?? null,
+          thumbnail_url: isPlaceholderUrl(url) ? url : thumbByUrl.get(url) ?? null,
         }));
 
         const { data: imageRows, error: imagesError } = await supabase
@@ -403,7 +415,7 @@ export default function EditItemPage({
           console.error("DATABASE ERROR (item_images):", imagesError.message);
         // Photos kept from before are re-read from their public URL. In the
         // background, on this device; never delays or fails the edit.
-        else if (imageRows) {
+        else if (imageRows && !noPhoto) {
           void (async () => {
             for (const url of finalImageUrls) {
               if (uploadedFiles.has(url)) continue;
@@ -615,6 +627,9 @@ export default function EditItemPage({
                 />
                 {isDocumentCategory(category) && (
                   <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("docDescHint")}</p>
+                )}
+                {isNoPhotoCategory(category) && (
+                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("noPhotoNotice")}</p>
                 )}
               </div>
 
