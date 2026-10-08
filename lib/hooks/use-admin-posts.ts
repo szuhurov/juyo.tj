@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AdminService, AdminPostFilters } from "@/lib/services/admin-service";
 import { ADMIN_KEYS } from "@/lib/hooks/admin-query-keys";
-import type { ImageModeration } from "@/lib/image-moderation";
 
 export interface AdminPostRow {
   id: string;
@@ -14,7 +13,7 @@ export interface AdminPostRow {
   created_at: string;
   user_id: string;
   profiles: { first_name: string | null; last_name: string | null } | null;
-  images: { image_url: string; moderation?: ImageModeration[] }[];
+  images: { image_url: string }[];
 }
 
 export interface AdminPostDetail {
@@ -30,8 +29,6 @@ export interface AdminPostDetail {
       image_url: string;
       /** Visual-search status only (the vector itself is never sent to a client). */
       embeddings?: { model_id: string; source: "author" | "admin" | "backfill"; author_match: number | null }[];
-      /** Weapons moderation, scored in the database from the vector above. */
-      moderation?: ImageModeration[];
     }[];
   };
 }
@@ -67,38 +64,6 @@ export function useAdminPost(id: string) {
     queryFn: () => AdminService.getPost(id) as Promise<AdminPostDetail>,
     enabled: !!id,
     staleTime: 30_000,
-  });
-}
-
-export interface SafePost {
-  id: string;
-  title: string;
-  description: string | null;
-  category: string;
-  type: "lost" | "found";
-  created_at: string;
-  updated_at: string;
-  admin_checked: boolean;
-  images: { id: string; image_url: string }[];
-}
-
-/** The "safe" list: every photo scored SAFE by the weapons model. */
-export function useSafePosts() {
-  return useQuery({
-    queryKey: [...ADMIN_KEYS.posts(), "safe"],
-    queryFn: () => AdminService.getSafePosts() as Promise<{ posts: SafePost[] }>,
-    staleTime: 10_000,
-  });
-}
-
-export function useBulkApprovePosts() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (items: { id: string; updated_at: string }[]) => AdminService.bulkApprovePosts(items),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.posts() });
-      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.stats() });
-    },
   });
 }
 

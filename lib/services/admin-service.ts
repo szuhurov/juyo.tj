@@ -104,15 +104,6 @@ export const AdminService = {
   getPost(id: string) {
     return adminFetch(`/api/admin/posts/${id}`);
   },
-  getSafePosts() {
-    return adminFetch("/api/admin/posts/safe");
-  },
-  bulkApprovePosts(items: { id: string; updated_at: string }[]) {
-    return adminFetch<{ approved: string[] }>("/api/admin/posts/bulk-approve", {
-      method: "POST",
-      body: JSON.stringify({ items }),
-    });
-  },
   updatePost(id: string, updates: Record<string, unknown>) {
     return adminFetch(`/api/admin/posts/${id}`, {
       method: "PATCH",

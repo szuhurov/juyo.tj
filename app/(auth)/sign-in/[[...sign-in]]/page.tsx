@@ -5,7 +5,8 @@
  */
 "use client";
 
-import { SignIn } from "@clerk/nextjs"; // For signing in to the profile
+import { ClerkLoaded, ClerkLoading, SignIn } from "@clerk/nextjs"; // For signing in to the profile
+import { AuthFormSkeleton } from "@/components/auth-form-skeleton";
 import { useLanguage, type Locale } from "@/lib/language-context"; // For switching the site's language
 import { Button } from "@/components/ui/button"; // Button component
 import { ChevronLeft } from "lucide-react";
@@ -61,6 +62,10 @@ export default function Page() {
 
       {/* Clerk's ready-made widget for login */}
       <div className="w-full max-w-[480px] flex justify-center -mt-4 sm:-mt-6">
+        <ClerkLoading>
+          <AuthFormSkeleton />
+        </ClerkLoading>
+        <ClerkLoaded>
         <SignIn
           path="/sign-in"
           routing="path"
@@ -83,6 +88,7 @@ export default function Page() {
             }
           }}
         />
+        </ClerkLoaded>
       </div>
     </main>
   );

@@ -73,6 +73,7 @@ export function PostBlurButton({ postId, images }: { postId: string; images: { i
           open={open}
           files={files}
           onConfirm={handleConfirm}
+          allowHideAll={false}
           onCancel={() => setOpen(false)}
         />
       )}

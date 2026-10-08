@@ -5,7 +5,7 @@
  * field here means a new `id`, a new row in public.visual_models and a
  * backfill — never an in-place change.
  *
- * Chosen by the JUYO benchmark (tools/visual-bench/RESULTS.md).
+ * Chosen by the JUYO benchmark (tools/visual-bench/RESULTS-instance.md).
  * Kept byte-identical in Web/lib and app/lib (app/__tests__/shared-lib-parity.test.ts).
  */
 import type { PreprocessSpec } from "./visual-preprocess";
@@ -15,23 +15,24 @@ export interface VisualModel {
   file: string;
   sha256: string;
   dim: number;
-  /** ONNX output name and how many leading floats are the embedding (CLS token = first `dim`). */
+  /** ONNX output name and how many leading floats of it are the embedding. */
   output: string;
   outputLength: number;
   spec: PreprocessSpec;
 }
 
 export const VISUAL_MODEL: VisualModel = {
-  // DINOv2 ViT-S/14 (Meta, Apache-2.0), onnx-community 4-bit weight-only
-  // export (activations stay float32, so the vector is stable across
-  // decoders: cosine ≥ 0.9988 — RESULTS.md), 280×280 squash, area resampling.
-  id: "dinov2-s14-q4.r280-area-v1",
-  file: "dinov2-small-q4.onnx",
-  sha256: "0f4a7f7d8524f2959407d0f35b09281111bc90c6ed105509290e36da1c669314",
-  dim: 384,
-  output: "last_hidden_state",
-  outputLength: 384,
-  spec: { size: 280, mode: "squash", mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225] },
+  // SigLIP 2 B/16 at 256 px (Google, Apache-2.0), onnx-community 4-bit
+  // weight-only export of the vision tower; the embedding is the attention-
+  // pooled output. Chosen on the real multi-view benchmark (another photo of
+  // the same object): R@1 98.6 % vs 88.4 % for DINOv2-S — RESULTS-instance.md.
+  id: "siglip2-b16-256-q4.squash-area-v1",
+  file: "siglip2-base-256-q4.onnx",
+  sha256: "712064dae0cce3fb4c94497c7dfd65d11f4ad34eadafe09442208474068cf777",
+  dim: 768,
+  output: "pooler_output",
+  outputLength: 768,
+  spec: { size: 256, mode: "squash", mean: [0.5, 0.5, 0.5], std: [0.5, 0.5, 0.5] },
 };
 
 /** Served by juyo.tj itself (public/models/visual) — never a third-party CDN. */

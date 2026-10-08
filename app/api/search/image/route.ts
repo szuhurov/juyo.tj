@@ -18,6 +18,14 @@ import { VISUAL_MODEL } from "@/lib/visual-model";
  */
 const MAX_BODY = 32 * 1024;
 
+// Models whose query vectors are still accepted: the current one, and the one
+// that app builds made before 2026-10-08 still compute (DINOv2-S, 384-d). Each
+// query is only compared with vectors of its own model in search_visual.
+const ACCEPTED_MODELS: Record<string, number> = {
+  [VISUAL_MODEL.id]: VISUAL_MODEL.dim,
+  "dinov2-s14-q4.r280-area-v1": 384,
+};
+
 const PUBLIC_FIELDS =
   "id, title, description, category, type, city, date, reward, created_at, location_type, images:item_images(image_url, thumbnail_url)";
 
@@ -34,8 +42,9 @@ function clientHash(req: NextRequest) {
 function parse(body: unknown) {
   if (!body || typeof body !== "object") return null;
   const b = body as Record<string, unknown>;
-  if (b.model !== VISUAL_MODEL.id) return null;
-  if (!Array.isArray(b.vector) || b.vector.length !== VISUAL_MODEL.dim) return null;
+  const dim = typeof b.model === "string" && Object.hasOwn(ACCEPTED_MODELS, b.model) ? ACCEPTED_MODELS[b.model] : 0;
+  if (!dim) return null;
+  if (!Array.isArray(b.vector) || b.vector.length !== dim) return null;
   if (!b.vector.every((x) => typeof x === "number" && Number.isFinite(x))) return null;
   const phash = typeof b.phash === "string" && /^[0-9a-f]{16}$/.test(b.phash) ? b.phash : null;
   const filter = (k: string) => {
@@ -43,6 +52,7 @@ function parse(body: unknown) {
     return typeof v === "string" && /^[\w-]{1,40}$/.test(v) ? v : null;
   };
   return {
+    model: b.model as string,
     vector: b.vector as number[],
     phash,
     // hard filters
@@ -71,7 +81,7 @@ export async function POST(req: NextRequest) {
   if (!input) return NextResponse.json({ error: "bad_request" }, { status: 400 });
 
   const { data: hits, error } = await supabaseAdmin.rpc("search_visual", {
-    p_model: VISUAL_MODEL.id,
+    p_model: input.model,
     p_embedding: input.vector,
     p_phash: input.phash,
     p_client_hash: clientHash(req),

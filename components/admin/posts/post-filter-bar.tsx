@@ -70,12 +70,6 @@ export function PostFilterBar({
             </button>
           );
         })}
-        <Link
-          href="/admin/posts/safe"
-          className="text-sm font-semibold pb-1 border-b-2 border-transparent text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
-        >
-          Бехатар (AI)
-        </Link>
       </div>
 
       {!archiveView && (

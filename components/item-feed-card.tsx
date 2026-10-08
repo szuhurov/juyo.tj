@@ -16,6 +16,7 @@ import { ImagePlaceholder } from "@/components/image-placeholder";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
+import { splitOwnerLine } from "@/lib/document-owner";
 
 export function ItemFeedCard({ item }: { item: Item }) {
   const { t } = useLanguage();
@@ -94,7 +95,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
             length. */}
         {item.description && (
           <p className="-mt-0.5 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            {item.description}
+            {splitOwnerLine(item.description).rest}
           </p>
         )}
 

@@ -1,9 +1,0 @@
-{
-  "name": "juyo-moderation-bench",
-  "private": true,
-  "description": "Developer-only benchmark for JUYO on-device image moderation. Runs every model locally with ONNX Runtime; no external AI API. Uses the onnxruntime-web and sharp already installed in Web/. Not part of the website bundle.",
-  "type": "module",
-  "engines": {
-    "node": ">=24"
-  }
-}

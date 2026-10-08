@@ -38,7 +38,9 @@ import {
 import Image from "next/image";
 import { PhotoSourceSheet } from "@/components/photo-source-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { PENDING_ADD_FILES_EVENT, takePendingAddFiles } from "@/lib/pending-add-files";
+import { PENDING_ADD_FILES_EVENT, takePendingAdd } from "@/lib/pending-add-files";
+import { CategorySheet } from "@/components/category-sheet";
+import { checkOwnerName, withOwnerLine } from "@/lib/document-owner";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -50,11 +52,9 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
 import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
-import { warmPhotoAnalysis } from "@/lib/photo-privacy";
 import { attachEmbeddings } from "@/lib/visual-search";
-import { isNoPhotoCategory, placeholderImageUrl } from "@/lib/photo-policy";
-import { isSafeFor, markReviewed, preparePhotos } from "@/lib/prepare-photos";
-import type { Rect } from "@/lib/privacy-pipeline";
+import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
+import { isHiddenPhotoFile } from "@/lib/hidden-photo";
 
 // These two components (the privacy blur canvas editor, the camera modal) are
 // heavy and only needed in specific cases (a document was detected / the
@@ -116,7 +116,9 @@ function AddItemForm() {
 
   // The actual navigation order of the steps — step 3 (publishing) comes
   // last, not third; step 6 ("where?") is placed after the details step.
-  const stepOrder = [1, 2, 6, 4, 5, 3];
+  // The category is chosen first (navbar "+" → CategorySheet); Documents/Cards have no photo step.
+  const stepOrder = isNoPhotoCategory(formData.category) ? [2, 6, 4, 5, 3] : [1, 2, 6, 4, 5, 3];
+  const firstStep = stepOrder[0];
   const stepIndex = stepOrder.indexOf(step);
 
   const [images, setImages] = useState<File[]>([]);
@@ -126,45 +128,31 @@ function AddItemForm() {
   // to title/description only.
   const [noPhotoAdviceOpen, setNoPhotoAdviceOpen] = useState(false);
 
-  // Privacy editor — opened by the person from the photo step, or by the
-  // privacy pipeline when a photo needs a person's check (document, card,
-  // detector unavailable).
+  // The privacy editor — opened by the person from the photo step to cover
+  // numbers, names or faces by hand (or hide a photo completely).
   const [privacyReview, setPrivacyReview] = useState<{
     files: File[];
-    documentMode: boolean;
-    initialRegions?: (Rect[] | null)[];
-    resolve: (result: { files: File[]; covers: Rect[][] } | null) => void;
+    resolve: (files: File[] | null) => void;
   } | null>(null);
-  const [checkingPhotos, setCheckingPhotos] = useState(false);
-  // Every photo passes the in-browser privacy pipeline (lib/prepare-photos.ts)
-  // before "Next" on the details step; only its safe output is uploaded.
-  // Documents/Cards: the photos are never uploaded (lib/photo-policy.ts), so there is nothing to check.
-  const needsPrivacyCheck = () => !isNoPhotoCategory(formData.category) && images.some((f) => !isSafeFor(f, formData.category));
-  // Start the analysis as soon as a photo is there, so "Next" rarely waits.
-  useEffect(() => {
-    images.forEach(warmPhotoAnalysis);
-  }, [images]);
 
-  const openPrivacyEditor = (files: File[], documentMode: boolean, initialRegions?: (Rect[] | null)[]) =>
-    new Promise<{ files: File[]; covers: Rect[][] } | null>((resolve) => {
-      setPrivacyReview({ files, documentMode, initialRegions, resolve });
+  const openPrivacyEditor = (files: File[]) =>
+    new Promise<File[] | null>((resolve) => {
+      setPrivacyReview({ files, resolve });
     });
 
   const replaceImages = (files: File[]) => {
     setImages(files);
     setPreviews((prev) => {
       prev.forEach((url) => URL.revokeObjectURL(url));
-      return files.map((f) => URL.createObjectURL(f));
+      // A photo hidden completely in the editor shows the document image.
+      return files.map((f) => (isHiddenPhotoFile(f) ? placeholderImageUrl("Documents") : URL.createObjectURL(f)));
     });
   };
 
-  // "Hide personal info" on the photo step: covered by hand; the pipeline
-  // still checks the result on "Next".
-  const reviewPhotos = async (documentMode: boolean) => {
-    const result = await openPrivacyEditor(images, documentMode);
-    if (!result) return;
-    result.files.forEach((f, i) => markReviewed(f, result.covers[i] ?? []));
-    replaceImages(result.files);
+  // One button under the photos opens the editor with every photo.
+  const reviewPhotos = async () => {
+    const files = await openPrivacyEditor(images);
+    if (files) replaceImages(files);
   };
 
   // The safety notice is shown AFTER the blur step (if it's a document), but
@@ -172,6 +160,9 @@ function AddItemForm() {
   const [safetyAck, setSafetyAck] = useState<{ resolve: (proceed: boolean) => void } | null>(null);
   const [postSuccessRedirect, setPostSuccessRedirect] = useState("/profile?tab=posts");
   const [showPhotoChoice, setShowPhotoChoice] = useState(false);
+  const [catSheetOpen, setCatSheetOpen] = useState(false);
+  // Documents: the owner's first name + first letter of the surname (lib/document-owner.ts).
+  const [ownerName, setOwnerName] = useState("");
   const [moderationStatus, setModerationStatus] = useState<"idle" | "passed">("idle");
 
   // Load the phone number from the profile
@@ -208,20 +199,27 @@ function AddItemForm() {
 
 
   useEffect(() => {
-    const consume = () => {
-      const files = takePendingAddFiles();
-      if (!files) return;
+    const consume = (initial: boolean) => {
+      const pending = takePendingAdd();
+      if (!pending) {
+        // Opened straight at /items/add (not from the navbar "+"): ask for the category first.
+        if (initial) setCatSheetOpen(true);
+        return;
+      }
+      const files = pending.files;
+      setFormData((prev) => ({ ...prev, category: pending.category }));
       setImages(files);
       setPreviews((prev) => {
         prev.forEach((url) => URL.revokeObjectURL(url));
         return files.map((file) => URL.createObjectURL(file));
       });
-      setStep(1);
+      setStep(isNoPhotoCategory(pending.category) ? 2 : 1);
       setModerationStatus("idle");
     };
-    consume();
-    window.addEventListener(PENDING_ADD_FILES_EVENT, consume);
-    return () => window.removeEventListener(PENDING_ADD_FILES_EVENT, consume);
+    consume(true);
+    const onPending = () => consume(false);
+    window.addEventListener(PENDING_ADD_FILES_EVENT, onPending);
+    return () => window.removeEventListener(PENDING_ADD_FILES_EVENT, onPending);
   }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -262,6 +260,19 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
+      // Switched from Documents/Cards to a category that needs photos.
+      if (!isNoPhotoCategory(formData.category) && images.length === 0) {
+        toast.error(t("pickImage"));
+        setStep(1);
+        return;
+      }
+      if (isNoPhotoCategory(formData.category)) {
+        const owner = checkOwnerName(ownerName);
+        if (owner && !owner.ok) {
+          toast.error(t(owner.reason === "full_surname" ? "docOwnerFullSurname" : "docOwnerFormat"));
+          return;
+        }
+      }
       continueFromDetails();
     } else if (step === 6) {
       if (!city || !locationAnswered) {
@@ -278,34 +289,7 @@ function AddItemForm() {
     }
   };
 
-  // Step 4 → next: the category is known now, so every photo goes through
-  // the privacy pipeline. A photo that needs a person's check opens the
-  // editor pre-covered; nothing moves on until every photo is safe.
-  const continueFromDetails = async () => {
-    if (checkingPhotos) return;
-    if (needsPrivacyCheck()) {
-      setCheckingPhotos(true);
-      try {
-        const outcome = await preparePhotos(images, formData.category, openPrivacyEditor);
-        replaceImages(outcome.files);
-        if (outcome.status === "cancelled") return;
-        if (outcome.status === "still_visible") {
-          toast.error(t("privacyStillVisible"));
-          return;
-        }
-        if (outcome.status === "person_photo") {
-          toast.error(t("privacyPersonPhoto"));
-          return;
-        }
-        if (outcome.status === "document_photo") {
-          toast.error(t("privacyDocumentPhoto"));
-          return;
-        }
-        if (outcome.autoCovered) toast.success(t("privacyAutoCovered"));
-      } finally {
-        setCheckingPhotos(false);
-      }
-    }
+  const continueFromDetails = () => {
     setStep(5); // Details → contact
   };
 
@@ -313,7 +297,7 @@ function AddItemForm() {
     // User request: a "Back" button is needed on step 1 too — previously
     // there was no button there at all (see the `step > 1` condition in the
     // footer below), so the user had no way to exit the wizard.
-    if (step === 1) {
+    if (step === firstStep) {
       router.push("/");
       return;
     }
@@ -332,17 +316,18 @@ function AddItemForm() {
   };
 
   const onFinalSubmit = async () => {
-    if (needsPrivacyCheck()) {
-      setStep(4);
-      return;
-    }
     setLoading(true);
     // Documents/Cards: no photo leaves the browser; the listing gets the JUYO image.
     const finalImages: File[] = isNoPhotoCategory(formData.category) ? [] : images;
     // The database masks these numbers too; doing it here keeps what the
     // poster sees in sync with what is saved.
     const finalTitle = maskSensitiveNumbers(formData.title, formData.category);
-    const finalDescription = maskSensitiveNumbers(formData.description, formData.category);
+    const owner = isNoPhotoCategory(formData.category) ? checkOwnerName(ownerName) : null;
+    const finalDescription = withOwnerLine(
+      maskSensitiveNumbers(formData.description, formData.category),
+      owner?.ok ? owner.value : null,
+      locale,
+    );
     const finalCategory = formData.category;
 
     // We start the notification permission prompt right here (not after
@@ -396,6 +381,11 @@ function AddItemForm() {
       // finalImages are the privacy pipeline's safe files; the re-encode
       // below also drops all metadata (EXIF/GPS).
       for (const file of finalImages) {
+        // Hidden completely in the editor: never uploaded, the document image instead.
+        if (isHiddenPhotoFile(file)) {
+          imageUrls.push(placeholderImageUrl("Documents"));
+          continue;
+        }
         const compressedFile = await compressImage(file);
         const ext = compressedFile.name.split(".").pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
@@ -468,7 +458,7 @@ function AddItemForm() {
           console.error("DATABASE ERROR:", imagesError.message);
         } else if (imageRows) {
           // In the background, on this device; never delays or fails the listing.
-          void attachEmbeddings(supabase, imageRows, uploadedFiles);
+          void attachEmbeddings(supabase, imageRows.filter((row) => !isPlaceholderUrl(row.image_url)), uploadedFiles);
         }
       }
 
@@ -522,11 +512,6 @@ function AddItemForm() {
           {/* Step 1: Photos First (Refined) */}
           {step === 1 && (
             <div className="space-y-6 w-full pt-4">
-              <div className="text-center space-y-1 mb-8">
-                <h2 className="text-lg min-[1084px]:text-xl min-[1503px]:text-2xl font-semibold tracking-tight text-action">
-                  {t("pickImage")}
-                </h2>
-              </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 sm:gap-3">
                 {images.length < 4 && (
                   <div
@@ -564,17 +549,15 @@ function AddItemForm() {
                 ))}
               </div>
 
-              {/* Documents, cards, faces: hidden by the user before publishing. */}
+              {/* One button (not one per photo): numbers and other personal details are covered by hand. */}
               {images.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => {
-                    reviewPhotos(isDocumentCategory(formData.category));
-                  }}
-                  className="pressable w-full h-11 rounded-md border border-hairline dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+                  onClick={() => void reviewPhotos()}
+                  className="pressable mx-auto flex h-11 items-center gap-2 rounded-md bg-emerald-500 hover:bg-emerald-600 px-4 text-sm font-semibold text-white"
                 >
-                  <EyeOff className="w-4 h-4" />
-                  {t("hidePersonalInfo")}
+                  <EyeOff className="h-4 w-4" />
+                  {t("hideDataBtn")}
                 </button>
               )}
 
@@ -835,41 +818,43 @@ function AddItemForm() {
                 <Label className="text-sm font-semibold text-muted-foreground ml-1">
                   {t("categoryLabel")}
                 </Label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {CATEGORIES.map((cat) => (
+                {/* The category is chosen first (CategorySheet, before photos); here it can still be changed. */}
+                {(() => {
+                  const current = CATEGORIES.find((c) => c.name === formData.category);
+                  return (
                     <button
-                      key={cat.id}
                       type="button"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          category: cat.name,
-                        }))
-                      }
-                      className={cn(
-                        "flex flex-col items-center gap-1 p-2 min-[1084px]:p-2.5 rounded-md bg-white dark:bg-zinc-800 ring-2 ring-transparent transition-all text-center",
-                        formData.category === cat.name
-                          ? "ring-2 ring-action bg-white dark:bg-zinc-800 text-action"
-                          : "text-slate-600",
-                      )}
+                      onClick={() => setCatSheetOpen(true)}
+                      className="pressable flex w-full items-center gap-3 rounded-md bg-white px-3 py-2.5 text-left dark:bg-zinc-800"
                     >
-                      <div
-                        className={cn(
-                          "w-8 h-8 min-[1084px]:w-10 min-[1084px]:h-10 rounded-md flex items-center justify-center text-base min-[1084px]:text-lg shrink-0",
-                          formData.category === cat.name
-                            ? "bg-canvas"
-                            : "bg-canvas",
-                        )}
-                      >
-                        {cat.icon}
-                      </div>
-                      <span className="text-xs font-medium tracking-tight leading-tight">
-                        {t(`categories.${cat.id}`)}
+                      <span className="grid size-9 shrink-0 place-items-center rounded-md bg-canvas text-lg" aria-hidden>
+                        {current?.icon ?? "＋"}
                       </span>
+                      <span className="flex-1 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        {current ? t(`categories.${current.id}`) : t("addChooseCategory")}
+                      </span>
+                      <span className="text-sm font-semibold text-action">{t("addChangeCategory")}</span>
                     </button>
-                  ))}
-                </div>
+                  );
+                })()}
               </div>
+
+              {isNoPhotoCategory(formData.category) && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="doc-owner" className="text-sm font-semibold text-muted-foreground ml-1">
+                    {t(formData.category === "Cards" ? "cardOwnerLabel" : "docOwnerLabel")}
+                  </Label>
+                  <Input
+                    id="doc-owner"
+                    placeholder={t("docOwnerPlaceholder")}
+                    autoComplete="off"
+                    maxLength={40}
+                    className="rounded-md h-12 bg-white dark:bg-zinc-800 border-none text-sm min-[1084px]:text-base font-medium shadow-none"
+                    value={ownerName}
+                    onChange={(e) => setOwnerName(e.target.value)}
+                  />
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <Label className="text-sm font-semibold text-muted-foreground ml-1">
@@ -886,12 +871,6 @@ function AddItemForm() {
                     }))
                   }
                 />
-                {isDocumentCategory(formData.category) && (
-                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("docDescHint")}</p>
-                )}
-                {isNoPhotoCategory(formData.category) && (
-                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("noPhotoNotice")}</p>
-                )}
               </div>
             </div>
           )}
@@ -1023,15 +1002,9 @@ function AddItemForm() {
               <Button
                 size="lg"
                 onClick={nextStep}
-                disabled={checkingPhotos}
-                aria-label={checkingPhotos ? t("privacyChecking") : undefined}
                 className="flex-1 rounded-md h-14 min-[1084px]:h-16 min-[1920px]:h-[68px] text-sm min-[1920px]:text-[15px] font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
               >
-                {checkingPhotos ? (
-                  <Loader2 className="w-5 h-5 min-[1084px]:w-6 min-[1084px]:h-6 min-[1920px]:w-7 min-[1920px]:h-7 animate-spin" />
-                ) : (
-                  t("next")
-                )}
+                {t("next")}
               </Button>
             )}
             {step === 5 && (
@@ -1053,6 +1026,22 @@ function AddItemForm() {
 
       {/* "Found": can the finder tell who the owner is? Two tappable
           choice cards so it reads as a question, not an info popup. */}
+      <CategorySheet
+        open={catSheetOpen}
+        selected={formData.category}
+        onOpenChange={(open) => {
+          setCatSheetOpen(open);
+          // Opened straight at /items/add and closed without a choice: nothing to add.
+          if (!open && !formData.category) router.push("/");
+        }}
+        onPick={(category) => {
+          setCatSheetOpen(false);
+          setFormData((prev) => ({ ...prev, category }));
+          if (step === 1 && isNoPhotoCategory(category)) setStep(2);
+          else if (step === 1 && images.length === 0) setTimeout(() => setShowPhotoChoice(true), 300);
+        }}
+      />
+
       <Dialog open={foundAskOpen} onOpenChange={setFoundAskOpen}>
         <DialogContent className="max-w-[360px] rounded-md p-5 pt-8 border-none shadow-2xl gap-0">
           <DialogHeader className="mb-4 space-y-1">
@@ -1161,13 +1150,10 @@ function AddItemForm() {
         <PrivacyBlurEditor
           open
           files={privacyReview.files}
-          documentMode={privacyReview.documentMode}
-          category={formData.category}
-          initialRegions={privacyReview.initialRegions}
-          onConfirm={(finalFiles, covers) => {
+          onConfirm={(finalFiles) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
-            resolve({ files: finalFiles, covers });
+            resolve(finalFiles);
           }}
           onCancel={() => {
             const resolve = privacyReview.resolve;

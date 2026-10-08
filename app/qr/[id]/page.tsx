@@ -162,7 +162,7 @@ export default async function PublicQRPage({ params, searchParams }: Props) {
     <div className="h-dvh w-full overflow-hidden flex flex-col p-5 sm:p-8">
       {/* Language selector */}
       <div className="flex items-center justify-center mb-4 sm:mb-6">
-        <div className="flex items-center bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md rounded-full p-1 border border-hairline dark:border-zinc-800">
+        <div className="flex items-center bg-white dark:bg-zinc-900 rounded-full p-1 border border-hairline dark:border-zinc-800">
           {[
             { id: "tg", label: "Тоҷикӣ" },
             { id: "ru", label: "Русский" },

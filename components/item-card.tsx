@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ImagePlaceholder } from "@/components/image-placeholder";
+import { splitOwnerLine } from "@/lib/document-owner";
 
 export function ItemCard({
   item,
@@ -193,7 +194,7 @@ export function ItemCard({
           {/* Description — one line, see ItemFeedCard (both cards look the same). */}
           {item.description && (
             <p className="mt-0.5 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              {item.description}
+              {splitOwnerLine(item.description).rest}
             </p>
           )}
 

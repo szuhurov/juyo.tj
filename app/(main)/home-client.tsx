@@ -677,7 +677,7 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                   {CATEGORY_FILTER_ITEMS.map((cat) => (
                     <CategoryFilterCard
                       key={cat.id}
-                      label={t(`categories.${cat.id}`)}
+                      label={cat.name === "LicensePlate" ? t("categoryFilterCar") : t(`categories.${cat.id}`)}
                       image={CATEGORY_FILTER_IMAGES[cat.name] ?? CATEGORY_IMAGES[cat.name]}
                       emoji={cat.name === "Other" ? "🤷" : undefined}
                       transparent={!!CATEGORY_FILTER_IMAGES[cat.name]}

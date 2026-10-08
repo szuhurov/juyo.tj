@@ -43,5 +43,5 @@ next-env.d.ts
 # clerk configuration (can include secrets)
 /.clerk/
 
-# Copied from node_modules by scripts/copy-ocr-assets.mjs (pre-dev / pre-build)
+# Copied from node_modules by scripts/copy-vendor-assets.mjs (pre-dev / pre-build)
 /public/vendor/

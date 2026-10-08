@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     let query = supabaseAdmin
       .from("items")
       .select(
-        "id, title, category, type, is_resolved, moderation_status, status, created_at, user_id, profiles!items_user_id_fkey(first_name, last_name), images:item_images(image_url, moderation:image_moderation(decision, reasons, source))",
+        "id, title, category, type, is_resolved, moderation_status, status, created_at, user_id, profiles!items_user_id_fkey(first_name, last_name), images:item_images(image_url)",
         { count: "exact" },
       );
 

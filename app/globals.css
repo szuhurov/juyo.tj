@@ -400,22 +400,9 @@ html:not(.dark) .border-hairline {
   h3 { letter-spacing: -0.01em; line-height: 1.25; }
 }
 
-/* §12 Translucent chrome: content scrolls UNDER nav/filter bars. The bright
-   hairline edge reads as light catching the material. */
+/* Nav/filter bars are solid, matching the mobile app (owner decision 2026-10-08: no glass blur). */
 .material {
-  background-color: color-mix(in oklab, var(--canvas) 72%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .material { background-color: var(--canvas); }
-}
-/* §14 Solid when the user asks for less transparency or more contrast. */
-@media (prefers-reduced-transparency: reduce) {
-  .material { background-color: var(--canvas); -webkit-backdrop-filter: none; backdrop-filter: none; }
-}
-@media (prefers-contrast: more) {
-  .material { background-color: var(--canvas); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  background-color: var(--canvas);
 }
 
 /* §1 Feedback on pointer-DOWN: presses in at once, springs back fast. */

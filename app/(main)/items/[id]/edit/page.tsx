@@ -30,14 +30,13 @@ import { Loader2, X, Upload, EyeOff } from "lucide-react"; // Icons
 import Image from "next/image"; // For images
 import { compressImage } from "@/lib/image-utils";
 import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
-import { warmPhotoAnalysis } from "@/lib/photo-privacy";
-import { isSafeFor, markReviewed, preparePhotos } from "@/lib/prepare-photos";
-import { DOCUMENT_CATEGORIES, type Rect } from "@/lib/privacy-pipeline";
 import { CITY_IDS, DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { cn } from "@/lib/utils";
 import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
+import { isHiddenPhotoFile } from "@/lib/hidden-photo";
+import { checkOwnerName, splitOwnerLine, withOwnerLine } from "@/lib/document-owner";
 
 import {
   Tooltip,
@@ -87,44 +86,17 @@ export default function EditItemPage({
     { url: string; isExisting: boolean }[]
   >([]);
 
-  // Privacy editor — opened by the person for NEW photos, or by the privacy
-  // pipeline when a photo needs a person's check (see items/add/page.tsx).
+  // The privacy editor — opened by the person to cover numbers, names or
+  // faces on NEW photos by hand (or hide a photo completely).
   const [privacyReview, setPrivacyReview] = useState<{
     files: File[];
-    documentMode: boolean;
-    initialRegions?: (Rect[] | null)[];
-    resolve: (result: { files: File[]; covers: Rect[][] } | null) => void;
+    resolve: (files: File[] | null) => void;
   } | null>(null);
-  // Start the analysis as soon as a photo is there, so saving rarely waits.
-  useEffect(() => {
-    images.forEach(warmPhotoAnalysis);
-  }, [images]);
 
-  const openPrivacyEditor = (files: File[], documentMode: boolean, initialRegions?: (Rect[] | null)[]) =>
-    new Promise<{ files: File[]; covers: Rect[][] } | null>((resolve) => {
-      setPrivacyReview({ files, documentMode, initialRegions, resolve });
+  const openPrivacyEditor = (files: File[]) =>
+    new Promise<File[] | null>((resolve) => {
+      setPrivacyReview({ files, resolve });
     });
-
-  // Switching a listing INTO Documents/Cards re-checks its current photos:
-  // they are fetched, go through the pipeline like new ones, and are then
-  // replaced (the old files deleted, like any removed photo).
-  const existingAsNewFiles = async (): Promise<File[] | null> => {
-    try {
-      let newIdx = 0;
-      return await Promise.all(
-        previews.map(async (p) => {
-          if (!p.isExisting) return images[newIdx++];
-          const res = await fetch(p.url);
-          if (!res.ok) throw new Error(String(res.status));
-          const blob = await res.blob();
-          return new File([blob], "image.jpg", { type: blob.type || "image/jpeg" });
-        }),
-      );
-    } catch {
-      toast.error(t("error"));
-      return null;
-    }
-  };
 
   /**
    * Function for fetching listing data from the database
@@ -222,6 +194,13 @@ export default function EditItemPage({
     const formData = new FormData(e.currentTarget);
     const title = ((formData.get("title") as string) || "").trim();
     const description = ((formData.get("description") as string) || "").trim();
+    // Documents: the owner's first name + first letter of the surname (lib/document-owner.ts).
+    const owner = isNoPhotoCategory(category) ? checkOwnerName((formData.get("docOwner") as string) || "") : null;
+    if (owner && !owner.ok) {
+      toast.error(t(owner.reason === "full_surname" ? "docOwnerFullSurname" : "docOwnerFormat"));
+      return;
+    }
+    const ownerValue = owner?.ok ? owner.value : null;
     const phone = ((formData.get("phone") as string) || "").trim();
     const rewardField = formData.get("reward");
     const reward = rewardEnabled
@@ -237,63 +216,21 @@ export default function EditItemPage({
     // Documents/Cards keep no photo at all (lib/photo-policy.ts): the old
     // photo files are deleted below and the listing shows the JUYO image.
     const noPhoto = isNoPhotoCategory(category);
-    const realPreviews = previews.filter((p) => !isPlaceholderUrl(p.url));
+    // The JUYO image of a Documents/Cards listing is not a photo; in other categories it is a photo
+    // the person hid completely, and stays.
+    const realPreviews = previews.filter((p) => !isPlaceholderUrl(p.url) || !isNoPhotoCategory(item?.category));
     if (!noPhoto && realPreviews.length === 0) {
       toast.error(t("atLeastOneImage"));
       return;
     }
 
-    let currentImages = noPhoto ? [] : images;
-    let currentPreviews = noPhoto ? [] : realPreviews;
-    const isDocCat = (c: string | null | undefined) => !!c && DOCUMENT_CATEGORIES.includes(c);
-    if (!noPhoto && isDocCat(category) && !isDocCat(item?.category) && realPreviews.some((p) => p.isExisting)) {
-      const all = await existingAsNewFiles();
-      if (!all) return;
-      currentImages = all;
-      currentPreviews = all.map(() => ({ url: "", isExisting: false }));
-    }
-    // Every new photo passes the in-browser privacy pipeline; only its safe
-    // output is uploaded.
-    if (currentImages.some((f) => !isSafeFor(f, category))) {
-      setSaving(true);
-      let outcome;
-      try {
-        outcome = await preparePhotos(currentImages, category, openPrivacyEditor);
-      } finally {
-        setSaving(false);
-      }
-      currentImages = outcome.files;
-      let idx = 0;
-      // Refused photos (a person) leave outcome.files shorter than the new previews.
-      currentPreviews = currentPreviews.flatMap((p) => {
-        if (p.isExisting) return [p];
-        const f = outcome.files[idx++];
-        return f ? [{ url: URL.createObjectURL(f), isExisting: false }] : [];
-      });
-      setImages(currentImages);
-      setPreviews((prev) => {
-        prev.forEach((pv) => !pv.isExisting && URL.revokeObjectURL(pv.url));
-        return currentPreviews;
-      });
-      if (outcome.status === "cancelled") return;
-      if (outcome.status === "still_visible") {
-        toast.error(t("privacyStillVisible"));
-        return;
-      }
-      if (outcome.status === "person_photo") {
-        toast.error(t("privacyPersonPhoto"));
-        return;
-      }
-      if (outcome.status === "document_photo") {
-        toast.error(t("privacyDocumentPhoto"));
-        return;
-      }
-      if (outcome.autoCovered) toast.success(t("privacyAutoCovered"));
-    }
+    // Documents/Cards: no photo is kept; otherwise the photos as shown.
+    const currentImages = noPhoto ? [] : images;
+    const currentPreviews = noPhoto ? [] : realPreviews;
 
     const hasNewImages = currentImages.length > 0;
     const textChanged =
-      title !== item.title || description !== item.description;
+      title !== item.title || withOwnerLine(description, ownerValue, locale) !== item.description;
 
     setSaving(true);
     try {
@@ -302,7 +239,7 @@ export default function EditItemPage({
       const finalImages = currentImages;
       // The database masks these numbers too.
       const finalTitle = maskSensitiveNumbers(title, category);
-      const finalDescription = maskSensitiveNumbers(description, category);
+      const finalDescription = withOwnerLine(maskSensitiveNumbers(description, category), ownerValue, locale);
       const finalCategory = category;
 
       // Any content change sends the listing back to an admin
@@ -329,6 +266,11 @@ export default function EditItemPage({
         } else {
           // The privacy pipeline's safe file; the re-encode also drops all metadata.
           const file = newFiles[newFileIdx++];
+          // Hidden completely in the editor: never uploaded, the document image instead.
+          if (isHiddenPhotoFile(file)) {
+            finalImageUrls.push(placeholderImageUrl("Documents"));
+            continue;
+          }
           const compressedFile = await compressImage(file);
           const ext = compressedFile.name.split(".").pop();
           const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
@@ -418,7 +360,7 @@ export default function EditItemPage({
         else if (imageRows && !noPhoto) {
           void (async () => {
             for (const url of finalImageUrls) {
-              if (uploadedFiles.has(url)) continue;
+              if (uploadedFiles.has(url) || isPlaceholderUrl(url)) continue;
               try {
                 const res = await fetch(url);
                 if (res.ok) uploadedFiles.set(url, await res.blob());
@@ -426,7 +368,7 @@ export default function EditItemPage({
                 // the admin's review recomputes it anyway
               }
             }
-            await attachEmbeddings(supabase, imageRows, uploadedFiles);
+            await attachEmbeddings(supabase, imageRows.filter((row) => !isPlaceholderUrl(row.image_url)), uploadedFiles);
           })();
         }
       }
@@ -610,6 +552,23 @@ export default function EditItemPage({
                 </div>
               </div>
 
+              {isNoPhotoCategory(category) && (
+                <div className="space-y-2">
+                  <Label htmlFor="docOwner" className="text-xs min-[1084px]:text-sm text-slate-500">
+                    {t(category === "Cards" ? "cardOwnerLabel" : "docOwnerLabel")}
+                  </Label>
+                  <Input
+                    id="docOwner"
+                    name="docOwner"
+                    defaultValue={splitOwnerLine(item?.description ?? "").ownerName}
+                    placeholder={t("docOwnerPlaceholder")}
+                    autoComplete="off"
+                    maxLength={40}
+                    className="rounded-md"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label
                   htmlFor="description"
@@ -620,17 +579,11 @@ export default function EditItemPage({
                 <Textarea
                   id="description"
                   name="description"
-                  defaultValue={item?.description}
+                  defaultValue={splitOwnerLine(item?.description ?? "").rest}
                   placeholder={t("description")}
                   className="rounded-md min-h-[100px] resize-none"
                   required
                 />
-                {isDocumentCategory(category) && (
-                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("docDescHint")}</p>
-                )}
-                {isNoPhotoCategory(category) && (
-                  <p className="text-xs font-medium leading-relaxed text-slate-500 dark:text-zinc-400">{t("noPhotoNotice")}</p>
-                )}
               </div>
 
               {/* Phone and Reward */}
@@ -717,6 +670,9 @@ export default function EditItemPage({
                 )}
               </div>
 
+              {/* Documents/Cards never carry a photo (lib/photo-policy.ts). */}
+              {!isNoPhotoCategory(category) && (
+                <>
               {/* Image management section (Image Upload) */}
               <div className="space-y-4">
                 <Label className="text-xs min-[1084px]:text-sm text-slate-500">
@@ -766,32 +722,34 @@ export default function EditItemPage({
                     </Tooltip>
                   )}
                 </div>
-                {/* Documents, cards, faces on NEW photos: hidden by the user before saving. */}
+                {/* Numbers, names, faces on NEW photos: covered by hand before saving. */}
                 {images.length > 0 && (
                   <button
                     type="button"
                     onClick={async () => {
-                      // Covered by hand; the pipeline still re-checks it on save.
-                      const result = await openPrivacyEditor(images, isDocumentCategory(category));
-                      if (!result) return;
-                      result.files.forEach((f, i) => markReviewed(f, result.covers[i] ?? []));
+                      const files = await openPrivacyEditor(images);
+                      if (!files) return;
+                      const result = { files };
                       setImages(result.files);
                       setPreviews((prev) => {
                         let idx = 0;
                         return prev.map((p) => {
                           if (p.isExisting) return p;
                           URL.revokeObjectURL(p.url);
-                          return { url: URL.createObjectURL(result.files[idx++]), isExisting: false };
+                          const edited = result.files[idx++];
+                          return { url: isHiddenPhotoFile(edited) ? placeholderImageUrl("Documents") : URL.createObjectURL(edited), isExisting: false };
                         });
                       });
                     }}
-                    className="pressable w-full h-11 rounded-md border border-hairline dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300"
+                    className="pressable mx-auto flex h-11 items-center gap-2 rounded-md bg-emerald-500 hover:bg-emerald-600 px-4 text-sm font-semibold text-white"
                   >
                     <EyeOff className="w-4 h-4" />
-                    {t("hidePersonalInfo")}
+                    {t("hideDataBtn")}
                   </button>
                 )}
               </div>
+                </>
+              )}
 
               {/* Submit button */}
               <Button
@@ -818,13 +776,10 @@ export default function EditItemPage({
         <PrivacyBlurEditor
           open
           files={privacyReview.files}
-          documentMode={privacyReview.documentMode}
-          category={category}
-          initialRegions={privacyReview.initialRegions}
-          onConfirm={(finalFiles, covers) => {
+          onConfirm={(finalFiles) => {
             const resolve = privacyReview.resolve;
             setPrivacyReview(null);
-            resolve({ files: finalFiles, covers });
+            resolve(finalFiles);
           }}
           onCancel={() => {
             const resolve = privacyReview.resolve;

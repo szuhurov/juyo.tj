@@ -1,8 +1,8 @@
-dinov2-small-q4.onnx
-  DINOv2 ViT-S/14 — Copyright (c) Meta Platforms, Inc. and affiliates.
+siglip2-base-256-q4.onnx
+  SigLIP 2 B/16 at 256 px — Copyright (c) Google LLC.
   Licensed under the Apache License, Version 2.0
   (https://www.apache.org/licenses/LICENSE-2.0).
-  Source weights: https://huggingface.co/facebook/dinov2-small
-  ONNX conversion with 4-bit weight quantization (modified from the original):
-  https://huggingface.co/onnx-community/dinov2-small-ONNX (onnx/model_q4.onnx)
-  SHA-256 0f4a7f7d8524f2959407d0f35b09281111bc90c6ed105509290e36da1c669314
+  Source weights: https://huggingface.co/google/siglip2-base-patch16-256
+  ONNX conversion of the vision tower with 4-bit weight quantization (modified from the original):
+  https://huggingface.co/onnx-community/siglip2-base-patch16-256-ONNX (onnx/vision_model_q4.onnx)
+  SHA-256 712064dae0cce3fb4c94497c7dfd65d11f4ad34eadafe09442208474068cf777

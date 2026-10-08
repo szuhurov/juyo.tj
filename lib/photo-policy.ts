@@ -25,3 +25,13 @@ export function placeholderImageUrl(category: string | null | undefined): string
 export function isPlaceholderUrl(url: string | null | undefined): boolean {
   return !!url && url.startsWith(PLACEHOLDER_BASE);
 }
+
+/**
+ * A photo the person chose to hide completely in the privacy editor: it is
+ * never uploaded, and the listing shows the document image in its place.
+ */
+export const HIDDEN_PHOTO_URI = 'juyo:hidden-photo';
+
+export function isHiddenPhotoUri(uri: string | null | undefined): boolean {
+  return uri === HIDDEN_PHOTO_URI;
+}

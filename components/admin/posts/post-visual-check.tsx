@@ -48,7 +48,6 @@ export function PostVisualCheck({ item }: { item: AdminPostDetail["item"] }) {
         if (!res.ok) throw new Error(String(res.status));
         const data = (await res.json()) as { results: { image_id: string; author_match: number | null }[] };
         if (!cancelled) setState({ kind: "done", results: data.results });
-        // The database re-scored moderation from these vectors — show the admin's result.
         queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.postDetail(item.id) });
       } catch {
         if (!cancelled) setState({ kind: "error" });

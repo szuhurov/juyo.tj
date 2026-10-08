@@ -6,13 +6,9 @@
  * reversed (known fonts on documents make digits guessable from the
  * blocks), a solid fill cannot. Same as the mobile editor.
  *
- * Suggested covers come from the in-browser privacy pipeline
- * (lib/photo-privacy.ts) — passed in as `initialRegions`, or detected here
- * when the editor is opened by hand. `documentMode` (Documents/Cards, or a
- * photo that looks like a document) applies the document rules, lists what
- * to hide, and asks again before confirming a photo with nothing hidden.
- * `onConfirm` also returns what was covered, so the caller can re-check
- * the exported photo (lib/photo-privacy.ts finalizePhoto).
+ * Everything is covered by hand (owner decision 2026-10-07: no automatic
+ * detection), or a photo is hidden completely — it is then never uploaded
+ * (lib/hidden-photo.ts).
  *
  * Multiple images at once: all images are reviewed in this ONE dialog
  * with left/right buttons (not one at a time in separate dialogs) — so
@@ -30,12 +26,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, X, RotateCw, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Undo2, Redo2, X, RotateCw, ChevronLeft, ChevronRight, EyeOff, Pointer } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
-import { boundingRect, suggestCovers } from "@/lib/photo-privacy";
-import type { Rect } from "@/lib/privacy-pipeline";
+import { placeholderImageUrl } from "@/lib/photo-policy";
+import { isHiddenPhotoFile, makeHiddenPhoto } from "@/lib/hidden-photo";
 
 interface EditableRegion {
   id: string;
@@ -52,6 +48,8 @@ interface ImageSlot {
   regions: EditableRegion[];
   history: EditableRegion[][];
   historyIndex: number;
+  /** "Hide completely": not uploaded at all (lib/hidden-photo.ts). */
+  hidden?: boolean;
 }
 
 type DragKind = "new" | "move" | "resize" | "rotate";
@@ -157,19 +155,15 @@ function redactRect(
 export function PrivacyBlurEditor({
   open,
   files,
-  documentMode = false,
-  category,
-  initialRegions,
   onConfirm,
   onCancel,
+  allowHideAll = true,
 }: {
   open: boolean;
   files: File[];
-  documentMode?: boolean;
-  category?: string | null;
-  /** Covers already suggested per photo (null = detection unavailable for it); skips detection here. */
-  initialRegions?: (Rect[] | null)[];
-  onConfirm: (finalFiles: File[], covers: Rect[][]) => void;
+  /** "Hide completely" (not uploaded at all) — off for the admin, who replaces published photos. */
+  allowHideAll?: boolean;
+  onConfirm: (finalFiles: File[]) => void;
   /** Pressing "×"/Escape/clicking outside — all images remain unconfirmed
    * (an unconfirmed image never goes to upload). */
   onCancel: () => void;
@@ -185,12 +179,6 @@ export function PrivacyBlurEditor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [exporting, setExporting] = useState(false);
-  // Document mode: photos the user confirmed with nothing hidden — asked once.
-  const [emptyWarning, setEmptyWarning] = useState(false);
-  const [detectStatus, setDetectStatus] = useState<"idle" | "running" | "done" | "unavailable">("idle");
-  // Bumped on every open, so a detection still running from a previous
-  // open never writes into the new set of photos.
-  const detectRunRef = useRef(0);
 
   const current = slots[currentIndex] as ImageSlot | undefined;
   // useMemo: if `current` doesn't exist, `?? []` would create a NEW array
@@ -251,53 +239,23 @@ export function PrivacyBlurEditor({
       wasOpenRef.current = true;
       if (files.length === 0) return;
       setReady(false);
-      setEmptyWarning(false);
-      setDetectStatus("idle");
-      const run = ++detectRunRef.current;
       setCurrentIndex(0);
       setSelectedId(null);
       Promise.all(
-        files.map((file) => decodeSlot(file)),
-      ).then(async (newSlots) => {
-        const toEditable = (rs: Rect[], i: number): EditableRegion[] =>
-          rs.map((r, k) => ({ x: r.x, y: r.y, width: r.width, height: r.height, rotation: 0, id: `region-auto-${i}-${k}` }));
-        if (initialRegions) {
-          setSlots(newSlots.map((sl, i) => {
-            const regions = toEditable(initialRegions[i] ?? [], i);
-            return regions.length ? { ...sl, regions, history: [[], regions], historyIndex: 1 } : sl;
-          }));
-          setDetectStatus(initialRegions.some((r) => r === null) ? "unavailable" : "done");
-          setReady(true);
-          return;
-        }
+        files.map((file) =>
+          // Hidden completely on an earlier pass: stays hidden, nothing to decode.
+          isHiddenPhotoFile(file)
+            ? Promise.resolve({ file, base: null, regions: [], history: [[]], historyIndex: 0, hidden: true } as ImageSlot)
+            : decodeSlot(file),
+        ),
+      ).then((newSlots) => {
         setSlots(newSlots);
         setReady(true);
-        setDetectStatus("running");
-        let unavailable = false;
-        for (let i = 0; i < newSlots.length; i++) {
-          const suggested = await suggestCovers(newSlots[i].file, category, documentMode);
-          if (run !== detectRunRef.current) return;
-          if (suggested === null) {
-            unavailable = true;
-            continue;
-          }
-          if (suggested.length === 0) continue;
-          const withIds = toEditable(suggested, i);
-          // Never overwrite what the person already drew on this photo.
-          setSlots((prev) =>
-            prev.map((sl, j) =>
-              j === i && sl.regions.length === 0
-                ? { ...sl, regions: withIds, history: [[], withIds], historyIndex: 1 }
-                : sl,
-            ),
-          );
-        }
-        setDetectStatus(unavailable ? "unavailable" : "done");
       });
     } else if (!open) {
       wasOpenRef.current = false;
     }
-  }, [open, files, documentMode, category, initialRegions]);
+  }, [open, files]);
 
   // The touch-action CSS only sometimes works (especially in iOS Safari)
   // — by listening directly for "touchmove" (passive:false) we guarantee
@@ -410,6 +368,7 @@ export function PrivacyBlurEditor({
   };
 
   const handleWrapPointerDown = (e: React.PointerEvent) => {
+    if (current?.hidden) return;
     const target = e.target as HTMLElement;
     const role = target.dataset.role;
     const regionId = target.dataset.regionId;
@@ -633,24 +592,13 @@ export function PrivacyBlurEditor({
     });
   };
 
-  const finalizeAll = async (confirmedEmpty = false) => {
+  const finalizeAll = async () => {
     if (!ready || slots.length === 0 || exporting) return;
-    if (documentMode && !confirmedEmpty) {
-      const firstEmpty = slots.findIndex((s) => s.regions.length === 0);
-      if (firstEmpty !== -1) {
-        goToIndex(firstEmpty);
-        setEmptyWarning(true);
-        return;
-      }
-    }
     setExporting(true);
     try {
-      const finalFiles = await Promise.all(slots.map(exportSlot));
-      // What is painted on each exported photo, as upright boxes.
-      const covers = slots.map((s) =>
-        s.regions.map((r) => boundingRect(r, s.base ? s.base.width / s.base.height : 1)),
-      );
-      onConfirm(finalFiles, covers);
+      // A photo hidden completely is never exported or uploaded.
+      const finalFiles = await Promise.all(slots.map((s) => (s.hidden ? Promise.resolve(makeHiddenPhoto(s.file.name)) : exportSlot(s))));
+      onConfirm(finalFiles);
     } catch {
       // Nothing is uploaded: the caller only ever receives redacted files.
       toast.error(t("privacyExportFailed"));
@@ -681,7 +629,7 @@ export function PrivacyBlurEditor({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <DialogTitle className="text-xl tracking-tight text-emerald-600 dark:text-emerald-400">
-                  {documentMode ? t("docPrivacyTitle") : t("privacyReviewTitle")}
+                  {t("privacyReviewTitle")}
                 </DialogTitle>
                 {slots.length > 1 && (
                   <span className="shrink-0 text-[10px] font-medium tracking-widest text-slate-400 bg-slate-100 dark:bg-zinc-700 rounded-full px-2 py-0.5">
@@ -690,20 +638,8 @@ export function PrivacyBlurEditor({
                 )}
               </div>
               <p className="text-sm font-semibold text-slate-400 mt-0.5">
-                {documentMode ? t("docPrivacyDesc") : t("privacyReviewDesc")}
+                {t("privacyReviewDesc")}
               </p>
-              {detectStatus !== "idle" && (
-                <p aria-live="polite" className="mt-2 flex items-start gap-1.5 text-xs font-semibold leading-relaxed text-emerald-600 dark:text-emerald-400">
-                  {detectStatus === "running" && <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />}
-                  <span>
-                    {detectStatus === "running"
-                      ? t("docDetecting")
-                      : detectStatus === "done"
-                        ? t(documentMode ? "docDetectDone" : "privacyDetectDone")
-                        : t("docDetectUnavailable")}
-                  </span>
-                </p>
-              )}
             </div>
             <button
               type="button"
@@ -818,6 +754,18 @@ export function PrivacyBlurEditor({
               </div>
             )}
 
+            {/* How to cover: a finger draws a dark bar (outside the exported canvas); gone once the person draws. */}
+            {ready && !exporting && regions.length === 0 && !current?.hidden && (
+              <SwipeHint width={dispSize.w || 240} />
+            )}
+
+            {ready && current?.hidden && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-zinc-800">
+                {/* eslint-disable-next-line @next/next/no-img-element -- static JUYO image */}
+                <img src={placeholderImageUrl("Documents")} alt="" className="h-full w-full object-contain" />
+              </div>
+            )}
+
             {/* Navigation between images — only if there is more than one image */}
             {ready && slots.length > 1 && (
               <>
@@ -860,8 +808,29 @@ export function PrivacyBlurEditor({
             </div>
           )}
 
-          {/* Toolbar */}
-          <div className="flex items-center justify-end gap-2 mt-3 flex-wrap">
+          {/* Toolbar — as wide as the photo, so its left edge lines up with the photo's left edge. */}
+          <div
+            className="mx-auto flex max-w-full items-center justify-between gap-2 mt-3 flex-wrap"
+            style={ready && dispSize.w ? { width: `${dispSize.w}px` } : undefined}
+          >
+            {allowHideAll ? (
+            <Button
+              type="button"
+              className={cn(
+                "h-9 rounded-md gap-1.5 px-3 text-white touch-manipulation",
+                current?.hidden ? "bg-emerald-700 hover:bg-emerald-800" : "bg-emerald-500 hover:bg-emerald-600",
+              )}
+              aria-pressed={!!current?.hidden}
+              // Hidden on an earlier pass: the original is gone, so it cannot be shown again.
+              disabled={!ready || exporting || isHiddenPhotoFile(current?.file)}
+              onClick={() => setSlots((prev) => prev.map((sl, i) => (i === currentIndex ? { ...sl, hidden: !sl.hidden } : sl)))}
+            >
+              <EyeOff className="w-4 h-4" />
+              {t("hideWholePhoto")}
+            </Button>
+            ) : (
+              <span />
+            )}
             <div className="flex items-center gap-1.5">
               <Button
                 type="button"
@@ -888,38 +857,47 @@ export function PrivacyBlurEditor({
         </div>
 
         <DialogFooter className="p-6 pt-4 shrink-0 flex-col gap-2 sm:flex-col">
-          {emptyWarning && (
-            <div role="alert" className="w-full rounded-md border border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40 p-3 space-y-2">
-              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">{t("docPrivacyNothingHidden")}</p>
-              <div className="flex gap-2">
-                <Button type="button" size="sm" className="flex-1" onClick={() => setEmptyWarning(false)}>
-                  {t("docPrivacyHideNow")}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    setEmptyWarning(false);
-                    finalizeAll(true);
-                  }}
-                >
-                  {t("docPrivacyNoDocument")}
-                </Button>
-              </div>
-            </div>
-          )}
           <Button
             type="button"
             onClick={handleFooterButton}
-            disabled={!ready || exporting || detectStatus === "running"}
-            className="w-full h-12 rounded-md tracking-widest text-xs bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
+            disabled={!ready || exporting}
+            className="w-full h-12 rounded-md tracking-normal text-[11px] whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg"
           >
-            {isLastSlot ? t("privacyConfirmBtn") : t("next")}
+            {/* Nothing covered on this photo yet: say so; the counter shows where the person is. */}
+            {regions.length === 0 && !current?.hidden ? t("privacyNothingContinue") : t("privacyConfirmBtn")}
+            {slots.length > 1 ? `  ${currentIndex + 1}/${slots.length}` : ""}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** A finger moving left to right, leaving a dark bar behind it: "cover it like this". Static with reduced motion. */
+function SwipeHint({ width }: { width: number }) {
+  const travel = Math.round(width * 0.5);
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 flex items-center justify-center"
+      style={{ ["--travel" as string]: `${travel}px` }}
+    >
+      <style>{`
+        @keyframes juyo-swipe-bar { 0% { width: 0 } 65%, 100% { width: var(--travel) } }
+        @keyframes juyo-swipe-hand { 0% { transform: translateX(0) } 65%, 100% { transform: translateX(var(--travel)) } }
+        .juyo-swipe-bar { animation: juyo-swipe-bar 2.2s ease-in-out infinite }
+        .juyo-swipe-hand { animation: juyo-swipe-hand 2.2s ease-in-out infinite }
+        @media (prefers-reduced-motion: reduce) {
+          .juyo-swipe-bar { animation: none; width: var(--travel) }
+          .juyo-swipe-hand { animation: none; transform: translateX(var(--travel)) }
+        }
+      `}</style>
+      <div className="relative h-6" style={{ width: travel }}>
+        <div className="juyo-swipe-bar h-6 rounded-[4px] bg-zinc-900/85" />
+        <div className="juyo-swipe-hand absolute -left-6 top-2.5 grid size-12 place-items-center rounded-full bg-black/35 text-white">
+          <Pointer className="size-7" />
+        </div>
+      </div>
+    </div>
   );
 }

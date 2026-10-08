@@ -1236,7 +1236,7 @@ function ProfileContent() {
                 {/* Preview column. Only the QR ITSELF is sticky — the status
                     card, buttons, and settings scroll past underneath it. */}
                 <div className="flex flex-col">
-                <div className="sticky top-0 md:top-[66px] z-30 md:relative md:top-0 bg-canvas/80 backdrop-blur-md -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent md:backdrop-blur-none transition-all duration-300">
+                <div className="sticky top-0 md:top-[66px] z-30 md:relative md:top-0 bg-canvas -mx-2.5 sm:-mx-4 px-1.5 pt-0 pb-1 md:p-0 md:bg-transparent transition-all duration-300">
                   {/* WHITE card with a soft border — matching the profile
                       cards' look. Previously this had a DASHED border: it
                       suggests an "empty state waiting to be filled", while

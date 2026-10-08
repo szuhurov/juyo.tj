@@ -4,7 +4,8 @@
  */
 "use client";
 
-import { SignUp } from "@clerk/nextjs";
+import { ClerkLoaded, ClerkLoading, SignUp } from "@clerk/nextjs";
+import { AuthFormSkeleton } from "@/components/auth-form-skeleton";
 import { useLanguage, type Locale } from "@/lib/language-context";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -59,6 +60,10 @@ export default function Page() {
       <div className="w-full max-w-[480px] -mt-4 sm:-mt-6">
         <div className="flex flex-col items-center">
           <div className="w-full flex justify-center">
+            <ClerkLoading>
+              <AuthFormSkeleton fields={2} />
+            </ClerkLoading>
+            <ClerkLoaded>
             <SignUp
               path="/sign-up"
               routing="path"
@@ -82,6 +87,7 @@ export default function Page() {
                 }
               }}
             />
+            </ClerkLoaded>
           </div>
         </div>
       </div>
