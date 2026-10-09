@@ -528,11 +528,13 @@ function AddItemForm() {
                     key={i}
                     className="relative aspect-square rounded-md overflow-hidden group bg-white dark:bg-zinc-800"
                   >
+                    {/* Whole photo, not zoomed in; the free space is the same photo blurred (like the listing page). */}
+                    <Image src={src} alt="" aria-hidden fill className="object-cover scale-110 blur-2xl" />
                     <Image
                       src={src}
                       alt="Preview"
                       fill
-                      className="object-cover"
+                      className="object-contain"
                     />
 
                     <button

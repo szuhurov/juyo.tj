@@ -8,6 +8,7 @@ import { useCallback, useRef } from "react";
 import { Camera, Image as ImageIcon, ImageOff, type LucideIcon } from "lucide-react";
 import { useSheetDrag } from "@/lib/hooks/use-sheet-drag";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useLanguage } from "@/lib/language-context";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ export function PhotoSourceSheet({
   onCamera,
   onGallery,
   onNoPhoto,
+  centered,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,6 +26,8 @@ export function PhotoSourceSheet({
   onGallery: () => void;
   /** When set, adds an "I don't have a photo" row under Camera/Gallery. */
   onNoPhoto?: () => void;
+  /** A centred card (like the delete confirmation) instead of a bottom sheet — add flow, right after the category sheet. */
+  centered?: boolean;
 }) {
   const { t } = useLanguage();
   // Phones: spring in from below, drag/flick down to dismiss (apple-design).
@@ -44,6 +48,48 @@ export function PhotoSourceSheet({
     });
   }
 
+  const rows = (
+    <div className="flex flex-col gap-1">
+      {actions.map(({ key, label, icon: Icon, iconClass, onClick }) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => {
+            onOpenChange(false);
+            onClick();
+          }}
+          className="pressable flex items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-tile"
+        >
+          <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", iconClass)}>
+            <Icon className="size-5" />
+          </span>
+          <span className="text-[15px] font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+
+  if (centered) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[96%] sm:max-w-md rounded-[var(--radius-card)] p-6 border-none shadow-[var(--shadow-3)] bg-card gap-3" showCloseButton={false}>
+          <DialogTitle className="text-center text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            {t("choose_photo_method")}
+          </DialogTitle>
+          <DialogDescription className="sr-only">{t("choose_photo_method")}</DialogDescription>
+          {rows}
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="pressable mt-1 h-12 w-full rounded-[var(--radius-control)] bg-tile text-[13px] font-medium text-muted-foreground"
+          >
+            {t("cancel")}
+          </button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -57,24 +103,7 @@ export function PhotoSourceSheet({
           {t("choose_photo_method")}
         </SheetTitle>
         <SheetDescription className="sr-only">{t("choose_photo_method")}</SheetDescription>
-        <div className="flex flex-col gap-1">
-          {actions.map(({ key, label, icon: Icon, iconClass, onClick }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => {
-                onOpenChange(false);
-                onClick();
-              }}
-              className="pressable flex items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-tile"
-            >
-              <span className={cn("grid size-10 shrink-0 place-items-center rounded-xl", iconClass)}>
-                <Icon className="size-5" />
-              </span>
-              <span className="text-[15px] font-medium text-zinc-900 dark:text-zinc-100">{label}</span>
-            </button>
-          ))}
-        </div>
+        {rows}
       </SheetContent>
     </Sheet>
   );

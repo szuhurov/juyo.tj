@@ -684,11 +684,13 @@ export default function EditItemPage({
                       key={i}
                       className="relative aspect-square rounded-md overflow-hidden border group"
                     >
+                      {/* Whole photo, not zoomed in; the free space is the same photo blurred (like the listing page). */}
+                      <Image src={preview.url} alt="" aria-hidden fill className="object-cover scale-110 blur-2xl" />
                       <Image
                         src={preview.url}
                         alt="Preview"
                         fill
-                        className="object-cover"
+                        className="object-contain"
                       />
                       <button
                         type="button"

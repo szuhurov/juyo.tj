@@ -76,6 +76,7 @@ export function AddLauncherProvider({ children }: { children: ReactNode }) {
         onCamera={() => setCameraOpen(true)}
         onGallery={() => galleryRef.current?.click()}
         onNoPhoto={() => setNoPhotoOpen(true)}
+        centered
       />
       <ConfirmDialog
         open={noPhotoOpen}
