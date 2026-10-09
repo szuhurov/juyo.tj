@@ -11,10 +11,9 @@ export const PAID_FEATURES_ENABLED: boolean =
   process.env.NEXT_PUBLIC_PAID_FEATURES_ENABLED === "true";
 
 /**
- * "Search by photo" (vectors made in the browser, lib/visual-search.ts). Off
- * until the visual_search migration is live and the existing photos are
- * backfilled (tools/visual-bench/backfill.ts). Same flag as
- * app/lib/feature-flags.ts (EXPO_PUBLIC_IMAGE_SEARCH).
+ * "Search by photo" (vectors made in the browser, lib/visual-search.ts). On
+ * since 2026-10-09 (SigLIP 2 live, photos backfilled); NEXT_PUBLIC_IMAGE_SEARCH
+ * = "false" hides it again. Same flag as app/lib/feature-flags.ts.
  */
 export const IMAGE_SEARCH: boolean =
-  process.env.NEXT_PUBLIC_IMAGE_SEARCH === "true";
+  process.env.NEXT_PUBLIC_IMAGE_SEARCH !== "false";
