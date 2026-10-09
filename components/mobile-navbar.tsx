@@ -32,15 +32,12 @@ export function MobileNavbar() {
   const { t } = useLanguage();
   const searchParams = useSearchParams();
 
-  // The "+" button (new listing) is only for signed-in users — `/items/add`
-  // is already protected by middleware, but showing it to a logged-out
-  // user would be pointless (tap → bounced back to sign-in).
+  // The "+" button is shown to everyone, like in the app; a logged-out tap
+  // goes to sign-up (handleNavClick).
   const navItems = [
     { label: t("home"), href: "/", icon: Home },
     { id: "qr", label: "QR", href: "/profile?tab=qr", icon: QrCode },
-    ...(userId
-      ? [{ label: t("addItemTitle"), href: "/items/add", icon: PlusCircle, isMain: true }]
-      : []),
+    { label: t("addItemTitle"), href: "/items/add", icon: PlusCircle, isMain: true },
     { label: "Scan", href: "/scan", icon: ScanLine },
     { id: "profile", label: t("profile"), href: "/profile", icon: User, isProfile: true },
   ];
@@ -48,7 +45,7 @@ export function MobileNavbar() {
   const handleNavClick = (href: string, e: React.MouseEvent) => {
     e.preventDefault();
     try {
-      const isProtected = href.includes("/profile");
+      const isProtected = href.includes("/profile") || href === "/items/add";
       if (isProtected && !userId) {
         router.push("/sign-up");
       } else {
