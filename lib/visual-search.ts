@@ -27,6 +27,48 @@ export interface PhotoEmbedding {
 
 let sessionP: Promise<{ ort: Ort; session: Session }> | null = null;
 
+/** Share of the model file downloaded so far (0–1); null when nothing is downloading. */
+let downloadProgress: number | null = null;
+const progressListeners = new Set<(p: number | null) => void>();
+function setDownloadProgress(p: number | null) {
+  downloadProgress = p;
+  progressListeners.forEach((l) => l(p));
+}
+/** The first search downloads the model (tens of MB); the dialog shows how far it is. */
+export function onVisualModelDownload(listener: (p: number | null) => void) {
+  progressListeners.add(listener);
+  listener(downloadProgress);
+  return () => { progressListeners.delete(listener); };
+}
+
+async function readWithProgress(res: Response): Promise<ArrayBuffer> {
+  const total = Number(res.headers.get("content-length")) || 0;
+  if (!res.body || !total) return res.arrayBuffer();
+  const chunks: Uint8Array[] = [];
+  const reader = res.body.getReader();
+  let got = 0;
+  setDownloadProgress(0);
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      got += value.length;
+      // A compressed response delivers more bytes than its content-length.
+      setDownloadProgress(Math.min(1, got / total));
+    }
+  } finally {
+    setDownloadProgress(null);
+  }
+  const bytes = new Uint8Array(got);
+  let at = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, at);
+    at += chunk.length;
+  }
+  return bytes.buffer;
+}
+
 async function sha256Hex(bytes: ArrayBuffer) {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -43,7 +85,7 @@ async function modelBytes(): Promise<ArrayBuffer> {
   }
   const res = await fetch(VISUAL_MODEL_URL, { cache: "no-cache" });
   if (!res.ok) throw new Error(`model ${res.status}`);
-  const bytes = await res.arrayBuffer();
+  const bytes = await readWithProgress(res);
   // Never run a model that is not exactly the pinned file.
   if ((await sha256Hex(bytes)) !== VISUAL_MODEL.sha256) throw new Error("model checksum mismatch");
   await cache?.put(VISUAL_MODEL_URL, new Response(bytes.slice(0), { headers: { "content-type": "application/octet-stream" } })).catch(() => {});
@@ -67,9 +109,27 @@ function getSession() {
   return sessionP;
 }
 
-/** Starts the (≈ one-time) model download early, e.g. when the search dialog opens. */
+/** Loads the model into memory early. Downloads it if it is not installed yet — check visualModelInstalled() first. */
 export function warmUpVisualModel() {
   getSession().catch(() => {});
+}
+
+/** Shown on the install prompt, so the person knows what the download costs. */
+export const VISUAL_MODEL_SIZE_MB = 64;
+
+/** True when the model is already in this browser (no download needed). */
+export async function visualModelInstalled() {
+  if (sessionP) return true;
+  try {
+    return !!(await (await caches.open(CACHE)).match(VISUAL_MODEL_URL));
+  } catch {
+    return false;
+  }
+}
+
+/** Downloads (with progress — onVisualModelDownload), verifies and loads the model. */
+export async function installVisualModel() {
+  await getSession();
 }
 
 /** Upright (EXIF applied), sRGB, full-resolution pixels — the only browser-specific step. */

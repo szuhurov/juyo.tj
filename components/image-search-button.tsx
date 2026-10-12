@@ -10,11 +10,18 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Camera, ImageUp, Loader2, RotateCcw } from "lucide-react";
+import { Camera, Download, ImageUp, Loader2, RotateCcw } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ItemCard } from "@/components/item-card";
 import { compressImage } from "@/lib/image-utils";
-import { embedPhoto, warmUpVisualModel } from "@/lib/visual-search";
+import {
+  embedPhoto,
+  installVisualModel,
+  onVisualModelDownload,
+  visualModelInstalled,
+  warmUpVisualModel,
+  VISUAL_MODEL_SIZE_MB,
+} from "@/lib/visual-search";
 import { useLanguage } from "@/lib/language-context";
 import type { Item } from "@/lib/services/item-service";
 
@@ -44,6 +51,37 @@ export function ImageSearchButton() {
   const fileRef = useRef<HTMLInputElement>(null);
   const runRef = useRef(0);
   const [elapsed, setElapsed] = useState(0);
+  const [download, setDownload] = useState<number | null>(null);
+  useEffect(() => onVisualModelDownload(setDownload), []);
+  // The model is a one-time download: until it is in this browser the dialog
+  // offers to install it (with its size) instead of camera/gallery.
+  const [installed, setInstalled] = useState<boolean | null>(null);
+  const [installing, setInstalling] = useState(false);
+  const [installFailed, setInstallFailed] = useState(false);
+  const percent = Math.round((download ?? 0) * 100);
+
+  const openDialog = () => {
+    setPhase({ kind: "pick" });
+    setInstallFailed(false);
+    setOpen(true);
+    void visualModelInstalled().then((ok) => {
+      setInstalled(ok);
+      if (ok) warmUpVisualModel();
+    });
+  };
+
+  const install = async () => {
+    setInstalling(true);
+    setInstallFailed(false);
+    try {
+      await installVisualModel();
+      setInstalled(true);
+    } catch {
+      setInstallFailed(true);
+    } finally {
+      setInstalling(false);
+    }
+  };
 
   useEffect(() => {
     if (phase.kind !== "searching") return;
@@ -102,7 +140,7 @@ export function ImageSearchButton() {
     <>
       <button
         type="button"
-        onClick={() => { reset(); setOpen(true); warmUpVisualModel(); }}
+        onClick={openDialog}
         aria-label={t("imageSearchTitle")}
         title={t("imageSearchTitle")}
         className="p-1.5 text-slate-500 hover:text-primary transition-colors cursor-pointer"
@@ -129,7 +167,53 @@ export function ImageSearchButton() {
             <DialogDescription>{t("imageSearchDesc")}</DialogDescription>
           </DialogHeader>
 
-          {phase.kind === "pick" && (
+          {phase.kind === "pick" && installed === null && (
+            <div className="flex justify-center py-6">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {phase.kind === "pick" && installed === false && (
+            <div className="flex flex-col items-center gap-3 py-2 text-center">
+              <div className="grid size-12 place-items-center rounded-md bg-found-soft">
+                <Download className="h-6 w-6 text-primary" />
+              </div>
+              <p className="text-sm font-semibold">{t("imageSearchInstallTitle")}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("imageSearchInstallDesc").replace("{size}", String(VISUAL_MODEL_SIZE_MB))}
+              </p>
+              {installFailed && (
+                <p className="text-sm font-semibold text-red-600 dark:text-red-400" role="alert">
+                  {t("imageSearchInstallFailed")}
+                </p>
+              )}
+              {installing && (
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-tile" aria-hidden>
+                  <div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: percent + "%" }} />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={install}
+                disabled={installing}
+                className="pressable flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-70"
+              >
+                {installing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span aria-live="polite">{t("imageSearchInstalling").replace("{percent}", String(percent))}</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    {t("imageSearchInstallBtn").replace("{size}", String(VISUAL_MODEL_SIZE_MB))}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {phase.kind === "pick" && installed && (
             <div className="grid grid-cols-2 gap-3">
               <button type="button" onClick={() => setCameraOpen(true)} className="pressable flex flex-col items-center gap-2 rounded-md border border-hairline dark:border-zinc-700 p-6 text-sm font-semibold">
                 <Camera className="h-6 w-6 text-primary" />
@@ -150,7 +234,11 @@ export function ImageSearchButton() {
                   <Loader2 className="h-10 w-10 animate-spin text-white drop-shadow" />
                 </div>
               </div>
-              <p className="text-sm font-semibold">{t("imageSearchAnalyzing")}</p>
+              <p className="text-sm font-semibold">
+                {download === null
+                  ? t("imageSearchAnalyzing")
+                  : t("imageSearchDownloading").replace("{percent}", String(Math.round(download * 100)))}
+              </p>
               <p className="text-xs text-muted-foreground tabular-nums">{elapsed}s</p>
             </div>
           )}
