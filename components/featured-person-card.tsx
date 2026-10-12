@@ -11,7 +11,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { ImagePlaceholder } from "@/components/image-placeholder";
+import { ImagePlaceholder, ImageSkeleton } from "@/components/image-placeholder";
 import { useLanguage } from "@/lib/language-context";
 import {
   FEATURED_CARD_ASPECT,
@@ -24,18 +24,25 @@ import type { FeaturedItem } from "@/lib/featured-people";
 export function FeaturedPersonCard({ item, single }: { item: FeaturedItem; single?: boolean }) {
   const { t } = useLanguage();
   const [coverFailed, setCoverFailed] = useState(false);
+  const [coverLoaded, setCoverLoaded] = useState(false);
   const typeLabel = t(item.type);
 
   return (
     <Link
       href={`/items/${item.id}`}
+      // See ItemFeedCard: prefetching /items/<id> trips the rate limit.
+      prefetch={false}
       aria-label={`${typeLabel} — ${item.title}`}
       className={cn(
         "relative block w-full rounded-md overflow-hidden bg-zinc-800 shadow-[var(--shadow-1)] dark:shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500 focus-visible:outline-offset-2",
         single ? FEATURED_SINGLE_CARD_ASPECT : FEATURED_CARD_ASPECT,
       )}
     >
-      <ImagePlaceholder className="rounded-md" />
+      {coverFailed || !item.coverUrl ? (
+        <ImagePlaceholder className="rounded-md" />
+      ) : (
+        !coverLoaded && <ImageSkeleton className="rounded-md" />
+      )}
       {!coverFailed && item.coverUrl && (
         <Image
           src={item.coverUrl}
@@ -43,6 +50,7 @@ export function FeaturedPersonCard({ item, single }: { item: FeaturedItem; singl
           fill
           sizes={single ? "(max-width: 1280px) 100vw, 1240px" : "(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"}
           className="object-cover"
+          onLoad={() => setCoverLoaded(true)}
           onError={() => setCoverFailed(true)}
         />
       )}

@@ -99,11 +99,25 @@ export function isLimitedActionRateLimited(request: Request, path: string): bool
   return hit.count > LIMITED_ACTION_MAX;
 }
 
+const RATE_LIMITED_PAGE = `<!doctype html><html lang="tg"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="${RATE_LIMIT_WINDOW_MS / 1000}"><title>JUYO</title><style>body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;font-family:system-ui,sans-serif;background:#fff;color:#18181b}p{margin:0;max-width:320px;color:#71717a;font-size:14px}a{margin-top:8px;padding:12px 20px;border-radius:10px;background:#10b981;color:#fff;font-weight:600;text-decoration:none}@media(prefers-color-scheme:dark){body{background:#17212b;color:#fff}}</style></head><body><h1 style="margin:0;font-size:20px">Дархостҳо аз ҳад зиёд шуд</h1><p>Лутфан як дақиқа интизор шавед — саҳифа худаш аз нав бор мешавад.</p><a href="">Аз нав кӯшиш кардан</a></body></html>`;
+
 export default clerkMiddleware(async (auth, request) => {
   const path = new URL(request.url).pathname;
 
-  if (isRateLimited(request, path) || isLimitedActionRateLimited(request, path)) {
+  if (isLimitedActionRateLimited(request, path)) {
     return new NextResponse("Too Many Requests", { status: 429 });
+  }
+  if (isRateLimited(request, path)) {
+    // A person, not a script, lands here on a page route: a readable page that
+    // reloads itself once the window is over, instead of a bare text line.
+    return new NextResponse(RATE_LIMITED_PAGE, {
+      status: 429,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+        "retry-after": String(RATE_LIMIT_WINDOW_MS / 1000),
+        "cache-control": "no-store",
+      },
+    });
   }
 
   if (isProtectedRoute(request)) {

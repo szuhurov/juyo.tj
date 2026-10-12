@@ -14,6 +14,19 @@
 import { Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Shimmer shown in an image's spot until the image has loaded. The wrapper
+ * does the positioning: `.juyo-skeleton` sets `position: relative` outside any
+ * CSS layer, which would win over Tailwind's `absolute`.
+ */
+export function ImageSkeleton({ className }: { className?: string }) {
+  return (
+    <div aria-hidden className={cn("absolute inset-0 overflow-hidden", className)}>
+      <div className="juyo-skeleton h-full w-full" />
+    </div>
+  );
+}
+
 export function ImagePlaceholder({ className }: { className?: string }) {
   return (
     <div

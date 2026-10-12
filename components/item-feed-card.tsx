@@ -12,7 +12,7 @@ import { ArrowRight, Crown } from "lucide-react";
 import { format } from "date-fns";
 import { CATEGORY_IMAGES, type Item } from "@/lib/services/item-service";
 import { useLanguage } from "@/lib/language-context";
-import { ImagePlaceholder } from "@/components/image-placeholder";
+import { ImagePlaceholder, ImageSkeleton } from "@/components/image-placeholder";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
@@ -30,38 +30,39 @@ export function ItemFeedCard({ item }: { item: Item }) {
   // may still fail to load (404, deleted file). onError catches this
   // case and shows the placeholder instead.
   const [imgFailed, setImgFailed] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const showThumb = !!thumb && !imgFailed;
+  const src = showThumb ? thumb : categoryFallback;
 
   return (
     <Link
       href={`/items/${item.id}`}
-      prefetch
+      // No viewport prefetch: every visible card would request /items/<id> and
+      // use up the per-IP contact-route limit in middleware.ts (429).
+      prefetch={false}
       className="pressable group flex flex-col gap-0 rounded-md bg-white dark:bg-transparent overflow-hidden"
     >
       {/* Image is rounded on all four sides — the type indicator moved
           from here to the bottom button, so the mask's inner corner and
           `-mb-px` are no longer needed. */}
       <div className="relative aspect-[16/10] rounded-md bg-slate-100 dark:bg-zinc-700">
-        {/* Placeholder is ALWAYS underneath, with the image rendering on
-            top of it. Before this it was only shown when the image was
-            missing/failed, so during LOADING its spot was an empty gray box. */}
-        <ImagePlaceholder className="rounded-md" />
-        {thumb && !imgFailed && (
-          <Image
-            src={thumb}
-            alt={item.title}
-            fill
-            sizes="(max-width: 640px) 50vw, 25vw"
-            className="object-cover rounded-md"
-            onError={() => setImgFailed(true)}
-          />
+        {/* The skeleton stays until the photo has actually loaded; the icon is
+            only for a listing that has nothing to show at all. */}
+        {!src ? (
+          <ImagePlaceholder className="rounded-md" />
+        ) : (
+          !imgLoaded && <ImageSkeleton className="rounded-md" />
         )}
-        {(!thumb || imgFailed) && categoryFallback && (
+        {src && (
           <Image
-            src={categoryFallback}
-            alt={item.category}
+            key={src}
+            src={src}
+            alt={showThumb ? item.title : item.category}
             fill
             sizes="(max-width: 640px) 50vw, 25vw"
             className="object-cover rounded-md"
+            onLoad={() => setImgLoaded(true)}
+            onError={() => (showThumb ? setImgFailed(true) : setImgLoaded(true))}
           />
         )}
         {PAID_FEATURES_ENABLED && (item.vip_tier === "vip" || item.vip_tier === "vvip") && (

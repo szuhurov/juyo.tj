@@ -35,7 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ImagePlaceholder } from "@/components/image-placeholder";
+import { ImagePlaceholder, ImageSkeleton } from "@/components/image-placeholder";
 import { splitOwnerLine } from "@/lib/document-owner";
 
 export function ItemCard({
@@ -60,6 +60,9 @@ export function ItemCard({
   // "I don't have a photo" listings have no item_images row — fall back to
   // the category illustration (see ItemFeedCard).
   const categoryFallback = CATEGORY_IMAGES[item.category];
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const showThumb = !!thumb && !imgFailed;
+  const src = showThumb ? thumb : categoryFallback;
 
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -93,37 +96,33 @@ export function ItemCard({
     <>
       <Link
         href={`/items/${item.id}`}
-        prefetch
+        // See ItemFeedCard: a viewport prefetch per card trips the /items rate limit.
+        prefetch={false}
         className="pressable group flex flex-col gap-0 rounded-md bg-white dark:bg-zinc-800 overflow-hidden"
       >
         {/* Image is rounded on all four sides — the type indicator moved
             to the bottom button, so a mask and `-mb-px` are no longer needed. */}
         <div className="relative aspect-[4/3] rounded-md bg-slate-100 dark:bg-zinc-700">
-          {/* Placeholder is ALWAYS underneath — see ItemFeedCard: without
-              this, its spot stays empty while the image is loading. */}
-          <ImagePlaceholder className="rounded-md" />
-          {thumb && !imgFailed && (
+          {/* Skeleton until the photo has loaded — see ItemFeedCard. */}
+          {!src ? (
+            <ImagePlaceholder className="rounded-md" />
+          ) : (
+            !imgLoaded && <ImageSkeleton className="rounded-md" />
+          )}
+          {src && (
             <Image
-              src={thumb}
-              alt={item.title}
+              key={src}
+              src={src}
+              alt={showThumb ? item.title : item.category}
               fill
               sizes="(max-width: 640px) 50vw, 25vw"
               quality={75}
               className={cn(
                 "object-cover rounded-md",
-                item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
+                showThumb && item.moderation_status === "rejected" && isOwner && "opacity-75 grayscale-[0.5]",
               )}
-              onError={() => setImgFailed(true)}
-            />
-          )}
-          {(!thumb || imgFailed) && categoryFallback && (
-            <Image
-              src={categoryFallback}
-              alt={item.category}
-              fill
-              sizes="(max-width: 640px) 50vw, 25vw"
-              quality={75}
-              className="object-cover rounded-md"
+              onLoad={() => setImgLoaded(true)}
+              onError={() => (showThumb ? setImgFailed(true) : setImgLoaded(true))}
             />
           )}
 

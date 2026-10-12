@@ -799,7 +799,7 @@ function AddItemForm() {
                   // but the placeholder matches the same weight as the
                   // description's placeholder, otherwise the boldness makes
                   // it look too prominent.
-                  className="rounded-md h-11 min-[1084px]:h-12 bg-white dark:bg-zinc-800 border-none text-sm min-[1084px]:text-base placeholder:font-medium shadow-none"
+                  className="rounded-md h-11 min-[1084px]:h-12 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base placeholder:font-medium shadow-none"
                   value={formData.title}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -821,7 +821,7 @@ function AddItemForm() {
                     <button
                       type="button"
                       onClick={() => setCatSheetOpen(true)}
-                      className="pressable flex w-full items-center gap-3 rounded-md bg-white px-3 py-2.5 text-left dark:bg-zinc-800"
+                      className="pressable flex w-full items-center gap-3 rounded-md border border-hairline dark:border-zinc-700 bg-white px-3 py-2.5 text-left dark:bg-zinc-800"
                     >
                       <span className="grid size-9 shrink-0 place-items-center rounded-md bg-canvas text-lg" aria-hidden>
                         {current?.icon ?? "＋"}
@@ -845,7 +845,7 @@ function AddItemForm() {
                     placeholder={t("docOwnerPlaceholder")}
                     autoComplete="off"
                     maxLength={40}
-                    className="rounded-md h-12 bg-white dark:bg-zinc-800 border-none text-sm min-[1084px]:text-base font-medium shadow-none"
+                    className="rounded-md h-12 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base font-medium shadow-none"
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}
                   />
@@ -858,7 +858,7 @@ function AddItemForm() {
                 </Label>
                 <Textarea
                   placeholder={t("descPlaceholderManual")}
-                  className="rounded-md min-h-[88px] min-[1084px]:min-h-[104px] bg-white dark:bg-zinc-800 border-none text-sm min-[1084px]:text-base font-medium shadow-none resize-none"
+                  className="rounded-md min-h-[88px] min-[1084px]:min-h-[104px] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base font-medium shadow-none resize-none"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData((prev) => ({
@@ -885,7 +885,7 @@ function AddItemForm() {
                     {t("phoneLabel")}
                   </Label>
                   <PhoneInput
-                    containerClassName="h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800"
+                    containerClassName="h-13 min-[1084px]:h-14 bg-white dark:bg-zinc-800 border border-hairline dark:border-zinc-700"
                     className="text-base min-[1084px]:text-lg text-action"
                     value={formData.phone}
                     onChange={(e) =>

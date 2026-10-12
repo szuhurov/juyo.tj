@@ -123,6 +123,7 @@ export function MatchCard({
   
       <Link
         href={`/items/${match.otherItemId}`}
+        prefetch={false}
         className="flex items-center justify-center gap-2 h-10 rounded-md bg-emerald-500 text-white font-medium text-xs hover:bg-emerald-600 transition-colors"
       >
         {t("matchViewListing")}

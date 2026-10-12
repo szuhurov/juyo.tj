@@ -235,6 +235,7 @@ function NotificationRow({
                       ? "/vip"
                       : `/items/${item.itemId}`
                 }
+                prefetch={false}
                 className="flex-1 flex items-center justify-center gap-2 h-11 min-[1084px]:h-12 min-[1920px]:h-[52px] rounded-md bg-emerald-500 text-white font-medium text-xs min-[1084px]:text-sm shadow-sm hover:shadow-md transition-all"
               >
                 {isAiMatch

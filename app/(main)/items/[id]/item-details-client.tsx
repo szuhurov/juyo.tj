@@ -14,7 +14,6 @@ import { useLanguage } from "@/lib/language-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ItemDetailsSkeleton } from "@/components/item-details-skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   Phone,
@@ -51,7 +50,7 @@ import {
 import { useItemDetails } from "@/lib/hooks/use-items";
 import { useQueryClient } from "@tanstack/react-query";
 import { VerifiedBadge } from "@/components/verified-badge";
-import { ImagePlaceholder } from "@/components/image-placeholder";
+import { ImageSkeleton } from "@/components/image-placeholder";
 import { TelegramIcon, WhatsappIcon, socialHref } from "@/components/social-icons";
 import { splitOwnerLine } from "@/lib/document-owner";
 
@@ -64,6 +63,8 @@ function toIntlPhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   return digits.startsWith("992") ? digits : `992${digits}`;
 }
+
+const viewsInFlight = new Set<string>();
 
 export default function ItemDetailsClient({
   id,
@@ -88,13 +89,26 @@ export default function ItemDetailsClient({
   const [showResolvedConfirm, setShowResolvedConfirm] = useState(false);
   const [showBlockedInfo, setShowBlockedInfo] = useState(false);
 
-  const { data: item, isLoading: loading, isError: loadFailed, refetch: retryLoad } = useItemDetails(
-    id,
-    isLoaded ? !!userId : undefined,
-    getToken,
-    initialItem,
-  );
+  const {
+    data,
+    isLoading: loading,
+    isError: loadFailed,
+    refetch: retryLoad,
+    isPlaceholderData,
+  } = useItemDetails(id, isLoaded ? !!userId : undefined, getToken, initialItem);
+  // loading.tsx mounts this query first (without server data), and React Query
+  // ignores `initialData` for a query that already exists — so fall back to the
+  // server row here instead of waiting for the client fetch.
+  const item = data ?? initialItem ?? undefined;
   const isOwner = !!userId && userId === item?.user_id;
+  // Nothing to show yet: every part of the page renders its own skeleton.
+  const pending = !item && (!isLoaded || loading);
+  // A row borrowed from a list cache has no owner profile and no phone number
+  // yet — only those parts stay skeletons until the full row arrives.
+  const detailsReady = !!item && !isPlaceholderData;
+  const [loadedImages, setLoadedImages] = useState<Record<string, true>>({});
+  const markLoaded = (key: string) =>
+    setLoadedImages((prev) => (prev[key] ? prev : { ...prev, [key]: true }));
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isManualScroll = useRef(false);
@@ -120,6 +134,7 @@ export default function ItemDetailsClient({
   // request and a dependency on a third-party service), the list stays empty
   // and a local placeholder (ImagePlaceholder) is shown at render time.
   const images = item?.images && item.images.length > 0 ? item.images : [];
+  const categoryImage = item ? CATEGORY_IMAGES[item.category] : undefined;
 
   // Effect for automatically cycling through images
   useEffect(() => {
@@ -152,7 +167,10 @@ export default function ItemDetailsClient({
         // closes, and the same person would add another +1 on their second
         // visit. The count must happen only ONCE per person.
         const viewKey = `viewed_${id}`;
-        if (!localStorage.getItem(viewKey)) {
+        // The page mounts twice on a navigation (loading.tsx, then the page),
+        // so an in-flight increment must be remembered outside the component.
+        if (!localStorage.getItem(viewKey) && !viewsInFlight.has(id)) {
+          viewsInFlight.add(id);
           viewIncremented.current = true;
           ItemService.incrementView(id).then(() => {
             localStorage.setItem(viewKey, "true");
@@ -268,11 +286,7 @@ export default function ItemDetailsClient({
     }
   };
 
-  if (!item) {
-    // We show the skeleton if: auth isn't determined yet, or the query is still running
-    if (!isLoaded || loading) {
-      return <ItemDetailsSkeleton />;
-    }
+  if (!item && !pending) {
     // A failed request is not "not found" — offer a retry, like the app.
     if (loadFailed) {
       return (
@@ -323,16 +337,22 @@ export default function ItemDetailsClient({
                   setIsAutoPlaying(false);
                 }}
               >
-                {images.length === 0 && !loading && (
+                {/* No icon anywhere here: a skeleton until the photo (or the
+                    category illustration) has loaded. */}
+                {images.length === 0 && (
                   <div className="h-full w-full shrink-0 relative">
-                    <ImagePlaceholder />
-                    {item && CATEGORY_IMAGES[item.category] && (
+                    {(!detailsReady || (!!categoryImage && !loadedImages.category)) && (
+                      <ImageSkeleton />
+                    )}
+                    {detailsReady && categoryImage && (
                       <Image
-                        src={CATEGORY_IMAGES[item.category]}
-                        alt={item.category}
+                        src={categoryImage}
+                        alt={item?.category ?? ""}
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
                         className="object-cover"
+                        onLoad={() => markLoaded("category")}
+                        onError={() => markLoaded("category")}
                       />
                     )}
                   </div>
@@ -342,12 +362,13 @@ export default function ItemDetailsClient({
                     key={index}
                     className="h-full w-full shrink-0 snap-center relative overflow-hidden"
                   >
+                    {!loadedImages[img.image_url] && (
+                      <ImageSkeleton className="z-20" />
+                    )}
                     {/* Background — the same image, scaled up and blurred, so that the
                         empty space of the canvas (if the aspect ratio doesn't match
                         the image) gets filled with the image's own color context,
                         rather than a flat color (like Instagram Stories). */}
-                    {/* Bottom layer — so the slide isn't empty while the image loads. */}
-                    <ImagePlaceholder />
                     <Image
                       src={img.image_url}
                       alt=""
@@ -366,6 +387,8 @@ export default function ItemDetailsClient({
                       className="relative z-10 object-contain"
                       priority={index === 0}
                       quality={90}
+                      onLoad={() => markLoaded(img.image_url)}
+                      onError={() => markLoaded(img.image_url)}
                     />
                   </div>
                 ))}
@@ -421,16 +444,18 @@ export default function ItemDetailsClient({
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-                <Badge
-                  className={cn(
-                    "rounded-md px-3 py-1 border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800 font-medium",
-                    item?.type === "lost"
-                      ? "text-lost"
-                      : "text-found",
-                  )}
-                >
-                  {item?.type === "lost" ? t("lost") : t("found")}
-                </Badge>
+                {item && (
+                  <Badge
+                    className={cn(
+                      "rounded-md px-3 py-1 border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800 font-medium",
+                      item.type === "lost"
+                        ? "text-lost"
+                        : "text-found",
+                    )}
+                  >
+                    {item.type === "lost" ? t("lost") : t("found")}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -444,7 +469,7 @@ export default function ItemDetailsClient({
             {/* Divider line between the listing owner and the item info — it
                 separates these two content sections from each other. */}
             <div className="flex justify-between items-center mb-3">
-              {item?.profiles ? (
+              {item && (item.profiles || detailsReady) ? (
                 <div className="flex items-center gap-3">
                   <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-slate-200 dark:border-zinc-700">
                     <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
@@ -466,34 +491,44 @@ export default function ItemDetailsClient({
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <Skeleton className="w-12 h-12 rounded-full" />
+                  <Skeleton className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 rounded-full" />
                   <div className="space-y-1.5">
-                    <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-24 rounded" />
+                    <Skeleton className="h-3 w-16 rounded" />
                   </div>
                 </div>
               )}
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5 pr-3 text-zinc-500 text-xs min-[1084px]:text-sm font-medium">
-                  <Eye className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" /> {item?.views || 0}
+                  <Eye className="w-4 h-4 min-[1084px]:w-[18px] min-[1084px]:h-[18px] min-[1920px]:w-5 min-[1920px]:h-5" />{" "}
+                  {item ? item.views || 0 : <Skeleton className="h-3.5 w-6 rounded" />}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h1 className="min-w-0 truncate text-2xl min-[1503px]:text-3xl font-bold tracking-tighter leading-none">
-                {item?.title}
-              </h1>
-              <Badge
-                className={cn(
-                  "shrink-0 rounded-md px-3 py-1 text-sm font-medium border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800",
-                  item?.type === "lost"
-                    ? "text-lost"
-                    : "text-found",
-                )}
-              >
-                {item?.type === "lost" ? t("lost") : t("found")}
-              </Badge>
+              {item ? (
+                <>
+                  <h1 className="min-w-0 truncate text-2xl min-[1503px]:text-3xl font-bold tracking-tighter leading-none">
+                    {item.title}
+                  </h1>
+                  <Badge
+                    className={cn(
+                      "shrink-0 rounded-md px-3 py-1 text-sm font-medium border-none shadow-none bg-white hover:bg-white dark:bg-zinc-800 dark:hover:bg-zinc-800",
+                      item.type === "lost"
+                        ? "text-lost"
+                        : "text-found",
+                    )}
+                  >
+                    {item.type === "lost" ? t("lost") : t("found")}
+                  </Badge>
+                </>
+              ) : (
+                <>
+                  <Skeleton className="h-6 min-[1503px]:h-[30px] w-3/5 rounded" />
+                  <Skeleton className="h-7 w-20 shrink-0 rounded-md" />
+                </>
+              )}
             </div>
 
             <div className="mb-5">
@@ -509,7 +544,13 @@ export default function ItemDetailsClient({
                   </span>
                 )}
               </div>
-              {(() => {
+              {!item &&
+                ["w-full", "w-[94%]", "w-2/3"].map((w) => (
+                  <div key={w} className="flex h-[26px] min-[1084px]:h-[29px] min-[1503px]:h-[32.5px] items-center">
+                    <Skeleton className={`h-3.5 ${w} rounded`} />
+                  </div>
+                ))}
+              {item && (() => {
                 // Documents keep the owner as the description's first line (lib/document-owner.ts).
                 const { ownerName, rest } = splitOwnerLine(item?.description ?? "");
                 return (
@@ -612,7 +653,10 @@ export default function ItemDetailsClient({
                   {t("resolved")}?
                 </Button>
               ) : null}
-              {isLoaded && isOwner ? null : item?.phone_number ? (
+              {isLoaded && isOwner ? null : !detailsReady ? (
+                // The phone number is never in a list row — skeleton, not "no phone".
+                <Skeleton className="h-14 md:h-16 min-[1084px]:h-[70px] min-[1920px]:h-20 w-full rounded-md" />
+              ) : item.phone_number ? (
                 <div className="flex gap-3">
                   <Button
                     size="lg"
