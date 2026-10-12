@@ -55,7 +55,8 @@ export function ItemCard({
   const [imgFailed, setImgFailed] = useState(false);
   const isOwner = !!userId && userId === item.user_id;
   const exactDate = format(new Date(item.date), "dd.MM.yyyy");
-  const thumb = item.images?.[0]?.image_url;
+  // Small copy for cards (lib/listing-photo-upload.ts); older listings fall back to the full photo.
+  const thumb = item.images?.[0]?.thumbnail_url || item.images?.[0]?.image_url;
   // "I don't have a photo" listings have no item_images row — fall back to
   // the category illustration (see ItemFeedCard).
   const categoryFallback = CATEGORY_IMAGES[item.category];

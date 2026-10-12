@@ -35,3 +35,10 @@ export const HIDDEN_PHOTO_URI = 'juyo:hidden-photo';
 export function isHiddenPhotoUri(uri: string | null | undefined): boolean {
   return uri === HIDDEN_PHOTO_URI;
 }
+
+/**
+ * Cache lifetime of uploaded listing photos and their `-thumb` copies. Every
+ * file gets a new random name and is never overwritten, so a year is safe;
+ * Storage's default (1 hour) made phones fetch photos from Tokyo again and again.
+ */
+export const PHOTO_CACHE_SECONDS = '31536000';

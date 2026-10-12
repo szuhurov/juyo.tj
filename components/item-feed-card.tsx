@@ -20,7 +20,8 @@ import { splitOwnerLine } from "@/lib/document-owner";
 
 export function ItemFeedCard({ item }: { item: Item }) {
   const { t } = useLanguage();
-  const thumb = item.images?.[0]?.image_url;
+  // Small copy for cards (lib/listing-photo-upload.ts); older listings fall back to the full photo.
+  const thumb = item.images?.[0]?.thumbnail_url || item.images?.[0]?.image_url;
   // "I don't have a photo" listings (items/add) have no item_images row at
   // all — the category illustration stands in so the card isn't blank.
   const categoryFallback = CATEGORY_IMAGES[item.category];

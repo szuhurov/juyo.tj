@@ -28,7 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner"; // For showing messages
 import { Loader2, X, Upload, EyeOff } from "lucide-react"; // Icons
 import Image from "next/image"; // For images
-import { compressImage } from "@/lib/image-utils";
+import { uploadListingPhoto } from "@/lib/listing-photo-upload";
 import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
 import { CITY_IDS, DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { cn } from "@/lib/utils";
@@ -257,6 +257,7 @@ export default function EditItemPage({
       const finalImageUrls: string[] = [];
       // New uploads by public URL, for the visual-search vectors below.
       const uploadedFiles = new Map<string, Blob>();
+      const newThumbByUrl = new Map<string, string | null>();
       const newFiles = finalImages;
       let newFileIdx = 0;
 
@@ -271,21 +272,10 @@ export default function EditItemPage({
             finalImageUrls.push(placeholderImageUrl("Documents"));
             continue;
           }
-          const compressedFile = await compressImage(file);
-          const ext = compressedFile.name.split(".").pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from("items")
-            .upload(fileName, compressedFile);
-
-          if (uploadError) throw uploadError;
-
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("items").getPublicUrl(fileName);
-          finalImageUrls.push(publicUrl);
-          uploadedFiles.set(publicUrl, compressedFile);
+          const uploaded = await uploadListingPhoto(supabase, file);
+          finalImageUrls.push(uploaded.url);
+          newThumbByUrl.set(uploaded.url, uploaded.thumbUrl);
+          uploadedFiles.set(uploaded.url, uploaded.file);
         }
       }
 
@@ -346,7 +336,7 @@ export default function EditItemPage({
         const imageRecords = finalImageUrls.map((url) => ({
           item_id: id,
           image_url: url,
-          thumbnail_url: isPlaceholderUrl(url) ? url : thumbByUrl.get(url) ?? null,
+          thumbnail_url: isPlaceholderUrl(url) ? url : thumbByUrl.get(url) ?? newThumbByUrl.get(url) ?? null,
         }));
 
         const { data: imageRows, error: imagesError } = await supabase

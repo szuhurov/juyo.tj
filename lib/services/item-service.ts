@@ -304,7 +304,7 @@ export const ItemService = {
     const { data, error } = await supabaseClient
       .from("saved_items")
       .select(
-        "item_id, items(id, user_id, title, description, category, type, date, reward, created_at, is_resolved, moderation_status, images:item_images(image_url))",
+        "item_id, items(id, user_id, title, description, category, type, date, reward, created_at, is_resolved, moderation_status, images:item_images(image_url, thumbnail_url))",
       )
       .eq("user_id", userId)
       .order("created_at", { ascending: false });

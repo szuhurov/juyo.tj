@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PHOTO_CACHE_SECONDS } from "@/lib/photo-policy";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -79,11 +80,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("items")
-      .upload(path, file, { contentType: file.type });
+      .upload(path, file, { contentType: file.type, cacheControl: PHOTO_CACHE_SECONDS });
     if (uploadError) throw uploadError;
     const { error: thumbUploadError } = await supabaseAdmin.storage
       .from("items")
-      .upload(thumbPath, thumbnail, { contentType: thumbnail.type });
+      .upload(thumbPath, thumbnail, { contentType: thumbnail.type, cacheControl: PHOTO_CACHE_SECONDS });
     if (thumbUploadError) {
       await supabaseAdmin.storage.from("items").remove([path]);
       throw thumbUploadError;

@@ -2,6 +2,7 @@
  * Client-side service for the admin panel — all requests go to /api/admin/*.
  */
 import { compressImage } from "@/lib/image-utils";
+import { THUMB_QUALITY, THUMB_WIDTH } from "@/lib/listing-photo-upload";
 
 async function adminFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -135,7 +136,7 @@ export const AdminService = {
     formData.append("image_id", imageId);
     formData.append("image", await compressImage(file));
     // The small copy shown in the feed must be redacted too (see the route).
-    formData.append("thumbnail", await compressImage(file, 400, 0.7));
+    formData.append("thumbnail", await compressImage(file, THUMB_WIDTH, THUMB_QUALITY));
     const res = await fetch(`/api/admin/posts/${postId}/images`, { method: "PATCH", body: formData });
     if (!res.ok) {
       const body = await res.json().catch(() => null);
