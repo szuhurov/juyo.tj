@@ -54,20 +54,18 @@ describe('POST /api/admin/post-instagram', () => {
     expect(fromMock).not.toHaveBeenCalled();
   });
 
-  it('publishes an approved listing under an Instagram profile carrying the person’s name', async () => {
+  it('publishes an approved listing owned by the admin, carrying the person’s name as the Instagram line', async () => {
     authMock.mockResolvedValue({ userId: 'admin_1' });
     const { POST } = await import('@/app/api/admin/post-instagram/route');
     const res = await POST(post(valid));
     expect(res.status).toBe(200);
 
-    const profile = inserts.find((i) => i.table === 'profiles')!.rows as Record<string, string>;
-    expect(profile.id.startsWith('instagram_')).toBe(true);
-    expect(profile.first_name).toBe('Аз Instagram-и juyo');
-    expect(profile.last_name).toBe('Алишер Раҳимов');
-    expect(profile.avatar_url).toBe("https://juyo.tj/placeholders/instagram.png");
+    // No account is created for the person.
+    expect(inserts.find((i) => i.table === 'profiles')).toBeUndefined();
 
     const item = inserts.find((i) => i.table === 'items')!.rows as Record<string, unknown>;
-    expect(item).toMatchObject({ user_id: profile.id, moderation_status: 'approved', phone_number: '901234567' });
+    expect(item).toMatchObject({ user_id: 'admin_1', moderation_status: 'approved', phone_number: '901234567' });
+    expect(String(item.description).split(String.fromCharCode(10))[0]).toBe('Instagram: Алишер Раҳимов');
   });
 
   it('refuses a photo that is not in the items bucket', async () => {

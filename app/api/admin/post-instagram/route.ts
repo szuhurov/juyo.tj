@@ -1,6 +1,7 @@
 /**
  * Admin only: publish a listing for a person who wrote to JUYO on Instagram.
- * The admin is the reviewer, so the listing is approved at once.
+ * The admin is the reviewer, so the listing is approved at once. It is owned by
+ * the admin's own account and shows "Аз Instagram-и juyo" + the person's name.
  *
  * Auth model: admin allowlist (middleware + isAdminUser), 404 otherwise.
  * Photos are uploaded by the admin's browser first (re-encoded there, so no
@@ -8,7 +9,6 @@
  * placeholder. Documents/Cards never carry a photo — same rule as the public
  * form, and the database enforces it too.
  */
-import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { isAdminUser } from "@/lib/admin-auth";
@@ -17,7 +17,7 @@ import { CATEGORIES, UNSPECIFIED_REWARD } from "@/lib/services/item-service";
 import { CITY_IDS } from "@/lib/cities";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { maskSensitiveNumbers } from "@/lib/sensitive-text";
-import { INSTAGRAM_AVATAR_URL, INSTAGRAM_PROFILE_NAME, INSTAGRAM_PROFILE_PREFIX } from "@/lib/instagram-source";
+import { withPostedFor } from "@/lib/document-owner";
 import { insertItemWithSource } from "@/lib/client-stats";
 
 const LOCATION_TYPES = [
@@ -76,30 +76,15 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // One small profile per person; the same name posted again reuses it.
+    // The listing belongs to the admin's own account (so it shows up in their
+    // posts and they can edit or delete it); the person's name travels as the
+    // "Instagram:" line and is shown in place of the admin's profile.
     const personName = `${firstName} ${lastName}`;
-    const { data: existing, error: findError } = await supabaseAdmin
-      .from("profiles")
-      .select("id")
-      .like("id", `${INSTAGRAM_PROFILE_PREFIX}%`)
-      .eq("last_name", personName)
-      .limit(1)
-      .maybeSingle();
-    if (findError) throw findError;
-
-    let profileId = existing?.id as string | undefined;
-    if (!profileId) {
-      profileId = `${INSTAGRAM_PROFILE_PREFIX}${randomUUID()}`;
-      const { error: profileError } = await supabaseAdmin
-        .from("profiles")
-        .insert({ id: profileId, first_name: INSTAGRAM_PROFILE_NAME, last_name: personName, avatar_url: INSTAGRAM_AVATAR_URL });
-      if (profileError) throw profileError;
-    }
 
     const itemRow = {
-        user_id: profileId,
+        user_id: adminId,
         title: maskSensitiveNumbers(title, category),
-        description: maskSensitiveNumbers(description, category),
+        description: withPostedFor(maskSensitiveNumbers(description, category), personName),
         category,
         type,
         phone_number: phone,

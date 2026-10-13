@@ -32,8 +32,13 @@ export function DocumentPlaceholderText({
           isCard ? "left-[36%] top-[48.5%] h-[10.5%] w-[45%]" : "left-[45%] top-[36%] h-[22.5%] w-[36.5%] bg-white",
         )}
       >
-        {ownerName && <span className="truncate text-[4.7cqw] font-bold leading-[1.25]">{ownerName}</span>}
-        {place && <span className="line-clamp-2 text-[3.5cqw] font-semibold leading-[1.25] text-[#5f7d74]">{place}</span>}
+        {/* A full name (admin listings) is longer than "Name S.": smaller, on two lines. */}
+        {ownerName && (
+          <span className={cn("font-bold", ownerName.length > 12 ? "line-clamp-2 text-[3.7cqw] leading-[1.2]" : "truncate text-[4.7cqw] leading-[1.25]")}>
+            {ownerName}
+          </span>
+        )}
+        {place && <span className="line-clamp-2 text-[3.3cqw] font-semibold leading-[1.25] text-[#5f7d74]">{place}</span>}
       </div>
     </div>
   );

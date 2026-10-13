@@ -167,6 +167,9 @@ function AddItemForm() {
   // Documents only: the owner's district or street, optional.
   const [ownerAddress, setOwnerAddress] = useState("");
   const [moderationStatus, setModerationStatus] = useState<"idle" | "passed">("idle");
+  // "Found" is only for accounts the owner verified (companies, authorities):
+  // the option is not shown to anyone else (the database refuses it too).
+  const [canPostFound, setCanPostFound] = useState(false);
 
   // Load the phone number from the profile
   useEffect(() => {
@@ -178,6 +181,7 @@ function AddItemForm() {
         if (profile?.phone) {
           setFormData((prev) => ({ ...prev, phone: profile.phone as string }));
         }
+        setCanPostFound(profile?.is_verified === true);
       } catch (error) {
         console.error("Error fetching profile:", error);
       }
@@ -251,6 +255,10 @@ function AddItemForm() {
     } else if (step === 2) {
       if (!formData.type) {
         toast.error(t("fillAllFields"));
+        return;
+      }
+      if (formData.type === "found" && !canPostFound) {
+        toast.error(t("foundOnlyVerified"));
         return;
       }
       setStep(6); // "Where?" comes right after the type — this continues the same question
@@ -643,6 +651,7 @@ function AddItemForm() {
                     />
                   </Label>
                 </div>
+                {canPostFound ? (
                 <div className="relative">
                   <Label
                     htmlFor="found"
@@ -666,6 +675,9 @@ function AddItemForm() {
                     />
                   </Label>
                 </div>
+                ) : (
+                  <p className="px-1 text-[13px] font-medium leading-relaxed text-muted-foreground">{t("foundOnlyVerified")}</p>
+                )}
               </RadioGroup>
             </div>
           )}

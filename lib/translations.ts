@@ -362,6 +362,7 @@ export const translations: Record<string, TranslationDict> = {
 
     // Item Details
     what_happened: "Чӣ шуд?",
+    foundOnlyVerified: "Ашё ёфтед? Эълони «Ёфтшуда»-ро танҳо ташкилотҳои тасдиқшуда мегузоранд. Ашёро ба шӯъбаи милитсия супоред.",
     lost: "Гумшудааст",
     lost_desc: "Ман чизеро гум кардам",
     found: "Ёфтшудааст",
@@ -1209,6 +1210,7 @@ export const translations: Record<string, TranslationDict> = {
 
     // Item Details
     what_happened: "Что случилось?",
+    foundOnlyVerified: "Нашли вещь? Объявления «Найдено» размещают только подтверждённые организации. Отнесите вещь в отделение милиции.",
     lost: "Утеряно",
     lost_desc: "Я что-то потерял",
     found: "Найдено",
@@ -2028,6 +2030,7 @@ export const translations: Record<string, TranslationDict> = {
 
     // Item Details
     what_happened: "What happened?",
+    foundOnlyVerified: "Found something? Only verified organisations can post “Found” listings. Please hand the item in to the police.",
     lost: "Lost",
     lost_desc: "I lost something",
     found: "Found",

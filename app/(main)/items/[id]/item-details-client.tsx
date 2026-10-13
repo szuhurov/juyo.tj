@@ -52,7 +52,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { ImageSkeleton } from "@/components/image-placeholder";
 import { TelegramIcon, WhatsappIcon, socialHref } from "@/components/social-icons";
-import { pictureOwnerName, splitOwnerLine } from "@/lib/document-owner";
+import { pictureOwnerName, splitOwnerLine, INSTAGRAM_POSTER_AVATAR, INSTAGRAM_POSTER_NAME } from "@/lib/document-owner";
 import { DocumentPlaceholderText } from "@/components/document-placeholder-text";
 import { isPlaceholderUrl } from "@/lib/photo-policy";
 
@@ -138,6 +138,11 @@ export default function ItemDetailsClient({
   const images = item?.images && item.images.length > 0 ? item.images : [];
   const categoryImage = item ? CATEGORY_IMAGES[item.category] : undefined;
   const docOwner = splitOwnerLine(item?.description ?? "");
+  // A listing posted for an Instagram request belongs to the admin's account
+  // but shows where it came from and whose it is, not the admin's profile.
+  const poster = docOwner.postedFor
+    ? { first_name: INSTAGRAM_POSTER_NAME, last_name: docOwner.postedFor, avatar_url: INSTAGRAM_POSTER_AVATAR, is_verified: false }
+    : item?.profiles;
 
   // Effect for automatically cycling through images
   useEffect(() => {
@@ -475,22 +480,22 @@ export default function ItemDetailsClient({
             {/* Divider line between the listing owner and the item info — it
                 separates these two content sections from each other. */}
             <div className="flex justify-between items-center mb-3">
-              {item && (item.profiles || detailsReady) ? (
+              {item && (poster || detailsReady) ? (
                 <div className="flex items-center gap-3">
                   <Avatar className="w-12 h-12 min-[1084px]:w-14 min-[1084px]:h-14 min-[1920px]:w-16 min-[1920px]:h-16 border border-slate-200 dark:border-zinc-700">
-                    <AvatarImage src={item.profiles?.avatar_url ?? undefined} alt="User" />
+                    <AvatarImage src={poster?.avatar_url ?? undefined} alt="User" />
                     <AvatarFallback className="bg-slate-50 dark:bg-zinc-800">
                       <User className="w-6 h-6 min-[1084px]:w-7 min-[1084px]:h-7 min-[1920px]:w-8 min-[1920px]:h-8 text-slate-400" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <p className="font-semibold text-base min-[1084px]:text-lg min-[1920px]:text-xl leading-tight flex items-center gap-1">
-                      {item.profiles?.first_name || t("user")}
-                      {item.profiles?.is_verified && <VerifiedBadge />}
+                      {poster?.first_name || t("user")}
+                      {poster?.is_verified && <VerifiedBadge />}
                     </p>
-                    {item.profiles?.last_name && (
+                    {poster?.last_name && (
                       <p className="text-xs min-[1084px]:text-[13px] min-[1920px]:text-sm text-zinc-500 font-medium tracking-tight">
-                        {item.profiles.last_name}
+                        {poster.last_name}
                       </p>
                     )}
                   </div>

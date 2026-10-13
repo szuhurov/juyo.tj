@@ -11,6 +11,11 @@
  * so the real owner can recognise the document. Both lines are drawn on the
  * placeholder image.
  *
+ * A listing the admin posts for someone who wrote to JUYO on Instagram belongs
+ * to the admin's own account; the person's name is kept the same way, as the
+ * very first line ("Instagram: Алишер Раҳимов"), and the listing shows
+ * "Аз Instagram-и juyo" with that name instead of the admin's profile.
+ *
  * Kept byte-identical in Web/lib and app/lib (app/__tests__/shared-lib-parity.test.ts).
  */
 const OWNER_LABELS: Record<string, string> = { tg: 'Соҳиб:', ru: 'Владелец:', en: 'Owner:' };
@@ -19,7 +24,12 @@ const LETTER = "\\p{L}";
 const SHORT_NAME = new RegExp(`^(${LETTER}[${LETTER}'’-]+)\\s+(${LETTER})\\.?$`, 'u');
 const OWNER_LINE = /^(?:Соҳиб|Владелец|Owner):\s*(.+)$/u;
 const ADDRESS_LINE = /^(?:Суроға|Адрес|Address):\s*(.+)$/u;
+const INSTAGRAM_LINE = /^Instagram:\s*(.+)$/u;
 export const OWNER_ADDRESS_MAX = 60;
+
+/** What a listing posted for an Instagram request shows in place of the poster's profile. */
+export const INSTAGRAM_POSTER_NAME = 'Аз Instagram-и juyo';
+export const INSTAGRAM_POSTER_AVATAR = 'https://juyo.tj/placeholders/instagram.png';
 
 export type OwnerNameCheck =
   | { ok: true; value: string }
@@ -46,26 +56,43 @@ export function cleanOwnerAddress(input: string | null | undefined): string {
   return (input ?? '').replace(/\s+/g, ' ').trim().slice(0, OWNER_ADDRESS_MAX).trim();
 }
 
-/** The description as saved: the owner line, then the address line, then what the person wrote. */
+/**
+ * The description as saved: the owner line, then the address line, then what
+ * the person wrote. An "Instagram:" line already on the description is kept.
+ */
 export function withOwnerLine(description: string, ownerName: string | null, locale: string, address: string | null = null): string {
-  const rest = splitOwnerLine(description).rest;
+  const { postedFor, rest } = splitOwnerLine(description);
   const lines: string[] = [];
+  if (postedFor) lines.push(`Instagram: ${postedFor}`);
   if (ownerName) lines.push(`${OWNER_LABELS[locale] ?? OWNER_LABELS.tg} ${ownerName}`);
   const place = cleanOwnerAddress(address);
   if (place) lines.push(`${ADDRESS_LABELS[locale] ?? ADDRESS_LABELS.tg} ${place}`);
   return [...lines, rest].join('\n').trim();
 }
 
-/** Reads the owner and address lines back (in any of the three languages) for the edit and listing screens. */
-export function splitOwnerLine(description: string): { ownerName: string; address: string; rest: string } {
+/** Puts (or replaces) the "Instagram:" line at the top; the owner and address lines stay. */
+export function withPostedFor(description: string, person: string): string {
+  const name = cleanOwnerAddress(person);
+  const body = description.split('\n').filter((line, i) => !(i === 0 && INSTAGRAM_LINE.test(line.trim()))).join('\n').trim();
+  return name ? `Instagram: ${name}\n${body}`.trim() : body;
+}
+
+/** Reads the leading lines back (in any of the three languages) for the edit and listing screens. */
+export function splitOwnerLine(description: string): { postedFor: string; ownerName: string; address: string; rest: string } {
   const lines = description.split('\n');
-  const owner = OWNER_LINE.exec((lines[0] ?? '').trim());
-  const place = ADDRESS_LINE.exec((lines[owner ? 1 : 0] ?? '').trim());
-  if (!owner && !place) return { ownerName: '', address: '', rest: description };
+  let at = 0;
+  const posted = INSTAGRAM_LINE.exec((lines[at] ?? '').trim());
+  if (posted) at++;
+  const owner = OWNER_LINE.exec((lines[at] ?? '').trim());
+  if (owner) at++;
+  const place = ADDRESS_LINE.exec((lines[at] ?? '').trim());
+  if (place) at++;
+  if (at === 0) return { postedFor: '', ownerName: '', address: '', rest: description };
   return {
+    postedFor: posted ? posted[1].trim() : '',
     ownerName: owner ? owner[1].trim() : '',
     address: place ? place[1].trim() : '',
-    rest: lines.slice((owner ? 1 : 0) + (place ? 1 : 0)).join('\n').trim(),
+    rest: lines.slice(at).join('\n').trim(),
   };
 }
 

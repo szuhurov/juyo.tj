@@ -12,7 +12,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { ImagePlus, Loader2, ShieldCheck, X } from "lucide-react";
+import { Camera, ImagePlus, Loader2, ShieldCheck, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,13 @@ import { createClerkSupabaseClient } from "@/lib/supabase";
 import { uploadListingPhoto } from "@/lib/listing-photo-upload";
 import { isNoPhotoCategory, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
-import { INSTAGRAM_PROFILE_NAME } from "@/lib/instagram-source";
+import { withOwnerLine, INSTAGRAM_POSTER_NAME, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 
 const PrivacyBlurEditor = dynamic(() =>
   import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
+);
+const CameraCaptureModal = dynamic(() =>
+  import("@/components/camera-capture-modal").then((m) => m.CameraCaptureModal),
 );
 
 const LOCATION_TYPES = [
@@ -89,6 +91,7 @@ export default function PostInstagramPage() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const noPhoto = isNoPhotoCategory(category);
@@ -171,7 +174,8 @@ export default function PostInstagramPage() {
       <div>
         <h1 className="text-xl font-bold tracking-tight">Эълон аз Instagram</h1>
         <p className="text-sm text-zinc-500">
-          Барои одамоне, ки дар Instagram хоҳиш кардаанд. Эълон дарҳол нашр мешавад.
+          Барои одамоне, ки дар Instagram хоҳиш кардаанд. Эълон дарҳол нашр мешавад ва ба аккаунти шумо тааллуқ
+          дорад: онро аз «Постҳои ман» таҳрир ё нест карда метавонед.
         </p>
       </div>
 
@@ -204,7 +208,7 @@ export default function PostInstagramPage() {
         {/* Exactly what visitors will see on the listing. */}
         <div className="rounded-md bg-zinc-50 dark:bg-zinc-800/60 px-3 py-2">
           <p className="text-[11px] font-semibold text-zinc-500">Дар эълон чунин дида мешавад</p>
-          <p className="text-sm font-semibold">{INSTAGRAM_PROFILE_NAME}</p>
+          <p className="text-sm font-semibold">{INSTAGRAM_POSTER_NAME}</p>
           <p className="text-xs text-zinc-500">{`${firstName} ${lastName}`.trim() || "Ном Насаб"}</p>
         </div>
       </Section>
@@ -316,7 +320,17 @@ export default function PostInstagramPage() {
                   className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-500"
                 >
                   <ImagePlus className="h-6 w-6" />
-                  Акс илова кардан
+                  Аз галерея
+                </button>
+              )}
+              {photos.length < MAX_PHOTOS && (
+                <button
+                  type="button"
+                  onClick={() => setCameraOpen(true)}
+                  className="flex aspect-square flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-zinc-300 dark:border-zinc-700 text-xs font-semibold text-zinc-500"
+                >
+                  <Camera className="h-6 w-6" />
+                  Акс гирифтан
                 </button>
               )}
             </div>
@@ -344,6 +358,8 @@ export default function PostInstagramPage() {
       <Button type="button" onClick={submit} disabled={saving} className="h-12 w-full rounded-md bg-emerald-500 hover:bg-emerald-600 text-white font-semibold">
         {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Нашр кардан"}
       </Button>
+
+      <CameraCaptureModal isOpen={cameraOpen} onClose={() => setCameraOpen(false)} onCapture={(file) => addPhotos([file])} />
 
       {editorOpen && (
         <PrivacyBlurEditor

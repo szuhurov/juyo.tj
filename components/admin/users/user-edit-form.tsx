@@ -101,6 +101,7 @@ export function UserEditForm({ profile }: { profile: AdminUserDetail["profile"] 
         />
         <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
           Ҳисоби тасдиқшуда <VerifiedBadge />
+          <span className="font-medium text-zinc-500">— иҷозати гузоштани эълони «Ёфтшуда»</span>
         </span>
       </label>
 

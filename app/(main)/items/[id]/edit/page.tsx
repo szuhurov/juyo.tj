@@ -37,6 +37,7 @@ import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
 import { checkOwnerName, splitOwnerLine, withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { useProfileQuery } from "@/lib/hooks/use-profile";
 
 import {
   Tooltip,
@@ -76,6 +77,10 @@ export default function EditItemPage({
   // States for item type, category, and images
   const [type, setType] = useState<"lost" | "found">("lost");
   const [category, setCategory] = useState("");
+  // "Found" is only for verified accounts (see items/add); a listing that is
+  // already "Found" keeps its option.
+  const { data: ownProfile } = useProfileQuery(userId, getToken);
+  const canPostFound = ownProfile?.is_verified === true;
   const [locationType, setLocationType] = useState<EditLocationType | null>(null);
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [rewardEnabled, setRewardEnabled] = useState(false);
@@ -195,7 +200,14 @@ export default function EditItemPage({
     const title = ((formData.get("title") as string) || "").trim();
     const description = ((formData.get("description") as string) || "").trim();
     // Documents: the owner's first name + first letter of the surname (lib/document-owner.ts).
-    const owner = isNoPhotoCategory(category) ? checkOwnerName((formData.get("docOwner") as string) || "") : null;
+    const ownerInput = ((formData.get("docOwner") as string) || "").replace(/\s+/g, " ").trim();
+    // A listing posted for an Instagram request may carry the owner's full name (admin only).
+    const fullNameAllowed = !!splitOwnerLine(item.description ?? "").postedFor;
+    const owner: ReturnType<typeof checkOwnerName> = !isNoPhotoCategory(category)
+      ? null
+      : fullNameAllowed
+        ? (ownerInput ? { ok: true, value: ownerInput.slice(0, 60) } : null)
+        : checkOwnerName(ownerInput);
     if (owner && !owner.ok) {
       toast.error(t(owner.reason === "full_surname" ? "docOwnerFullSurname" : "docOwnerFormat"));
       return;
@@ -426,6 +438,7 @@ export default function EditItemPage({
                       <span className="font-semibold text-sm min-[1084px]:text-base">{t("lost")}</span>
                     </Label>
                   </div>
+                  {(canPostFound || type === "found") && (
                   <div>
                     <RadioGroupItem
                       value="found"
@@ -440,6 +453,7 @@ export default function EditItemPage({
                       <span className="font-semibold text-sm min-[1084px]:text-base">{t("found")}</span>
                     </Label>
                   </div>
+                  )}
                 </RadioGroup>
               </div>
 
