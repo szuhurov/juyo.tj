@@ -3,7 +3,9 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { useLanguage } from "@/lib/language-context";
 import { getClerkLocalization } from "@/lib/clerk-localization";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
+import { clerkNeedsUi } from "@/lib/clerk-ui";
 
 /**
  * Client Wrapper for ClerkProvider.
@@ -16,8 +18,21 @@ export function ClerkLocalizationProvider({ children }: { children: React.ReactN
   // Recompute Clerk's localization when the language changes
   const localization = useMemo(() => getClerkLocalization(locale), [locale]);
 
+  // Clerk's prebuilt screens (sign-in, sign-up, account settings) need its UI
+  // bundle — over 1 MB of script that Clerk otherwise downloads and runs on
+  // every page, and waits for before it reports the session. Clerk reads this
+  // once, when it loads, so the answer is fixed at the first render.
+  const pathname = usePathname();
+  const [withUi] = useState(() => clerkNeedsUi(pathname));
+  // Arrived at one of those screens from a page that loaded Clerk without its
+  // UI: load the page properly, once (after that the first render says yes).
+  useEffect(() => {
+    if (!withUi && clerkNeedsUi(pathname)) window.location.reload();
+  }, [withUi, pathname]);
+
   return (
     <ClerkProvider
+      prefetchUI={withUi}
       localization={localization}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"

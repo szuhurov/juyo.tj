@@ -152,6 +152,10 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Listing photos come straight from Storage: open that connection early. */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).origin} />
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
