@@ -190,9 +190,9 @@ export function ItemCard({
 
         <div className="px-3.5 pt-1.5 pb-2 flex flex-col flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="min-w-0 flex-1 truncate font-semibold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
+            <h2 className="min-w-0 flex-1 truncate font-semibold text-sm min-[1084px]:text-base text-zinc-900 dark:text-white">
               {item.title || item.category}
-            </h3>
+            </h2>
             <span className="shrink-0 text-xs font-medium text-muted-foreground">
               {exactDate}
             </span>

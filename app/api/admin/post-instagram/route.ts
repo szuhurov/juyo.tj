@@ -18,7 +18,6 @@ import { CITY_IDS } from "@/lib/cities";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { maskSensitiveNumbers } from "@/lib/sensitive-text";
 import { withPostedFor } from "@/lib/document-owner";
-import { insertItemWithSource } from "@/lib/client-stats";
 
 const LOCATION_TYPES = [
   "taxi", "hotel_restaurant", "public_place", "airport", "gym",
@@ -99,12 +98,8 @@ export async function POST(req: NextRequest) {
         location_type: locationType,
         city,
       };
-    const { data: item, error: itemError } = (await insertItemWithSource(
-      (row) => supabaseAdmin.from("items").insert(row).select("id").single(),
-      itemRow,
-      "instagram",
-    )) as { data: { id: string } | null; error: { code?: string } | null };
-    if (itemError || !item) throw itemError ?? new Error("insert failed");
+    const { data: item, error: itemError } = await supabaseAdmin.from("items").insert(itemRow).select("id").single();
+    if (itemError) throw itemError;
 
     if (images.length > 0) {
       const { error: imagesError } = await supabaseAdmin

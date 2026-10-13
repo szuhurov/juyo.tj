@@ -1,6 +1,5 @@
 "use client";
 
-import { PLATFORM_LABELS } from "@/lib/client-stats";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { Settings } from "lucide-react";
@@ -83,12 +82,6 @@ export function UserTable({ rows }: { rows: AdminUserRow[] }) {
 
               <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium">
                 {format(new Date(user.created_at), "d MMM yyyy")}
-                {user.app_platform && (
-                  <span className="block text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-200">
-                    {PLATFORM_LABELS[user.app_platform] ?? user.app_platform}
-                    {user.app_version ? ` · ${user.app_version}` : ""}
-                  </span>
-                )}
               </span>
 
               <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium">

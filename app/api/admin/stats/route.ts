@@ -124,38 +124,6 @@ export async function GET(req: NextRequest) {
     // All real categories are shown, even at 0% — not just the ones that have posts in this period.
     const itemsByCategory = CATEGORIES.map((c) => ({ category: c.name, count: categoryCounts[c.name] ?? 0 }));
 
-    // Added by migration 20261013000000_client_stats; null until it is applied.
-    let appUsers: { total: number; android: number; ios: number; newInPeriod: number } | null = null;
-    let itemsBySource: Record<string, number> | null = null;
-    {
-      const { data: appRows, error: appError } = await supabaseAdmin
-        .from("profiles")
-        .select("app_platform, app_first_seen_at")
-        .not("app_platform", "is", null)
-        .or(NOT_DELETED);
-      if (!appError) {
-        const rows = (appRows ?? []) as { app_platform: string; app_first_seen_at: string | null }[];
-        appUsers = {
-          total: rows.length,
-          android: rows.filter((r) => r.app_platform === "android").length,
-          ios: rows.filter((r) => r.app_platform === "ios").length,
-          newInPeriod: periodStartIso
-            ? rows.filter((r) => r.app_first_seen_at && r.app_first_seen_at >= periodStartIso).length
-            : rows.length,
-        };
-      }
-      let sourceQuery = supabaseAdmin.from("items").select("source").or(NOT_DELETED);
-      if (periodStartIso) sourceQuery = sourceQuery.gte("created_at", periodStartIso);
-      const { data: sourceRows, error: sourceError } = await sourceQuery;
-      if (!sourceError) {
-        itemsBySource = {};
-        for (const row of (sourceRows ?? []) as { source: string | null }[]) {
-          const key = row.source ?? "unknown";
-          itemsBySource[key] = (itemsBySource[key] ?? 0) + 1;
-        }
-      }
-    }
-
     // QR: the database keeps counters only (no dates), so this is always all-time.
     // "Set up" means activated at least once — is_qr_active alone defaults to true.
     let qr: {
@@ -205,8 +173,6 @@ export async function GET(req: NextRequest) {
       totalResolvedItems: totalResolvedItems ?? 0,
       pendingModerationCount: pendingModerationCount ?? 0,
       totalPushEnabledUsers,
-      appUsers,
-      itemsBySource,
       qr,
       signupsByDay,
       signupsGranularity: granularity,

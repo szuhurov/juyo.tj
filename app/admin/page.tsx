@@ -1,6 +1,5 @@
 "use client";
 
-import { ClientStatsPanel } from "@/components/admin/client-stats-panel";
 import { QrStatsPanel } from "@/components/admin/qr-stats-panel";
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -96,8 +95,6 @@ export default function AdminDashboardPage() {
       </div>
 
       <QrStatsPanel qr={stats.qr} />
-
-      <ClientStatsPanel appUsers={stats.appUsers} itemsBySource={stats.itemsBySource} periodLabel={PERIOD_LABELS[period]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <div className="min-w-0">

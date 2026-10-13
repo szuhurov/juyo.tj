@@ -730,7 +730,6 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
                     key={value}
                     onClick={() => (value === "all" ? setLocationType(null) : toggleLocationType(value))}
                     aria-pressed={active}
-                    aria-label={title}
                     className={cn(
                       "pressable shrink-0 snap-start w-max flex items-center justify-between gap-3 px-3 py-1.5 min-[1503px]:py-2.5 rounded-md text-left cursor-pointer transition-colors",
                       active ? "bg-primary text-primary-foreground" : "bg-transparent text-foreground",                    )}

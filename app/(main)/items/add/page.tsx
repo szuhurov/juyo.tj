@@ -55,7 +55,6 @@ import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
 import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { insertItemWithSource } from "@/lib/client-stats";
 
 // These two components (the privacy blur canvas editor, the camera modal) are
 // heavy and only needed in specific cases (a document was detected / the
@@ -431,12 +430,11 @@ function AddItemForm() {
         city,
       };
 
-      const { data: item, error: itemError } = (await insertItemWithSource(
-        (row) => supabase.from("items").insert([row]).select().single(),
-        itemData,
-        "web",
-      )) as { data: { id: string } | null; error: Error | null };
-      if (!item) throw itemError ?? new Error("insert failed");
+      const { data: item, error: itemError } = await supabase
+        .from("items")
+        .insert([itemData])
+        .select()
+        .single();
       if (itemError) throw itemError;
 
       if (isNoPhotoCategory(finalCategory)) {

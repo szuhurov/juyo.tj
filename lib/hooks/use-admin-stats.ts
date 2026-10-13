@@ -15,10 +15,6 @@ export interface AdminStats {
   totalResolvedItems: number;
   pendingModerationCount: number;
   totalPushEnabledUsers: number;
-  /** Users who opened the mobile app signed in. Null until migration 20261013000000_client_stats is applied. */
-  appUsers: { total: number; android: number; ios: number; newInPeriod: number } | null;
-  /** Listings of the period by where they were posted from ("unknown" = before this was recorded). */
-  itemsBySource: Record<string, number> | null;
   /** Who set up a QR code and how often it was scanned (all time). */
   qr: QrStats | null;
   signupsByDay: { date: string; count: number }[];
