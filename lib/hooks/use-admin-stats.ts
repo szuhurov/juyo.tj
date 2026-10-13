@@ -1,3 +1,4 @@
+import type { QrStats } from "@/components/admin/qr-stats-panel";
 import { useQuery } from "@tanstack/react-query";
 import { AdminService } from "@/lib/services/admin-service";
 import { ADMIN_KEYS } from "@/lib/hooks/admin-query-keys";
@@ -18,6 +19,8 @@ export interface AdminStats {
   appUsers: { total: number; android: number; ios: number; newInPeriod: number } | null;
   /** Listings of the period by where they were posted from ("unknown" = before this was recorded). */
   itemsBySource: Record<string, number> | null;
+  /** Who set up a QR code and how often it was scanned (all time). */
+  qr: QrStats | null;
   signupsByDay: { date: string; count: number }[];
   signupsGranularity: "hour" | "day" | "month";
   itemsByCategory: { category: string; count: number }[];

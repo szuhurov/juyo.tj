@@ -18,6 +18,9 @@ export function ClientStatsPanel({
   itemsBySource: Record<string, number> | null;
   periodLabel: string;
 }) {
+  // Nothing to show until the migration is applied: no empty boxes on the dashboard.
+  if (!appUsers && !itemsBySource) return null;
+
   const card = "min-w-0 rounded-md border border-zinc-100 dark:border-zinc-800 bg-white dark:bg-zinc-800 p-4";
   const totalItems = itemsBySource ? Object.values(itemsBySource).reduce((a, b) => a + b, 0) : 0;
 

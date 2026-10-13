@@ -17,7 +17,7 @@ import { CATEGORIES, UNSPECIFIED_REWARD } from "@/lib/services/item-service";
 import { CITY_IDS } from "@/lib/cities";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { maskSensitiveNumbers } from "@/lib/sensitive-text";
-import { INSTAGRAM_PROFILE_NAME, INSTAGRAM_PROFILE_PREFIX } from "@/lib/instagram-source";
+import { INSTAGRAM_AVATAR_URL, INSTAGRAM_PROFILE_NAME, INSTAGRAM_PROFILE_PREFIX } from "@/lib/instagram-source";
 import { insertItemWithSource } from "@/lib/client-stats";
 
 const LOCATION_TYPES = [
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
       profileId = `${INSTAGRAM_PROFILE_PREFIX}${randomUUID()}`;
       const { error: profileError } = await supabaseAdmin
         .from("profiles")
-        .insert({ id: profileId, first_name: INSTAGRAM_PROFILE_NAME, last_name: personName });
+        .insert({ id: profileId, first_name: INSTAGRAM_PROFILE_NAME, last_name: personName, avatar_url: INSTAGRAM_AVATAR_URL });
       if (profileError) throw profileError;
     }
 

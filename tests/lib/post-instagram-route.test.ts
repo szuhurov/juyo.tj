@@ -64,6 +64,7 @@ describe('POST /api/admin/post-instagram', () => {
     expect(profile.id.startsWith('instagram_')).toBe(true);
     expect(profile.first_name).toBe('Аз Instagram-и juyo');
     expect(profile.last_name).toBe('Алишер Раҳимов');
+    expect(profile.avatar_url).toBe("https://juyo.tj/placeholders/instagram.png");
 
     const item = inserts.find((i) => i.table === 'items')!.rows as Record<string, unknown>;
     expect(item).toMatchObject({ user_id: profile.id, moderation_status: 'approved', phone_number: '901234567' });

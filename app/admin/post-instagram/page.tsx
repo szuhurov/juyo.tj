@@ -27,7 +27,7 @@ import { createClerkSupabaseClient } from "@/lib/supabase";
 import { uploadListingPhoto } from "@/lib/listing-photo-upload";
 import { isNoPhotoCategory, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { checkOwnerName, withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 import { INSTAGRAM_PROFILE_NAME } from "@/lib/instagram-source";
 
 const PrivacyBlurEditor = dynamic(() =>
@@ -114,10 +114,9 @@ export default function PostInstagramPage() {
     if (!category) return toast.error("Категорияро интихоб кунед");
     if (!title.trim() || !description.trim()) return toast.error("Сарлавҳа ва тавсифро нависед");
     if (!city) return toast.error("Шаҳрро интихоб кунед");
-    const owner = noPhoto ? checkOwnerName(ownerName) : null;
-    if (owner && !owner.ok) {
-      return toast.error(t(owner.reason === "full_surname" ? "docOwnerFullSurname" : "docOwnerFormat"));
-    }
+    // Owner decision 2026-10-13: here the admin may write the owner's full name
+    // (the public forms still take only "first name + initial").
+    const owner = noPhoto ? ownerName.replace(/\s+/g, " ").trim().slice(0, 60) : "";
 
     setSaving(true);
     try {
@@ -148,7 +147,7 @@ export default function PostInstagramPage() {
           type,
           category,
           title,
-          description: withOwnerLine(description, owner?.ok ? owner.value : null, "tg", category === "Documents" ? ownerAddress : null),
+          description: withOwnerLine(description, owner || null, "tg", category === "Documents" ? ownerAddress : null),
           city,
           location_type: locationType,
           date,
@@ -234,7 +233,7 @@ export default function PostInstagramPage() {
         </Field>
         {noPhoto && (
           <Field label={t(category === "Cards" ? "cardOwnerLabel" : "docOwnerLabel")}>
-            <Input className={FIELD} value={ownerName} maxLength={40} placeholder={t("docOwnerPlaceholder")} autoComplete="off" onChange={(e) => setOwnerName(e.target.value)} />
+            <Input className={FIELD} value={ownerName} maxLength={60} placeholder="Масалан: Алишер Раҳимов" autoComplete="off" onChange={(e) => setOwnerName(e.target.value)} />
           </Field>
         )}
         {category === "Documents" && (

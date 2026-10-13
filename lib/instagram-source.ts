@@ -12,3 +12,6 @@ export const INSTAGRAM_PROFILE_NAME = "Аз Instagram-и juyo";
 export function isInstagramProfileId(id: string | null | undefined): boolean {
   return !!id && id.startsWith(INSTAGRAM_PROFILE_PREFIX);
 }
+
+/** Avatar of every Instagram profile: the Instagram mark, served by juyo.tj itself. */
+export const INSTAGRAM_AVATAR_URL = "https://juyo.tj/placeholders/instagram.png";

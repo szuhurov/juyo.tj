@@ -156,6 +156,43 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // QR: the database keeps counters only (no dates), so this is always all-time.
+    // "Set up" means activated at least once — is_qr_active alone defaults to true.
+    let qr: {
+      users: number;
+      active: number;
+      scans: number;
+      list: { id: string; name: string; phone: string | null; is_qr_active: boolean; qr_activation_count: number; qr_scan_count: number }[];
+    } | null = null;
+    {
+      const { data: qrRows, error: qrError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name, phone, is_qr_active, qr_activation_count, qr_scan_count")
+        .gt("qr_activation_count", 0)
+        .or(NOT_DELETED)
+        .order("qr_scan_count", { ascending: false })
+        .order("qr_activation_count", { ascending: false });
+      if (!qrError) {
+        const rows = (qrRows ?? []) as {
+          id: string; first_name: string | null; last_name: string | null; phone: string | null;
+          is_qr_active: boolean | null; qr_activation_count: number; qr_scan_count: number;
+        }[];
+        qr = {
+          users: rows.length,
+          active: rows.filter((r) => r.is_qr_active).length,
+          scans: rows.reduce((sum, r) => sum + (r.qr_scan_count ?? 0), 0),
+          list: rows.slice(0, 100).map((r) => ({
+            id: r.id,
+            name: `${r.first_name ?? ""} ${r.last_name ?? ""}`.trim() || "Беном",
+            phone: r.phone,
+            is_qr_active: !!r.is_qr_active,
+            qr_activation_count: r.qr_activation_count ?? 0,
+            qr_scan_count: r.qr_scan_count ?? 0,
+          })),
+        };
+      }
+    }
+
     const totalPushEnabledUsers = new Set((pushTokenRows ?? []).map((r: { user_id: string }) => r.user_id)).size;
 
     return NextResponse.json({
@@ -170,6 +207,7 @@ export async function GET(req: NextRequest) {
       totalPushEnabledUsers,
       appUsers,
       itemsBySource,
+      qr,
       signupsByDay,
       signupsGranularity: granularity,
       itemsByCategory,
