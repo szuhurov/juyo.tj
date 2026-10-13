@@ -52,7 +52,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { ImageSkeleton } from "@/components/image-placeholder";
 import { TelegramIcon, WhatsappIcon, socialHref } from "@/components/social-icons";
-import { splitOwnerLine } from "@/lib/document-owner";
+import { pictureOwnerName, splitOwnerLine } from "@/lib/document-owner";
+import { DocumentPlaceholderText } from "@/components/document-placeholder-text";
+import { isPlaceholderUrl } from "@/lib/photo-policy";
 
 /**
  * `item.phone_number` is a local number only (no country code). Telegram/
@@ -135,6 +137,7 @@ export default function ItemDetailsClient({
   // and a local placeholder (ImagePlaceholder) is shown at render time.
   const images = item?.images && item.images.length > 0 ? item.images : [];
   const categoryImage = item ? CATEGORY_IMAGES[item.category] : undefined;
+  const docOwner = splitOwnerLine(item?.description ?? "");
 
   // Effect for automatically cycling through images
   useEffect(() => {
@@ -390,6 +393,9 @@ export default function ItemDetailsClient({
                       onLoad={() => markLoaded(img.image_url)}
                       onError={() => markLoaded(img.image_url)}
                     />
+                    {item && isPlaceholderUrl(img.image_url) && loadedImages[img.image_url] && (
+                      <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={docOwner.address} />
+                    )}
                   </div>
                 ))}
               </div>
@@ -552,7 +558,7 @@ export default function ItemDetailsClient({
                 ))}
               {item && (() => {
                 // Documents keep the owner as the description's first line (lib/document-owner.ts).
-                const { ownerName, rest } = splitOwnerLine(item?.description ?? "");
+                const { ownerName, address, rest } = docOwner;
                 return (
                   <>
                     <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base min-[1084px]:text-lg min-[1503px]:text-xl whitespace-pre-wrap">
@@ -561,6 +567,11 @@ export default function ItemDetailsClient({
                     {ownerName && (
                       <p className="mt-3 font-semibold text-zinc-900 dark:text-zinc-50 text-base min-[1084px]:text-lg min-[1503px]:text-xl">
                         {t(item?.category === "Cards" ? "cardOwnerShown" : "docOwnerShown")}: <span className="font-bold">{ownerName}</span>
+                      </p>
+                    )}
+                    {address && (
+                      <p className={cn("font-semibold text-zinc-900 dark:text-zinc-50 text-base min-[1084px]:text-lg min-[1503px]:text-xl", ownerName ? "mt-1" : "mt-3")}>
+                        {t("docAddressShown")}: <span className="font-bold">{address}</span>
                       </p>
                     )}
                   </>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkOwnerName, splitOwnerLine, withOwnerLine } from "@/lib/document-owner";
+import { checkOwnerName, cleanOwnerAddress, pictureOwnerName, splitOwnerLine, withOwnerLine } from "@/lib/document-owner";
 
 describe("document owner name: first name + first letter of the surname", () => {
   it("accepts and normalizes the short form", () => {
@@ -23,10 +23,41 @@ describe("document owner name: first name + first letter of the surname", () => 
   it("saves the name as the first line of the description and reads it back in any language", () => {
     const saved = withOwnerLine("Дар бозор ёфтам", "Алишер Р.", "tg");
     expect(saved).toBe("Соҳиб: Алишер Р.\nДар бозор ёфтам");
-    expect(splitOwnerLine(saved)).toEqual({ ownerName: "Алишер Р.", rest: "Дар бозор ёфтам" });
-    expect(splitOwnerLine("Владелец: Ivan P.\nНашёл в такси")).toEqual({ ownerName: "Ivan P.", rest: "Нашёл в такси" });
+    expect(splitOwnerLine(saved)).toEqual({ ownerName: "Алишер Р.", address: "", rest: "Дар бозор ёфтам" });
+    expect(splitOwnerLine("Владелец: Ivan P.\nНашёл в такси")).toEqual({ ownerName: "Ivan P.", address: "", rest: "Нашёл в такси" });
     expect(withOwnerLine(saved, "Самариддин З.", "en")).toBe("Owner: Самариддин З.\nДар бозор ёфтам");
     expect(withOwnerLine(saved, null, "tg")).toBe("Дар бозор ёфтам");
-    expect(splitOwnerLine("Ҳамён ёфтам")).toEqual({ ownerName: "", rest: "Ҳамён ёфтам" });
+    expect(splitOwnerLine("Ҳамён ёфтам")).toEqual({ ownerName: "", address: "", rest: "Ҳамён ёфтам" });
+  });
+
+  it("keeps the optional address as the next line and reads both back", () => {
+    const saved = withOwnerLine("Дар бозор ёфтам", "Алишер Р.", "tg", "  ноҳияи   Сино,\nкӯчаи Рӯдакӣ ");
+    expect(saved).toBe("Соҳиб: Алишер Р.\nСуроға: ноҳияи Сино, кӯчаи Рӯдакӣ\nДар бозор ёфтам");
+    expect(splitOwnerLine(saved)).toEqual({ ownerName: "Алишер Р.", address: "ноҳияи Сино, кӯчаи Рӯдакӣ", rest: "Дар бозор ёфтам" });
+    // an address without a name, and in another language
+    expect(splitOwnerLine("Адрес: 82 мкр\nНашёл паспорт")).toEqual({ ownerName: "", address: "82 мкр", rest: "Нашёл паспорт" });
+    // saving again without an address removes the line
+    expect(withOwnerLine(saved, "Алишер Р.", "tg")).toBe("Соҳиб: Алишер Р.\nДар бозор ёфтам");
+    expect(withOwnerLine(saved, null, "tg", "")).toBe("Дар бозор ёфтам");
+  });
+
+  it("cuts the address to one short line", () => {
+    expect(cleanOwnerAddress("a".repeat(100))).toHaveLength(60);
+    expect(cleanOwnerAddress(null)).toBe("");
+  });
+
+  it("finds the name older listings wrote in the text itself — always word + one initial", () => {
+    expect(pictureOwnerName("Соҳиб: Алишер Р.\nНашли паспорт на имя Махмудов М.")).toBe("Алишер Р.");
+    expect(pictureOwnerName("Нашли паспорт на имя Махмудов М. Ждём звонка.")).toBe("Махмудов М.");
+    expect(pictureOwnerName("#Загран\nна имя Боборачабов А.")).toBe("Боборачабов А.");
+    expect(pictureOwnerName("Хучатхо ба номи Носиров Комилчон Таваралиевич.")).toBe("Носиров К.");
+    expect(pictureOwnerName("Нурахмадов И.")).toBe("Нурахмадов И.");
+  });
+
+  it("draws nothing when the text names nobody", () => {
+    expect(pictureOwnerName("Папка-файл, принадлежит некой студентке Алимовой.")).toBe("");
+    expect(pictureOwnerName("#Паспорт\nНаш офис по адресу Каххорова 111")).toBe("");
+    expect(pictureOwnerName("Студенческий билет нашли.")).toBe("");
+    expect(pictureOwnerName("")).toBe("");
   });
 });

@@ -40,7 +40,7 @@ import { PhotoSourceSheet } from "@/components/photo-source-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PENDING_ADD_FILES_EVENT, takePendingAdd } from "@/lib/pending-add-files";
 import { CategorySheet } from "@/components/category-sheet";
-import { checkOwnerName, withOwnerLine } from "@/lib/document-owner";
+import { checkOwnerName, withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -55,6 +55,7 @@ import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
 import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
+import { insertItemWithSource } from "@/lib/client-stats";
 
 // These two components (the privacy blur canvas editor, the camera modal) are
 // heavy and only needed in specific cases (a document was detected / the
@@ -163,6 +164,8 @@ function AddItemForm() {
   const [catSheetOpen, setCatSheetOpen] = useState(false);
   // Documents: the owner's first name + first letter of the surname (lib/document-owner.ts).
   const [ownerName, setOwnerName] = useState("");
+  // Documents only: the owner's district or street, optional.
+  const [ownerAddress, setOwnerAddress] = useState("");
   const [moderationStatus, setModerationStatus] = useState<"idle" | "passed">("idle");
 
   // Load the phone number from the profile
@@ -327,6 +330,7 @@ function AddItemForm() {
       maskSensitiveNumbers(formData.description, formData.category),
       owner?.ok ? owner.value : null,
       locale,
+      formData.category === "Documents" ? ownerAddress : null,
     );
     const finalCategory = formData.category;
 
@@ -419,11 +423,12 @@ function AddItemForm() {
         city,
       };
 
-      const { data: item, error: itemError } = await supabase
-        .from("items")
-        .insert([itemData])
-        .select()
-        .single();
+      const { data: item, error: itemError } = (await insertItemWithSource(
+        (row) => supabase.from("items").insert([row]).select().single(),
+        itemData,
+        "web",
+      )) as { data: { id: string } | null; error: Error | null };
+      if (!item) throw itemError ?? new Error("insert failed");
       if (itemError) throw itemError;
 
       if (isNoPhotoCategory(finalCategory)) {
@@ -849,6 +854,24 @@ function AddItemForm() {
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}
                   />
+                </div>
+              )}
+
+              {formData.category === "Documents" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="doc-address" className="text-sm font-semibold text-muted-foreground ml-1">
+                    {t("docAddressLabel")}
+                  </Label>
+                  <Input
+                    id="doc-address"
+                    placeholder={t("docAddressPlaceholder")}
+                    autoComplete="off"
+                    maxLength={OWNER_ADDRESS_MAX}
+                    className="rounded-md h-12 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base font-medium shadow-none"
+                    value={ownerAddress}
+                    onChange={(e) => setOwnerAddress(e.target.value)}
+                  />
+                  <p className="ml-1 text-xs text-muted-foreground">{t("docAddressHint")}</p>
                 </div>
               )}
 

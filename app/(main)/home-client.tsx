@@ -788,8 +788,8 @@ function HomeContent({ initialItems }: { initialItems?: Item[] }) {
               </div>
             )}
             <div className={HOME_GRID_CLASS}>
-              {displayedItems.map((item) => (
-                <ItemFeedCard key={item.id} item={item} />
+              {displayedItems.map((item, index) => (
+                <ItemFeedCard key={item.id} item={item} priority={index < 4} />
               ))}
             </div>
 

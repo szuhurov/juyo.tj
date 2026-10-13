@@ -14,6 +14,8 @@ export interface AdminPostRow {
   user_id: string;
   profiles: { first_name: string | null; last_name: string | null } | null;
   images: { image_url: string }[];
+  /** Where it was posted from; null for listings older than migration 20261013000000_client_stats. */
+  source?: string | null;
 }
 
 export interface AdminPostDetail {

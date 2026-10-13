@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Package, UserX, ExternalLink, Crown } from "lucide-react";
+import { LayoutDashboard, Users, Package, UserX, ExternalLink, Crown, AtSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePendingPostsCount } from "@/lib/hooks/use-admin-posts";
 import { usePendingDeletionRequestsCount } from "@/lib/hooks/use-admin-deletion-requests";
@@ -11,6 +11,7 @@ export const NAV_ITEMS = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
   { href: "/admin/users", label: "Корбарон", icon: Users },
   { href: "/admin/posts", label: "Эълонҳо", icon: Package },
+  { href: "/admin/post-instagram", label: "Аз Instagram", icon: AtSign },
   { href: "/admin/subscriptions", label: "TOP/VIP", icon: Crown },
   { href: "/admin/deletion-requests", label: "Нестшудаҳо", icon: UserX },
 ];

@@ -1,5 +1,6 @@
 "use client";
 
+import { SOURCE_LABELS } from "@/lib/client-stats";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -60,7 +61,14 @@ export function PostTable({ rows }: { rows: AdminPostRow[] }) {
                 </div>
               </div>
 
-              <span className="text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium truncate">{ownerName}</span>
+              <span className="min-w-0 text-zinc-500 dark:text-zinc-400 group-hover:text-blue-100 font-medium">
+                <span className="block truncate">{ownerName}</span>
+                {post.source && (
+                  <span className="block text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-200">
+                    {SOURCE_LABELS[post.source as keyof typeof SOURCE_LABELS] ?? post.source}
+                  </span>
+                )}
+              </span>
 
               <StatusPill status={post.type} />
 

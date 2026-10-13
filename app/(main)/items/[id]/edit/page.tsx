@@ -36,7 +36,7 @@ import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { checkOwnerName, splitOwnerLine, withOwnerLine } from "@/lib/document-owner";
+import { checkOwnerName, splitOwnerLine, withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 
 import {
   Tooltip,
@@ -201,6 +201,8 @@ export default function EditItemPage({
       return;
     }
     const ownerValue = owner?.ok ? owner.value : null;
+    // Only a Documents listing carries an address line.
+    const ownerAddress = category === "Documents" ? ((formData.get("docAddress") as string) || "") : null;
     const phone = ((formData.get("phone") as string) || "").trim();
     const rewardField = formData.get("reward");
     const reward = rewardEnabled
@@ -230,7 +232,7 @@ export default function EditItemPage({
 
     const hasNewImages = currentImages.length > 0;
     const textChanged =
-      title !== item.title || withOwnerLine(description, ownerValue, locale) !== item.description;
+      title !== item.title || withOwnerLine(description, ownerValue, locale, ownerAddress) !== item.description;
 
     setSaving(true);
     try {
@@ -239,7 +241,7 @@ export default function EditItemPage({
       const finalImages = currentImages;
       // The database masks these numbers too.
       const finalTitle = maskSensitiveNumbers(title, category);
-      const finalDescription = withOwnerLine(maskSensitiveNumbers(description, category), ownerValue, locale);
+      const finalDescription = withOwnerLine(maskSensitiveNumbers(description, category), ownerValue, locale, ownerAddress);
       const finalCategory = category;
 
       // Any content change sends the listing back to an admin
@@ -556,6 +558,24 @@ export default function EditItemPage({
                     maxLength={40}
                     className="rounded-md"
                   />
+                </div>
+              )}
+
+              {category === "Documents" && (
+                <div className="space-y-2">
+                  <Label htmlFor="docAddress" className="text-xs min-[1084px]:text-sm text-slate-500">
+                    {t("docAddressLabel")}
+                  </Label>
+                  <Input
+                    id="docAddress"
+                    name="docAddress"
+                    defaultValue={splitOwnerLine(item?.description ?? "").address}
+                    placeholder={t("docAddressPlaceholder")}
+                    autoComplete="off"
+                    maxLength={OWNER_ADDRESS_MAX}
+                    className="rounded-md"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("docAddressHint")}</p>
                 </div>
               )}
 

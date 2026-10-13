@@ -16,9 +16,11 @@ import { ImagePlaceholder, ImageSkeleton } from "@/components/image-placeholder"
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { PAID_FEATURES_ENABLED } from "@/lib/feature-flags";
-import { splitOwnerLine } from "@/lib/document-owner";
+import { pictureOwnerName, splitOwnerLine } from "@/lib/document-owner";
+import { DocumentPlaceholderText } from "@/components/document-placeholder-text";
+import { isPlaceholderUrl } from "@/lib/photo-policy";
 
-export function ItemFeedCard({ item }: { item: Item }) {
+export function ItemFeedCard({ item, priority = false }: { item: Item; priority?: boolean }) {
   const { t } = useLanguage();
   // Small copy for cards (lib/listing-photo-upload.ts); older listings fall back to the full photo.
   const thumb = item.images?.[0]?.thumbnail_url || item.images?.[0]?.image_url;
@@ -31,6 +33,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
   // case and shows the placeholder instead.
   const [imgFailed, setImgFailed] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const owner = splitOwnerLine(item.description ?? "");
   const showThumb = !!thumb && !imgFailed;
   const src = showThumb ? thumb : categoryFallback;
 
@@ -45,7 +48,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
       {/* Image is rounded on all four sides — the type indicator moved
           from here to the bottom button, so the mask's inner corner and
           `-mb-px` are no longer needed. */}
-      <div className="relative aspect-[16/10] rounded-md bg-slate-100 dark:bg-zinc-700">
+      <div className="relative aspect-[16/10] overflow-hidden rounded-md bg-slate-100 dark:bg-zinc-700">
         {/* The skeleton stays until the photo has actually loaded; the icon is
             only for a listing that has nothing to show at all. */}
         {!src ? (
@@ -61,9 +64,14 @@ export function ItemFeedCard({ item }: { item: Item }) {
             fill
             sizes="(max-width: 640px) 50vw, 25vw"
             className="object-cover rounded-md"
+            // The first cards are what the visitor sees first: fetch them at once.
+            priority={priority}
             onLoad={() => setImgLoaded(true)}
             onError={() => (showThumb ? setImgFailed(true) : setImgLoaded(true))}
           />
+        )}
+        {showThumb && imgLoaded && isPlaceholderUrl(thumb) && (
+          <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={owner.address} />
         )}
         {PAID_FEATURES_ENABLED && (item.vip_tier === "vip" || item.vip_tier === "vvip") && (
           <span
@@ -97,7 +105,7 @@ export function ItemFeedCard({ item }: { item: Item }) {
             length. */}
         {item.description && (
           <p className="-mt-0.5 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
-            {splitOwnerLine(item.description).rest}
+            {owner.rest}
           </p>
         )}
 

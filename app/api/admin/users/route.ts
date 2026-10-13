@@ -4,6 +4,7 @@ import { startOfDay, startOfMonth } from "date-fns";
 import { isAdminUser } from "@/lib/admin-auth";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getErrorMessage } from "@/lib/error-utils";
+import { appInfoByUser } from "@/lib/client-stats";
 
 const NOT_DELETED = "status.is.null,status.neq.deleted";
 
@@ -74,8 +75,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const appInfo = await appInfoByUser(supabaseAdmin, userIds);
     const users = (profiles ?? []).map((p) => ({
       ...p,
+      app_platform: appInfo.get(p.id)?.app_platform ?? null,
+      app_version: appInfo.get(p.id)?.app_version ?? null,
+      app_last_seen_at: appInfo.get(p.id)?.app_last_seen_at ?? null,
       itemsCount: itemCounts.get(p.id)?.total ?? 0,
       resolvedCount: itemCounts.get(p.id)?.resolved ?? 0,
     }));

@@ -16,6 +16,10 @@ export interface AdminUserRow {
   itemsCount: number;
   resolvedCount: number;
   is_verified?: boolean;
+  /** Set once the user has opened the mobile app signed in (migration 20261013000000_client_stats). */
+  app_platform?: string | null;
+  app_version?: string | null;
+  app_last_seen_at?: string | null;
 }
 
 export interface AdminUserDetail {

@@ -14,6 +14,10 @@ export interface AdminStats {
   totalResolvedItems: number;
   pendingModerationCount: number;
   totalPushEnabledUsers: number;
+  /** Users who opened the mobile app signed in. Null until migration 20261013000000_client_stats is applied. */
+  appUsers: { total: number; android: number; ios: number; newInPeriod: number } | null;
+  /** Listings of the period by where they were posted from ("unknown" = before this was recorded). */
+  itemsBySource: Record<string, number> | null;
   signupsByDay: { date: string; count: number }[];
   signupsGranularity: "hour" | "day" | "month";
   itemsByCategory: { category: string; count: number }[];

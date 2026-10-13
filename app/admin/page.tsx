@@ -1,5 +1,6 @@
 "use client";
 
+import { ClientStatsPanel } from "@/components/admin/client-stats-panel";
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Users, Package, CheckCircle2, BellRing } from "lucide-react";
@@ -92,6 +93,8 @@ export default function AdminDashboardPage() {
         <StatCard icon={CheckCircle2} label="Ҳалшуда" value={stats.totalResolvedItems} accent="emerald" />
         <StatCard icon={BellRing} label="Push фаъол" value={stats.totalPushEnabledUsers} accent="sky" />
       </div>
+
+      <ClientStatsPanel appUsers={stats.appUsers} itemsBySource={stats.itemsBySource} periodLabel={PERIOD_LABELS[period]} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <div className="min-w-0">

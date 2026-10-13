@@ -36,7 +36,9 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ImagePlaceholder, ImageSkeleton } from "@/components/image-placeholder";
-import { splitOwnerLine } from "@/lib/document-owner";
+import { pictureOwnerName, splitOwnerLine } from "@/lib/document-owner";
+import { DocumentPlaceholderText } from "@/components/document-placeholder-text";
+import { isPlaceholderUrl } from "@/lib/photo-policy";
 
 export function ItemCard({
   item,
@@ -61,6 +63,7 @@ export function ItemCard({
   // the category illustration (see ItemFeedCard).
   const categoryFallback = CATEGORY_IMAGES[item.category];
   const [imgLoaded, setImgLoaded] = useState(false);
+  const owner = splitOwnerLine(item.description ?? "");
   const showThumb = !!thumb && !imgFailed;
   const src = showThumb ? thumb : categoryFallback;
 
@@ -102,7 +105,7 @@ export function ItemCard({
       >
         {/* Image is rounded on all four sides — the type indicator moved
             to the bottom button, so a mask and `-mb-px` are no longer needed. */}
-        <div className="relative aspect-[4/3] rounded-md bg-slate-100 dark:bg-zinc-700">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-slate-100 dark:bg-zinc-700">
           {/* Skeleton until the photo has loaded — see ItemFeedCard. */}
           {!src ? (
             <ImagePlaceholder className="rounded-md" />
@@ -124,6 +127,10 @@ export function ItemCard({
               onLoad={() => setImgLoaded(true)}
               onError={() => (showThumb ? setImgFailed(true) : setImgLoaded(true))}
             />
+          )}
+
+          {showThumb && imgLoaded && isPlaceholderUrl(thumb) && (
+            <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={owner.address} />
           )}
 
           {isOwner && (
@@ -194,7 +201,7 @@ export function ItemCard({
           {/* Description — one line, see ItemFeedCard (both cards look the same). */}
           {item.description && (
             <p className="mt-0.5 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              {splitOwnerLine(item.description).rest}
+              {owner.rest}
             </p>
           )}
 
