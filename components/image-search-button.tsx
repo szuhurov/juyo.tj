@@ -34,6 +34,30 @@ const ERROR_KEYS: Record<string, string> = {
   rate_limited: "imageSearchErrTimeout",
 };
 
+/** Round progress in place of the camera icon while the model downloads with the dialog closed. */
+function ProgressRing({ progress }: { progress: number }) {
+  const r = 7;
+  const length = 2 * Math.PI * r;
+  const done = Math.min(1, Math.max(0.04, progress));
+  return (
+    <svg width="16" height="16" viewBox="0 0 18 18" role="img" aria-label={`${Math.round(progress * 100)}%`}>
+      <circle cx="9" cy="9" r={r} fill="none" strokeWidth="2.5" className="stroke-zinc-200 dark:stroke-zinc-700" />
+      <circle
+        cx="9"
+        cy="9"
+        r={r}
+        fill="none"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeDasharray={length}
+        strokeDashoffset={length * (1 - done)}
+        transform="rotate(-90 9 9)"
+        className="stroke-primary transition-[stroke-dashoffset] duration-200"
+      />
+    </svg>
+  );
+}
+
 function badgeKey(reasons: string[]) {
   if (reasons.includes("same_photo")) return "imageSearchSamePhoto";
   if (reasons.includes("very_similar")) return "imageSearchVerySimilar";
@@ -58,9 +82,15 @@ export function ImageSearchButton() {
   const [installed, setInstalled] = useState<boolean | null>(null);
   const [installing, setInstalling] = useState(false);
   const [installFailed, setInstallFailed] = useState(false);
-  const percent = Math.round((download ?? 0) * 100);
+  // After the bytes are in, the model still has to be prepared for a moment: shown as 100%.
+  const percent = Math.round((download ?? (installing ? 1 : 0)) * 100);
 
   const openDialog = () => {
+    // Reopened while the model is still downloading: show its progress again.
+    if (installing) {
+      setOpen(true);
+      return;
+    }
     setPhase({ kind: "pick" });
     setInstallFailed(false);
     setOpen(true);
@@ -71,11 +101,13 @@ export function ImageSearchButton() {
   };
 
   const install = async () => {
+    if (installing) return;
     setInstalling(true);
     setInstallFailed(false);
     try {
       await installVisualModel();
       setInstalled(true);
+      warmUpVisualModel();
     } catch {
       setInstallFailed(true);
     } finally {
@@ -145,7 +177,7 @@ export function ImageSearchButton() {
         title={t("imageSearchTitle")}
         className="p-1.5 text-slate-500 hover:text-primary transition-colors cursor-pointer"
       >
-        <Camera className="h-4 w-4" />
+        {installing ? <ProgressRing progress={download ?? 1} /> : <Camera className="h-4 w-4" />}
       </button>
 
       <input
@@ -187,29 +219,31 @@ export function ImageSearchButton() {
                   {t("imageSearchInstallFailed")}
                 </p>
               )}
-              {installing && (
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-tile" aria-hidden>
-                  <div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: percent + "%" }} />
+              {installing ? (
+                // Instead of a spinner: one long bar with the percentage. The
+                // dialog may be closed — the download goes on and the camera
+                // button in the search bar shows its progress.
+                <div className="w-full space-y-2" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+                  <div className="flex items-center gap-3">
+                    <div className="h-3 flex-1 overflow-hidden rounded-full bg-tile">
+                      <div className="h-full rounded-full bg-primary transition-[width] duration-200" style={{ width: percent + "%" }} />
+                    </div>
+                    <span className="w-12 text-right text-sm font-bold tabular-nums text-primary">{percent}%</span>
+                  </div>
+                  <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
+                    {t("imageSearchInstalling").replace("{percent}", String(percent))}
+                  </p>
                 </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={install}
+                  className="pressable flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-foreground"
+                >
+                  <Download className="h-4 w-4" />
+                  {t("imageSearchInstallBtn").replace("{size}", String(VISUAL_MODEL_SIZE_MB))}
+                </button>
               )}
-              <button
-                type="button"
-                onClick={install}
-                disabled={installing}
-                className="pressable flex h-12 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-semibold text-primary-foreground disabled:opacity-70"
-              >
-                {installing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span aria-live="polite">{t("imageSearchInstalling").replace("{percent}", String(percent))}</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4" />
-                    {t("imageSearchInstallBtn").replace("{size}", String(VISUAL_MODEL_SIZE_MB))}
-                  </>
-                )}
-              </button>
             </div>
           )}
 
