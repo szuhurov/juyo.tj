@@ -36,7 +36,7 @@ import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { checkOwnerName, splitOwnerLine, withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { checkOwnerName, cleanPosterName, hasContentsField, splitOwnerLine, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
 
 import {
@@ -212,7 +212,14 @@ export default function EditItemPage({
       toast.error(t(owner.reason === "full_surname" ? "docOwnerFullSurname" : "docOwnerFormat"));
       return;
     }
-    const ownerValue = owner?.ok ? owner.value : null;
+    const ownerValue = isNoPhotoCategory(category)
+      ? (owner?.ok ? owner.value : null)
+      : type === "lost"
+        ? cleanPosterName((formData.get("posterName") as string) || "") || null
+        : null;
+    const contents = hasContentsField(category, type)
+      ? maskSensitiveNumbers((formData.get("contents") as string) || "", category)
+      : null;
     // Only a Documents listing carries an address line.
     const ownerAddress = category === "Documents" ? ((formData.get("docAddress") as string) || "") : null;
     const phone = ((formData.get("phone") as string) || "").trim();
@@ -244,7 +251,7 @@ export default function EditItemPage({
 
     const hasNewImages = currentImages.length > 0;
     const textChanged =
-      title !== item.title || withOwnerLine(description, ownerValue, locale, ownerAddress) !== item.description;
+      title !== item.title || withOwnerLine(description, ownerValue, locale, ownerAddress, contents) !== item.description;
 
     setSaving(true);
     try {
@@ -253,7 +260,7 @@ export default function EditItemPage({
       const finalImages = currentImages;
       // The database masks these numbers too.
       const finalTitle = maskSensitiveNumbers(title, category);
-      const finalDescription = withOwnerLine(maskSensitiveNumbers(description, category), ownerValue, locale, ownerAddress);
+      const finalDescription = withOwnerLine(maskSensitiveNumbers(description, category), ownerValue, locale, ownerAddress, contents);
       const finalCategory = category;
 
       // Any content change sends the listing back to an admin
@@ -590,6 +597,42 @@ export default function EditItemPage({
                     className="rounded-md"
                   />
                   <p className="text-xs text-muted-foreground">{t("docAddressHint")}</p>
+                </div>
+              )}
+
+              {type === "lost" && !isNoPhotoCategory(category) && (
+                <div className="space-y-2">
+                  <Label htmlFor="posterName" className="text-xs min-[1084px]:text-sm text-slate-500">
+                    {t("posterNameLabel")}
+                  </Label>
+                  <Input
+                    id="posterName"
+                    name="posterName"
+                    defaultValue={splitOwnerLine(item?.description ?? "").ownerName}
+                    placeholder={t("posterNamePlaceholder")}
+                    autoComplete="name"
+                    maxLength={OWNER_ADDRESS_MAX}
+                    className="rounded-md"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("posterNameHint")}</p>
+                </div>
+              )}
+
+              {hasContentsField(category, type) && (
+                <div className="space-y-2">
+                  <Label htmlFor="contents" className="text-xs min-[1084px]:text-sm text-slate-500">
+                    {t("contentsLabel")}
+                  </Label>
+                  <Textarea
+                    id="contents"
+                    name="contents"
+                    defaultValue={splitOwnerLine(item?.description ?? "").contents}
+                    placeholder={t("contentsPlaceholder")}
+                    maxLength={CONTENTS_MAX}
+                    rows={2}
+                    className="rounded-md min-h-[64px] resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("contentsHint")}</p>
                 </div>
               )}
 

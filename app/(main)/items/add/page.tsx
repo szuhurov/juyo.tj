@@ -40,7 +40,7 @@ import { PhotoSourceSheet } from "@/components/photo-source-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PENDING_ADD_FILES_EVENT, takePendingAdd } from "@/lib/pending-add-files";
 import { CategorySheet } from "@/components/category-sheet";
-import { checkOwnerName, withOwnerLine, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { checkOwnerName, cleanPosterName, hasContentsField, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -165,6 +165,10 @@ function AddItemForm() {
   const [ownerName, setOwnerName] = useState("");
   // Documents only: the owner's district or street, optional.
   const [ownerAddress, setOwnerAddress] = useState("");
+  // Lost listings: the poster's own name (any category but Documents/Cards,
+  // which have the owner field above) and, for a wallet or bag, what was inside.
+  const [posterName, setPosterName] = useState("");
+  const [contents, setContents] = useState("");
   const [moderationStatus, setModerationStatus] = useState<"idle" | "passed">("idle");
   // "Found" is only for accounts the owner verified (companies, authorities):
   // the option is not shown to anyone else (the database refuses it too).
@@ -333,11 +337,17 @@ function AddItemForm() {
     // poster sees in sync with what is saved.
     const finalTitle = maskSensitiveNumbers(formData.title, formData.category);
     const owner = isNoPhotoCategory(formData.category) ? checkOwnerName(ownerName) : null;
+    const ownerLine = isNoPhotoCategory(formData.category)
+      ? (owner?.ok ? owner.value : null)
+      : formData.type === "lost"
+        ? cleanPosterName(posterName) || null
+        : null;
     const finalDescription = withOwnerLine(
       maskSensitiveNumbers(formData.description, formData.category),
-      owner?.ok ? owner.value : null,
+      ownerLine,
       locale,
       formData.category === "Documents" ? ownerAddress : null,
+      hasContentsField(formData.category, formData.type) ? maskSensitiveNumbers(contents, formData.category) : null,
     );
     const finalCategory = formData.category;
 
@@ -882,6 +892,42 @@ function AddItemForm() {
                     onChange={(e) => setOwnerAddress(e.target.value)}
                   />
                   <p className="ml-1 text-xs text-muted-foreground">{t("docAddressHint")}</p>
+                </div>
+              )}
+
+              {formData.type === "lost" && !isNoPhotoCategory(formData.category) && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="poster-name" className="text-sm font-semibold text-muted-foreground ml-1">
+                    {t("posterNameLabel")}
+                  </Label>
+                  <Input
+                    id="poster-name"
+                    placeholder={t("posterNamePlaceholder")}
+                    autoComplete="name"
+                    maxLength={OWNER_ADDRESS_MAX}
+                    className="rounded-md h-12 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base font-medium shadow-none"
+                    value={posterName}
+                    onChange={(e) => setPosterName(e.target.value)}
+                  />
+                  <p className="ml-1 text-xs text-muted-foreground">{t("posterNameHint")}</p>
+                </div>
+              )}
+
+              {hasContentsField(formData.category, formData.type) && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="item-contents" className="text-sm font-semibold text-muted-foreground ml-1">
+                    {t("contentsLabel")}
+                  </Label>
+                  <Textarea
+                    id="item-contents"
+                    placeholder={t("contentsPlaceholder")}
+                    maxLength={CONTENTS_MAX}
+                    rows={2}
+                    className="rounded-md min-h-[64px] bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base font-medium shadow-none resize-none"
+                    value={contents}
+                    onChange={(e) => setContents(e.target.value)}
+                  />
+                  <p className="ml-1 text-xs text-muted-foreground">{t("contentsHint")}</p>
                 </div>
               )}
 

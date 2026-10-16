@@ -27,7 +27,7 @@ import { createClerkSupabaseClient } from "@/lib/supabase";
 import { uploadListingPhoto } from "@/lib/listing-photo-upload";
 import { isNoPhotoCategory, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { withOwnerLine, INSTAGRAM_POSTER_NAME, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { hasContentsField, withOwnerLine, CONTENTS_MAX, INSTAGRAM_POSTER_NAME, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 
 const PrivacyBlurEditor = dynamic(() =>
   import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
@@ -83,6 +83,7 @@ export default function PostInstagramPage() {
   const [description, setDescription] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [ownerAddress, setOwnerAddress] = useState("");
+  const [contents, setContents] = useState("");
   const [city, setCity] = useState<string | null>(null);
   const [locationType, setLocationType] = useState<string | null>(null);
   const [date, setDate] = useState(today);
@@ -150,7 +151,7 @@ export default function PostInstagramPage() {
           type,
           category,
           title,
-          description: withOwnerLine(description, owner || null, "tg", category === "Documents" ? ownerAddress : null),
+          description: withOwnerLine(description, owner || null, "tg", category === "Documents" ? ownerAddress : null, hasContentsField(category, type) ? contents : null),
           city,
           location_type: locationType,
           date,
@@ -246,6 +247,14 @@ export default function PostInstagramPage() {
               <Input className={FIELD} value={ownerAddress} maxLength={OWNER_ADDRESS_MAX} placeholder={t("docAddressPlaceholder")} autoComplete="off" onChange={(e) => setOwnerAddress(e.target.value)} />
             </Field>
             <p className="text-xs text-zinc-500">{t("docAddressHint")}</p>
+          </div>
+        )}
+        {hasContentsField(category, type) && (
+          <div className="space-y-1">
+            <Field label={t("contentsLabel")}>
+              <Textarea className="rounded-md min-h-[64px] bg-white dark:bg-zinc-800 resize-none" rows={2} value={contents} maxLength={CONTENTS_MAX} placeholder={t("contentsPlaceholder")} onChange={(e) => setContents(e.target.value)} />
+            </Field>
+            <p className="text-xs text-zinc-500">{t("contentsHint")}</p>
           </div>
         )}
         <Field label="Тавсиф">

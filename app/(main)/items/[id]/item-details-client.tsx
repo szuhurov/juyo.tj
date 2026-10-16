@@ -563,7 +563,7 @@ export default function ItemDetailsClient({
                 ))}
               {item && (() => {
                 // Documents keep the owner as the description's first line (lib/document-owner.ts).
-                const { ownerName, address, rest } = docOwner;
+                const { ownerName, address, contents, rest } = docOwner;
                 return (
                   <>
                     <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base min-[1084px]:text-lg min-[1503px]:text-xl whitespace-pre-wrap">
@@ -571,7 +571,13 @@ export default function ItemDetailsClient({
                     </p>
                     {ownerName && (
                       <p className="mt-3 font-semibold text-zinc-900 dark:text-zinc-50 text-base min-[1084px]:text-lg min-[1503px]:text-xl">
-                        {t(item?.category === "Cards" ? "cardOwnerShown" : "docOwnerShown")}: <span className="font-bold">{ownerName}</span>
+                        {t(item?.category === "Cards" ? "cardOwnerShown" : item?.category === "Documents" ? "docOwnerShown" : "ownerShown")}:{" "}
+                        <span className="font-bold">{ownerName}</span>
+                      </p>
+                    )}
+                    {contents && (
+                      <p className={cn("font-semibold text-zinc-900 dark:text-zinc-50 text-base min-[1084px]:text-lg min-[1503px]:text-xl", ownerName ? "mt-1" : "mt-3")}>
+                        {t("contentsShown")}: <span className="font-bold">{contents}</span>
                       </p>
                     )}
                     {address && (

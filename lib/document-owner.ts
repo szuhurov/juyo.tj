@@ -16,6 +16,12 @@
  * very first line ("Instagram: Алишер Раҳимов"), and the listing shows
  * "Аз Instagram-и juyo" with that name instead of the admin's profile.
  *
+ * A lost Wallet or Bag may list what was inside ("Дар дохилаш: шиноснома,
+ * калид"), and any lost listing may carry the poster's own name as the owner
+ * line — both help the finder recognise the item. The contents are never
+ * asked for "Found" listings: published, they would tell a fake owner what
+ * to answer.
+ *
  * Kept byte-identical in Web/lib and app/lib (app/__tests__/shared-lib-parity.test.ts).
  */
 const OWNER_LABELS: Record<string, string> = { tg: 'Соҳиб:', ru: 'Владелец:', en: 'Owner:' };
@@ -25,7 +31,16 @@ const SHORT_NAME = new RegExp(`^(${LETTER}[${LETTER}'’-]+)\\s+(${LETTER})\\.?$
 const OWNER_LINE = /^(?:Соҳиб|Владелец|Owner):\s*(.+)$/u;
 const ADDRESS_LINE = /^(?:Суроға|Адрес|Address):\s*(.+)$/u;
 const INSTAGRAM_LINE = /^Instagram:\s*(.+)$/u;
+const CONTENTS_LABELS: Record<string, string> = { tg: 'Дар дохилаш:', ru: 'Внутри:', en: 'Inside:' };
+const CONTENTS_LINE = /^(?:Дар дохилаш|Внутри|Inside):\s*(.+)$/u;
 export const OWNER_ADDRESS_MAX = 60;
+export const CONTENTS_MAX = 150;
+/** Categories that are containers: a lost one may say what was inside. */
+export const CONTENTS_CATEGORIES: readonly string[] = ['Wallet', 'Bag'];
+
+export function hasContentsField(category: string | null | undefined, type: string | null | undefined): boolean {
+  return type === 'lost' && !!category && CONTENTS_CATEGORIES.includes(category);
+}
 
 /** What a listing posted for an Instagram request shows in place of the poster's profile. */
 export const INSTAGRAM_POSTER_NAME = 'Аз Instagram-и juyo';
@@ -53,20 +68,37 @@ export function checkOwnerName(input: string): OwnerNameCheck | null {
 
 /** One line, single spaces, at most OWNER_ADDRESS_MAX characters. */
 export function cleanOwnerAddress(input: string | null | undefined): string {
-  return (input ?? '').replace(/\s+/g, ' ').trim().slice(0, OWNER_ADDRESS_MAX).trim();
+  return cleanLine(input, OWNER_ADDRESS_MAX);
+}
+
+function cleanLine(input: string | null | undefined, max: number): string {
+  return (input ?? '').replace(/\s+/g, ' ').trim().slice(0, max).trim();
+}
+
+/** The poster's own name on a lost listing: any real name, one line, at most 60 characters. */
+export function cleanPosterName(input: string | null | undefined): string {
+  return cleanLine(input, OWNER_ADDRESS_MAX);
 }
 
 /**
  * The description as saved: the owner line, then the address line, then what
  * the person wrote. An "Instagram:" line already on the description is kept.
  */
-export function withOwnerLine(description: string, ownerName: string | null, locale: string, address: string | null = null): string {
+export function withOwnerLine(
+  description: string,
+  ownerName: string | null,
+  locale: string,
+  address: string | null = null,
+  contents: string | null = null,
+): string {
   const { postedFor, rest } = splitOwnerLine(description);
   const lines: string[] = [];
   if (postedFor) lines.push(`Instagram: ${postedFor}`);
   if (ownerName) lines.push(`${OWNER_LABELS[locale] ?? OWNER_LABELS.tg} ${ownerName}`);
   const place = cleanOwnerAddress(address);
   if (place) lines.push(`${ADDRESS_LABELS[locale] ?? ADDRESS_LABELS.tg} ${place}`);
+  const inside = cleanLine(contents, CONTENTS_MAX);
+  if (inside) lines.push(`${CONTENTS_LABELS[locale] ?? CONTENTS_LABELS.tg} ${inside}`);
   return [...lines, rest].join('\n').trim();
 }
 
@@ -78,7 +110,13 @@ export function withPostedFor(description: string, person: string): string {
 }
 
 /** Reads the leading lines back (in any of the three languages) for the edit and listing screens. */
-export function splitOwnerLine(description: string): { postedFor: string; ownerName: string; address: string; rest: string } {
+export function splitOwnerLine(description: string): {
+  postedFor: string;
+  ownerName: string;
+  address: string;
+  contents: string;
+  rest: string;
+} {
   const lines = description.split('\n');
   let at = 0;
   const posted = INSTAGRAM_LINE.exec((lines[at] ?? '').trim());
@@ -87,11 +125,14 @@ export function splitOwnerLine(description: string): { postedFor: string; ownerN
   if (owner) at++;
   const place = ADDRESS_LINE.exec((lines[at] ?? '').trim());
   if (place) at++;
-  if (at === 0) return { postedFor: '', ownerName: '', address: '', rest: description };
+  const inside = CONTENTS_LINE.exec((lines[at] ?? '').trim());
+  if (inside) at++;
+  if (at === 0) return { postedFor: '', ownerName: '', address: '', contents: '', rest: description };
   return {
     postedFor: posted ? posted[1].trim() : '',
     ownerName: owner ? owner[1].trim() : '',
     address: place ? place[1].trim() : '',
+    contents: inside ? inside[1].trim() : '',
     rest: lines.slice(at).join('\n').trim(),
   };
 }

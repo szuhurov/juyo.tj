@@ -6,9 +6,11 @@ import {
   splitOwnerLine,
   withOwnerLine,
   withPostedFor,
+  hasContentsField,
+  cleanPosterName,
 } from "@/lib/document-owner";
 
-const NONE = { postedFor: "", ownerName: "", address: "" };
+const NONE = { postedFor: "", ownerName: "", address: "", contents: "" };
 
 describe("document owner name: first name + first letter of the surname", () => {
   it("accepts and normalizes the short form", () => {
@@ -77,6 +79,7 @@ describe("document owner name: first name + first letter of the surname", () => 
       postedFor: "Фарҳод Каримов",
       ownerName: "Алишер Раҳимов",
       address: "ноҳияи Сино",
+      contents: "",
       rest: "Дар бозор ёфтам",
     });
     // editing the listing later keeps the line
@@ -85,5 +88,28 @@ describe("document owner name: first name + first letter of the surname", () => 
     expect(withPostedFor(saved, "Сино Н.").split("\n")[0]).toBe("Instagram: Сино Н.");
     expect(splitOwnerLine("Instagram: Сино Н.\nКалид гум шуд")).toEqual({ ...NONE, postedFor: "Сино Н.", rest: "Калид гум шуд" });
     expect(pictureOwnerName(saved)).toBe("Алишер Раҳимов");
+  });
+
+  it("keeps what a lost wallet or bag had inside, after the owner line", () => {
+    const saved = withOwnerLine("Дар бозор гум шуд", "Алишер Раҳимов", "tg", null, "  шиноснома,\n 2 корти бонкӣ ");
+    expect(saved).toBe("Соҳиб: Алишер Раҳимов\nДар дохилаш: шиноснома, 2 корти бонкӣ\nДар бозор гум шуд");
+    expect(splitOwnerLine(saved)).toEqual({ ...NONE, ownerName: "Алишер Раҳимов", contents: "шиноснома, 2 корти бонкӣ", rest: "Дар бозор гум шуд" });
+    expect(splitOwnerLine("Внутри: ключи\nПотерял в такси")).toEqual({ ...NONE, contents: "ключи", rest: "Потерял в такси" });
+    // saving again without contents removes the line; the Instagram line stays first
+    expect(withOwnerLine(saved, "Алишер Раҳимов", "tg")).toBe("Соҳиб: Алишер Раҳимов\nДар бозор гум шуд");
+    expect(withPostedFor(saved, "Сино Н.").split("\n").slice(0, 3)).toEqual(["Instagram: Сино Н.", "Соҳиб: Алишер Раҳимов", "Дар дохилаш: шиноснома, 2 корти бонкӣ"]);
+  });
+
+  it("asks for the contents only for a lost wallet or bag", () => {
+    expect(hasContentsField("Wallet", "lost")).toBe(true);
+    expect(hasContentsField("Bag", "lost")).toBe(true);
+    expect(hasContentsField("Wallet", "found")).toBe(false);
+    expect(hasContentsField("Keys", "lost")).toBe(false);
+    expect(hasContentsField(null, "lost")).toBe(false);
+  });
+
+  it("takes the poster's own full name on one line", () => {
+    expect(cleanPosterName("  Алишер   Раҳимов ")).toBe("Алишер Раҳимов");
+    expect(cleanPosterName("a".repeat(80))).toHaveLength(60);
   });
 });
