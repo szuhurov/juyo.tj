@@ -6,6 +6,8 @@ import { THUMB_QUALITY, THUMB_WIDTH } from "@/lib/listing-photo-upload";
 
 async function adminFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
+    // The panel must always show what is in the database right now.
+    cache: "no-store",
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });

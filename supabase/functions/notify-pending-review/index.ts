@@ -5,16 +5,15 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const SITE_URL = Deno.env.get("SITE_URL") ?? "https://juyo.tj";
 const PUSH_INTERNAL_SECRET = Deno.env.get("PUSH_INTERNAL_SECRET");
 
-// The admin's account (zuhurovsamariddinn1@gmail.com) — every new listing
-// waits in moderation_status='pending' for the admin; the notification goes
-// only to this account.
-const ADMIN_USER_ID = "user_3GTmOz49mVZU6KeypHzMV14Dx10";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// The admin accounts (Clerk ids) that get these notifications — the same
+// list as ADMIN_USER_IDS on the website. BUG FOUND 2026-10-15: this used to be
+// one hardcoded id that has no profile in the database, so no admin ever
+// received a "pending review" notification. Set ADMIN_USER_IDS as a function
+// secret to change the list without a deploy.
+const ADMIN_USER_IDS = (Deno.env.get("ADMIN_USER_IDS") ?? "user_3ImaBqNiOR3WoGCEBHgU0Acec2l,user_3Dqp9UtdA1pRMUZZwQaRCA8Jgek")
+  .split(",")
+  .map((id) => id.trim())
+  .filter(Boolean);
 
 // see notify-category-post for why this relay exists (web push doesn't work in Deno).
 async function sendWebPush(token: string, payload: object): Promise<{ ok: boolean; statusCode?: number }> {
@@ -29,38 +28,54 @@ async function sendWebPush(token: string, payload: object): Promise<{ ok: boolea
   return result;
 }
 
-// When a new listing is created with moderation_status='pending' (every
-// listing is reviewed by the admin — there is no AI), sends a distinct
-// notification to the admin — see trigger_notify_pending_review() in
-// supabase/migrations/20260731000000_notify_pending_review.sql.
+type Message = { title: string; body: string; data: Record<string, string>; tag: string };
+
+// Called by database triggers with the service-role key (verify_jwt = true):
+//   { item_id }      a new listing waits for review   (trigger_notify_pending_review)
+//   { new_user_id }  a new account was created         (trigger_notify_new_user)
+// The admin's own phone (Expo) and Chrome (web push) get it.
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return new Response("method not allowed", { status: 405 });
 
   const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
   try {
-    const { item_id } = await req.json();
-    if (!item_id) {
-      return new Response(JSON.stringify({ error: "item_id required" }), { status: 400 });
-    }
+    const { item_id, new_user_id } = await req.json();
+    let message: Message;
 
-    const { data: item } = await supabase.from("items").select("id, title").eq("id", item_id).single();
-    if (!item) {
-      return new Response(JSON.stringify({ error: "item not found" }), { status: 404 });
+    if (item_id) {
+      const { data: item } = await supabase.from("items").select("id, title").eq("id", item_id).single();
+      if (!item) return new Response(JSON.stringify({ error: "item not found" }), { status: 404 });
+      message = {
+        title: "🔴 Санҷиши дастӣ лозим аст",
+        body: `Эълони нав дар интизори тасдиқ: "${item.title}"`,
+        data: { type: "pending_review", item_id: item.id, url: `/admin/posts/${item.id}` },
+        tag: "pending-review",
+      };
+    } else if (new_user_id) {
+      // No name or email in the text: push services (Expo, Google, Apple) carry it.
+      const { count } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .or("status.is.null,status.neq.deleted");
+      message = {
+        title: "👤 Корбари нав",
+        body: count ? `Корбари нав дар juyo бақайд гирифт. Ҳамагӣ: ${count}` : "Корбари нав дар juyo бақайд гирифт.",
+        data: { type: "new_user", url: `/admin/users/${new_user_id}` },
+        tag: `new-user-${new_user_id}`,
+      };
+    } else {
+      return new Response(JSON.stringify({ error: "item_id or new_user_id required" }), { status: 400 });
     }
 
     const { data: tokens } = await supabase
       .from("push_tokens")
       .select("platform, token")
-      .eq("user_id", ADMIN_USER_ID);
+      .in("user_id", ADMIN_USER_IDS);
 
     if (!tokens || tokens.length === 0) {
       return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
     }
-
-    const title = "🔴 Санҷиши дастӣ лозим аст";
-    const body = `Эълони нав дар интизори тасдиқ: "${item.title}"`;
-    const data = { type: "pending_review", item_id: item.id };
 
     let sent = 0;
     const staleTokenIds: string[] = [];
@@ -72,7 +87,7 @@ Deno.serve(async (req) => {
             const res = await fetch("https://exp.host/--/api/v2/push/send", {
               method: "POST",
               headers: { "Content-Type": "application/json", Accept: "application/json" },
-              body: JSON.stringify({ to: row.token, title, body, data, sound: "default", priority: "high" }),
+              body: JSON.stringify({ to: row.token, title: message.title, body: message.body, data: message.data, sound: "default", priority: "high" }),
             });
             const result = await res.json().catch(() => null);
             const status = result?.data?.status ?? result?.data?.[0]?.status;
@@ -82,14 +97,13 @@ Deno.serve(async (req) => {
               sent++;
             }
           } else if (row.platform === "web") {
-            // Distinct vibrate and tag — so this notification type is
-            // distinguishable from regular notifications (category_post).
+            // Distinct vibrate and tag — so these are told apart from regular notifications.
             const result = await sendWebPush(row.token, {
-              title,
-              body,
-              data,
+              title: message.title,
+              body: message.body,
+              data: message.data,
               vibrate: [400, 150, 400, 150, 400],
-              tag: "pending-review",
+              tag: message.tag,
             });
             if (result.ok) {
               sent++;
@@ -113,6 +127,6 @@ Deno.serve(async (req) => {
     });
   } catch (err: any) {
     console.error("notify-pending-review error:", err?.message || err);
-    return new Response(JSON.stringify({ error: err?.message || "unknown error" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "internal error" }), { status: 500 });
   }
 });

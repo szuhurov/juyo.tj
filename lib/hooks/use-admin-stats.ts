@@ -26,6 +26,8 @@ export function useAdminStats(period?: StatsPeriod) {
   return useQuery({
     queryKey: [...ADMIN_KEYS.stats(), period ?? "all"],
     queryFn: () => AdminService.getStats(period) as Promise<AdminStats>,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }

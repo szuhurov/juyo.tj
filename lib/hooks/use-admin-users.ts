@@ -58,7 +58,9 @@ export function useAdminUsers(filters: AdminUserFilters) {
   return useQuery({
     queryKey: ADMIN_KEYS.usersList(filters),
     queryFn: () => AdminService.getUsers(filters) as Promise<{ users: AdminUserRow[]; total: number }>,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -67,7 +69,9 @@ export function useAdminUser(id: string) {
     queryKey: ADMIN_KEYS.userDetail(id),
     queryFn: () => AdminService.getUser(id) as Promise<AdminUserDetail>,
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -160,7 +164,9 @@ export function useDeletedAccountsArchive() {
   return useQuery({
     queryKey: ["admin", "users", "deleted-archive"],
     queryFn: () => AdminService.getDeletedAccountsArchive() as Promise<{ entries: DeletedAccountEntry[] }>,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -169,6 +175,8 @@ export function useDeletedAccountEntry(id: string) {
     queryKey: ["admin", "users", "deleted-archive", id],
     queryFn: () => AdminService.getDeletedAccountEntry(id) as Promise<{ entry: DeletedAccountEntry }>,
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }

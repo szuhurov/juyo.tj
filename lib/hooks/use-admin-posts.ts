@@ -45,7 +45,9 @@ export function usePendingPostsCount() {
       };
       return res.total;
     },
-    staleTime: 20_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     refetchInterval: 30_000,
   });
 }
@@ -54,7 +56,9 @@ export function useAdminPosts(filters: AdminPostFilters) {
   return useQuery({
     queryKey: ADMIN_KEYS.postsList(filters),
     queryFn: () => AdminService.getPosts(filters) as Promise<{ posts: AdminPostRow[]; total: number }>,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -63,7 +67,9 @@ export function useAdminPost(id: string) {
     queryKey: ADMIN_KEYS.postDetail(id),
     queryFn: () => AdminService.getPost(id) as Promise<AdminPostDetail>,
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -143,7 +149,9 @@ export function useDeletedItemsArchive(userId?: string) {
   return useQuery({
     queryKey: userId ? ["admin", "posts", "deleted-archive", "user", userId] : ["admin", "posts", "deleted-archive"],
     queryFn: () => AdminService.getDeletedItemsArchive(userId) as Promise<{ entries: DeletedItemEntry[] }>,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -152,6 +160,8 @@ export function useDeletedItemEntry(id: string) {
     queryKey: ["admin", "posts", "deleted-archive", id],
     queryFn: () => AdminService.getDeletedItemEntry(id) as Promise<{ entry: DeletedItemEntry }>,
     enabled: !!id,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }

@@ -18,7 +18,9 @@ export function usePendingDeletionRequestsCount() {
       const res = (await AdminService.getDeletionRequests({ status: "pending" })) as { requests: AdminDeletionRequestRow[] };
       return res.requests.length;
     },
-    staleTime: 20_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     refetchInterval: 30_000,
   });
 }
@@ -27,7 +29,9 @@ export function useAdminDeletionRequests(status: string) {
   return useQuery({
     queryKey: ADMIN_KEYS.deletionRequestsList(status),
     queryFn: () => AdminService.getDeletionRequests({ status }) as Promise<{ requests: AdminDeletionRequestRow[] }>,
-    staleTime: 15_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 

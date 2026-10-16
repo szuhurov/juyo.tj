@@ -1,5 +1,6 @@
 // juyo.tj service worker
-const CACHE_NAME = "juyo-v14";
+// v15: drops the API responses v14 kept (admin panel showed old data until a hard refresh).
+const CACHE_NAME = "juyo-v15";
 const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
   "/offline.html",
@@ -101,6 +102,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // API calls are live data (admin panel, search, notifications): always the
+  // network, never this cache. BUG FOUND 2026-10-16: the cache-first branch
+  // below kept the first answer of every GET /api/... forever, so the admin
+  // panel showed old lists until a hard refresh.
+  if (url.pathname.startsWith("/api/")) return;
+
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request.clone())
@@ -164,7 +171,11 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const itemId = event.notification.data?.item_id;
-  const url = itemId ? `/items/${itemId}` : "/";
+  // Admin notifications name the panel page to open; only paths on this site.
+  const target = event.notification.data?.url;
+  const url = typeof target === "string" && target.startsWith("/") && !target.startsWith("//")
+    ? target
+    : itemId ? `/items/${itemId}` : "/";
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
       for (const client of list) {
