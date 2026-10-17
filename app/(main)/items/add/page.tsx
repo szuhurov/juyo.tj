@@ -40,7 +40,7 @@ import { PhotoSourceSheet } from "@/components/photo-source-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PENDING_ADD_FILES_EVENT, takePendingAdd } from "@/lib/pending-add-files";
 import { CategorySheet } from "@/components/category-sheet";
-import { cleanPosterName, hasContentsField, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { cleanPlate, cleanPosterName, hasContentsField, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX, PLATE_MAX } from "@/lib/document-owner";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -53,7 +53,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ITEM_KEYS } from "@/lib/hooks/use-items";
 import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
 import { attachEmbeddings } from "@/lib/visual-search";
-import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
+import { hasOwnerField, isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl, PLATE_CATEGORY } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
 import { canPostFound } from "@/lib/found-policy";
 
@@ -170,6 +170,8 @@ function AddItemForm() {
   // which have the owner field above) and, for a wallet or bag, what was inside.
   const [posterName, setPosterName] = useState("");
   const [contents, setContents] = useState("");
+  // Licence plate: the number, drawn on the JUYO plate image (no photo).
+  const [plate, setPlate] = useState("");
   const [moderationStatus, setModerationStatus] = useState<"idle" | "passed">("idle");
   // "Found" is only for accounts the owner verified (companies, authorities):
   // the option is not shown to anyone else (the database refuses it too).
@@ -276,6 +278,10 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
+      if (formData.category === PLATE_CATEGORY && !cleanPlate(plate)) {
+        toast.error(t("plateRequired"));
+        return;
+      }
       // Switched from Documents/Cards to a category that needs photos.
       if (!isNoPhotoCategory(formData.category) && images.length === 0) {
         toast.error(t("pickImage"));
@@ -336,7 +342,7 @@ function AddItemForm() {
     // poster sees in sync with what is saved.
     const finalTitle = maskSensitiveNumbers(formData.title, formData.category);
     // Owner decision 2026-10-17: the document owner's full name, like the admin form.
-    const ownerLine = isNoPhotoCategory(formData.category)
+    const ownerLine = hasOwnerField(formData.category)
       ? cleanPosterName(ownerName) || null
       : formData.type === "lost"
         ? cleanPosterName(posterName) || null
@@ -347,6 +353,7 @@ function AddItemForm() {
       locale,
       formData.category === "Documents" ? ownerAddress : null,
       hasContentsField(formData.category, formData.type) ? maskSensitiveNumbers(contents, formData.category) : null,
+      formData.category === PLATE_CATEGORY ? plate : null,
     );
     const finalCategory = formData.category;
 
@@ -859,7 +866,25 @@ function AddItemForm() {
                 })()}
               </div>
 
-              {isNoPhotoCategory(formData.category) && (
+              {formData.category === PLATE_CATEGORY && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="plate-number" className="text-sm font-semibold text-muted-foreground ml-1">
+                    {t("plateLabel")}
+                  </Label>
+                  <Input
+                    id="plate-number"
+                    placeholder={t("platePlaceholder")}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    maxLength={PLATE_MAX + 4}
+                    className="rounded-md h-12 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base font-medium shadow-none uppercase tracking-wider"
+                    value={plate}
+                    onChange={(e) => setPlate(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {hasOwnerField(formData.category) && (
                 <div className="space-y-1.5">
                   <Label htmlFor="doc-owner" className="text-sm font-semibold text-muted-foreground ml-1">
                     {t(formData.category === "Cards" ? "cardOwnerLabel" : "docOwnerLabel")}
@@ -894,7 +919,7 @@ function AddItemForm() {
                 </div>
               )}
 
-              {formData.type === "lost" && !isNoPhotoCategory(formData.category) && (
+              {formData.type === "lost" && !hasOwnerField(formData.category) && (
                 <div className="space-y-1.5">
                   <Label htmlFor="poster-name" className="text-sm font-semibold text-muted-foreground ml-1">
                     {t("posterNameLabel")}

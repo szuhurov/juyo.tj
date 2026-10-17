@@ -7,9 +7,18 @@
  * the device. The database enforces the same rule for every client
  * (migration 20261007030000_document_photo_placeholders).
  *
+ * Owner decision 2026-10-17: a licence plate is treated the same way — no
+ * photo; the number the poster types is drawn on a JUYO plate image.
+ *
  * Kept byte-identical in Web/lib and app/lib (app/__tests__/shared-lib-parity.test.ts).
  */
-export const NO_PHOTO_CATEGORIES: readonly string[] = ['Documents', 'Cards'];
+export const NO_PHOTO_CATEGORIES: readonly string[] = ['Documents', 'Cards', 'LicensePlate'];
+export const PLATE_CATEGORY = 'LicensePlate';
+
+/** Documents and Cards carry the owner's name (and a document the address); a plate carries its number instead. */
+export function hasOwnerField(category: string | null | undefined): boolean {
+  return category === 'Documents' || category === 'Cards';
+}
 
 const PLACEHOLDER_BASE = 'https://juyo.tj/placeholders/';
 
@@ -19,7 +28,8 @@ export function isNoPhotoCategory(category: string | null | undefined): boolean 
 
 /** The image a Documents/Cards listing shows instead of a photo. */
 export function placeholderImageUrl(category: string | null | undefined): string {
-  return `${PLACEHOLDER_BASE}${category === 'Cards' ? 'card' : 'document'}.png`;
+  const name = category === 'Cards' ? 'card' : category === PLATE_CATEGORY ? 'plate' : 'document';
+  return `${PLACEHOLDER_BASE}${name}.png`;
 }
 
 export function isPlaceholderUrl(url: string | null | undefined): boolean {

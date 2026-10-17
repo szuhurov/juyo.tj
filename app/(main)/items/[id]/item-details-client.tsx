@@ -399,7 +399,7 @@ export default function ItemDetailsClient({
                       onError={() => markLoaded(img.image_url)}
                     />
                     {item && isPlaceholderUrl(img.image_url) && loadedImages[img.image_url] && (
-                      <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={docOwner.address} />
+                      <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={docOwner.address} plate={docOwner.plate} />
                     )}
                   </div>
                 ))}
@@ -563,7 +563,7 @@ export default function ItemDetailsClient({
                 ))}
               {item && (() => {
                 // Documents keep the owner as the description's first line (lib/document-owner.ts).
-                const { ownerName, address, contents, rest } = docOwner;
+                const { ownerName, address, contents, plate, rest } = docOwner;
                 return (
                   <>
                     <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-base min-[1084px]:text-lg min-[1503px]:text-xl whitespace-pre-wrap">
@@ -573,6 +573,11 @@ export default function ItemDetailsClient({
                       <p className="mt-3 font-semibold text-zinc-900 dark:text-zinc-50 text-base min-[1084px]:text-lg min-[1503px]:text-xl">
                         {t(item?.category === "Cards" ? "cardOwnerShown" : item?.category === "Documents" ? "docOwnerShown" : "ownerShown")}:{" "}
                         <span className="font-bold">{ownerName}</span>
+                      </p>
+                    )}
+                    {plate && (
+                      <p className="mt-3 font-semibold text-zinc-900 dark:text-zinc-50 text-base min-[1084px]:text-lg min-[1503px]:text-xl">
+                        {t("plateShown")}: <span className="font-bold tracking-wide">{plate}</span>
                       </p>
                     )}
                     {contents && (

@@ -6,11 +6,12 @@ import {
   splitOwnerLine,
   withOwnerLine,
   withPostedFor,
+  cleanPlate,
   hasContentsField,
   cleanPosterName,
 } from "@/lib/document-owner";
 
-const NONE = { postedFor: "", ownerName: "", address: "", contents: "" };
+const NONE = { postedFor: "", ownerName: "", address: "", contents: "", plate: "" };
 
 describe("document owner name: first name + first letter of the surname", () => {
   it("accepts and normalizes the short form", () => {
@@ -80,6 +81,7 @@ describe("document owner name: first name + first letter of the surname", () => 
       ownerName: "Алишер Раҳимов",
       address: "ноҳияи Сино",
       contents: "",
+      plate: "",
       rest: "Дар бозор ёфтам",
     });
     // editing the listing later keeps the line
@@ -111,5 +113,15 @@ describe("document owner name: first name + first letter of the surname", () => 
   it("takes the poster's own full name on one line", () => {
     expect(cleanPosterName("  Алишер   Раҳимов ")).toBe("Алишер Раҳимов");
     expect(cleanPosterName("a".repeat(80))).toHaveLength(60);
+  });
+
+  it("keeps a licence plate number as its own line, upper case", () => {
+    expect(cleanPlate(" 1234 ab  01 ")).toBe("1234 AB 01");
+    expect(cleanPlate("01 TJ-777!!")).toBe("01 TJ-777");
+    expect(cleanPlate("1".repeat(20))).toHaveLength(12);
+    const saved = withOwnerLine("Дар назди бозор ёфтам", null, "tg", null, null, "1234ab01");
+    expect(saved).toBe("Рақами мошин: 1234AB01\nДар назди бозор ёфтам");
+    expect(splitOwnerLine(saved)).toEqual({ ...NONE, plate: "1234AB01", rest: "Дар назди бозор ёфтам" });
+    expect(splitOwnerLine("Номер машины: 5555 AA 02\nНашёл номер")).toEqual({ ...NONE, plate: "5555 AA 02", rest: "Нашёл номер" });
   });
 });

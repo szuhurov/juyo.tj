@@ -34,9 +34,9 @@ import { CITY_IDS, DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { cn } from "@/lib/utils";
 import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import { attachEmbeddings } from "@/lib/visual-search";
-import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
+import { hasOwnerField, isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl, PLATE_CATEGORY } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { cleanPosterName, hasContentsField, splitOwnerLine, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { cleanPlate, cleanPosterName, hasContentsField, splitOwnerLine, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX, PLATE_MAX } from "@/lib/document-owner";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
 import { canKeepFound, canPostFound } from "@/lib/found-policy";
 
@@ -201,7 +201,7 @@ export default function EditItemPage({
     const title = ((formData.get("title") as string) || "").trim();
     const description = ((formData.get("description") as string) || "").trim();
     // Documents/Cards: the owner's full name (owner decision 2026-10-17).
-    const ownerValue = isNoPhotoCategory(category)
+    const ownerValue = hasOwnerField(category)
       ? cleanPosterName((formData.get("docOwner") as string) || "") || null
       : type === "lost"
         ? cleanPosterName((formData.get("posterName") as string) || "") || null
@@ -209,6 +209,11 @@ export default function EditItemPage({
     const contents = hasContentsField(category, type)
       ? maskSensitiveNumbers((formData.get("contents") as string) || "", category)
       : null;
+    const plate = category === PLATE_CATEGORY ? cleanPlate((formData.get("plate") as string) || "") : null;
+    if (category === PLATE_CATEGORY && !plate) {
+      toast.error(t("plateRequired"));
+      return;
+    }
     // Only a Documents listing carries an address line.
     const ownerAddress = category === "Documents" ? ((formData.get("docAddress") as string) || "") : null;
     const phone = ((formData.get("phone") as string) || "").trim();
@@ -244,7 +249,7 @@ export default function EditItemPage({
 
     const hasNewImages = currentImages.length > 0;
     const textChanged =
-      title !== item.title || withOwnerLine(description, ownerValue, locale, ownerAddress, contents) !== item.description;
+      title !== item.title || withOwnerLine(description, ownerValue, locale, ownerAddress, contents, plate) !== item.description;
 
     setSaving(true);
     try {
@@ -253,7 +258,7 @@ export default function EditItemPage({
       const finalImages = currentImages;
       // The database masks these numbers too.
       const finalTitle = maskSensitiveNumbers(title, category);
-      const finalDescription = withOwnerLine(maskSensitiveNumbers(description, category), ownerValue, locale, ownerAddress, contents);
+      const finalDescription = withOwnerLine(maskSensitiveNumbers(description, category), ownerValue, locale, ownerAddress, contents, plate);
       const finalCategory = category;
 
       // Any content change sends the listing back to an admin
@@ -558,7 +563,24 @@ export default function EditItemPage({
                 </div>
               </div>
 
-              {isNoPhotoCategory(category) && (
+              {category === PLATE_CATEGORY && (
+                <div className="space-y-2">
+                  <Label htmlFor="plate" className="text-xs min-[1084px]:text-sm text-slate-500">
+                    {t("plateLabel")}
+                  </Label>
+                  <Input
+                    id="plate"
+                    name="plate"
+                    defaultValue={splitOwnerLine(item?.description ?? "").plate}
+                    placeholder={t("platePlaceholder")}
+                    autoComplete="off"
+                    maxLength={PLATE_MAX + 4}
+                    className="rounded-md uppercase tracking-wider"
+                  />
+                </div>
+              )}
+
+              {hasOwnerField(category) && (
                 <div className="space-y-2">
                   <Label htmlFor="docOwner" className="text-xs min-[1084px]:text-sm text-slate-500">
                     {t(category === "Cards" ? "cardOwnerLabel" : "docOwnerLabel")}
@@ -593,7 +615,7 @@ export default function EditItemPage({
                 </div>
               )}
 
-              {type === "lost" && !isNoPhotoCategory(category) && (
+              {type === "lost" && !hasOwnerField(category) && (
                 <div className="space-y-2">
                   <Label htmlFor="posterName" className="text-xs min-[1084px]:text-sm text-slate-500">
                     {t("posterNameLabel")}

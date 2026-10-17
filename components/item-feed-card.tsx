@@ -71,7 +71,7 @@ export function ItemFeedCard({ item, priority = false }: { item: Item; priority?
           />
         )}
         {showThumb && imgLoaded && isPlaceholderUrl(thumb) && (
-          <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={owner.address} />
+          <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={owner.address} plate={owner.plate} />
         )}
         {PAID_FEATURES_ENABLED && (item.vip_tier === "vip" || item.vip_tier === "vvip") && (
           <span

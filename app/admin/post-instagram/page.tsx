@@ -25,9 +25,9 @@ import { CATEGORIES, UNSPECIFIED_REWARD } from "@/lib/services/item-service";
 import { CITY_IDS, cityLabel } from "@/lib/cities";
 import { createClerkSupabaseClient } from "@/lib/supabase";
 import { uploadListingPhoto } from "@/lib/listing-photo-upload";
-import { isNoPhotoCategory, placeholderImageUrl } from "@/lib/photo-policy";
+import { hasOwnerField, isNoPhotoCategory, placeholderImageUrl, PLATE_CATEGORY } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { hasContentsField, withOwnerLine, CONTENTS_MAX, INSTAGRAM_POSTER_NAME, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { cleanPlate, hasContentsField, withOwnerLine, CONTENTS_MAX, INSTAGRAM_POSTER_NAME, OWNER_ADDRESS_MAX, PLATE_MAX } from "@/lib/document-owner";
 
 const PrivacyBlurEditor = dynamic(() =>
   import("@/components/privacy-blur-editor").then((m) => m.PrivacyBlurEditor),
@@ -84,6 +84,7 @@ export default function PostInstagramPage() {
   const [ownerName, setOwnerName] = useState("");
   const [ownerAddress, setOwnerAddress] = useState("");
   const [contents, setContents] = useState("");
+  const [plate, setPlate] = useState("");
   const [city, setCity] = useState<string | null>(null);
   const [locationType, setLocationType] = useState<string | null>(null);
   const [date, setDate] = useState(today);
@@ -118,9 +119,10 @@ export default function PostInstagramPage() {
     if (!category) return toast.error("Категорияро интихоб кунед");
     if (!title.trim() || !description.trim()) return toast.error("Сарлавҳа ва тавсифро нависед");
     if (!city) return toast.error("Шаҳрро интихоб кунед");
+    if (category === PLATE_CATEGORY && !cleanPlate(plate)) return toast.error(t("plateRequired"));
     // Owner decision 2026-10-13: here the admin may write the owner's full name
     // (the public forms still take only "first name + initial").
-    const owner = noPhoto ? ownerName.replace(/\s+/g, " ").trim().slice(0, 60) : "";
+    const owner = hasOwnerField(category) ? ownerName.replace(/\s+/g, " ").trim().slice(0, 60) : "";
 
     setSaving(true);
     try {
@@ -151,7 +153,7 @@ export default function PostInstagramPage() {
           type,
           category,
           title,
-          description: withOwnerLine(description, owner || null, "tg", category === "Documents" ? ownerAddress : null, hasContentsField(category, type) ? contents : null),
+          description: withOwnerLine(description, owner || null, "tg", category === "Documents" ? ownerAddress : null, hasContentsField(category, type) ? contents : null, category === PLATE_CATEGORY ? plate : null),
           city,
           location_type: locationType,
           date,
@@ -236,7 +238,12 @@ export default function PostInstagramPage() {
         <Field label="Сарлавҳа">
           <Input className={FIELD} value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} />
         </Field>
-        {noPhoto && (
+        {category === PLATE_CATEGORY && (
+          <Field label={t("plateLabel")}>
+            <Input className={`${FIELD} uppercase tracking-wider`} value={plate} maxLength={PLATE_MAX + 4} placeholder={t("platePlaceholder")} autoComplete="off" onChange={(e) => setPlate(e.target.value)} />
+          </Field>
+        )}
+        {hasOwnerField(category) && (
           <Field label={t(category === "Cards" ? "cardOwnerLabel" : "docOwnerLabel")}>
             <Input className={FIELD} value={ownerName} maxLength={60} placeholder="Масалан: Алишер Раҳимов" autoComplete="off" onChange={(e) => setOwnerName(e.target.value)} />
           </Field>
@@ -304,7 +311,7 @@ export default function PostInstagramPage() {
       <Section title="Аксҳо">
         {noPhoto ? (
           <p className="text-sm text-zinc-500">
-            Акси ҳуҷҷат ё корт ҳеҷ гоҳ бор намешавад — дар эълон расми juyo нишон дода мешавад.
+            Акси ҳуҷҷат, корт ё рақами мошин ҳеҷ гоҳ бор намешавад — дар эълон расми juyo нишон дода мешавад.
           </p>
         ) : (
           <>

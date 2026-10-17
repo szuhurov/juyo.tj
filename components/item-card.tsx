@@ -130,7 +130,7 @@ export function ItemCard({
           )}
 
           {showThumb && imgLoaded && isPlaceholderUrl(thumb) && (
-            <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={owner.address} />
+            <DocumentPlaceholderText category={item.category} ownerName={pictureOwnerName(item.description ?? "")} address={owner.address} plate={owner.plate} />
           )}
 
           {isOwner && (

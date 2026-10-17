@@ -14,11 +14,24 @@ export function DocumentPlaceholderText({
   category,
   ownerName,
   address,
+  plate,
 }: {
   category: string;
   ownerName: string;
   address?: string;
+  plate?: string;
 }) {
+  // Licence plate: the number goes into the empty plate (public/placeholders/plate.png).
+  if (category === "LicensePlate") {
+    if (!plate) return null;
+    return (
+      <div className="pointer-events-none absolute left-0 top-1/2 z-10 aspect-square w-full -translate-y-1/2 [container-type:inline-size]">
+        <div className="absolute left-[30%] top-[41.25%] flex h-[14.5%] w-[56.5%] items-center justify-center overflow-hidden bg-white">
+          <span className="truncate font-mono text-[8.2cqw] font-bold leading-none tracking-[0.04em] text-[#1f2f2a]">{plate}</span>
+        </div>
+      </div>
+    );
+  }
   const isCard = category === "Cards";
   const place = isCard ? "" : address ?? "";
   if (!ownerName && !place) return null;

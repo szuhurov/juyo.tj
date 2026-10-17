@@ -17,3 +17,13 @@ describe("photo policy: Documents and Cards never get a photo", () => {
   });
 });
 
+
+describe("licence plates (owner decision 2026-10-17)", () => {
+  it("never upload a photo and show the JUYO plate image", async () => {
+    const { isNoPhotoCategory, placeholderImageUrl, hasOwnerField } = await import("@/lib/photo-policy");
+    expect(isNoPhotoCategory("LicensePlate")).toBe(true);
+    expect(placeholderImageUrl("LicensePlate")).toBe("https://juyo.tj/placeholders/plate.png");
+    expect(hasOwnerField("LicensePlate")).toBe(false);
+    expect(hasOwnerField("Documents")).toBe(true);
+  });
+});

@@ -22,6 +22,9 @@
  * asked for "Found" listings: published, they would tell a fake owner what
  * to answer.
  *
+ * A licence-plate listing keeps the number as a line too ("Рақами мошин:
+ * 1234 AB 01"); it is drawn on the plate image.
+ *
  * Kept byte-identical in Web/lib and app/lib (app/__tests__/shared-lib-parity.test.ts).
  */
 const OWNER_LABELS: Record<string, string> = { tg: 'Соҳиб:', ru: 'Владелец:', en: 'Owner:' };
@@ -35,6 +38,20 @@ const CONTENTS_LABELS: Record<string, string> = { tg: 'Дар дохилаш:', 
 const CONTENTS_LINE = /^(?:Дар дохилаш|Внутри|Inside):\s*(.+)$/u;
 export const OWNER_ADDRESS_MAX = 60;
 export const CONTENTS_MAX = 150;
+const PLATE_LABELS: Record<string, string> = { tg: 'Рақами мошин:', ru: 'Номер машины:', en: 'Plate:' };
+const PLATE_LINE = /^(?:Рақами мошин|Номер машины|Plate):\s*(.+)$/u;
+export const PLATE_MAX = 12;
+
+/** "1234 ab 01" → "1234 AB 01": letters, digits, single spaces and dashes, at most PLATE_MAX characters. */
+export function cleanPlate(input: string | null | undefined): string {
+  return (input ?? '')
+    .toLocaleUpperCase()
+    .replace(/[^\p{L}\p{N} -]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, PLATE_MAX)
+    .trim();
+}
 /** Categories that are containers: a lost one may say what was inside. */
 export const CONTENTS_CATEGORIES: readonly string[] = ['Wallet', 'Bag'];
 
@@ -90,6 +107,7 @@ export function withOwnerLine(
   locale: string,
   address: string | null = null,
   contents: string | null = null,
+  plate: string | null = null,
 ): string {
   const { postedFor, rest } = splitOwnerLine(description);
   const lines: string[] = [];
@@ -99,6 +117,8 @@ export function withOwnerLine(
   if (place) lines.push(`${ADDRESS_LABELS[locale] ?? ADDRESS_LABELS.tg} ${place}`);
   const inside = cleanLine(contents, CONTENTS_MAX);
   if (inside) lines.push(`${CONTENTS_LABELS[locale] ?? CONTENTS_LABELS.tg} ${inside}`);
+  const number = cleanPlate(plate);
+  if (number) lines.push(`${PLATE_LABELS[locale] ?? PLATE_LABELS.tg} ${number}`);
   return [...lines, rest].join('\n').trim();
 }
 
@@ -115,6 +135,7 @@ export function splitOwnerLine(description: string): {
   ownerName: string;
   address: string;
   contents: string;
+  plate: string;
   rest: string;
 } {
   const lines = description.split('\n');
@@ -127,12 +148,15 @@ export function splitOwnerLine(description: string): {
   if (place) at++;
   const inside = CONTENTS_LINE.exec((lines[at] ?? '').trim());
   if (inside) at++;
-  if (at === 0) return { postedFor: '', ownerName: '', address: '', contents: '', rest: description };
+  const number = PLATE_LINE.exec((lines[at] ?? '').trim());
+  if (number) at++;
+  if (at === 0) return { postedFor: '', ownerName: '', address: '', contents: '', plate: '', rest: description };
   return {
     postedFor: posted ? posted[1].trim() : '',
     ownerName: owner ? owner[1].trim() : '',
     address: place ? place[1].trim() : '',
     contents: inside ? inside[1].trim() : '',
+    plate: number ? number[1].trim() : '',
     rest: lines.slice(at).join('\n').trim(),
   };
 }
