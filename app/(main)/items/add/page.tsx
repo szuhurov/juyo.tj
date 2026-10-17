@@ -55,6 +55,7 @@ import { isDocumentCategory, maskSensitiveNumbers } from "@/lib/sensitive-text";
 import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
+import { canPostFound } from "@/lib/found-policy";
 
 // These two components (the privacy blur canvas editor, the camera modal) are
 // heavy and only needed in specific cases (a document was detected / the
@@ -172,7 +173,8 @@ function AddItemForm() {
   const [moderationStatus, setModerationStatus] = useState<"idle" | "passed">("idle");
   // "Found" is only for accounts the owner verified (companies, authorities):
   // the option is not shown to anyone else (the database refuses it too).
-  const [canPostFound, setCanPostFound] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const foundAllowed = canPostFound(formData.category, verified);
 
   // Load the phone number from the profile
   useEffect(() => {
@@ -184,7 +186,7 @@ function AddItemForm() {
         if (profile?.phone) {
           setFormData((prev) => ({ ...prev, phone: profile.phone as string }));
         }
-        setCanPostFound(profile?.is_verified === true);
+        setVerified(profile?.is_verified === true);
       } catch (error) {
         console.error("Error fetching profile:", error);
       }
@@ -260,7 +262,7 @@ function AddItemForm() {
         toast.error(t("fillAllFields"));
         return;
       }
-      if (formData.type === "found" && !canPostFound) {
+      if (formData.type === "found" && !foundAllowed) {
         toast.error(t("foundOnlyVerified"));
         return;
       }
@@ -288,6 +290,10 @@ function AddItemForm() {
       }
       setStep(4); // Location → details
     } else if (step === 5) {
+      if (formData.type === "found" && !foundAllowed) {
+        toast.error(t("foundOnlyVerified"));
+        return;
+      }
       if (!formData.phone.trim()) {
         toast.error(t("fillAllFields"));
         return;
@@ -652,7 +658,7 @@ function AddItemForm() {
                     />
                   </Label>
                 </div>
-                {canPostFound ? (
+                {foundAllowed ? (
                 <div className="relative">
                   <Label
                     htmlFor="found"

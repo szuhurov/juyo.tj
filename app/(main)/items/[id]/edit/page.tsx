@@ -38,6 +38,7 @@ import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
 import { cleanPosterName, hasContentsField, splitOwnerLine, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
+import { canKeepFound, canPostFound } from "@/lib/found-policy";
 
 import {
   Tooltip,
@@ -80,7 +81,7 @@ export default function EditItemPage({
   // "Found" is only for verified accounts (see items/add); a listing that is
   // already "Found" keeps its option.
   const { data: ownProfile } = useProfileQuery(userId, getToken);
-  const canPostFound = ownProfile?.is_verified === true;
+  const verified = ownProfile?.is_verified === true;
   const [locationType, setLocationType] = useState<EditLocationType | null>(null);
   const [city, setCity] = useState<string>(DEFAULT_CITY);
   const [rewardEnabled, setRewardEnabled] = useState(false);
@@ -219,6 +220,10 @@ export default function EditItemPage({
     // Check that all fields are filled in
     if (!title || !description || !category || !phone) {
       toast.error(t("fillAllFields"));
+      return;
+    }
+    if (type === "found" && !canKeepFound(category, verified, item)) {
+      toast.error(t("foundOnlyVerified"));
       return;
     }
 
@@ -433,7 +438,7 @@ export default function EditItemPage({
                       <span className="font-semibold text-sm min-[1084px]:text-base">{t("lost")}</span>
                     </Label>
                   </div>
-                  {(canPostFound || type === "found") && (
+                  {(canPostFound(category, verified) || type === "found") && (
                   <div>
                     <RadioGroupItem
                       value="found"
