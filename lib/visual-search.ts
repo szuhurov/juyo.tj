@@ -27,38 +27,68 @@ export interface PhotoEmbedding {
 
 let sessionP: Promise<{ ort: Ort; session: Session }> | null = null;
 
-/** Share of the model file downloaded so far (0–1); null when nothing is downloading. */
-let downloadProgress: number | null = null;
-const progressListeners = new Set<(p: number | null) => void>();
-function setDownloadProgress(p: number | null) {
-  downloadProgress = p;
-  progressListeners.forEach((l) => l(p));
+/**
+ * Exact sizes of the two files the install downloads. They are needed
+ * because Vercel sends both brotli-compressed WITHOUT a Content-Length — the
+ * old progress then jumped straight to 100% and sat there for the whole
+ * download. The stream yields decompressed bytes, so these are the file
+ * sizes on disk (tests/lib/visual-search-sizes.test.ts keeps them honest).
+ */
+export const VISUAL_MODEL_BYTES = 63_451_786;
+export const ORT_WASM_BYTES = 14_239_897;
+const ORT_WASM_URL = `${ORT_BASE}ort-wasm-simd-threaded.wasm`;
+
+export interface DownloadProgress {
+  loaded: number;
+  total: number;
 }
-/** The first search downloads the model (tens of MB); the dialog shows how far it is. */
-export function onVisualModelDownload(listener: (p: number | null) => void) {
+
+/** Bytes downloaded so far across both files; null when nothing is downloading. */
+let downloadProgress: DownloadProgress | null = null;
+const parts = new Map<string, { loaded: number; total: number }>();
+const progressListeners = new Set<(p: DownloadProgress | null) => void>();
+function emitProgress() {
+  if (parts.size === 0) {
+    downloadProgress = null;
+  } else {
+    let loaded = 0;
+    let total = 0;
+    for (const part of parts.values()) {
+      loaded += Math.min(part.loaded, part.total);
+      total += part.total;
+    }
+    downloadProgress = { loaded, total };
+  }
+  progressListeners.forEach((l) => l(downloadProgress));
+}
+/** The install prompt and the camera button show how far the one-time download is. */
+export function onVisualModelDownload(listener: (p: DownloadProgress | null) => void) {
   progressListeners.add(listener);
   listener(downloadProgress);
   return () => { progressListeners.delete(listener); };
 }
 
-async function readWithProgress(res: Response): Promise<ArrayBuffer> {
-  const total = Number(res.headers.get("content-length")) || 0;
-  if (!res.body || !total) return res.arrayBuffer();
+async function readWithProgress(res: Response, key: string, expected: number): Promise<ArrayBuffer> {
+  if (!res.body) return res.arrayBuffer();
+  const total = Math.max(expected, Number(res.headers.get("content-length")) || 0);
   const chunks: Uint8Array[] = [];
   const reader = res.body.getReader();
   let got = 0;
-  setDownloadProgress(0);
+  parts.set(key, { loaded: 0, total });
+  emitProgress();
   try {
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       chunks.push(value);
       got += value.length;
-      // A compressed response delivers more bytes than its content-length.
-      setDownloadProgress(Math.min(1, got / total));
+      parts.set(key, { loaded: got, total });
+      emitProgress();
     }
-  } finally {
-    setDownloadProgress(null);
+  } catch (e) {
+    parts.delete(key);
+    emitProgress();
+    throw e;
   }
   const bytes = new Uint8Array(got);
   let at = 0;
@@ -85,27 +115,52 @@ async function modelBytes(): Promise<ArrayBuffer> {
   }
   const res = await fetch(VISUAL_MODEL_URL, { cache: "no-cache" });
   if (!res.ok) throw new Error(`model ${res.status}`);
-  const bytes = await readWithProgress(res);
+  const bytes = await readWithProgress(res, "model", VISUAL_MODEL_BYTES);
   // Never run a model that is not exactly the pinned file.
   if ((await sha256Hex(bytes)) !== VISUAL_MODEL.sha256) throw new Error("model checksum mismatch");
   await cache?.put(VISUAL_MODEL_URL, new Response(bytes.slice(0), { headers: { "content-type": "application/octet-stream" } })).catch(() => {});
   return bytes;
 }
 
+/**
+ * The WebAssembly runtime (14 MB). Downloaded here — with progress, and kept
+ * next to the model — instead of by ONNX Runtime itself, which fetched it
+ * silently after the model and made the install look stuck at 100%.
+ */
+async function wasmBytes(): Promise<ArrayBuffer> {
+  const cache = typeof caches !== "undefined" ? await caches.open(CACHE).catch(() => null) : null;
+  const cached = await cache?.match(ORT_WASM_URL);
+  if (cached) return cached.arrayBuffer();
+  const res = await fetch(ORT_WASM_URL, { cache: "no-cache" });
+  if (!res.ok) throw new Error(`runtime ${res.status}`);
+  const bytes = await readWithProgress(res, "wasm", ORT_WASM_BYTES);
+  await cache?.put(ORT_WASM_URL, new Response(bytes.slice(0), { headers: { "content-type": "application/wasm" } })).catch(() => {});
+  return bytes;
+}
+
 function getSession() {
   sessionP ??= (async () => {
-    const ort = await import("onnxruntime-web/wasm");
+    // Both files download side by side; the progress counts both.
+    const [ort, model, wasm] = await Promise.all([import("onnxruntime-web/wasm"), modelBytes(), wasmBytes()]);
     ort.env.wasm.wasmPaths = ORT_BASE;
+    ort.env.wasm.wasmBinary = wasm;
     // juyo.tj is not cross-origin isolated, so WASM threads are unavailable;
     // asking for them only logs a warning.
     ort.env.wasm.numThreads = 1;
     ort.env.wasm.proxy = false;
-    const session = await ort.InferenceSession.create(await modelBytes(), { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
+    // Ask the browser not to evict ~78 MB the person chose to install.
+    void navigator.storage?.persist?.().catch(() => false);
+    const session = await ort.InferenceSession.create(model, { executionProviders: ["wasm"], graphOptimizationLevel: "all" });
     return { ort: ort as unknown as Ort, session };
-  })().catch((e) => {
-    sessionP = null;
-    throw e;
-  });
+  })()
+    .catch((e) => {
+      sessionP = null;
+      throw e;
+    })
+    .finally(() => {
+      parts.clear();
+      emitProgress();
+    });
   return sessionP;
 }
 
@@ -115,13 +170,14 @@ export function warmUpVisualModel() {
 }
 
 /** Shown on the install prompt, so the person knows what the download costs. */
-export const VISUAL_MODEL_SIZE_MB = 64;
+export const VISUAL_MODEL_SIZE_MB = Math.round((VISUAL_MODEL_BYTES + ORT_WASM_BYTES) / 1_000_000);
 
-/** True when the model is already in this browser (no download needed). */
+/** True when the model and its runtime are already in this browser (no download needed). */
 export async function visualModelInstalled() {
   if (sessionP) return true;
   try {
-    return !!(await (await caches.open(CACHE)).match(VISUAL_MODEL_URL));
+    const cache = await caches.open(CACHE);
+    return !!(await cache.match(VISUAL_MODEL_URL)) && !!(await cache.match(ORT_WASM_URL));
   } catch {
     return false;
   }

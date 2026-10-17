@@ -21,6 +21,7 @@ import {
   visualModelInstalled,
   warmUpVisualModel,
   VISUAL_MODEL_SIZE_MB,
+  type DownloadProgress,
 } from "@/lib/visual-search";
 import { useLanguage } from "@/lib/language-context";
 import type { Item } from "@/lib/services/item-service";
@@ -75,15 +76,18 @@ export function ImageSearchButton() {
   const fileRef = useRef<HTMLInputElement>(null);
   const runRef = useRef(0);
   const [elapsed, setElapsed] = useState(0);
-  const [download, setDownload] = useState<number | null>(null);
+  const [download, setDownload] = useState<DownloadProgress | null>(null);
   useEffect(() => onVisualModelDownload(setDownload), []);
   // The model is a one-time download: until it is in this browser the dialog
   // offers to install it (with its size) instead of camera/gallery.
   const [installed, setInstalled] = useState<boolean | null>(null);
   const [installing, setInstalling] = useState(false);
   const [installFailed, setInstallFailed] = useState(false);
-  // After the bytes are in, the model still has to be prepared for a moment: shown as 100%.
-  const percent = Math.round((download ?? (installing ? 1 : 0)) * 100);
+  // Before the first byte arrives the bar starts at 0%, not 100%.
+  const fraction = download ? download.loaded / Math.max(1, download.total) : 0;
+  const percent = Math.min(100, Math.round(fraction * 100));
+  const mb = (bytes: number) => (bytes / 1_000_000).toFixed(1);
+  const sizeText = download ? `${mb(download.loaded)} МБ / ${mb(download.total)} МБ` : "";
 
   const openDialog = () => {
     // Reopened while the model is still downloading: show its progress again.
@@ -177,7 +181,7 @@ export function ImageSearchButton() {
         title={t("imageSearchTitle")}
         className="p-1.5 text-slate-500 hover:text-primary transition-colors cursor-pointer"
       >
-        {installing ? <ProgressRing progress={download ?? 1} /> : <Camera className="h-4 w-4" />}
+        {installing ? <ProgressRing progress={fraction} /> : <Camera className="h-4 w-4" />}
       </button>
 
       <input
@@ -230,9 +234,10 @@ export function ImageSearchButton() {
                     </div>
                     <span className="w-12 text-right text-sm font-bold tabular-nums text-primary">{percent}%</span>
                   </div>
-                  <p className="text-xs font-medium text-muted-foreground" aria-live="polite">
-                    {t("imageSearchInstalling").replace("{percent}", String(percent))}
-                  </p>
+                  <div className="flex items-center justify-between gap-3 text-xs font-medium text-muted-foreground" aria-live="polite">
+                    <span>{t("imageSearchInstalling").replace("{percent}", String(percent))}</span>
+                    {sizeText && <span className="shrink-0 tabular-nums">{sizeText}</span>}
+                  </div>
                 </div>
               ) : (
                 <button
@@ -271,7 +276,7 @@ export function ImageSearchButton() {
               <p className="text-sm font-semibold">
                 {download === null
                   ? t("imageSearchAnalyzing")
-                  : t("imageSearchDownloading").replace("{percent}", String(Math.round(download * 100)))}
+                  : t("imageSearchDownloading").replace("{percent}", String(percent))}
               </p>
               <p className="text-xs text-muted-foreground tabular-nums">{elapsed}s</p>
             </div>
