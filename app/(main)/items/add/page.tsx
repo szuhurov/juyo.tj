@@ -40,7 +40,7 @@ import { PhotoSourceSheet } from "@/components/photo-source-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PENDING_ADD_FILES_EVENT, takePendingAdd } from "@/lib/pending-add-files";
 import { CategorySheet } from "@/components/category-sheet";
-import { checkOwnerName, cleanPosterName, hasContentsField, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { cleanPosterName, hasContentsField, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -280,13 +280,6 @@ function AddItemForm() {
         setStep(1);
         return;
       }
-      if (isNoPhotoCategory(formData.category)) {
-        const owner = checkOwnerName(ownerName);
-        if (owner && !owner.ok) {
-          toast.error(t(owner.reason === "full_surname" ? "docOwnerFullSurname" : "docOwnerFormat"));
-          return;
-        }
-      }
       continueFromDetails();
     } else if (step === 6) {
       if (!city || !locationAnswered) {
@@ -336,9 +329,9 @@ function AddItemForm() {
     // The database masks these numbers too; doing it here keeps what the
     // poster sees in sync with what is saved.
     const finalTitle = maskSensitiveNumbers(formData.title, formData.category);
-    const owner = isNoPhotoCategory(formData.category) ? checkOwnerName(ownerName) : null;
+    // Owner decision 2026-10-17: the document owner's full name, like the admin form.
     const ownerLine = isNoPhotoCategory(formData.category)
-      ? (owner?.ok ? owner.value : null)
+      ? cleanPosterName(ownerName) || null
       : formData.type === "lost"
         ? cleanPosterName(posterName) || null
         : null;
@@ -869,7 +862,7 @@ function AddItemForm() {
                     id="doc-owner"
                     placeholder={t("docOwnerPlaceholder")}
                     autoComplete="off"
-                    maxLength={40}
+                    maxLength={OWNER_ADDRESS_MAX}
                     className="rounded-md h-12 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm min-[1084px]:text-base font-medium shadow-none"
                     value={ownerName}
                     onChange={(e) => setOwnerName(e.target.value)}

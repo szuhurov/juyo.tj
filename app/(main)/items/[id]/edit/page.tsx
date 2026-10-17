@@ -36,7 +36,7 @@ import { TelegramIcon, WhatsappIcon } from "@/components/social-icons";
 import { attachEmbeddings } from "@/lib/visual-search";
 import { isNoPhotoCategory, isPlaceholderUrl, placeholderImageUrl } from "@/lib/photo-policy";
 import { isHiddenPhotoFile } from "@/lib/hidden-photo";
-import { checkOwnerName, cleanPosterName, hasContentsField, splitOwnerLine, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
+import { cleanPosterName, hasContentsField, splitOwnerLine, withOwnerLine, CONTENTS_MAX, OWNER_ADDRESS_MAX } from "@/lib/document-owner";
 import { useProfileQuery } from "@/lib/hooks/use-profile";
 
 import {
@@ -199,21 +199,9 @@ export default function EditItemPage({
     const formData = new FormData(e.currentTarget);
     const title = ((formData.get("title") as string) || "").trim();
     const description = ((formData.get("description") as string) || "").trim();
-    // Documents: the owner's first name + first letter of the surname (lib/document-owner.ts).
-    const ownerInput = ((formData.get("docOwner") as string) || "").replace(/\s+/g, " ").trim();
-    // A listing posted for an Instagram request may carry the owner's full name (admin only).
-    const fullNameAllowed = !!splitOwnerLine(item.description ?? "").postedFor;
-    const owner: ReturnType<typeof checkOwnerName> = !isNoPhotoCategory(category)
-      ? null
-      : fullNameAllowed
-        ? (ownerInput ? { ok: true, value: ownerInput.slice(0, 60) } : null)
-        : checkOwnerName(ownerInput);
-    if (owner && !owner.ok) {
-      toast.error(t(owner.reason === "full_surname" ? "docOwnerFullSurname" : "docOwnerFormat"));
-      return;
-    }
+    // Documents/Cards: the owner's full name (owner decision 2026-10-17).
     const ownerValue = isNoPhotoCategory(category)
-      ? (owner?.ok ? owner.value : null)
+      ? cleanPosterName((formData.get("docOwner") as string) || "") || null
       : type === "lost"
         ? cleanPosterName((formData.get("posterName") as string) || "") || null
         : null;
@@ -576,7 +564,7 @@ export default function EditItemPage({
                     defaultValue={splitOwnerLine(item?.description ?? "").ownerName}
                     placeholder={t("docOwnerPlaceholder")}
                     autoComplete="off"
-                    maxLength={40}
+                    maxLength={OWNER_ADDRESS_MAX}
                     className="rounded-md"
                   />
                 </div>
